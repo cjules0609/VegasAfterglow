@@ -81,8 +81,8 @@ void Observer::calc_emission_surface(Coord const& coord) {
     for (size_t i = 0; i < coord.phi.size(); ++i) {
         for (size_t j = 0; j < coord.theta.size(); ++j) {
             for (size_t k = 0; k < coord.r.size(); ++k) {
-                double dcos = std::cos(coord.theta_b[j]) - std::cos(coord.theta_b[j]);
-                double dphi = coord.phi_b[i] - coord.phi_b[i];
+                double dcos = std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j]);
+                double dphi = coord.phi_b[i + 1] - coord.phi_b[i];
                 double dOmega = std::fabs(dphi * dcos);
                 double r_ = coord.r[k];
                 this->emission_S[i][j][k] = r_ * r_ * dOmega;

@@ -11,7 +11,7 @@ void afterglow_gen() {
     double eps_e = 0.1;
     double eps_B = 0.01;
     double pel = 2.3;
-    double theta_j = 5.0 * con::deg;
+    double theta_j = 15.0 * con::deg;
 
     // create model
     auto medium = create_ISM(n_ism, eps_e, eps_B, pel);
@@ -26,7 +26,7 @@ void afterglow_gen() {
     size_t grid_num = 300;
     Array r = logspace(R_ES / 100, R_ES * 100, grid_num);
     Array theta = linspace(0, theta_j, 30);
-    Array phi = linspace(0, 2 * con::pi, 2);
+    Array phi = linspace(0, 2 * con::pi, 37);
     Coord coord{r, theta, phi};
 
     write2file(coord.r, prefix + "r");
@@ -42,7 +42,7 @@ void afterglow_gen() {
 
     Observer observer;
 
-    double theta_obs = 0.0 * con::deg;
+    double theta_obs = 10.0 * con::deg;
     observer.observe(coord, Gamma_history, theta_obs);
     write2file(observer.t_obs, prefix + "t_obs");
     write2file(observer.Doppler, prefix + "doppler");
@@ -64,4 +64,9 @@ void afterglow_gen() {
     }
 
     // write to file
+}
+
+int main() {
+    afterglow_gen();
+    return 0;
 }
