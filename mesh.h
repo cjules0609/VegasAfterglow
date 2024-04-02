@@ -14,6 +14,26 @@ using Array = std::vector<double>;
 using Profile = std::function<double(double)>;
 using Profile2d = std::function<double(double, double)>;
 
+Array linspace(double start, double end, size_t num);
+
+Array logspace(double start, double end, size_t num);
+
+Array zeros(size_t num);
+
+Array ones(size_t num);
+
+MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
+
+MeshGrid createGrid_like(MeshGrid const& grid, double val = 0);
+
+MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
+
+MeshGrid3d createGrid3d_like(MeshGrid3d const& grid, double val = 0);
+
+Array boundary2center(Array const& boundary);
+
+Array boundary2centerlog(Array const& boundary);
+
 class Coord {
    public:
     Coord(Array r_b, Array theta_b, Array phi_b) : r_b(r_b), theta_b(theta_b), phi_b(phi_b) {
@@ -30,19 +50,4 @@ class Coord {
     Array phi;
 };
 
-Array linspace(double start, double end, size_t num);
-
-Array logspace(double start, double end, size_t num);
-
-Array zeros(size_t num);
-
-Array ones(size_t num);
-
-MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
-
-MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
-
-Array boundary2center(Array const& boundary);
-
-Array boundary2centerlog(Array const& boundary);
 #endif

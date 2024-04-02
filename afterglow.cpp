@@ -2,8 +2,7 @@
 
 #include <boost/numeric/odeint.hpp>
 
-void afterglow_gen(Coord const& coord, Jet const& blast, Medium const& medium, double theta_obs, Array const& nu_obs,
-                   size_t light_curve_resolution = 100) {
+void afterglow_gen() {
     std::string prefix = "off-axis-tophat/";
     double E_iso = 1e53 * con::erg;
     double Gamma0 = 300;

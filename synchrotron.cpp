@@ -8,13 +8,13 @@
 #include "mesh.h"
 #include "utilities.h"
 
-SynRadMesh createSynRadGrid(size_t theta_size, size_t r_size, SynRad val = {0, 0, 0, 0, 0}) {
+SynRadMesh createSynRadGrid(size_t theta_size, size_t r_size, SynRad val) {
     return SynRadMesh(theta_size, SynRadArray(r_size, val));
 }
 
-double SynRad::I_nu(double nu, double pel) const { return I_nu_peak * I_nu_(nu, pel); }
+double SynRad::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
-double SynRad::I_nu_(double nu, double pel) const {
+double SynRad::I_nu_(double nu) const {
     if (nu_a < nu_m && nu_m < nu_c) {
         if (nu <= nu_a) {
             return pow(nu_a / nu_m, 1.0 / 3) * pow(nu / nu_a, 2);
@@ -172,7 +172,7 @@ SynRad syn_radiation(double r, double Gamma, double t_com, Medium const& medium)
     double nu_c = syn_nu(gamma_c, Bprime);
 
     double nu_a = calc_syn_nu_a(Gamma, Bprime, I_nu_peak, gamma_m, gamma_c, gamma_M);
-    return {I_nu_peak, nu_m, nu_c, nu_a, nu_M};
+    return {I_nu_peak, nu_m, nu_c, nu_a, nu_M, medium.pel};
 }
 
 SynRadMesh calc_syn_radiation(Coord const& coord, MeshGrid const& Gamma, MeshGrid const& t_com, Medium const& medium) {

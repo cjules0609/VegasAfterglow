@@ -1,6 +1,7 @@
 #ifndef _OBSERVER_
 #define _OBSERVER_
 
+#include <stdexcept>
 #include <vector>
 
 #include "mesh.h"
@@ -17,7 +18,7 @@ class Observer {
     void observe(Coord const& coord, MeshGrid const& Gamma, double theta_obs);
 
     template <typename... RadMesh>
-    MeshGrid3d Observer::I_nu_history(double nu_obs, RadMesh const&... rad_com);
+    MeshGrid3d I_nu_history(double nu_obs, RadMesh const&... rad_com);
 
     template <typename... RadMesh>
     MeshGrid light_curve(size_t data_points, double nu_obs, RadMesh const&... rad_com) const;
@@ -74,11 +75,14 @@ MeshGrid Observer::light_curve(size_t data_points, double nu_obs, RadMesh const&
 
 template <typename... RadMesh>
 MeshGrid3d Observer::I_nu_history(double nu_obs, RadMesh const&... rad_com) {
-    MeshGrid3d I_nu_obs = createGrid3d(coord.r, coord.theta, coord.phi);
+    if (eat_s.empty()) {
+        throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
+    }
+    MeshGrid3d I_nu_obs = createGrid3d_like(Doppler, 0);
 
-    for (size_t i = 0; i < coord.phi.size(); ++i) {
-        for (size_t j = 0; j < coord.theta.size(); ++j) {
-            for (size_t k = 0; k < coord.r.size(); ++k) {
+    for (size_t i = 0; i < I_nu_obs.size(); ++i) {
+        for (size_t j = 0; j < I_nu_obs[0].size(); ++j) {
+            for (size_t k = 0; k < I_nu_obs[0][0].size(); ++k) {
                 double doppler = this->Doppler[i][j][k];
                 double nu_prime = nu_obs / doppler;
                 double I_nu_tot = (rad_com[j][k].I_nu(nu_prime) + ...);

@@ -12,7 +12,7 @@ double E_iso2Gamma0(double E_iso, double gamma_max, double E) {
     return gamma;
 }
 
-Jet createIsotropicJet(double E_iso, double Gamma0, Profile2d inject = noInjection) {
+Jet createIsotropicJet(double E_iso, double Gamma0, Profile2d inject) {
     auto dEdOmega = [=](double theta, double t_lab) { return E_iso / (4 * con::pi) + inject(theta, t_lab); };
 
     auto Gamma = [=](double theta) { return Gamma0; };
@@ -20,7 +20,7 @@ Jet createIsotropicJet(double E_iso, double Gamma0, Profile2d inject = noInjecti
     return Jet{dEdOmega, Gamma};
 }
 
-Jet createTopHatJet(double E_iso, double Gamma0, double theta_c, Profile2d inject = noInjection) {
+Jet createTopHatJet(double E_iso, double Gamma0, double theta_c, Profile2d inject) {
     auto dEdOmega = [=](double theta, double t_lab) {
         return (theta < theta_c ? (E_iso / (4 * con::pi)) : 0) + inject(theta, t_lab);
     };
@@ -30,8 +30,7 @@ Jet createTopHatJet(double E_iso, double Gamma0, double theta_c, Profile2d injec
     return Jet{dEdOmega, Gamma};
 }
 
-Jet createPowerLawJet(double E_iso_on_axis, double Gamma0_on_axis, double theta_m, double k,
-                      Profile2d inject = noInjection) {
+Jet createPowerLawJet(double E_iso_on_axis, double Gamma0_on_axis, double theta_m, double k, Profile2d inject) {
     double e0 = E_iso_on_axis / (4 * con::pi);
     auto dEdOmega = [=](double theta, double t_lab) {
         return (theta < theta_m ? e0 : e0 * std::pow(theta / theta_m, -k)) + inject(theta, t_lab);
@@ -42,7 +41,7 @@ Jet createPowerLawJet(double E_iso_on_axis, double Gamma0_on_axis, double theta_
     return Jet{dEdOmega, Gamma};
 }
 
-Jet createGaussianJet(double E_iso_on_axis, double Gamma0_on_axis, double theta_c, Profile2d inject = noInjection) {
+Jet createGaussianJet(double E_iso_on_axis, double Gamma0_on_axis, double theta_c, Profile2d inject) {
     double e0 = E_iso_on_axis / (4 * con::pi);
     auto dEdOmega = [=](double theta, double t_lab) {
         return e0 * std::exp(-theta * theta / (2 * theta_c * theta_c)) + inject(theta, t_lab);
