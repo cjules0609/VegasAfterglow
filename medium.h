@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "mesh.h"
-
 class Medium {
    public:
     Medium(Profile rho, Profile mass, double eps_e, double eps_B, double pel, double xi = 1)
@@ -25,8 +24,7 @@ class Medium {
 };
 
 Medium create_ISM(double n_ism, double eps_e, double eps_B, double pel);
+// double co_moving_B(double eps_B, double Gamma, double rho);
+// MeshGrid co_moving_B(Coord const& coord, Shock const& shock, Medium const& medium);
 
-double calc_B_field(double eps_B, double Gamma, double rho);
-
-double shock_width_com(double r, double Gamma);
 #endif

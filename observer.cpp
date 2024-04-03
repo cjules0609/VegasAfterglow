@@ -4,9 +4,8 @@
 #include <cmath>
 
 #include "macros.h"
-#include "mesh.h"
 #include "utilities.h"
-class TobsEqn {
+class ObsTimeEqn {
    public:
     void operator()(double const& t, double& dtdr, double r) {
         double Gamma = interp(r, r_, Gamma_);
@@ -19,21 +18,21 @@ class TobsEqn {
     double cos_;
 };
 
-void Observer::observe(Coord const& coord, MeshGrid const& Gamma, double theta_obs) {
+void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs) {
     this->theta_obs = theta_obs;
-    calc_doppler_grid(coord, Gamma);
-    calc_t_obs_grid(coord, Gamma);
-    get_sorted_EAT_surface(t_obs);
+    calc_doppler_grid(coord, shock.Gamma);
+    calc_t_obs_grid(coord, shock.Gamma);
+    calc_sorted_EAT_surface(t_obs);
     calc_emission_surface(coord);
 }
 
 void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
-    t_obs = createGrid3d(coord.phi.size(), coord.theta.size(), coord.r.size());
+    t_obs = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;
     double atol = 0;
     double rtol = 1e-9;
     auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
-    TobsEqn eqn;
+    ObsTimeEqn eqn;
     eqn.r_ = coord.r;
     double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;
 
@@ -61,7 +60,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
 }
 
 void Observer::calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma) {
-    this->Doppler = createGrid3d(coord.phi.size(), coord.theta.size(), coord.r.size());
+    this->doppler = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
     for (size_t i = 0; i < coord.phi.size(); ++i) {
         double phi_ = coord.phi[i];
         for (size_t j = 0; j < coord.theta.size(); ++j) {
@@ -70,14 +69,14 @@ void Observer::calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma) {
             for (size_t k = 0; k < Gamma[j].size(); ++k) {
                 double gamma_ = Gamma[j][k];
                 double beta = sqrt(1 - 1 / gamma_ / gamma_);
-                this->Doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_));
+                this->doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_));
             }
         }
     }
 }
 
 void Observer::calc_emission_surface(Coord const& coord) {
-    this->emission_S = createGrid3d(coord.phi.size(), coord.theta.size(), coord.r.size());
+    this->emission_S = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
     for (size_t i = 0; i < coord.phi.size(); ++i) {
         for (size_t j = 0; j < coord.theta.size(); ++j) {
             for (size_t k = 0; k < coord.r.size(); ++k) {
@@ -91,7 +90,7 @@ void Observer::calc_emission_surface(Coord const& coord) {
     }
 }
 
-void Observer::get_sorted_EAT_surface(MeshGrid3d const& t_obs) {
+void Observer::calc_sorted_EAT_surface(MeshGrid3d const& t_obs) {
     this->eat_s.resize(t_obs.size() * t_obs[0].size() * t_obs[0][0].size());
     size_t idx = 0;
     for (size_t i = 0; i < t_obs.size(); ++i) {

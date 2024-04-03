@@ -2,7 +2,7 @@
 #define _AFTERGLOW_
 
 #include "IO.h"
-#include "dynamics.h"
+#include "forward-shock.h"
 #include "inverse-compton.h"
 #include "jet.h"
 #include "macros.h"

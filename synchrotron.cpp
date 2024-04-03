@@ -4,19 +4,16 @@
 #include <cmath>
 
 #include "macros.h"
-#include "medium.h"
-#include "mesh.h"
 #include "utilities.h"
-
-SynRadMesh createSynRadGrid(size_t theta_size, size_t r_size, SynRad val) {
-    return SynRadMesh(theta_size, SynRadArray(r_size, val));
+SynElectronMesh create_syn_electron_grid(size_t theta_size, size_t r_size, SynElectron val) {
+    return SynElectronMesh(theta_size, SynElectronArray(r_size, val));
 }
 
-double SynRad::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
+double SynElectron::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
-double SynRad::I_nu_(double nu) const {
+double SynElectron::I_nu_(double nu) const {
     if (order(nu_a, nu_m, nu_c)) {
         if (nu <= nu_a) {
             return pow(nu_a / nu_m, 1.0 / 3) * pow(nu / nu_a, 2);
@@ -86,9 +83,9 @@ double SynRad::I_nu_(double nu) const {
     }
 }
 
-inline double calc_syn_I_nu_peak(double r, double Gamma, double Bprime, double rho, double xi, double pel) {
+inline double syn_I_nu_peak(double r, double Gamma, double Bprime, double rho, double xi, double pel) {
     return (pel - 1) / 2 * sqrt(3) * con::e * con::e * con::e * Bprime / (con::me * con::c2) * 4 * Gamma *
-           (rho / con::mp) * xi * shock_width_com(r, Gamma);
+           (rho / con::mp) * xi * co_moving_shock_width(r, Gamma);
 }
 
 double syn_nu(double gamma, double B) {
@@ -100,11 +97,11 @@ double syn_gamma(double nu, double B) {
     return gamma;
 }
 
-double calc_syn_gamma_M(double Bprime, double zeta, double Y_tilt) {
+double syn_gamma_M(double Bprime, double zeta, double Y_tilt) {
     return sqrt(6 * con::pi * con::e / (con::sigmaT * Bprime * zeta * (1 + Y_tilt)));
 }
 
-double calc_syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double pel) {
+double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double pel) {
     double gamma_m = 1;
     if (pel > 2) {
         gamma_m = (pel - 2) / (pel - 1) * eps_e * (Gamma - 1) * 1836 / xi + 1;
@@ -121,7 +118,7 @@ double calc_syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, d
     return gamma_m;
 }
 
-double calc_syn_gamma_c(double Gamma, double t_com, double Bprime, double Y_tilt) {
+double syn_gamma_c(double Gamma, double t_com, double Bprime, double Y_tilt) {
     double beta = sqrt(Gamma * Gamma - 1) / Gamma;
     /*double gamma_c = 6 * consts::pi * consts::me * consts::c /
                      (consts::sigmaT * t_com * beta * beta * Bprime * Bprime * (1 + Y_tilt));*/
@@ -132,7 +129,7 @@ double calc_syn_gamma_c(double Gamma, double t_com, double Bprime, double Y_tilt
     return gamma_c;
 }
 
-double calc_syn_nu_a(double Gamma, double Bprime, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M) {
+double syn_nu_a(double Gamma, double Bprime, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M) {
     double gamma_peak = std::min(gamma_m, gamma_c);
     double nu_peak = syn_nu(gamma_peak, Bprime);
 
@@ -176,48 +173,37 @@ double syn_nu_E_peak(double nu_a, double nu_m, double nu_c) {
     }
 }
 
-double syn_nu_E_peak(SynRad const& rad) { return syn_nu_E_peak(rad.nu_a, rad.nu_m, rad.nu_c); }
+double syn_nu_E_peak(SynElectron const& elc) { return syn_nu_E_peak(elc.nu_a, elc.nu_m, elc.nu_c); }
 
-SynRad syn_radiation(double r, double Gamma, double t_com, Medium const& medium) {
-    SynRad rad;
+SynElectron gen_syn_electron(double r, double Gamma, double t_com, double B, Medium const& medium) {
+    SynElectron elc;
     double rho = medium.rho(r);
-    double Bprime = calc_B_field(medium.eps_B, Gamma, rho);
-    rad.I_nu_peak = calc_syn_I_nu_peak(r, Gamma, Bprime, rho, medium.xi, medium.pel);
+    elc.I_nu_peak = syn_I_nu_peak(r, Gamma, B, rho, medium.xi, medium.pel);
 
-    double gamma_M = calc_syn_gamma_M(Bprime, medium.zeta, 0);
-    rad.nu_M = syn_nu(gamma_M, Bprime);
+    double gamma_M = syn_gamma_M(B, medium.zeta, 0);
+    elc.nu_M = syn_nu(gamma_M, B);
 
-    double gamma_m = calc_syn_gamma_m(Gamma, gamma_M, medium.eps_e, medium.xi, medium.pel);
-    rad.nu_m = syn_nu(gamma_m, Bprime);
+    double gamma_m = syn_gamma_m(Gamma, gamma_M, medium.eps_e, medium.xi, medium.pel);
+    elc.nu_m = syn_nu(gamma_m, B);
 
-    double gamma_c = calc_syn_gamma_c(Gamma, t_com, Bprime, 0);
-    rad.nu_c = syn_nu(gamma_c, Bprime);
+    double gamma_c = syn_gamma_c(Gamma, t_com, B, 0);
+    elc.nu_c = syn_nu(gamma_c, B);
 
-    rad.nu_a = calc_syn_nu_a(Gamma, Bprime, rad.I_nu_peak, gamma_m, gamma_c, gamma_M);
+    elc.nu_a = syn_nu_a(Gamma, B, elc.I_nu_peak, gamma_m, gamma_c, gamma_M);
 
-    rad.nu_E_peak = syn_nu_E_peak(rad);
+    elc.nu_E_peak = syn_nu_E_peak(elc);
 
-    rad.pel = medium.pel;
+    elc.pel = medium.pel;
 
-    return rad;
+    return elc;
 }
 
-SynRadMesh calc_syn_radiation(Coord const& coord, MeshGrid const& Gamma, MeshGrid const& t_com, Medium const& medium) {
-    SynRadMesh syn_rad = createSynRadGrid(coord.theta.size(), coord.r.size());
+SynElectronMesh gen_syn_electrons(Coord const& coord, Shock const& shock, Medium const& medium) {
+    SynElectronMesh electrons = create_syn_electron_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            syn_rad[j][k] = syn_radiation(coord.r[k], Gamma[j][k], t_com[j][k], medium);
+            electrons[j][k] = gen_syn_electron(coord.r[k], shock.Gamma[j][k], shock.t_com[j][k], shock.B[j][k], medium);
         }
     }
-    return syn_rad;
-}
-
-MeshGrid get_B_field(Coord const& coord, MeshGrid const& Gamma, Medium const& medium) {
-    MeshGrid B = createGrid_like(Gamma);
-    for (size_t j = 0; j < B.size(); ++j) {
-        for (size_t k = 0; k < B[j].size(); ++k) {
-            B[j][k] = calc_B_field(medium.eps_B, Gamma[j][k], medium.rho(coord.r[k]));
-        }
-    }
-    return B;
+    return electrons;
 }

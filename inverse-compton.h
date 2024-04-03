@@ -4,8 +4,9 @@
 
 #include "medium.h"
 #include "mesh.h"
+#include "shock.h"
 #include "synchrotron.h"
-struct ICRad {
+struct ICPhoton {
     double I_nu_peak{0};
     double nu_E_peak{0};
 
@@ -28,19 +29,19 @@ struct ICRad {
    private:
     inline double I_nu_(double nu) const;
 };
-using ICRadArray = std::vector<ICRad>;
-using ICRadMesh = std::vector<std::vector<ICRad>>;
+using ICPhotonArray = std::vector<ICPhoton>;
+using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
 
 double compton_sigma(double gamma, double nu);
 
-ICRadMesh createICRadGrid(size_t theta_size, size_t r_size, ICRad val = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.3});
+ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size,
+                                   ICPhoton val = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.3});
 
-ICRadMesh calc_IC_radiation(Coord const& coord, MeshGrid const& Gamma, MeshGrid B, SynRadMesh const& electron,
-                            SynRadMesh const& photon, Medium const& medium);
+ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronMesh const& electron,
+                            SynElectronMesh const& photon, Medium const& medium);
 
-MeshGrid IC_cooling_noKN(MeshGrid const& Gamma, MeshGrid const& t_com, MeshGrid const& B, SynRadMesh& electron,
-                    ICRadMesh const& photon, Medium const& medium, size_t order = 1);
+MeshGrid IC_cooling_Thomson(Shock const& shock, SynElectronMesh& electron, ICPhotonMesh const& photon,
+                            Medium const& medium);
 
-MeshGrid IC_cooling(MeshGrid const& Gamma, MeshGrid const& t_com, MeshGrid const& B, SynRadMesh& electron,
-                       ICRadMesh const& photon, Medium const& medium, size_t order = 1);
+MeshGrid IC_cooling_KN(Shock const& shock, SynElectronMesh& electron, ICPhotonMesh const& photon, Medium const& medium);
 #endif

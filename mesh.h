@@ -4,8 +4,6 @@
 #include <functional>
 #include <vector>
 
-#include "mesh.h"
-
 using MeshGrid = std::vector<std::vector<double>>;
 using MeshGrid3d = std::vector<std::vector<std::vector<double>>>;
 
@@ -22,7 +20,7 @@ Array zeros(size_t num);
 
 Array ones(size_t num);
 
-MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
+MeshGrid create_grid(size_t theta_size, size_t r_size, double val = 0);
 
 double min(MeshGrid const& grid);
 
@@ -38,11 +36,11 @@ double max(MeshGrid const&... grids) {
     return std::max(max(grids...));
 }
 
-MeshGrid createGrid_like(MeshGrid const& grid, double val = 0);
+MeshGrid create_grid_like(MeshGrid const& grid, double val = 0);
 
-MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
+MeshGrid3d create_3d_grid(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
 
-MeshGrid3d createGrid3d_like(MeshGrid3d const& grid, double val = 0);
+MeshGrid3d create_3d_grid_like(MeshGrid3d const& grid, double val = 0);
 
 Array boundary2center(Array const& boundary);
 

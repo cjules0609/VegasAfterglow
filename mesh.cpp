@@ -33,7 +33,7 @@ Array ones(size_t num) {
     return result;
 }
 
-MeshGrid createGrid(size_t theta_size, size_t r_size, double val) { return MeshGrid(theta_size, Array(r_size, val)); }
+MeshGrid create_grid(size_t theta_size, size_t r_size, double val) { return MeshGrid(theta_size, Array(r_size, val)); }
 
 double min(MeshGrid const& grid) {
     double min = grid[0][0];
@@ -59,13 +59,15 @@ double max(MeshGrid const& grid) {
     return max;
 }
 
-MeshGrid createGrid_like(MeshGrid const& grid, double val) { return MeshGrid(grid.size(), Array(grid[0].size(), val)); }
+MeshGrid create_grid_like(MeshGrid const& grid, double val) {
+    return MeshGrid(grid.size(), Array(grid[0].size(), val));
+}
 
-MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val) {
+MeshGrid3d create_3d_grid(size_t phi_size, size_t theta_size, size_t r_size, double val) {
     return MeshGrid3d(phi_size, MeshGrid(theta_size, Array(r_size, val)));
 }
 
-MeshGrid3d createGrid3d_like(MeshGrid3d const& grid, double val) {
+MeshGrid3d create_3d_grid_like(MeshGrid3d const& grid, double val) {
     return MeshGrid3d(grid.size(), MeshGrid(grid[0].size(), Array(grid[0][0].size(), val)));
 }
 

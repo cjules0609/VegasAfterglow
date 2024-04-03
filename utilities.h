@@ -17,5 +17,5 @@ auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0
 }
 
 double interp(double x0, Array const& x, Array const& y);
-inline double stepfun(double x) { return x > 0 ? 1 : 0; }
+inline double step_func(double x) { return x > 0 ? 1 : 0; }
 #endif
