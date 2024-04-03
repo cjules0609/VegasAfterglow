@@ -23,6 +23,9 @@ class Observer {
     template <typename... RadMesh>
     MeshGrid light_curve(size_t data_points, double nu_obs, RadMesh const&... rad_com) const;
 
+    template <typename... RadMesh>
+    MeshGrid spectrum(double nu_min, double nu_max, double t, RadMesh const&... rad_com) const;
+
     double theta_obs;
     MeshGrid3d Doppler;
     MeshGrid3d t_obs;
@@ -72,6 +75,20 @@ MeshGrid Observer::light_curve(size_t data_points, double nu_obs, RadMesh const&
     }
     return L_nu;
 }
+
+/*template <typename... RadMesh>
+MeshGrid Observer::spectrum(double nu_min, double nu_max, double t, RadMesh const&... rad_com) const {
+    if (eat_s.empty()) {
+        throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
+    }
+    size_t data_points = 100;
+    Array nu_bin = logspace(nu_min, nu_max, data_points + 1);
+    Array nu_c = boundary2center(nu_bin);
+    MeshGrid L_nu = createGrid(2, data_points, 0);
+
+    double t_min = eat_s.front().first;
+    double t_max = eat_s.back().first;
+}*/
 
 template <typename... RadMesh>
 MeshGrid3d Observer::I_nu_history(double nu_obs, RadMesh const&... rad_com) {

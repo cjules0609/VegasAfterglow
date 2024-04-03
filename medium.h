@@ -17,7 +17,6 @@ class Medium {
     double eta_rad{1};
     double eps_e{0.1};
     double eps_B{0.01};
-    double Y_tilt{0};
     double zeta{1};
     double xi{1};
     double pel{2.3};
@@ -27,4 +26,7 @@ class Medium {
 
 Medium create_ISM(double n_ism, double eps_e, double eps_B, double pel);
 
+double calc_B_field(double eps_B, double Gamma, double rho);
+
+double shock_width_com(double r, double Gamma);
 #endif

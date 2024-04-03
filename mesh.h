@@ -24,6 +24,20 @@ Array ones(size_t num);
 
 MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
 
+double min(MeshGrid const& grid);
+
+double max(MeshGrid const& grid);
+
+template <typename... MeshGrid>
+double min(MeshGrid const&... grids) {
+    return std::min(min(grids...));
+}
+
+template <typename... MeshGrid>
+double max(MeshGrid const&... grids) {
+    return std::max(max(grids...));
+}
+
 MeshGrid createGrid_like(MeshGrid const& grid, double val = 0);
 
 MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);

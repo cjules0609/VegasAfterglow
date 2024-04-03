@@ -49,13 +49,6 @@ double DynamicsEqn::dtdr_eng(double Gamma) {
 
 double DynamicsEqn::dtdr_com(double Gamma) { return 1 / (sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
 
-double calc_eta_rad(double nu_m, double nu_c, double pel) {
-    if (nu_c < nu_m) {
-        return 1;
-    } else {
-        return pow(nu_c / nu_m, 2 - pel);
-    }
-}
 
 void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, double u0, DynamicsEqn const& eqn) {
     using namespace boost::numeric::odeint;

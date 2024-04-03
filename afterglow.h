@@ -3,6 +3,7 @@
 
 #include "IO.h"
 #include "dynamics.h"
+#include "inverse-compton.h"
 #include "jet.h"
 #include "macros.h"
 #include "medium.h"

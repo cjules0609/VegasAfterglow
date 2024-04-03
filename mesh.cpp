@@ -35,6 +35,30 @@ Array ones(size_t num) {
 
 MeshGrid createGrid(size_t theta_size, size_t r_size, double val) { return MeshGrid(theta_size, Array(r_size, val)); }
 
+double min(MeshGrid const& grid) {
+    double min = grid[0][0];
+    for (size_t i = 0; i < grid.size(); ++i) {
+        for (size_t j = 0; j < grid[i].size(); ++j) {
+            if (grid[i][j] < min) {
+                min = grid[i][j];
+            }
+        }
+    }
+    return min;
+}
+
+double max(MeshGrid const& grid) {
+    double max = grid[0][0];
+    for (size_t i = 0; i < grid.size(); ++i) {
+        for (size_t j = 0; j < grid[i].size(); ++j) {
+            if (grid[i][j] > max) {
+                max = grid[i][j];
+            }
+        }
+    }
+    return max;
+}
+
 MeshGrid createGrid_like(MeshGrid const& grid, double val) { return MeshGrid(grid.size(), Array(grid[0].size(), val)); }
 
 MeshGrid3d createGrid3d(size_t phi_size, size_t theta_size, size_t r_size, double val) {
