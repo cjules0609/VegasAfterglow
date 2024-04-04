@@ -7,7 +7,6 @@ class Shock {
     MeshGrid t_com;
     MeshGrid Gamma;
     MeshGrid B;
+    MeshGrid D_com;  // co-moving shock width
 };
-
-inline double co_moving_shock_width(double r, double Gamma) { return r / Gamma / 12; }
 #endif

@@ -10,18 +10,27 @@ Shock::Shock(Coord const& coord)
       Gamma(create_grid(coord.theta.size(), coord.r.size(), 1)),
       B(create_grid(coord.theta.size(), coord.r.size(), 0)) {}
 
-double FS_co_moving_B(double eps_B, double Gamma, double rho) {
-    return sqrt(8 * con::pi * eps_B * rho * (4 * Gamma * Gamma - 4 * Gamma)) * con::c;
-}
-
 MeshGrid FS_co_moving_B(Coord const& coord, Shock const& shock, Medium const& medium) {
     MeshGrid B = create_grid_like(shock.Gamma);
     for (size_t j = 0; j < B.size(); ++j) {
         for (size_t k = 0; k < B[j].size(); ++k) {
-            B[j][k] = FS_co_moving_B(medium.eps_B, shock.Gamma[j][k], medium.rho(coord.r[k]));
+            double rho = medium.rho(coord.r[k]);
+            double eps_B = medium.eps_B;
+            double Gamma = shock.Gamma[j][k];
+            B[j][k] = sqrt(8 * con::pi * eps_B * rho * (4 * Gamma * Gamma - 4 * Gamma)) * con::c;
         }
     }
     return B;
+}
+
+MeshGrid FS_co_moving_shock_width(Coord const& coord, Shock const& shock) {
+    MeshGrid Delta = create_grid_like(shock.Gamma);
+    for (size_t j = 0; j < Delta.size(); ++j) {
+        for (size_t k = 0; k < Delta[j].size(); ++k) {
+            Delta[j][k] = coord.r[k] / shock.Gamma[j][k] / 12;
+        }
+    }
+    return Delta;
 }
 
 ForwardShockEqn::ForwardShockEqn(Medium medium, Jet blast, double theta_lo, double theta_hi)
@@ -122,5 +131,6 @@ Shock gen_forward_shock(Coord const& coord, Jet const& jet, Medium const& medium
         solve_single_shell(coord.r, shock.Gamma[i], shock.t_com[i], u0, eqn);
     }
     shock.B = FS_co_moving_B(coord, shock, medium);
+    shock.D_com = FS_co_moving_shock_width(coord, shock);
     return shock;
 }

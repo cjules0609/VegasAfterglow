@@ -34,14 +34,13 @@ using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
 
 double compton_sigma(double gamma, double nu);
 
-ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size,
-                                   ICPhoton val = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2.3});
+ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
 
-ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronMesh const& electron,
-                            SynElectronMesh const& photon, Medium const& medium);
+ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& electron,
+                            SynPhotonsMesh const& photon, Medium const& medium);
 
-MeshGrid IC_cooling_Thomson(Shock const& shock, SynElectronMesh& electron, ICPhotonMesh const& photon,
-                            Medium const& medium);
+MeshGrid IC_cooling_Thomson(Shock const& shock, SynElectronsMesh& electron, Medium const& medium);
 
-MeshGrid IC_cooling_KN(Shock const& shock, SynElectronMesh& electron, ICPhotonMesh const& photon, Medium const& medium);
+MeshGrid IC_cooling_KN(Shock const& shock, SynElectronsMesh& electron, ICPhotonMesh const& photon,
+                       Medium const& medium);
 #endif

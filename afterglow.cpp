@@ -10,11 +10,11 @@ void afterglow_gen() {
     double eps_rad = 1;
     double eps_e = 0.1;
     double eps_B = 0.01;
-    double pel = 2.3;
+    double p = 2.3;
     double theta_j = 35.0 * con::deg;
 
     // create model
-    auto medium = create_ISM(n_ism, eps_e, eps_B, pel);
+    auto medium = create_ISM(n_ism, eps_e, eps_B, p);
     auto inj = create_iso_power_law_injection(0 / 9e20 / 2e33, 1000, 1, 2);
     auto jet = create_tophat_jet(E_iso, Gamma0, theta_j, inj);
     //  auto blast = create_power_law_jet(E_iso, Gamma0, theta_j, 4, inj);
@@ -38,21 +38,24 @@ void afterglow_gen() {
     write2file(shock_f.Gamma, prefix + "Gamma");
 
     auto syn_e = gen_syn_electrons(coord, shock_f, medium);
-    auto IC_ph = gen_IC_photons(coord, shock_f, syn_e, syn_e, medium);
+    auto syn_ph = gen_syn_photons(coord, syn_e, shock_f, medium);
+    auto IC_ph = gen_IC_photons(coord, shock_f, syn_e, syn_ph, medium);
 
     auto Y_eff = create_grid_like(shock_f.Gamma);
 
-    write2file(syn_e, prefix + "syn");
+    write2file(syn_ph, prefix + "syn");
     write2file(Y_eff, prefix + "Y");
 
     auto syn0 = syn_e;
     Y_eff = IC_cooling_KN(shock_f, syn_e, IC_ph, medium);
-    write2file(syn_e, prefix + "IC_syn");
+    syn_ph = gen_syn_photons(coord, syn_e, shock_f, medium);
+    write2file(syn_ph, prefix + "IC_syn");
     write2file(Y_eff, prefix + "IC_Y");
 
     syn_e = syn0;
-    Y_eff = IC_cooling_Thomson(shock_f, syn_e, IC_ph, medium);
-    write2file(syn_e, prefix + "ICnoKN_syn");
+    Y_eff = IC_cooling_Thomson(shock_f, syn_e, medium);
+    syn_ph = gen_syn_photons(coord, syn_e, shock_f, medium);
+    write2file(syn_ph, prefix + "ICnoKN_syn");
     write2file(Y_eff, prefix + "ICnoKN_Y");
 
     Observer obs;
@@ -71,8 +74,8 @@ void afterglow_gen() {
     size_t data_points = 100;
 
     for (size_t i = 0; i < nu_obs.size(); ++i) {
-        MeshGrid3d I_syn_obs = obs.gen_I_nu_grid(nu_obs[i], syn_e);
-        MeshGrid L_nu = obs.gen_light_curve(data_points, nu_obs[i], syn_e);
+        MeshGrid3d I_syn_obs = obs.gen_I_nu_grid(nu_obs[i], syn_ph);
+        MeshGrid L_nu = obs.gen_light_curve(data_points, nu_obs[i], syn_ph);
 
         write2file(I_syn_obs, prefix + "I_nu_" + std::to_string(int(log10(nu_obs[i] / 500))));
         write2file(L_nu, prefix + "L_nu_" + std::to_string(int(log10(nu_obs[i] / 500))));

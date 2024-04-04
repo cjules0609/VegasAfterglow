@@ -14,6 +14,8 @@ namespace con {
     constexpr double h = 6.63e-27 * erg * sec;
     // constexpr double kB = 1.38e-16;
     constexpr double e = 4.8e-10 / 4.472136e16 / 5.809475e19 / sec;  // M^(1/2)L^(3/2)/T
+    constexpr double e2 = e * e;
+    constexpr double e3 = e2 * e;
     constexpr double pi = 3.14159265358979323846;
     constexpr double sigmaT = 6.65e-25 * cm * cm;
     constexpr double deg = pi / 180;

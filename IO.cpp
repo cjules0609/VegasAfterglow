@@ -9,7 +9,7 @@ void print_array(Array const& arr) {
     std::cout << std::endl;
 }
 
-void write2file(SynElectronMesh const& syn_rad, std::string const& filename) {
+void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_I_peak(filename + "_I_nu_peak.txt");
     std::ofstream file_nu_peak(filename + "_nu_E_peak.txt");
     std::ofstream file_nu_m(filename + "_nu_m.txt");
