@@ -1,6 +1,7 @@
 #ifndef _OBSERVER_
 #define _OBSERVER_
 
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -110,5 +111,6 @@ MeshGrid3d Observer::gen_I_nu_grid(double nu_obs, RadParticleMesh const&... rad_
     }
     return I_nu_obs;
 }
+
 
 #endif

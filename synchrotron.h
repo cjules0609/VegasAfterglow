@@ -11,6 +11,12 @@ struct SynElectrons {
     double gamma_a{0};
     double gamma_M{0};
     double p{2.3};
+    double N_tot;
+    double gamma_N_peak;
+    double dn_dgamma(double gamma) const;
+
+   private:
+    double dn_dgamma_(double gamma) const;
 };
 
 struct SynPhotons {
@@ -21,17 +27,11 @@ struct SynPhotons {
     double nu_a{0};
     double nu_M{0};
     double p{2.3};
-
     double I_nu(double nu) const;
 
    private:
     inline double I_nu_(double nu) const;
 };
-
-/*struct SynRad {
-    SynElectronsMesh electrons;
-    SynPhotonsMesh photons;
-};*/
 
 using SynPhotonsArray = std::vector<SynPhotons>;
 using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
@@ -43,7 +43,10 @@ SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size);
 
 SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size);
 
-SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, Medium const& medium);
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium);
+
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium,
+                                   MeshGrid const& Y_tilt);
 
 SynPhotonsMesh gen_syn_photons(Coord const& coord, SynElectronsMesh const& electrons, Shock const& shock,
                                Medium const& medium);
@@ -51,8 +54,10 @@ SynPhotonsMesh gen_syn_photons(Coord const& coord, SynElectronsMesh const& elect
 double syn_gamma_c(double Gamma, double t_com, double B, double Y_tilt);
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
 double syn_gamma_M(double B, double zeta, double Y_tilt);
-/*
+double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M);
+double syn_I_nu_peak(double r, double Gamma, double B, double D_com, double rho, double xi, double p);
 double syn_nu(double gamma, double B);
+/*
 double syn_gamma(double nu, double B);
 double syn_nu_E_peak(SynPhotons const& rad);*/
 #endif

@@ -13,6 +13,65 @@ SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size) {
     return SynElectronsMesh(theta_size, SynElectronsArray(r_size));
 }
 
+double SynElectrons::dn_dgamma(double gamma) const { return N_tot * dn_dgamma_(gamma); }
+
+double SynElectrons::dn_dgamma_(double gamma) const {
+    if (order(gamma_a, gamma_m, gamma_c)) {
+        if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 3);
+        } else if (gamma <= gamma_m) {
+            return pow(gamma_m / gamma_a, -1. / 3) * pow(gamma / gamma_m, -1. / 3);
+        } else if (gamma <= gamma_c) {
+            return pow(gamma / gamma_m, -p);
+        } else {
+            return pow(gamma / gamma_c, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    } else if (order(gamma_m, gamma_a, gamma_c)) {
+        if (gamma <= gamma_m) {
+            return pow(gamma / gamma_m, 3);
+        } else if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 4);
+        } else if (gamma <= gamma_c) {
+            return pow(gamma / gamma_m, -p);
+        } else {
+            return pow(gamma / gamma_c, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    } else if (order(gamma_a, gamma_c, gamma_m)) {
+        if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 3);
+        } else if (gamma <= gamma_c) {
+            return pow(gamma / gamma_c, -1. / 3);
+        } else if (gamma <= gamma_m) {
+            return pow(gamma / gamma_c, -2.);
+        } else {
+            return pow(gamma / gamma_m, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    } else if (order(gamma_c, gamma_a, gamma_m)) {
+        double R = pow(gamma_c / gamma_a, 1. / 2) / 3;
+        if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 3);
+        } else if (gamma <= gamma_m) {
+            return R * pow(gamma / gamma_a, -2.);
+        } else {
+            return R * pow(gamma / gamma_m, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    } else if (order(gamma_m, gamma_c, gamma_a)) {
+        double R = (p - 1) / 3 * pow(gamma_c / gamma_a, 1. / 2) * pow(gamma_m / gamma_a, (p - 1) / 2);
+        if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 3);
+        } else {
+            return R * pow(gamma / gamma_a, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    } else if (order(gamma_c, gamma_m, gamma_a)) {
+        double R = 1. / 3 * pow(gamma_c / gamma_a, 1. / 2) * pow(gamma_m / gamma_a, (p - 1) / 2);
+        if (gamma <= gamma_a) {
+            return pow(gamma / gamma_a, 3);
+        } else {
+            return R * pow(gamma / gamma_a, -(p + 1)) * exp(-gamma / gamma_M);
+        }
+    }
+}
+
 double SynPhotons::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
 inline bool order(double a, double b, double c) { return a <= b && b <= c; };
@@ -25,10 +84,8 @@ double SynPhotons::I_nu_(double nu) const {
             return pow(nu / nu_m, 1. / 3);
         } else if (nu <= nu_c) {
             return pow(nu / nu_m, -(p - 1) / 2);
-        } else if (nu <= nu_M) {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2);
         } else {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu_M / nu_c, -p / 2) * sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2) * exp(-nu / nu_M);
         }
     } else if (order(nu_m, nu_a, nu_c)) {
         if (nu <= nu_m) {
@@ -37,10 +94,8 @@ double SynPhotons::I_nu_(double nu) const {
             return pow(nu_a / nu_m, -(p - 1) / 2) * pow(nu / nu_a, 5. / 2);
         } else if (nu <= nu_c) {
             return pow(nu / nu_m, -(p - 1) / 2);
-        } else if (nu <= nu_M) {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2);
         } else {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu_M / nu_c, -p / 2) * sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2) * exp(-nu / nu_M);
         }
     } else if (order(nu_a, nu_c, nu_m)) {
         if (nu <= nu_a) {
@@ -49,45 +104,37 @@ double SynPhotons::I_nu_(double nu) const {
             return pow(nu / nu_c, 1. / 3);
         } else if (nu <= nu_m) {
             return pow(nu / nu_c, -1. / 2);
-        } else if (nu <= nu_M) {
-            return pow(nu_m / nu_c, -1. / 2) * pow(nu / nu_m, -p / 2);
         } else {
-            return pow(nu_m / nu_c, -1. / 2) * pow(nu_M / nu_m, -p / 2) * sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return pow(nu_m / nu_c, -1. / 2) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
         }
     } else if (order(nu_c, nu_a, nu_m)) {
+        double R = pow(nu_c / nu_a, 1. / 2) / 3;
         if (nu <= nu_a) {
             return pow(nu / nu_a, 2);
         } else if (nu <= nu_m) {
-            return pow(nu / nu_a, -1. / 2) * pow(nu_c / nu_a, 1. / 2) / 3;
-        } else if (nu <= nu_M) {
-            return pow(nu_m / nu_a, -1. / 2) * pow(nu / nu_m, -p / 2) * pow(nu_c / nu_a, 1. / 2) / 3;
+            return R * pow(nu / nu_a, -1. / 2);
         } else {
-            return pow(nu_m / nu_a, -1. / 2) * pow(nu_M / nu_m, -p / 2) * pow(nu_c / nu_a, 1. / 2) / 3 *
-                   sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return R * pow(nu_m / nu_a, -1. / 2) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
         }
     } else if (order(nu_m, nu_c, nu_a)) {
+        double R = (p - 1) / 3 * pow(nu_c / nu_a, 1. / 2) * pow(nu_m / nu_a, (p - 1) / 2);
         if (nu <= nu_a) {
             return pow(nu / nu_a, 2);
-        } else if (nu <= nu_M) {
-            return (p - 1) / 3 * pow(nu / nu_a, -p / 2) * pow(nu_m / nu_a, (p - 1) / 2) * pow(nu_c / nu_a, 1. / 2);
         } else {
-            return (p - 1) / 3 * pow(nu_M / nu_a, -p / 2) * pow(nu_m / nu_a, (p - 1) / 2) * pow(nu_c / nu_a, 1. / 2) *
-                   sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
         }
     } else if (order(nu_c, nu_m, nu_a)) {
+        double R = 1. / 3 * pow(nu_c / nu_a, 1. / 2) * pow(nu_m / nu_a, (p - 1) / 2);
         if (nu <= nu_a) {
             return pow(nu / nu_a, 2);
-        } else if (nu <= nu_M) {
-            return pow(nu / nu_a, -p / 2) * pow(nu_m / nu_a, (p - 1) / 2) * pow(nu_c / nu_a, 1. / 2) / 3;
         } else {
-            return pow(nu_M / nu_a, -p / 2) * pow(nu_m / nu_a, (p - 1) / 2) * pow(nu_c / nu_a, 1. / 2) / 3 *
-                   sqrt(nu / nu_M) * exp(-nu / nu_M);
+            return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
         }
     }
 }
 
-inline double syn_I_nu_peak(double r, double Gamma, double B, double Delta, double rho, double xi, double pel) {
-    return (pel - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2) * 4 * Gamma * (rho / con::mp) * xi * Delta;
+double syn_I_nu_peak(double r, double Gamma, double B, double Delta, double rho, double xi, double p) {
+    return (p - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2) * 4 * Gamma * (rho / con::mp) * xi * Delta;
 }
 
 double syn_nu(double gamma, double B) {
@@ -103,13 +150,12 @@ double syn_gamma_M(double B, double zeta, double Y_tilt) {
     return sqrt(6 * con::pi * con::e / (con::sigmaT * B * zeta * (1 + Y_tilt)));
 }
 
-double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double pel) {
+double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double p) {
     double gamma_m = 1;
-    if (pel > 2) {
-        gamma_m = (pel - 2) / (pel - 1) * eps_e * (Gamma - 1) * 1836 / xi + 1;
-    } else if (pel < 2) {
-        gamma_m =
-            pow((2 - pel) / (pel - 1) * eps_e * (Gamma - 1) * 1836 / xi * pow(gamma_M, pel - 1), 1 / (pel - 1)) + 1;
+    if (p > 2) {
+        gamma_m = (p - 2) / (p - 1) * eps_e * (Gamma - 1) * 1836 / xi + 1;
+    } else if (p < 2) {
+        gamma_m = pow((2 - p) / (p - 1) * eps_e * (Gamma - 1) * 1836 / xi * pow(gamma_M, p - 1), 1 / (p - 1)) + 1;
     } else {
         gamma_m = root_bisection(
             [=](double x) -> double {
@@ -129,7 +175,8 @@ double syn_gamma_c(double Gamma, double t_com, double B, double Y_tilt) {
     return gamma_c;
 }
 
-double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_peak, double gamma_M) {
+double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M) {
+    double gamma_peak = std::min(gamma_m, gamma_c);
     double nu_peak = syn_nu(gamma_peak, B);
     double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);  // adiabatic index
     double kT = (gamma_peak - 1) * con::me * con::c2 * (gamma_eos - 1);
@@ -184,7 +231,8 @@ double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c) {
 
 double syn_gamma_N_peak(SynElectrons const& e) { return syn_gamma_N_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
-SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, Medium const& medium) {
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium,
+                                   MeshGrid const& Y_tilt) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
@@ -195,17 +243,24 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, Mediu
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
             double D_com = shock.D_com[j][k];
+            double Y = Y_tilt[j][k];
 
-            double I_nu_peak = syn_I_nu_peak(r, Gamma, B, D_com, rho, medium.xi, medium.pel);
-            e[j][k].gamma_M = syn_gamma_M(B, medium.zeta, 0);
-            e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, medium.eps_e, medium.xi, medium.pel);
-            e[j][k].gamma_c = syn_gamma_c(Gamma, t_com, B, 0);
-            double gamma_peak = std::min(e[j][k].gamma_m, e[j][k].gamma_c);  // peak gamma before self-absorption
-            e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, gamma_peak, e[j][k].gamma_M);
-            e[j][k].p = medium.pel;
+            double I_nu_peak = syn_I_nu_peak(r, Gamma, B, D_com, rho, medium.xi, p);
+            e[j][k].gamma_M = syn_gamma_M(B, medium.zeta, Y);
+            e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, medium.eps_e, medium.xi, p);
+            e[j][k].gamma_c = syn_gamma_c(Gamma, t_com, B, Y);
+            e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
+            e[j][k].p = p;
+            e[j][k].gamma_N_peak == syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
         }
     }
     return e;
+}
+
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium) {
+    SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
+    MeshGrid Y_tilt = create_grid_like(shock.Gamma, 0);
+    return gen_syn_electrons(p, coord, shock, medium, Y_tilt);
 }
 
 SynPhotonsMesh gen_syn_photons(Coord const& coord, SynElectronsMesh const& e, Shock const& shock,

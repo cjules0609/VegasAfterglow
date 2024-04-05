@@ -16,60 +16,89 @@ inline bool order(double a, double b, double c) { return a < b && b < c; };
 
 double compton_sigma(double nu) {
     double x = con::h * nu / (con::me * con::c2);
-    return 0.75 * con::sigmaT *
-           ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-            (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
+    if (x < 1e-2) {
+        return con::sigmaT * (1 - 2 * x);
+    } else if (x > 1e2) {
+        return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
+    } else {
+        return 0.75 * con::sigmaT *
+               ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
+                (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
+    }
 }
 
 double ICPhoton::I_nu_(double nu) const {
     if (order(nu_ma, nu_mm, nu_mc)) {
         if (nu < nu_ma) {
-            return 5. / 2 * (pel - 1) / (pel + 1) * pow(nu_ma / nu_mm, 1. / 3) * (nu / nu_ma);
+            return 5. / 2 * (p - 1) / (p + 1) * pow(nu_ma / nu_mm, 1. / 3) * (nu / nu_ma);
         } else if (nu < nu_mm) {
-            return 3. / 2 * (pel - 1) / (pel - 1. / 3) * pow(nu / nu_mm, 1. / 3);
+            return 3. / 2 * (p - 1) / (p - 1. / 3) * pow(nu / nu_mm, 1. / 3);
         } else if (nu < nu_mc) {
-            return (pel - 1) / (pel + 1) * pow(nu / nu_mm, (1 - pel) / 2) *
-                   (4 * (pel + 1. / 3) / (pel + 1) / (pel - 1. / 3) + log(nu / nu_mm));
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, (1 - p) / 2) *
+                   (4 * (p + 1. / 3) / (p + 1) / (p - 1. / 3) + log(nu / nu_mm));
         } else if (nu < nu_cc) {
-            return (pel - 1) / (pel + 1) * pow(nu / nu_mm, (1 - pel) / 2) *
-                   (2 * (2 * pel + 3) / (pel + 2) - 2 / (pel + 1) / (pel + 2) + log(nu_cc / nu));
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, (1 - p) / 2) *
+                   (2 * (2 * p + 3) / (p + 2) - 2 / (p + 1) / (p + 2) + log(nu_cc / nu));
         } else {
-            return (pel - 1) / (pel + 1) * pow(nu / nu_mm, -pel / 2) * (nu_mc / nu_mm) *
-                   (2 * (2 * pel + 3) / (pel + 2) - 2 / (pel + 2) / (pel + 2) +
-                    (pel + 1) / (pel + 2) * log(nu / nu_cc));
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, -p / 2) * (nu_mc / nu_mm) *
+                   (2 * (2 * p + 3) / (p + 2) - 2 / (p + 2) / (p + 2) + (p + 1) / (p + 2) * log(nu / nu_cc));
         }
     } else if (order(nu_mm, nu_ma, nu_mc)) {
         if (nu < nu_ma) {
-            return 2 * (pel + 4) * (pel - 1) / 3 / (pel + 1) / (pel + 1) * pow(nu_mm / nu_ma, (pel + 1) / 2) *
-                   (nu / nu_mm);
+            return 2 * (p + 4) * (p - 1) / 3 / (p + 1) / (p + 1) * pow(nu_mm / nu_ma, (p + 1) / 2) * (nu / nu_mm);
         } else if (nu < nu_mc) {
-            return (pel - 1) / (pel + 1) * pow(nu / nu_mm, (1 - pel) / 2) *
-                   (2 * (2 * pel + 5) / (pel + 1) / (pel + 4) + log(nu / nu_ma));
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, (1 - p) / 2) *
+                   (2 * (2 * p + 5) / (p + 1) / (p + 4) + log(nu / nu_ma));
         } else if (nu < nu_ca) {
-            return (pel - 1) / (pel + 1) * pow(nu / nu_mm, (1 - pel) / 2) * (2 + 2 / (pel + 4) + log(nu / nu_mc));
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, (1 - p) / 2) * (2 + 2 / (p + 4) + log(nu / nu_mc));
         } else if (nu < nu_cc) {
+            return (p - 1) / (p + 1) * pow(nu / nu_mm, (1 - p) / 2) * (2 * (2 * p + 1) / (p + 1) + log(nu_cc / nu));
         } else {
+            return (p - 1) / (p + 1) * (nu_mc / nu_mm) * pow(nu / nu_mm, -p / 2) *
+                   (2 * (2 * p + 5) / (p + 2) + log(nu / nu_cc));
         }
     } else if (order(nu_ma, nu_mc, nu_mm)) {
         if (nu < nu_ca) {
+            return 5. / 6 * pow(nu_ma / nu_mc, 1. / 3) * (nu / nu_ca);
         } else if (nu < nu_cc) {
+            return 9. / 10 * pow(nu / nu_cc, 1. / 3);
         } else if (nu < nu_cm) {
+            return 1. / 3 * pow(nu / nu_cc, -1. / 2) * (28. / 15 + log(nu / nu_ca));
         } else if (nu < nu_mm) {
+            return 1. / 3 * pow(nu / nu_cc, -1. / 2) *
+                   (2 * (p + 5) / (p + 2) / (p - 1) - 2. / 3 * (p - 1) / (p + 2) + log(nu_mm / nu));
         } else {
+            return 1. / (p + 2) * (nu_mc / nu_mm) * pow(nu / nu_mm, -p / 2) *
+                   (2. / 3 * (p + 5) / (p - 1) - 2. / 3 * (p - 1) / (p + 2) + log(nu / nu_mm));
         }
     } else if (order(nu_mc, nu_ma, nu_mm)) {
+        double R = pow(nu_mc / nu_ma, 1. / 2);
         if (nu < nu_aa) {
+            return (R / 2 + 1) * (R + 4) * (nu / nu_aa);
         } else if (nu < nu_am) {
+            return R * pow(nu / nu_aa, -1. / 2) * (R / 6 + 0.9 + R / 4 * log(nu / nu_aa));
         } else if (nu < nu_mm) {
+            return R * R * pow(nu / nu_aa, -1. / 2) * (3 / (p - 1) - 1. / 2 + 0.75 * log(nu_mm / nu));
         } else {
+            return 9 * R * R / 2 / (p + 2) * (nu_ma / nu_mm) * pow(nu / nu_mm, -p / 2) *
+                   (4 / (p + 3) * pow(nu_am / nu_mm, (p - 1) / 2) * sqrt(nu_am / nu_cm) +
+                    3 * (p + 1) / (p - 1) / (p + 2) + 0.5 * log(nu / nu_mm));
         }
     } else if (order(nu_mm, nu_mc, nu_ma)) {
+        double R = (p - 1) / 3 * pow(nu_mc / nu_ma, 1. / 2) * pow(nu_mm / nu_ma, (p - 1) / 2);
         if (nu < nu_aa) {
+            return (3 * R / 2 / (p + 2) + 1) * (3 * R / (p + 2) + 4) * (nu / nu_aa);
         } else {
+            return pow(nu / nu_aa, -p / 2) / (p + 2) *
+                   (6 * R / (p + 3) + R * (9 * R / 2 / (p + 2) + 1) + 9 * R * R / 4 * log(nu / nu_aa));
         }
     } else if (order(nu_mc, nu_mm, nu_ma)) {
+        double R = 1. / 3 * pow(nu_mc / nu_ma, 1. / 2) * pow(nu_mm / nu_ma, (p - 1) / 2);
         if (nu < nu_aa) {
+            return (3 * R / 2 / (p + 2) + 1) * (3 * R / (p + 2) + 4) * (nu / nu_aa);
         } else {
+            return pow(nu / nu_aa, -p / 2) / (p + 2) *
+                   (6 * R / (p + 3) + R * (9 * R / 2 / (p + 2) + 1) + 9 * R * R / 4 * log(nu / nu_aa));
         }
     }
 }
@@ -101,8 +130,8 @@ double IC_nu_E_peak(ICPhoton const& ph) {
     }
 }
 
-inline double eta_rad(double gamma_m, double gamma_c, double pel) {
-    return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - pel));
+inline double eta_rad(double gamma_m, double gamma_c, double p) {
+    return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - p));
 }
 
 double IC_Y_tilt(double b) { return (sqrt(1 + 4 * b) - 1) / 2; }
@@ -127,7 +156,7 @@ double eff_Y_IC_Thomson(double Gamma, double B, double t_com, double eps_e, doub
     return Y0;
 }
 
-double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double eps_B, SynElectrons const& e, double nu) {
+double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double eps_B, SynElectrons const& e) {
     double eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
     double b = eta_e * eps_e / eps_B;
     double Y0 = IC_Y_tilt(b);
@@ -135,45 +164,41 @@ double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double ep
     for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
         Y1 = Y0;
         double gamma_c = syn_gamma_c(Gamma, t_com, B, Y1);
-        double gamma_N_peak = syn_gamma_N_peak(e.gamma_a, e.gamma_m, gamma_c);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
-        b = eta_e * eps_e / eps_B * KN_correct(gamma_N_peak, nu);
+        double nu_c = syn_nu(gamma_c, B);
+        b = eta_e * eps_e / eps_B * compton_sigma(nu_c / gamma_c) / con::sigmaT;
         Y0 = IC_Y_tilt(b);
     }
     return Y0;
 }
 
-MeshGrid IC_cooling_Thomson(Shock const& shock, SynElectronsMesh& e, Medium const& medium) {
+MeshGrid solve_IC_Y_Thomson(Shock const& shock, SynElectronsMesh const& e, Medium const& medium) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
         for (size_t k = 0; k < e[j].size(); ++k) {
             Y_eff[j][k] = eff_Y_IC_Thomson(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], medium.eps_e,
                                            medium.eps_B, e[j][k]);
-            e[j][k].gamma_c = syn_gamma_c(shock.Gamma[j][k], shock.t_com[j][k], shock.B[j][k], Y_eff[j][k]);
-            e[j][k].gamma_M = syn_gamma_M(shock.B[j][k], medium.zeta, Y_eff[j][k]);
         }
     }
     return Y_eff;
 }
 
-MeshGrid IC_cooling_KN(Shock const& shock, SynElectronsMesh& e, ICPhotonMesh const& ph, Medium const& medium) {
+MeshGrid solve_IC_Y_KN(Shock const& shock, SynElectronsMesh const& e, Medium const& medium) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
         for (size_t k = 0; k < e[j].size(); ++k) {
-            Y_eff[j][k] = eff_Y_IC_KN(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], medium.eps_e, medium.eps_B,
-                                      e[j][k], ph[j][k].nu_E_peak);
-            e[j][k].gamma_c = syn_gamma_c(shock.Gamma[j][k], shock.t_com[j][k], shock.B[j][k], Y_eff[j][k]);
-            e[j][k].gamma_M = syn_gamma_M(shock.B[j][k], medium.zeta, Y_eff[j][k]);
+            Y_eff[j][k] =
+                eff_Y_IC_KN(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], medium.eps_e, medium.eps_B, e[j][k]);
         }
     }
     return Y_eff;
 }
 
-ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh& e, SynPhotonsMesh const& ph,
+ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& e, SynPhotonsMesh const& ph,
                             Medium const& medium) {
-    IC_cooling_Thomson(shock, e, medium);
+    solve_IC_Y_Thomson(shock, e, medium);
 
     ICPhotonMesh IC_ph = create_IC_photon_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
@@ -199,7 +224,7 @@ ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectrons
             IC_ph[j][k].nu_aa = IC_nu(e[j][k].gamma_a, ph[j][k].nu_a);
 
             IC_ph[j][k].nu_E_peak = IC_nu_E_peak(IC_ph[j][k]);
-            IC_ph[j][k].pel = e[j][k].p;
+            IC_ph[j][k].p = e[j][k].p;
         }
     }
     return IC_ph;
