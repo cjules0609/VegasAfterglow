@@ -23,7 +23,7 @@ void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs)
     calc_doppler_grid(coord, shock.Gamma);
     calc_t_obs_grid(coord, shock.Gamma);
     calc_sorted_EAT_surface(t_obs);
-    calc_emission_surface(coord);
+    calc_emission_volume(coord, shock.Gamma, shock.D_com);
 }
 
 void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
@@ -49,7 +49,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
             int k = 0;
             stepper.initialize(t_obs0, coord.r[0], dr0);
             for (; stepper.current_time() <= coord.r.back();) {
-                auto [t_last, t_current] = stepper.do_step(eqn);
+                stepper.do_step(eqn);
                 for (; stepper.current_time() > coord.r[k + 1] && k + 1 < coord.r.size();) {
                     k++;
                     stepper.calc_state(coord.r[k], t_obs[i][j][k]);
@@ -75,8 +75,8 @@ void Observer::calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma) {
     }
 }
 
-void Observer::calc_emission_surface(Coord const& coord) {
-    this->emission_S = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
+void Observer::calc_emission_volume(Coord const& coord, MeshGrid const& Gamma, MeshGrid const& D_com) {
+    this->emission_V = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
     for (size_t i = 0; i < coord.phi.size(); ++i) {
         for (size_t j = 0; j < coord.theta.size(); ++j) {
             for (size_t k = 0; k < coord.r.size(); ++k) {
@@ -84,7 +84,9 @@ void Observer::calc_emission_surface(Coord const& coord) {
                 double dphi = coord.phi_b[i + 1] - coord.phi_b[i];
                 double dOmega = std::fabs(dphi * dcos);
                 double r_ = coord.r[k];
-                this->emission_S[i][j][k] = r_ * r_ * dOmega;
+                double Gamma_ = Gamma[j][k];
+                double shock_width = D_com[j][k] * Gamma_;
+                this->emission_V[i][j][k] = r_ * r_ * dOmega * shock_width;
             }
         }
     }

@@ -18,7 +18,7 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_nu_M(filename + "_nu_Max.txt");
     for (size_t i = 0; i < syn_rad.size(); ++i) {
         for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_I_peak << syn_rad[i][j].I_nu_peak << " ";
+            file_I_peak << syn_rad[i][j].j_nu_peak << " ";
             file_nu_peak << syn_rad[i][j].nu_E_peak << " ";
             file_nu_m << syn_rad[i][j].nu_m << " ";
             file_nu_c << syn_rad[i][j].nu_c << " ";

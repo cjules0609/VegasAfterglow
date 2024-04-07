@@ -98,7 +98,7 @@ void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, double u0, F
     stepper.initialize(Array{Gamma0, u0, t_eng, t_com0}, r0, dr);
     // integrate the shell over r
     for (int i = 0; stepper.current_time() <= r.back();) {
-        auto [t_last, t_current] = stepper.do_step(eqn);
+        stepper.do_step(eqn);
 
         for (; stepper.current_time() > r[i + 1] && i + 1 < r.size();) {
             i++;

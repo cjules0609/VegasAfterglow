@@ -8,24 +8,19 @@
 ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size) {
     return ICPhotonMesh(theta_size, ICPhotonArray(r_size));
 }
-inline const double IC_x0 = sqrt(2) / 3;
-
-double ICPhoton::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
-double compton_sigma(double nu) {
-    double x = con::h * nu / (con::me * con::c2);
-    if (x < 1e-2) {
-        return con::sigmaT * (1 - 2 * x);
-    } else if (x > 1e2) {
-        return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
+double ICPhoton::j_nu(double nu) const {
+    if (nu >= nu_max) {
+        return 0.0;
     } else {
-        return 0.75 * con::sigmaT *
-               ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-                (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
+        return interp_log_extra_lo(nu, nu_IC_, j_nu_);
     }
 }
+
+/*
+double ICPhoton::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
 double ICPhoton::I_nu_(double nu) const {
     if (order(nu_ma, nu_mm, nu_mc)) {
@@ -129,7 +124,7 @@ double IC_nu_E_peak(ICPhoton const& ph) {
         return ph.nu_aa;
     }
 }
-
+*/
 inline double eta_rad(double gamma_m, double gamma_c, double p) {
     return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - p));
 }
@@ -148,7 +143,7 @@ double eff_Y_IC_Thomson(double Gamma, double B, double t_com, double eps_e, doub
     double Y1 = 2 * Y0;
     for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
         Y1 = Y0;
-        double gamma_c = syn_gamma_c(Gamma, t_com, B, Y1);
+        double gamma_c = syn_gamma_c(t_com, B, Y1);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
         b = eta_e * eps_e / eps_B;
         Y0 = IC_Y_tilt(b);
@@ -163,10 +158,11 @@ double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double ep
     double Y1 = 2 * Y0;
     for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
         Y1 = Y0;
-        double gamma_c = syn_gamma_c(Gamma, t_com, B, Y1);
+        double gamma_c = syn_gamma_c(t_com, B, Y1);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
         double nu_c = syn_nu(gamma_c, B);
-        b = eta_e * eps_e / eps_B * compton_sigma(nu_c / gamma_c) / con::sigmaT;
+        double gamma_N_peak = syn_gamma_N_peak(e.gamma_a, e.gamma_m, gamma_c);
+        b = eta_e * eps_e / eps_B * compton_sigma(nu_c / gamma_N_peak) / con::sigmaT;
         Y0 = IC_Y_tilt(b);
     }
     return Y0;
@@ -196,6 +192,18 @@ MeshGrid solve_IC_Y_KN(Shock const& shock, SynElectronsMesh const& e, Medium con
     return Y_eff;
 }
 
+ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& e, SynPhotonsMesh const& ph,
+                            Medium const& medium) {
+    solve_IC_Y_Thomson(shock, e, medium);
+    ICPhotonMesh IC_ph = create_IC_photon_grid(coord.theta.size(), coord.r.size());
+    for (size_t j = 0; j < coord.theta.size(); ++j) {
+        for (size_t k = 0; k < coord.r.size(); ++k) {
+            IC_ph[j][k] = ICPhoton(e[j][k], ph[j][k]);
+        }
+    }
+    return IC_ph;
+}
+/*
 ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& e, SynPhotonsMesh const& ph,
                             Medium const& medium) {
     solve_IC_Y_Thomson(shock, e, medium);
@@ -229,3 +237,4 @@ ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectrons
     }
     return IC_ph;
 }
+*/

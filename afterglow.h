@@ -19,7 +19,7 @@ MeshGrid spectrum(Photons const& ph, double nu_min, double nu_max, size_t data_p
     MeshGrid L_nu = create_grid(2, data_points, 0);
     for (size_t i = 0; i < L_nu[0].size(); ++i) {
         L_nu[0][i] = nu_c[i];
-        L_nu[1][i] = ph.I_nu(nu_c[i]) / ph.I_nu_peak;
+        L_nu[1][i] = ph.j_nu(nu_c[i]);
     }
     return L_nu;
 }
@@ -32,7 +32,7 @@ MeshGrid full_spectrum(PhotonsArray const& ph, double nu_min, double nu_max, siz
     L_nu[0] = nu_c;
     for (size_t i = 0; i < ph.size(); ++i) {
         for (size_t j = 0; j < L_nu[0].size(); ++j) {
-            L_nu[i + 1][j] = ph[i].I_nu(nu_c[j]);
+            L_nu[i + 1][j] = ph[i].j_nu(nu_c[j]);
         }
     }
     return L_nu;
