@@ -17,7 +17,7 @@ MeshGrid FS_co_moving_B(Coord const& coord, Shock const& shock, Medium const& me
             double rho = medium.rho(coord.r[k]);
             double eps_B = medium.eps_B;
             double Gamma = shock.Gamma[j][k];
-            B[j][k] = sqrt(8 * con::pi * eps_B * rho * (4 * Gamma * Gamma - 4 * Gamma)) * con::c;
+            B[j][k] = sqrt(8 * con::pi * eps_B * rho * 4 * Gamma * (Gamma - 1)) * con::c;
         }
     }
     return B;

@@ -5,25 +5,32 @@
 
 #include "macros.h"
 #include "utilities.h"
-class ObsTimeEqn {
-   public:
-    void operator()(double const& t, double& dtdr, double r) {
-        double Gamma = interp(r, r_, Gamma_);
-        double sqr = std::sqrt(Gamma * Gamma - 1);
-        dtdr = (Gamma - sqr * cos_) / (sqr * con::c);
-    };
 
-    Array Gamma_;
-    Array r_;
-    double cos_;
-};
-
-void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs) {
+void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double z) {
     this->theta_obs = theta_obs;
     calc_doppler_grid(coord, shock.Gamma);
     calc_t_obs_grid(coord, shock.Gamma);
     calc_sorted_EAT_surface(t_obs);
     calc_emission_volume(coord, shock.Gamma, shock.D_com);
+    calc_D_L(z);
+}
+
+void Observer::calc_D_L(double z) {
+    using namespace boost::numeric::odeint;
+    double atol = 0;
+    double rtol = 1e-6;
+    auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
+
+    auto eqn = [&](double const& y, double& dydz, double z0) {
+        dydz = 1 / sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
+    };
+    stepper.initialize(0, 0, 1e-6);
+
+    for (; stepper.current_time() <= z;) {
+        stepper.do_step(eqn);
+    }
+    stepper.calc_state(z, this->D_L);
+    this->D_L = (1 + z) * this->D_L * con::c / con::H0;
 }
 
 void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
@@ -32,23 +39,26 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     double atol = 0;
     double rtol = 1e-9;
     auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
-    ObsTimeEqn eqn;
-    eqn.r_ = coord.r;
-    double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;
 
-    for (size_t j = 0; j < coord.theta.size(); ++j) {
-        double theta_ = coord.theta[j];
-        eqn.Gamma_ = Gamma[j];
-        double Gamma0 = Gamma[j][0];
-        double beta0 = sqrt(1 - 1 / Gamma0 / Gamma0);
-        for (size_t i = 0; i < coord.phi.size(); ++i) {
-            double phi_ = coord.phi[i];
-            eqn.cos_ = sin(theta_) * cos(phi_) * sin(theta_obs) + cos(theta_) * cos(theta_obs);
-            double t_obs0 = coord.r[0] * (1 - beta0 * eqn.cos_) / con::c / beta0;
-            t_obs[i][j][0] = t_obs0;
-            int k = 0;
-            stepper.initialize(t_obs0, coord.r[0], dr0);
-            for (; stepper.current_time() <= coord.r.back();) {
+    double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;
+    for (size_t i = 0; i < coord.phi.size(); ++i) {
+        double phi_ = coord.phi[i];
+        for (size_t j = 0; j < coord.theta.size(); ++j) {
+            double theta_ = coord.theta[j];
+            double cos_ = sin(theta_) * cos(phi_) * sin(theta_obs) + cos(theta_) * cos(theta_obs);
+
+            auto eqn = [&](double const& t, double& dtdr, double r) {
+                double Gamma_ = interp(r, coord.r, Gamma[j]);
+                double beta = sqrt(1 - 1 / Gamma_ / Gamma_);
+                dtdr = (1 - beta * cos_) / (beta * con::c);
+            };
+
+            double Gamma0 = Gamma[j][0];
+            double beta0 = sqrt(1 - 1 / Gamma0 / Gamma0);
+            t_obs[i][j][0] = coord.r[0] * (1 - beta0 * cos_) / con::c / beta0;
+
+            stepper.initialize(t_obs[i][j][0], coord.r[0], dr0);
+            for (size_t k = 0; stepper.current_time() <= coord.r.back();) {
                 stepper.do_step(eqn);
                 for (; stepper.current_time() > coord.r[k + 1] && k + 1 < coord.r.size();) {
                     k++;

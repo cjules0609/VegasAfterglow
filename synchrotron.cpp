@@ -161,16 +161,16 @@ double syn_gamma_M(double B, double zeta, double Y_tilt) {
 
 double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double p) {
     double gamma_m = 1;
+    double A = eps_e * (Gamma - 1) * 1836 / xi + 1;
+
     if (p > 2) {
-        gamma_m = (p - 2) / (p - 1) * eps_e * (Gamma - 1) * 1836 / xi + 1;
+        gamma_m = (p - 2) / (p - 1) * A;
     } else if (p < 2) {
-        gamma_m = pow((2 - p) / (p - 1) * eps_e * (Gamma - 1) * 1836 / xi * pow(gamma_M, p - 1), 1 / (p - 1)) + 1;
+        gamma_m =
+            pow((2 - p) / (p - 1) * A * pow(gamma_M, p - 1), 1 / (p - 1));  // need to check in non-relativistic limit
     } else {
         gamma_m = root_bisection(
-            [=](double x) -> double {
-                return (x * log(gamma_M) - (x + 1) * log(x) - eps_e * (Gamma - 1) * 1836 / xi - log(gamma_M));
-            },
-            1, gamma_M);
+            [=](double x) -> double { return (x * log(gamma_M) - (x + 1) * log(x) - A - log(gamma_M)); }, 1, gamma_M);
     }
     return gamma_m;
 }
@@ -275,7 +275,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
     return gen_syn_electrons(p, coord, shock, medium, Y_tilt);
 }
 
-SynPhotonsMesh gen_syn_photons(Coord const& coord, SynElectronsMesh const& e, Shock const& shock,
+SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock,
                                Medium const& medium) {
     SynPhotonsMesh ph = create_syn_photons_grid(coord.theta.size(), coord.r.size());
 

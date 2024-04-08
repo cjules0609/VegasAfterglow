@@ -5,12 +5,12 @@
 void afterglow_gen() {
     std::string prefix = "tests/";
     double E_iso = 1e51 * con::erg;
-    double Gamma0 = 100;
+    double Gamma0 = 500;
     double n_ism = 1 / con::cm / con::cm / con::cm;
     double eps_e = 0.1;
     double eps_B = 0.001;
     double p = 2.3;
-    double theta_j = 10.0 * con::deg;
+    double theta_j = 1.0 * con::deg;
 
     // create model
     auto medium = create_ISM(n_ism, eps_e, eps_B);
@@ -22,10 +22,13 @@ void afterglow_gen() {
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t grid_num = 600;
-    Array r = logspace(R_ES / 100, R_ES * 50, grid_num);
-    Array theta = linspace(0, theta_j, 50);
-    Array phi = linspace(0, 2 * con::pi, 37);
+    size_t r_grid_num = 600;
+    size_t theta_grid_num = 50;
+    size_t phi_grid_num = 37;
+
+    Array r = logspace(R_ES / 1000, R_ES * 50, r_grid_num);
+    Array theta = linspace(0, theta_j, theta_grid_num);
+    Array phi = linspace(0, 2 * con::pi, phi_grid_num);
     Coord coord{r, theta, phi};
 
     write2file(coord.r, prefix + "r");
@@ -40,11 +43,12 @@ void afterglow_gen() {
     write2file(shock_f.t_com, prefix + "t_com");
 
     auto syn_e = gen_syn_electrons(p, coord, shock_f, medium);
-    auto syn_ph = gen_syn_photons(coord, syn_e, shock_f, medium);
-    auto Y_eff = create_grid_like(shock_f.Gamma, 0);
+    auto syn_ph = gen_syn_photons(syn_e, coord, shock_f, medium);
 
     write2file(syn_ph, prefix + "syn");
-    write2file(Y_eff, prefix + "Y");
+    /*
+     auto Y_eff = create_grid_like(shock_f.Gamma, 0);
+     write2file(Y_eff, prefix + "Y");
 
     Y_eff = solve_IC_Y_Thomson(shock_f, syn_e, medium);
     auto syn_e_IC = gen_syn_electrons(p, coord, shock_f, medium, Y_eff);
@@ -56,7 +60,7 @@ void afterglow_gen() {
     auto syn_e_IC_KN = gen_syn_electrons(p, coord, shock_f, medium, Y_eff);
     auto syn_ph_IC_KN = gen_syn_photons(coord, syn_e_IC_KN, shock_f, medium);
     write2file(syn_ph_IC_KN, prefix + "syn_ICKN");
-    write2file(Y_eff, prefix + "Y_ICKN");
+    write2file(Y_eff, prefix + "Y_ICKN");*/
 
     /*auto IC_ph = gen_IC_photons(coord, shock_f, syn_e, syn_ph, medium);
 
@@ -67,35 +71,35 @@ void afterglow_gen() {
     Observer obs;
 
     double theta_obs = 0 * con::deg;
-    obs.observe(coord, shock_f, theta_obs);
+    double z = 0.003;
+    obs.observe(coord, shock_f, theta_obs, z);
     write2file(obs.t_obs, prefix + "t_obs");
     write2file(obs.doppler, prefix + "doppler");
 
     // specify observables
 
-    Array nu_obs{1e9 * con::Hz,  1e10 * con::Hz, 1e11 * con::Hz, 1e12 * con::Hz, 1e13 * con::Hz,
-                 1e14 * con::Hz, 1e15 * con::Hz, 1e16 * con::Hz, 1e17 * con::Hz};
+    Array nu_obs{1e14 * con::Hz, 1e15 * con::Hz, 1e16 * con::Hz, 1e17 * con::Hz, 1e18 * con::Hz, 1e19 * con::Hz};
 
     size_t time_resol = 100;
 
     MeshGrid L_nu = obs.gen_light_curve(time_resol, nu_obs, syn_ph);
     write2file(L_nu, prefix + "L_nu");
 
-    MeshGrid L_nu_IC = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC);
-    write2file(L_nu_IC, prefix + "L_nu_IC");
-
-    /*for (size_t i = 0; i < nu_obs.size(); ++i) {
-        MeshGrid3d I_syn_obs = obs.gen_I_nu_grid(nu_obs[i], syn_ph);
-        write2file(I_syn_obs, prefix + "I_nu_" + std::to_string(int(log10(nu_obs[i] / 500))));
-    }
+    // MeshGrid L_nu_IC = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC);
+    // write2file(L_nu_IC, prefix + "L_nu_IC");
 
     for (size_t i = 0; i < nu_obs.size(); ++i) {
-        MeshGrid3d I_syn_obs = obs.gen_I_nu_grid(nu_obs[i], syn_ph_IC);
-        write2file(I_syn_obs, prefix + "I_nu_IC_" + std::to_string(int(log10(nu_obs[i] / 500))));
-    }*/
+        MeshGrid3d I_syn_obs = obs.gen_F_nu_grid(nu_obs[i], syn_ph);
+        write2file(I_syn_obs, prefix + "I_nu_" + std::to_string(int(log10(nu_obs[i] / 500))));
+    }
+    /*
+        for (size_t i = 0; i < nu_obs.size(); ++i) {
+            MeshGrid3d I_syn_obs = obs.gen_F_nu_grid(nu_obs[i], syn_ph_IC);
+            write2file(I_syn_obs, prefix + "I_nu_IC_" + std::to_string(int(log10(nu_obs[i] / 500))));
+        }*/
 
     /*for (size_t i = 0; i < nu_obs.size(); ++i) {
-        MeshGrid3d I_syn_obs = obs.gen_I_nu_grid(nu_obs[i], IC_ph);
+        MeshGrid3d I_syn_obs = obs.gen_F_nu_grid(nu_obs[i], IC_ph);
         MeshGrid L_nu = obs.gen_light_curve(time_resol, nu_obs[i], IC_ph);
 
         write2file(I_syn_obs, prefix + "I_nu_SSC_" + std::to_string(int(log10(nu_obs[i] / 500))));

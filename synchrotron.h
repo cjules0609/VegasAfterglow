@@ -48,7 +48,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
 SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium,
                                    MeshGrid const& Y_tilt);
 
-SynPhotonsMesh gen_syn_photons(Coord const& coord, SynElectronsMesh const& electrons, Shock const& shock,
+SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock,
                                Medium const& medium);
 
 double syn_gamma_c(double t_com, double B, double Y_tilt);
