@@ -12,11 +12,13 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size) {
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
 double ICPhoton::j_nu(double nu) const {
-    if (nu >= nu_max) {
+    return interp_log_extra_both(nu, nu_IC_, j_nu_);
+    /*if (nu >= nu_max) {
         return 0.0;
     } else {
-        return interp_log_extra_lo(nu, nu_IC_, j_nu_);
-    }
+        double x = interp_log_extra_lo(nu, nu_IC_, j_nu_);
+        return x;
+    }*/
 }
 
 /*
@@ -168,7 +170,7 @@ double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double ep
     return Y0;
 }
 
-MeshGrid solve_IC_Y_Thomson(Shock const& shock, SynElectronsMesh const& e, Medium const& medium) {
+MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock, Medium const& medium) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
@@ -180,7 +182,7 @@ MeshGrid solve_IC_Y_Thomson(Shock const& shock, SynElectronsMesh const& e, Mediu
     return Y_eff;
 }
 
-MeshGrid solve_IC_Y_KN(Shock const& shock, SynElectronsMesh const& e, Medium const& medium) {
+MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock, Medium const& medium) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
@@ -192,13 +194,11 @@ MeshGrid solve_IC_Y_KN(Shock const& shock, SynElectronsMesh const& e, Medium con
     return Y_eff;
 }
 
-ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& e, SynPhotonsMesh const& ph,
-                            Medium const& medium) {
-    solve_IC_Y_Thomson(shock, e, medium);
-    ICPhotonMesh IC_ph = create_IC_photon_grid(coord.theta.size(), coord.r.size());
-    for (size_t j = 0; j < coord.theta.size(); ++j) {
-        for (size_t k = 0; k < coord.r.size(); ++k) {
-            IC_ph[j][k] = ICPhoton(e[j][k], ph[j][k]);
+ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph, Shock const& shock) {
+    ICPhotonMesh IC_ph = create_IC_photon_grid(shock.D_com.size(), shock.D_com[0].size());
+    for (size_t j = 0; j < IC_ph.size(); ++j) {
+        for (size_t k = 0; k < IC_ph[0].size(); ++k) {
+            IC_ph[j][k] = ICPhoton(e[j][k], ph[j][k], shock.D_com[j][k]);
         }
     }
     return IC_ph;

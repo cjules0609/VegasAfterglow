@@ -55,8 +55,6 @@ MeshGrid Observer::gen_light_curve(size_t time_resolution, Array const& nu_obs, 
     Array t_c = boundary2center(t_bin);
     MeshGrid F_nu = create_grid(nu_obs.size() + 1, time_resolution, 0);
 
-    std::cout << nu_obs.size() << std::endl;
-
     for (size_t l = 0; l < nu_obs.size(); ++l) {
         for (size_t m = 0, n = 0; m < eat_s.size(); ++m) {
             double t_ = eat_s[m].t_obs;

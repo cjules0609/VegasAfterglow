@@ -9,6 +9,50 @@ void print_array(Array const& arr) {
     std::cout << std::endl;
 }
 
+void write2file(Coord const& coord, std::string const& filename) {
+    std::ofstream file_r(filename + "_r.txt");
+    std::ofstream file_theta(filename + "_theta.txt");
+    std::ofstream file_phi(filename + "_phi.txt");
+
+    for (size_t i = 0; i < coord.r.size(); ++i) {
+        file_r << coord.r[i] << " ";
+    }
+
+    file_r << std::endl;
+
+    for (size_t i = 0; i < coord.theta.size(); ++i) {
+        file_theta << coord.theta[i] << " ";
+    }
+
+    file_theta << std::endl;
+
+    for (size_t i = 0; i < coord.phi.size(); ++i) {
+        file_phi << coord.phi[i] << " ";
+    }
+
+    file_phi << std::endl;
+}
+
+void write2file(Shock const& shock, std::string const& filename) {
+    std::ofstream file(filename + "_Gamma.txt");
+    std::ofstream file_B(filename + "_B.txt");
+    std::ofstream file_D_com(filename + "_D_com.txt");
+    std::ofstream file_t_com(filename + "_t_com.txt");
+
+    for (size_t j = 0; j < shock.Gamma.size(); ++j) {
+        for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
+            file << shock.Gamma[j][k] << " ";
+            file_B << shock.B[j][k] << " ";
+            file_D_com << shock.D_com[j][k] << " ";
+            file_t_com << shock.t_com[j][k] << " ";
+        }
+        file << std::endl;
+        file_B << std::endl;
+        file_D_com << std::endl;
+        file_t_com << std::endl;
+    }
+}
+
 void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_I_peak(filename + "_I_nu_peak.txt");
     std::ofstream file_nu_peak(filename + "_nu_E_peak.txt");

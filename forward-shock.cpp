@@ -27,7 +27,7 @@ MeshGrid FS_co_moving_shock_width(Coord const& coord, Shock const& shock) {
     MeshGrid Delta = create_grid_like(shock.Gamma);
     for (size_t j = 0; j < Delta.size(); ++j) {
         for (size_t k = 0; k < Delta[j].size(); ++k) {
-            Delta[j][k] = coord.r[k] / shock.Gamma[j][k] / 12;
+            Delta[j][k] = coord.r[k] / shock.Gamma[j][k];
         }
     }
     return Delta;

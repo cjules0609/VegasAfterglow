@@ -12,29 +12,29 @@
 #include "synchrotron.h"
 #include "utilities.h"
 
-template <typename Photons>
-MeshGrid spectrum(Photons const& ph, double nu_min, double nu_max, size_t data_points = 100) {
-    Array nu_bin = logspace(nu_min, nu_max, data_points + 1);
+template <typename... Photons>
+MeshGrid co_moving_spectrum(size_t spectrum_resol, double nu_min, double nu_max, Photons const&... ph) {
+    Array nu_bin = logspace(nu_min, nu_max, spectrum_resol + 1);
     Array nu_c = boundary2center(nu_bin);
-    MeshGrid L_nu = create_grid(2, data_points, 0);
-    for (size_t i = 0; i < L_nu[0].size(); ++i) {
-        L_nu[0][i] = nu_c[i];
-        L_nu[1][i] = ph.j_nu(nu_c[i]);
+    MeshGrid j_nu = create_grid(2, spectrum_resol, 0);
+    for (size_t i = 0; i < j_nu[0].size(); ++i) {
+        j_nu[0][i] = nu_c[i];
+        j_nu[1][i] = (ph.j_nu(nu_c[i]) + ...);
     }
-    return L_nu;
+    return j_nu;
 }
 
 template <typename PhotonsArray>
-MeshGrid full_spectrum(PhotonsArray const& ph, double nu_min, double nu_max, size_t data_points = 100) {
+MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, PhotonsArray const& ph) {
     Array nu_bin = logspace(nu_min, nu_max, data_points + 1);
     Array nu_c = boundary2center(nu_bin);
-    MeshGrid L_nu = create_grid(1 + ph.size(), data_points, 0);
-    L_nu[0] = nu_c;
+    MeshGrid j_nu = create_grid(1 + ph.size(), data_points, 0);
+    j_nu[0] = nu_c;
     for (size_t i = 0; i < ph.size(); ++i) {
-        for (size_t j = 0; j < L_nu[0].size(); ++j) {
-            L_nu[i + 1][j] = ph[i].j_nu(nu_c[j]);
+        for (size_t j = 0; j < j_nu[0].size(); ++j) {
+            j_nu[i + 1][j] = ph[i].j_nu(nu_c[j]);
         }
     }
-    return L_nu;
+    return j_nu;
 }
 #endif

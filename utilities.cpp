@@ -30,26 +30,32 @@ double interp_log(double xi, Array const& x, Array const& y) {
         if (xi == x[i]) {
             return y[i];
         } else {
-            double lgxi = log(xi);
-            double y1 = log(y[i]);
-            double y0 = log(y[i - 1]);
-            double x1 = log(x[i]);
-            double x0 = log(x[i - 1]);
+            if (y[i] == 0 || y[i - 1] == 0) {
+                return 0;
+            }
+            double lgxi = log10(xi);
+            double y1 = log10(y[i]);
+            double y0 = log10(y[i - 1]);
+            double x1 = log10(x[i]);
+            double x0 = log10(x[i - 1]);
             double a = (y1 - y0) / (x1 - x0);
-            return exp(y0 + a * (lgxi - x0));
+            return pow(10, y0 + a * (lgxi - x0));
         }
     }
 }
 
 double interp_log_extra_lo(double xi, Array const& x, Array const& y) {
     if (xi < x[0]) {
-        double lgxi = log(xi);
-        double y1 = log(y[1]);
-        double y0 = log(y[0]);
-        double x1 = log(x[1]);
-        double x0 = log(x[0]);
+        if (y[0] == 0 || y[1] == 0) {
+            return 0;
+        }
+        double lgxi = log10(xi);
+        double y1 = log10(y[1]);
+        double y0 = log10(y[0]);
+        double x1 = log10(x[1]);
+        double x0 = log10(x[0]);
         double a = (y1 - y0) / (x1 - x0);
-        return exp(y0 + a * (lgxi - x0));
+        return pow(10, y0 + a * (lgxi - x0));
     } else if (xi > x.back()) {
         return y.back();
     } else {
@@ -58,13 +64,16 @@ double interp_log_extra_lo(double xi, Array const& x, Array const& y) {
         if (xi == x[i]) {
             return y[i];
         } else {
-            double lgxi = log(xi);
-            double y1 = log(y[i]);
-            double y0 = log(y[i - 1]);
-            double x1 = log(x[i]);
-            double x0 = log(x[i - 1]);
+            if (y[i] == 0 || y[i - 1] == 0) {
+                return 0;
+            }
+            double lgxi = log10(xi);
+            double y1 = log10(y[i]);
+            double y0 = log10(y[i - 1]);
+            double x1 = log10(x[i]);
+            double x0 = log10(x[i - 1]);
             double a = (y1 - y0) / (x1 - x0);
-            return exp(y0 + a * (lgxi - x0));
+            return pow(10, y0 + a * (lgxi - x0));
         }
     }
 }
@@ -73,58 +82,73 @@ double interp_log_extra_hi(double xi, Array const& x, Array const& y) {
     if (xi < x[0]) {
         return y[0];
     } else if (xi > x.back()) {
-        double lgxi = log(xi);
-        double y1 = log(y[y.size() - 2]);
-        double y0 = log(y[y.size() - 1]);
-        double x1 = log(x[x.size() - 2]);
-        double x0 = log(x[x.size() - 1]);
+        if (y[y.size() - 1] == 0 || y[y.size() - 2] == 0) {
+            return 0;
+        }
+        double lgxi = log10(xi);
+        double y1 = log10(y[y.size() - 2]);
+        double y0 = log10(y[y.size() - 1]);
+        double x1 = log10(x[x.size() - 2]);
+        double x0 = log10(x[x.size() - 1]);
         double a = (y1 - y0) / (x1 - x0);
-        return exp(y0 + a * (lgxi - x0));
+        return pow(10, y0 + a * (lgxi - x0));
     } else {
         auto it = std::lower_bound(x.begin(), x.end(), xi);
         size_t i = it - x.begin();
         if (xi == x[i]) {
             return y[i];
         } else {
-            double lgxi = log(xi);
-            double y1 = log(y[i]);
-            double y0 = log(y[i - 1]);
-            double x1 = log(x[i]);
-            double x0 = log(x[i - 1]);
+            if (y[i] == 0 || y[i - 1] == 0) {
+                return 0;
+            }
+            double lgxi = log10(xi);
+            double y1 = log10(y[i]);
+            double y0 = log10(y[i - 1]);
+            double x1 = log10(x[i]);
+            double x0 = log10(x[i - 1]);
             double a = (y1 - y0) / (x1 - x0);
-            return exp(y0 + a * (lgxi - x0));
+            return pow(10, y0 + a * (lgxi - x0));
         }
     }
 }
 
 double interp_log_extra_both(double xi, Array const& x, Array const& y) {
-    double lgxi = log(xi);
+    double lgxi = log10(xi);
     if (xi < x[0]) {
-        double y1 = log(y[1]);
-        double y0 = log(y[0]);
-        double x1 = log(x[1]);
-        double x0 = log(x[0]);
+        if (y[0] == 0 || y[1] == 0) {
+            return 0;
+        }
+        double y1 = log10(y[1]);
+        double y0 = log10(y[0]);
+        double x1 = log10(x[1]);
+        double x0 = log10(x[0]);
         double a = (y1 - y0) / (x1 - x0);
-        return exp(y0 + a * (lgxi - x0));
+        return pow(10, y0 + a * (lgxi - x0));
     } else if (xi > x.back()) {
-        double y1 = log(y[y.size() - 2]);
-        double y0 = log(y[y.size() - 1]);
-        double x1 = log(x[x.size() - 2]);
-        double x0 = log(x[x.size() - 1]);
+        if (y[y.size() - 1] == 0 || y[y.size() - 2] == 0) {
+            return 0;
+        }
+        double y1 = log10(y[y.size() - 2]);
+        double y0 = log10(y[y.size() - 1]);
+        double x1 = log10(x[x.size() - 2]);
+        double x0 = log10(x[x.size() - 1]);
         double a = (y1 - y0) / (x1 - x0);
-        return exp(y0 + a * (lgxi - x0));
+        return pow(10, y0 + a * (lgxi - x0));
     } else {
         auto it = std::lower_bound(x.begin(), x.end(), xi);
         size_t i = it - x.begin();
         if (xi == x[i]) {
             return y[i];
         } else {
-            double y1 = log(y[i]);
-            double y0 = log(y[i - 1]);
-            double x1 = log(x[i]);
-            double x0 = log(x[i - 1]);
+            if (y[i] == 0 || y[i - 1] == 0) {
+                return 0;
+            }
+            double y1 = log10(y[i]);
+            double y0 = log10(y[i - 1]);
+            double x1 = log10(x[i]);
+            double x0 = log10(x[i - 1]);
             double a = (y1 - y0) / (x1 - x0);
-            return exp(y0 + a * (lgxi - x0));
+            return pow(10, y0 + a * (lgxi - x0));
         }
     }
 }

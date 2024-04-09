@@ -13,11 +13,11 @@ SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size) {
     return SynElectronsMesh(theta_size, SynElectronsArray(r_size));
 }
 
-double SynElectrons::N(double gamma) const { return N_tot * N_(gamma); }
+double SynElectrons::n(double gamma) const { return n_tot * n_(gamma); }
 
 inline bool order(double a, double b, double c) { return a <= b && b <= c; };
 
-double SynElectrons::N_(double gamma) const {
+double SynElectrons::n_(double gamma) const {
     if (order(gamma_a, gamma_m, gamma_c)) {
         double C = 2. / 3 * pow(gamma_m, -2. / 3);
         if (gamma <= gamma_a) {
@@ -160,27 +160,30 @@ double syn_gamma_M(double B, double zeta, double Y_tilt) {
 }
 
 double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double p) {
+    double gamma_bar = 1 + eps_e * (Gamma - 1) * 1836 / xi;
     double gamma_m = 1;
-    double A = eps_e * (Gamma - 1) * 1836 / xi + 1;
 
     if (p > 2) {
-        gamma_m = (p - 2) / (p - 1) * A;
+        gamma_m = (p - 2) / (p - 1) * gamma_bar;
     } else if (p < 2) {
-        gamma_m =
-            pow((2 - p) / (p - 1) * A * pow(gamma_M, p - 1), 1 / (p - 1));  // need to check in non-relativistic limit
+        gamma_m = pow((2 - p) / (p - 1) * gamma_bar * pow(gamma_M, p - 1),
+                      1 / (p - 1));  // need to check in non-relativistic limit
     } else {
         gamma_m = root_bisection(
-            [=](double x) -> double { return (x * log(gamma_M) - (x + 1) * log(x) - A - log(gamma_M)); }, 1, gamma_M);
+            [=](double x) -> double { return (x * log(gamma_M) - (x + 1) * log(x) - gamma_bar - log(gamma_M)); }, 1,
+            gamma_M);
+    }
+
+    if (gamma_m < 1) {
+        gamma_m = 1;
     }
     return gamma_m;
 }
 
 double syn_gamma_c(double t_com, double B, double Y_tilt) {
-    double gamma_c = 6 * con::pi * con::me * con::c / (con::sigmaT * t_com * B * B * (1 + Y_tilt)) - 1;
-
-    if (gamma_c < 1) {
-        gamma_c = 1;
-    }
+    // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
+    double A = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
+    double gamma_c = (A + sqrt(A * A + 4)) / 2;
 
     return gamma_c;
 }
@@ -189,12 +192,13 @@ double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, do
     double gamma_peak = std::min(gamma_m, gamma_c);
     double nu_peak = syn_nu(gamma_peak, B);
     double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);  // adiabatic index
+
     double kT = (gamma_peak - 1) * con::me * con::c2 * (gamma_eos - 1);
     // 2kT(nv_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
     double nu_a = pow(I_syn_peak * con::c2 / pow(nu_peak, 1. / 3) / kT / 2, 3. / 5);
 
     // the nu_peak is not the real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(gamma_eos-1), I_syn = I_peak;
-    if (nu_a > nu_peak) {
+    if (fabs(gamma_peak - 1) < 1e-6 || nu_a > nu_peak) {
         /*nu_a = pow(I_syn_peak / con::me / 2 / (gamma_eos - 1) /
                        sqrt(4 * con::pi / 3 * con::me * con::c / con::e / B),
                    2.0 / 5);*/ //this works only for gamma >> 1
@@ -205,7 +209,11 @@ double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, do
                               sqrt(nu_peak), sqrt(nu_M));
         nu_a *= nu_a;
     }
-    return syn_gamma(nu_a, B);
+    double gamma_a = syn_gamma(nu_a, B);
+    if (gamma_a < 1) {
+        gamma_a = 1;
+    }
+    return gamma_a;
 }
 
 double syn_nu_E_peak(double nu_a, double nu_m, double nu_c) {
@@ -262,7 +270,8 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
             e[j][k].p = p;
-            e[j][k].N_tot = (rho / con::mp) * r * r * (D_com * Gamma) * dcos / (2 * con::pi) * medium.xi;
+            e[j][k].n_tot = (rho / con::mp) * medium.xi;
+            //*r* r*(D_com * Gamma) * dcos / (2 * con::pi) * medium.xi;
             e[j][k].gamma_N_peak = syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
         }
     }

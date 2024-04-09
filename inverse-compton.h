@@ -51,24 +51,22 @@ inline double compton_sigma(double nu) {
 }
 struct ICPhoton {
     template <typename Electrons, typename Photons>
-    ICPhoton(Electrons const& e, Photons const& ph) {
+    ICPhoton(Electrons const& e, Photons const& ph, double D_com) {
         double gamma_e_min = std::min(e.gamma_m, std::min(e.gamma_c, e.gamma_a));
         double nu_ph_min = std::min(ph.nu_m, std::min(ph.nu_c, ph.nu_a));
 
-        double nu0_max = ph.nu_M * 10;
+        double nu0_max = ph.nu_M * 2;
         double nu0_min = 4 * gamma_e_min * gamma_e_min * nu_ph_min;
         Array nu0_bin = logspace(nu0_min, nu0_max, integral_resol + 1);
         Array nu0 = boundary2center(nu0_bin);
 
         double gamma_min = 1;
-        double gamma_max = e.gamma_M * 10;
+        double gamma_max = e.gamma_M * 2;
         Array gamma_bin = logspace(gamma_min, gamma_max, integral_resol + 1);
         Array gamma = boundary2center(gamma_bin);
 
         this->nu_min = 4 * gamma_min * gamma_min * nu0_min;
         this->nu_max = 4 * gamma_max * gamma_max * nu0_max;
-
-        // std::cout << nu_min << ' ' << nu_max;
 
         MeshGrid I0 = create_grid(nu0.size(), gamma.size(), 0);
 
@@ -78,10 +76,9 @@ struct ICPhoton {
                 double gamma_ = gamma[j];
                 double dS = fabs((nu0_bin[i + 1] - nu0_bin[i]) * (gamma_bin[j + 1] - gamma_bin[j]));
                 double f = 4 * gamma_ * gamma_ * nu0_;
-                I0[i][j] = compton_sigma(nu0_ / gamma_) * e.N(gamma_) * ph.j_nu(nu0_) * dS / (f * nu0_);
+                I0[i][j] = D_com * compton_sigma(nu0_ / gamma_) * e.n(gamma_) * ph.j_nu(nu0_) * dS / (f * nu0_);
             }
         }
-
         nu_IC_ = logspace(nu_min, nu_max, spectrum_resol);
         j_nu_ = Array(spectrum_resol, 0);
 
@@ -95,11 +92,7 @@ struct ICPhoton {
                     }
                 }
             }
-            // std::cout << I_nu_[k] << std::endl;
         }
-        /* for (size_t i = 0; i < nu_IC_.size(); ++i) {
-             std::cout << nu_IC_[i] << ' ' << I_nu_[i] << std::endl;
-         }*/
     };
 
     ICPhoton() = default;
@@ -112,22 +105,19 @@ struct ICPhoton {
     double nu_min;
     double gamma_max;
     double gamma_min;
-    size_t integral_resol{200};
-    size_t spectrum_resol{200};
+    size_t integral_resol{50};
+    size_t spectrum_resol{50};
 };
 
 using ICPhotonArray = std::vector<ICPhoton>;
 using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
 
-// double compton_sigma(double nu);
-
 ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
 
-ICPhotonMesh gen_IC_photons(Coord const& coord, Shock const& shock, SynElectronsMesh const& electron,
-                            SynPhotonsMesh const& photon, Medium const& medium);
+ICPhotonMesh gen_IC_photons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
-MeshGrid solve_IC_Y_Thomson(Shock const& shock, SynElectronsMesh const& electron, Medium const& medium);
+MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& electron, Shock const& shock, Medium const& medium);
 
-MeshGrid solve_IC_Y_KN(Shock const& shock, SynElectronsMesh const& electron, Medium const& medium);
+MeshGrid solve_IC_Y_KN(SynElectronsMesh const& electron, Shock const& shock, Medium const& medium);
 
 #endif

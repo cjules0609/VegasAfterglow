@@ -11,12 +11,12 @@ struct SynElectrons {
     double gamma_a{0};
     double gamma_M{0};
     double p{2.3};
-    double N_tot{0};
+    double n_tot{0};
     double gamma_N_peak;
-    double N(double gamma) const;
+    double n(double gamma) const;
 
    private:
-    double N_(double gamma) const;
+    double n_(double gamma) const;
 };
 
 struct SynPhotons {
