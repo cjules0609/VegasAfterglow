@@ -78,6 +78,31 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     }
 }
 
+void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
+    std::ofstream file_n_tot(filename + "_n_tot.txt");
+    std::ofstream file_gamma_peak(filename + "_gamma_N_peak.txt");
+    std::ofstream file_gamma_m(filename + "_gamma_m.txt");
+    std::ofstream file_gamma_c(filename + "_gamma_c.txt");
+    std::ofstream file_gamma_a(filename + "_gamma_a.txt");
+    std::ofstream file_gamma_M(filename + "_gamma_Max.txt");
+    for (size_t i = 0; i < syn_rad.size(); ++i) {
+        for (size_t j = 0; j < syn_rad[i].size(); ++j) {
+            file_n_tot << syn_rad[i][j].n_tot << " ";
+            file_gamma_peak << syn_rad[i][j].gamma_N_peak << " ";
+            file_gamma_m << syn_rad[i][j].gamma_m << " ";
+            file_gamma_c << syn_rad[i][j].gamma_c << " ";
+            file_gamma_a << syn_rad[i][j].gamma_a << " ";
+            file_gamma_M << syn_rad[i][j].gamma_M << " ";
+        }
+        file_n_tot << std::endl;
+        file_gamma_peak << std::endl;
+        file_gamma_m << std::endl;
+        file_gamma_c << std::endl;
+        file_gamma_a << std::endl;
+        file_gamma_M << std::endl;
+    }
+}
+
 void write2file(MeshGrid3d const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
     for (size_t i = 0; i < array.size(); ++i) {

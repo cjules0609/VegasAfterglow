@@ -37,4 +37,18 @@ MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, P
     }
     return j_nu;
 }
+
+template <typename ElectronsArray>
+MeshGrid co_moving_n_spectrum(size_t data_points, double gamma_min, double gamma_max, ElectronsArray const& e) {
+    Array gamma_bin = logspace(gamma_min, gamma_max, data_points + 1);
+    Array gamma_c = boundary2center(gamma_bin);
+    MeshGrid n_gamma = create_grid(1 + e.size(), data_points, 0);
+    n_gamma[0] = gamma_c;
+    for (size_t i = 0; i < e.size(); ++i) {
+        for (size_t j = 0; j < n_gamma[0].size(); ++j) {
+            n_gamma[i + 1][j] = e[i].n(gamma_c[j]);
+        }
+    }
+    return n_gamma;
+}
 #endif

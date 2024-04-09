@@ -19,65 +19,48 @@ inline bool order(double a, double b, double c) { return a <= b && b <= c; };
 
 double SynElectrons::n_(double gamma) const {
     if (order(gamma_a, gamma_m, gamma_c)) {
-        double C = 2. / 3 * pow(gamma_m, -2. / 3);
-        if (gamma <= gamma_a) {
-            return C * pow(gamma, 3) * pow(gamma_a, -10. / 3);
-        } else if (gamma <= gamma_m) {
-            return C * pow(gamma, -1. / 3);
+        if (gamma <= gamma_m) {
+            return 0;
         } else if (gamma <= gamma_c) {
-            return C * pow(gamma_m, -1. / 3) * pow(gamma / gamma_m, -p);
+            return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
         } else {
-            return C * pow(gamma_m, -1. / 3) * pow(gamma_c / gamma_m, -p) * pow(gamma / gamma_c, -(p + 1)) *
-                   exp(-gamma / gamma_M);
+            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     } else if (order(gamma_m, gamma_a, gamma_c)) {
-        double C = (p - 1) / gamma_a;
         if (gamma <= gamma_m) {
-            return C * pow(gamma_m / gamma_a, 4) * pow(gamma / gamma_m, 3);
-        } else if (gamma <= gamma_a) {
-            return C * pow(gamma / gamma_a, 4);
+            return 0;
         } else if (gamma <= gamma_c) {
-            return C * pow(gamma / gamma_a, -p);
+            return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
         } else {
-            return C * pow(gamma_c / gamma_a, -p) * pow(gamma / gamma_c, -(p + 1)) * exp(-gamma / gamma_M);
+            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     } else if (order(gamma_a, gamma_c, gamma_m)) {
-        double C = 2. / 3 * pow(gamma_a, -1. / 3) * pow(gamma_c, -2. / 3);
-        if (gamma <= gamma_a) {
-            return C * pow(gamma, 3) * pow(gamma_a, -10. / 3);
-        } else if (gamma <= gamma_c) {
-            return C * pow(gamma, -1. / 3);
+        if (gamma <= gamma_c) {
+            return 0;
         } else if (gamma <= gamma_m) {
-            return C * pow(gamma_c, -1. / 3) * pow(gamma / gamma_c, -2);
+            return gamma_c * pow(gamma, -2);
         } else {
-            return C * pow(gamma_c, -1. / 3) * pow(gamma_m / gamma_c, -2) * pow(gamma / gamma_m, -(p + 1)) *
-                   exp(-gamma / gamma_M);
+            return gamma_c * pow(gamma_m, p - 1) * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     } else if (order(gamma_c, gamma_a, gamma_m)) {
-        double R = (gamma_c / gamma_a) / 3;
-        double C = 4 / gamma_a;
         if (gamma <= gamma_a) {
-            return C * pow(gamma / gamma_a, 3);
+            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
         } else if (gamma <= gamma_m) {
-            return C * R * pow(gamma / gamma_a, -2);
+            return gamma_c / (gamma * gamma);
         } else {
-            return C * R * pow(gamma_m / gamma_a, -2) * pow(gamma / gamma_m, -(p + 1)) * exp(-gamma / gamma_M);
+            return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     } else if (order(gamma_m, gamma_c, gamma_a)) {
-        double R = (p - 1) / 3 * (gamma_c / gamma_a) * pow(gamma_m / gamma_a, p - 1);
-        double C = 4 / gamma_a;
         if (gamma <= gamma_a) {
-            return C * pow(gamma / gamma_a, 3);
+            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
         } else {
-            return C * R * pow(gamma / gamma_a, -(p + 1)) * exp(-gamma / gamma_M);
+            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     } else if (order(gamma_c, gamma_m, gamma_a)) {
-        double R = 1. / 3 * (gamma_c / gamma_a) * pow(gamma_m / gamma_a, p - 1);
-        double C = 4 / gamma_a;
         if (gamma <= gamma_a) {
-            return C * pow(gamma / gamma_a, 3);
+            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
         } else {
-            return C * R * pow(gamma / gamma_a, -(p + 1)) * exp(-gamma / gamma_M);
+            return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
         }
     }
 }
@@ -270,7 +253,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
             e[j][k].p = p;
-            e[j][k].n_tot = (rho / con::mp) * medium.xi;
+            e[j][k].n_tot = 4 * Gamma * (rho / con::mp) * medium.xi;  // co-moving frame electron number density
             //*r* r*(D_com * Gamma) * dcos / (2 * con::pi) * medium.xi;
             e[j][k].gamma_N_peak = syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
         }

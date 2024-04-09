@@ -55,13 +55,13 @@ struct ICPhoton {
         double gamma_e_min = std::min(e.gamma_m, std::min(e.gamma_c, e.gamma_a));
         double nu_ph_min = std::min(ph.nu_m, std::min(ph.nu_c, ph.nu_a));
 
-        double nu0_max = ph.nu_M * 2;
-        double nu0_min = 4 * gamma_e_min * gamma_e_min * nu_ph_min;
+        double nu0_max = ph.nu_M * 10;
+        double nu0_min = nu_ph_min / 10;
         Array nu0_bin = logspace(nu0_min, nu0_max, integral_resol + 1);
         Array nu0 = boundary2center(nu0_bin);
 
         double gamma_min = 1;
-        double gamma_max = e.gamma_M * 2;
+        double gamma_max = e.gamma_M * 10;
         Array gamma_bin = logspace(gamma_min, gamma_max, integral_resol + 1);
         Array gamma = boundary2center(gamma_bin);
 
