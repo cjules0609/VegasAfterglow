@@ -20,6 +20,7 @@ void Observer::calc_D_L(double z) {
     double atol = 0;
     double rtol = 1e-6;
     auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
+    // auto stepper = make_dense_output(1.0e-6, 1.0e-6, runge_kutta_cash_karp54<std::vector<double>>());
 
     auto eqn = [&](double const& y, double& dydz, double z0) {
         dydz = 1 / sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
@@ -108,7 +109,7 @@ void Observer::calc_sorted_EAT_surface(MeshGrid3d const& t_obs) {
     for (size_t i = 0; i < t_obs.size(); ++i) {
         for (size_t j = 0; j < t_obs[0].size(); ++j) {
             for (size_t k = 0; k < t_obs[0][0].size(); ++k) {
-                this->eat_s[idx++] = std::make_pair(t_obs[i][j][k], Indexes{i, j, k});
+                this->eat_s[idx++] = EATinfo{t_obs[i][j][k], i, j, k};
             }
         }
     }

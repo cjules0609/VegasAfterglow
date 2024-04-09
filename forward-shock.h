@@ -10,7 +10,7 @@
 
 class ForwardShockEqn {
    public:
-    ForwardShockEqn(Medium medium, Jet blast, double theta_lo, double theta_hi);
+    ForwardShockEqn(Medium const& medium, Jet const& jet, double theta_lo, double theta_hi);
 
     void operator()(Array const& y, Array& dydr, double r);
 

@@ -33,7 +33,7 @@ MeshGrid FS_co_moving_shock_width(Coord const& coord, Shock const& shock) {
     return Delta;
 }
 
-ForwardShockEqn::ForwardShockEqn(Medium medium, Jet blast, double theta_lo, double theta_hi)
+ForwardShockEqn::ForwardShockEqn(Medium const& medium, Jet const& blast, double theta_lo, double theta_hi)
     : medium(medium),
       blast(blast),
       theta_lo(theta_lo),
