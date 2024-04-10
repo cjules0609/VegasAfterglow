@@ -114,6 +114,7 @@ struct ICPhoton {
             j_nu_[k] *= D_com;
         }
     };
+
     double j_nu(double nu) const;
 
    public:

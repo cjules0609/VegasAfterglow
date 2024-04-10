@@ -104,9 +104,9 @@ double SynPhotons::j_nu_(double nu) const {
     switch (regime) {
         case 1:
             if (nu <= nu_a) {
-                return pow(nu_a / nu_m, 1. / 3) * (nu / nu_a) * (nu / nu_a);
+                return cbrt(nu_a / nu_m) * (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_m) {
-                return pow(nu / nu_m, 1. / 3);
+                return cbrt(nu / nu_m);
             } else if (nu <= nu_c) {
                 return pow(nu / nu_m, -(p - 1) / 2);
             } else {
@@ -126,11 +126,11 @@ double SynPhotons::j_nu_(double nu) const {
             break;
         case 3:
             if (nu <= nu_a) {
-                return pow(nu_a / nu_c, 1. / 3) * (nu / nu_a) * (nu / nu_a);
+                return cbrt(nu_a / nu_c) * (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_c) {
-                return pow(nu / nu_c, 1. / 3);
+                return cbrt(nu / nu_c);
             } else if (nu <= nu_m) {
-                return sqrt(nu_c / nu);  // pow(nu / nu_c, -1. / 2);
+                return sqrt(nu_c / nu);
             } else {
                 return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
@@ -139,10 +139,10 @@ double SynPhotons::j_nu_(double nu) const {
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_m) {
-                double R = sqrt(nu_c / nu_a) / 3;  // pow(nu_c / nu_a, 1. / 2) / 3;
-                return R * sqrt(nu_a / nu);        // pow(nu / nu_a, -1. / 2);
+                double R = sqrt(nu_c / nu_a) / 3;
+                return R * sqrt(nu_a / nu);
             } else {
-                double R = sqrt(nu_c / nu_a) / 3;  // pow(nu_c / nu_a, 1. / 2) / 3;
+                double R = sqrt(nu_c / nu_a) / 3;
                 return R * sqrt(nu_a / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
@@ -158,7 +158,7 @@ double SynPhotons::j_nu_(double nu) const {
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                double R = 1. / 3 * sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2);
+                double R = sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2) / 3;
                 return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
             }
             break;

@@ -1,7 +1,6 @@
 #ifndef _UTILIT_
 #define _UTILIT_
 #include "mesh.h"
-
 template <typename Fun>
 auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
     using Scalar = decltype(f(0));
@@ -17,14 +16,12 @@ auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0
 }
 
 double exp_fast(double a);
-double interp_log(double x0, Array const& x, Array const& y);
-double interp_log_extra_lo(double x0, Array const& x, Array const& y);
-double interp_log_extra_hi(double x0, Array const& x, Array const& y);
-double interp_log_extra_both(double x0, Array const& x, Array const& y);
+
+double logscale_interp_extrap(double x0, Array const& x, Array const& y);
+double logscale_interp_extrap_eq_spaced(double x0, Array const& x, Array const& y);
 
 double interp(double x0, Array const& x, Array const& y);
-double interp_extra_lo(double x0, Array const& x, Array const& y);
-double interp_extra_hi(double x0, Array const& x, Array const& y);
-double interp_extra_both(double x0, Array const& x, Array const& y);
+double interp_extrap(double x0, Array const& x, Array const& y);
+double interp_extrap_eq_spaced(double x0, Array const& x, Array const& y);
 inline double step_func(double x) { return x > 0 ? 1 : 0; }
 #endif

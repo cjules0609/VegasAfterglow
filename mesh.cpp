@@ -12,26 +12,18 @@ Array linspace(double start, double end, size_t num) {
 
 Array logspace(double start, double end, size_t num) {
     Array result(num);
-    double log_start = std::log10(start);
-    double log_end = std::log10(end);
+    double log_start = std::log(start);
+    double log_end = std::log(end);
     double step = (log_end - log_start) / (num - 1);
     for (size_t i = 0; i < num; i++) {
-        result[i] = std::pow(10, log_start + i * step);
+        result[i] = std::exp(log_start + i * step);
     }
     return result;
 }
 
-Array zeros(size_t num) {
-    Array result(num);
-    std::fill(result.begin(), result.end(), 0);
-    return result;
-}
+Array zeros(size_t num) { return Array(num, 0); }
 
-Array ones(size_t num) {
-    Array result(num);
-    std::fill(result.begin(), result.end(), 1);
-    return result;
-}
+Array ones(size_t num) { return Array(num, 1); }
 
 MeshGrid create_grid(size_t theta_size, size_t r_size, double val) { return MeshGrid(theta_size, Array(r_size, val)); }
 

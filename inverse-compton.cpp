@@ -12,15 +12,7 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size) {
 
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
-double ICPhoton::j_nu(double nu) const {
-    return interp_log_extra_both(nu, nu_IC_, j_nu_);
-    /*if (nu >= nu_max) {
-        return 0.0;
-    } else {
-        double x = interp_log_extra_lo(nu, nu_IC_, j_nu_);
-        return x;
-    }*/
-}
+double ICPhoton::j_nu(double nu) const { return logscale_interp_extrap_eq_spaced(nu, this->nu_IC_, this->j_nu_); }
 /*
 double ICPhoton::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
