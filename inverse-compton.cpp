@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <thread>
 
 #include "macros.h"
 #include "utilities.h"
@@ -20,7 +21,6 @@ double ICPhoton::j_nu(double nu) const {
         return x;
     }*/
 }
-
 /*
 double ICPhoton::I_nu(double nu) const { return I_nu_peak * I_nu_(nu); }
 
@@ -194,13 +194,32 @@ MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock, Medium con
     return Y_eff;
 }
 
+void gen_IC_photons_(ICPhotonArray& IC_ph, SynElectronsArray const& e, SynPhotonsArray const& ph, Array const& D_com) {
+    for (size_t k = 0; k < IC_ph.size(); ++k) {
+        IC_ph[k].gen(e[k], ph[k], D_com[k]);
+    }
+}
+
 ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph, Shock const& shock) {
     ICPhotonMesh IC_ph = create_IC_photon_grid(shock.D_com.size(), shock.D_com[0].size());
+
+    // multithreading acceleration
+    std::vector<std::thread> thread;
+    thread.reserve(IC_ph.size());
     for (size_t j = 0; j < IC_ph.size(); ++j) {
-        for (size_t k = 0; k < IC_ph[0].size(); ++k) {
-            IC_ph[j][k] = ICPhoton(e[j][k], ph[j][k], shock.D_com[j][k]);
-        }
+        thread.emplace_back(gen_IC_photons_, std::ref(IC_ph[j]), std::cref(e[j]), std::cref(ph[j]),
+                            std::cref(shock.D_com[j]));
     }
+
+    for (size_t j = 0; j < thread.size(); ++j) {
+        thread[j].join();
+    }
+
+    /*for (size_t j = 0; j < IC_ph.size(); ++j) {
+        for (size_t k = 0; k < IC_ph[0].size(); ++k) {
+            IC_ph[j][k].gen(e[j][k], ph[j][k], shock.D_com[j][k]);
+        }
+    }*/
     return IC_ph;
 }
 /*

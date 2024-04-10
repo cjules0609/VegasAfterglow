@@ -207,3 +207,12 @@ double interp_extra_both(double x0, Array const& x, Array const& y) {
         }
     }
 }
+
+double exp_fast(double a) {
+    union {
+        double d;
+        long long x;
+    } u;
+    u.x = (long long)(6497320848556798LL * a + 0x3fef127e83d16f12LL);
+    return u.d;
+}

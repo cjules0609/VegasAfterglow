@@ -38,7 +38,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     t_obs = create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;
     double atol = 0;
-    double rtol = 1e-9;
+    double rtol = 1e-6;
     auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
 
     double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;

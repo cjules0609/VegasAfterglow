@@ -13,10 +13,11 @@ struct SynElectrons {
     double p{2.3};
     double n_tot{0};
     double gamma_N_peak;
+    size_t regime{0};
     double n(double gamma) const;
 
    private:
-    double n_(double gamma) const;
+    inline double n_(double gamma) const;
 };
 
 struct SynPhotons {
@@ -27,6 +28,7 @@ struct SynPhotons {
     double nu_a{0};
     double nu_M{0};
     double p{2.3};
+    size_t regime{0};
     double j_nu(double nu) const;
 
    private:

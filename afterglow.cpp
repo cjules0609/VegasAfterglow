@@ -4,9 +4,9 @@
 
 void afterglow_gen() {
     std::string prefix = "tests/";
-    double E_iso = 1e56 * con::erg;
+    double E_iso = 1e53 * con::erg;
     double Gamma0 = 300;
-    double n_ism = 1 / con::cm / con::cm / con::cm;
+    double n_ism = 0.1 / con::cm / con::cm / con::cm;
     double eps_e = 0.1;
     double eps_B = 0.01;
     double p = 2.3;
@@ -22,11 +22,11 @@ void afterglow_gen() {
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t r_grid_num = 800;
+    size_t r_grid_num = 500;
     size_t theta_grid_num = 30;
-    size_t phi_grid_num = 2;
+    size_t phi_grid_num = 37;
 
-    Array r = logspace(R_ES / 50, R_ES * 50, r_grid_num);
+    Array r = logspace(R_ES / 100, R_ES * 100, r_grid_num);
     // Array r = linspace(R_ES / 100, R_ES * 50, r_grid_num);
     Array theta = linspace(0, theta_j, theta_grid_num);
     Array phi = linspace(0, 2 * con::pi, phi_grid_num);
@@ -60,17 +60,17 @@ void afterglow_gen() {
 
     /*auto IC_phs = gen_IC_photons(syn_e, syn_ph, shock_f);
     size_t k = 400;
-    auto IC_ph = ICPhoton(syn_e[0][k], syn_ph[0][k], shock_f.D_com[0][k]);
+    ICPhotons IC_ph.gen(syn_e[0][k], syn_ph[0][k], shock_f.D_com[0][k]);
     auto spectrum = co_moving_spectrum(100, 1e5 * con::Hz, 1e40 * con::Hz, IC_ph, syn_ph[0][k]);
     write2file(spectrum, prefix + "spectrum");*/
 
-    auto IC_ph = gen_IC_photons(syn_e_IC_KN, syn_ph_IC_KN, shock_f);
+    // auto IC_ph = gen_IC_photons(syn_e_IC_KN, syn_ph_IC_KN, shock_f);
 
     auto syn_spectrum = co_moving_spectrums(100, 1e4 * con::Hz, 1e25 * con::Hz, syn_ph_IC_KN[0]);
     write2file(syn_spectrum, prefix + "syn_spectrum");
 
-    auto IC_spectrum = co_moving_spectrums(100, 1e4 * con::Hz, 1e41 * con::Hz, IC_ph[0]);
-    write2file(IC_spectrum, prefix + "IC_spectrum");
+    // auto IC_spectrum = co_moving_spectrums(100, 1e4 * con::Hz, 1e41 * con::Hz, IC_ph[0]);
+    // write2file(IC_spectrum, prefix + "IC_spectrum");
 
     auto n_specturm = co_moving_n_spectrum(100, 1, 1e9, syn_e_IC_KN[0]);
     write2file(n_specturm, prefix + "n_spectrum");
@@ -93,11 +93,12 @@ void afterglow_gen() {
     MeshGrid F_nu_syn = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC_KN);
     write2file(F_nu_syn, prefix + "F_nu_syn");
 
-    MeshGrid F_nu_IC = obs.gen_light_curve(time_resol, nu_obs, IC_ph);
+    /* MeshGrid F_nu_IC = obs.gen_light_curve(time_resol, nu_obs, IC_ph);
     write2file(F_nu_IC, prefix + "F_nu_IC");
 
     MeshGrid F_nu_tot = obs.gen_light_curve(time_resol, nu_obs, IC_ph, syn_ph_IC_KN);
     write2file(F_nu_tot, prefix + "F_nu_tot");
+    */
 
     // MeshGrid F_nu_IC = obs.gen_light_curve(time_resol, nu_obs, IC_ph);
     // write2file(F_nu_IC, prefix + "F_nu_IC");
@@ -107,10 +108,10 @@ void afterglow_gen() {
         write2file(j_syn_obs, prefix + "j_nu_syn" + std::to_string(int(log10(nu_obs[i] / 500))));
     }
 
-    for (size_t i = 0; i < nu_obs.size(); ++i) {
+    /*for (size_t i = 0; i < nu_obs.size(); ++i) {
         MeshGrid3d j_IC_obs = obs.gen_j_nu_grid(nu_obs[i], IC_ph);
         write2file(j_IC_obs, prefix + "j_nu_IC" + std::to_string(int(log10(nu_obs[i] / 500))));
-    }
+    }*/
 }
 
 int main() {

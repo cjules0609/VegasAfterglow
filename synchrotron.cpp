@@ -17,111 +17,162 @@ double SynElectrons::n(double gamma) const { return n_tot * n_(gamma); }
 
 inline bool order(double a, double b, double c) { return a <= b && b <= c; };
 
-double SynElectrons::n_(double gamma) const {
-    if (order(gamma_a, gamma_m, gamma_c)) {
-        if (gamma <= gamma_m) {
-            return 0;
-        } else if (gamma <= gamma_c) {
-            return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
-        } else {
-            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
-    } else if (order(gamma_m, gamma_a, gamma_c)) {
-        if (gamma <= gamma_m) {
-            return 0;
-        } else if (gamma <= gamma_c) {
-            return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
-        } else {
-            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
-    } else if (order(gamma_a, gamma_c, gamma_m)) {
-        if (gamma <= gamma_c) {
-            return 0;
-        } else if (gamma <= gamma_m) {
-            return gamma_c * pow(gamma, -2);
-        } else {
-            return gamma_c * pow(gamma_m, p - 1) * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
-    } else if (order(gamma_c, gamma_a, gamma_m)) {
-        if (gamma <= gamma_a) {
-            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
-        } else if (gamma <= gamma_m) {
-            return gamma_c / (gamma * gamma);
-        } else {
-            return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
-    } else if (order(gamma_m, gamma_c, gamma_a)) {
-        if (gamma <= gamma_a) {
-            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
-        } else {
-            return (p - 1) * pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
-    } else if (order(gamma_c, gamma_m, gamma_a)) {
-        if (gamma <= gamma_a) {
-            return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
-        } else {
-            return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
-        }
+size_t get_regime(double a, double c, double m) {
+    if (order(a, m, c)) {
+        return 1;
+    } else if (order(m, a, c)) {
+        return 2;
+    } else if (order(a, c, m)) {
+        return 3;
+    } else if (order(c, a, m)) {
+        return 4;
+    } else if (order(m, c, a)) {
+        return 5;
+    } else if (order(c, m, a)) {
+        return 6;
     }
+    return 0;
+}
+
+double SynElectrons::n_(double gamma) const {
+    switch (regime) {
+        case 1:
+            if (gamma <= gamma_m) {
+                return 0;
+            } else if (gamma <= gamma_c) {
+                return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
+            } else {
+                return (p - 1) * pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
+            }
+            break;
+        case 2:
+            if (gamma <= gamma_m) {
+                return 0;
+            } else if (gamma <= gamma_c) {
+                return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
+            } else {
+                return (p - 1) * pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
+            }
+            break;
+        case 3:
+            if (gamma <= gamma_c) {
+                return 0;
+            } else if (gamma <= gamma_m) {
+                return gamma_c / (gamma * gamma);
+            } else {
+                return gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+            }
+            break;
+        case 4:
+            if (gamma <= gamma_a) {
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
+            } else if (gamma <= gamma_m) {
+                return gamma_c / (gamma * gamma);
+            } else {
+                return gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+            }
+            break;
+        case 5:
+            if (gamma <= gamma_a) {
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
+            } else {
+                return (p - 1) * gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+            }
+            break;
+        case 6:
+            if (gamma <= gamma_a) {
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
+            } else {
+                return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
+            }
+            break;
+        default:
+            return 0;
+    }
+    /*if (order(gamma_a, gamma_m, gamma_c)) {
+    } else if (order(gamma_m, gamma_a, gamma_c)) {
+    } else if (order(gamma_a, gamma_c, gamma_m)) {
+    } else if (order(gamma_c, gamma_a, gamma_m)) {
+    } else if (order(gamma_m, gamma_c, gamma_a)) {
+    } else if (order(gamma_c, gamma_m, gamma_a)) {
+    }*/
 }
 
 double SynPhotons::j_nu(double nu) const { return j_nu_peak * j_nu_(nu); }
 
 double SynPhotons::j_nu_(double nu) const {
-    if (order(nu_a, nu_m, nu_c)) {
-        if (nu <= nu_a) {
-            return pow(nu_a / nu_m, 1. / 3) * pow(nu / nu_a, 2);
-        } else if (nu <= nu_m) {
-            return pow(nu / nu_m, 1. / 3);
-        } else if (nu <= nu_c) {
-            return pow(nu / nu_m, -(p - 1) / 2);
-        } else {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2) * exp(-nu / nu_M);
-        }
-    } else if (order(nu_m, nu_a, nu_c)) {
-        if (nu <= nu_m) {
-            return pow(nu_m / nu_a, (p + 4) / 2) * pow(nu / nu_m, 2);
-        } else if (nu <= nu_a) {
-            return pow(nu_a / nu_m, -(p - 1) / 2) * pow(nu / nu_a, 5. / 2);
-        } else if (nu <= nu_c) {
-            return pow(nu / nu_m, -(p - 1) / 2);
-        } else {
-            return pow(nu_c / nu_m, -(p - 1) / 2) * pow(nu / nu_c, -p / 2) * exp(-nu / nu_M);
-        }
-    } else if (order(nu_a, nu_c, nu_m)) {
-        if (nu <= nu_a) {
-            return pow(nu_a / nu_c, 1. / 3) * pow(nu / nu_a, 2);
-        } else if (nu <= nu_c) {
-            return pow(nu / nu_c, 1. / 3);
-        } else if (nu <= nu_m) {
-            return pow(nu / nu_c, -1. / 2);
-        } else {
-            return pow(nu_m / nu_c, -1. / 2) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
-        }
-    } else if (order(nu_c, nu_a, nu_m)) {
-        double R = pow(nu_c / nu_a, 1. / 2) / 3;
-        if (nu <= nu_a) {
-            return pow(nu / nu_a, 2);
-        } else if (nu <= nu_m) {
-            return R * pow(nu / nu_a, -1. / 2);
-        } else {
-            return R * pow(nu_m / nu_a, -1. / 2) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
-        }
-    } else if (order(nu_m, nu_c, nu_a)) {
-        double R = (p - 1) / 3 * pow(nu_c / nu_a, 1. / 2) * pow(nu_m / nu_a, (p - 1) / 2);
-        if (nu <= nu_a) {
-            return pow(nu / nu_a, 2);
-        } else {
-            return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
-        }
-    } else if (order(nu_c, nu_m, nu_a)) {
-        double R = 1. / 3 * pow(nu_c / nu_a, 1. / 2) * pow(nu_m / nu_a, (p - 1) / 2);
-        if (nu <= nu_a) {
-            return pow(nu / nu_a, 2);
-        } else {
-            return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
-        }
+    switch (regime) {
+        case 1:
+            if (nu <= nu_a) {
+                return pow(nu_a / nu_m, 1. / 3) * (nu / nu_a) * (nu / nu_a);
+            } else if (nu <= nu_m) {
+                return pow(nu / nu_m, 1. / 3);
+            } else if (nu <= nu_c) {
+                return pow(nu / nu_m, -(p - 1) / 2);
+            } else {
+                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+        case 2:
+            if (nu <= nu_m) {
+                return pow(nu_m / nu_a, (p + 4) / 2) * (nu * nu) / (nu_m * nu_m);
+            } else if (nu <= nu_a) {
+                return pow(nu_a / nu_m, -(p - 1) / 2) * pow(nu / nu_a, 5. / 2);
+            } else if (nu <= nu_c) {
+                return pow(nu / nu_m, -(p - 1) / 2);
+            } else {
+                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+        case 3:
+            if (nu <= nu_a) {
+                return pow(nu_a / nu_c, 1. / 3) * (nu / nu_a) * (nu / nu_a);
+            } else if (nu <= nu_c) {
+                return pow(nu / nu_c, 1. / 3);
+            } else if (nu <= nu_m) {
+                return sqrt(nu_c / nu);  // pow(nu / nu_c, -1. / 2);
+            } else {
+                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+        case 4:
+            if (nu <= nu_a) {
+                return (nu / nu_a) * (nu / nu_a);
+            } else if (nu <= nu_m) {
+                double R = sqrt(nu_c / nu_a) / 3;  // pow(nu_c / nu_a, 1. / 2) / 3;
+                return R * sqrt(nu_a / nu);        // pow(nu / nu_a, -1. / 2);
+            } else {
+                double R = sqrt(nu_c / nu_a) / 3;  // pow(nu_c / nu_a, 1. / 2) / 3;
+                return R * sqrt(nu_a / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+        case 5:
+            if (nu <= nu_a) {
+                return (nu / nu_a) * (nu / nu_a);
+            } else {
+                double R = (p - 1) / 3 * sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2);
+                return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+        case 6:
+            if (nu <= nu_a) {
+                return (nu / nu_a) * (nu / nu_a);
+            } else {
+                double R = 1. / 3 * sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2);
+                return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+            }
+            break;
+
+        default:
+            break;
     }
+    /*if (order(nu_a, nu_m, nu_c)) {
+    } else if (order(nu_m, nu_a, nu_c)) {
+    } else if (order(nu_a, nu_c, nu_m)) {
+    } else if (order(nu_c, nu_a, nu_m)) {
+    } else if (order(nu_m, nu_c, nu_a)) {
+    } else if (order(nu_c, nu_m, nu_a)) {
+    }*/
 }
 
 double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p) {
@@ -252,6 +303,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, medium.eps_e, medium.xi, p);
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
+            e[j][k].regime = get_regime(e[j][k].gamma_a, e[j][k].gamma_c, e[j][k].gamma_m);
             e[j][k].p = p;
             e[j][k].n_tot = 4 * Gamma * (rho / con::mp) * medium.xi;  // co-moving frame electron number density
             //*r* r*(D_com * Gamma) * dcos / (2 * con::pi) * medium.xi;
@@ -283,6 +335,7 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
             ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);
             ph[j][k].nu_a = syn_nu(e[j][k].gamma_a, B);
+            ph[j][k].regime = e[j][k].regime;
             ph[j][k].nu_E_peak = syn_nu_E_peak(ph[j][k]);
             ph[j][k].p = e[j][k].p;
         }

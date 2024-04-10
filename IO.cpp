@@ -46,10 +46,10 @@ void write2file(Shock const& shock, std::string const& filename) {
             file_D_com << shock.D_com[j][k] << " ";
             file_t_com << shock.t_com[j][k] << " ";
         }
-        file << std::endl;
-        file_B << std::endl;
-        file_D_com << std::endl;
-        file_t_com << std::endl;
+        file << '\n';
+        file_B << '\n';
+        file_D_com << '\n';
+        file_t_com << '\n';
     }
 }
 
@@ -69,12 +69,12 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
             file_nu_a << syn_rad[i][j].nu_a << " ";
             file_nu_M << syn_rad[i][j].nu_M << " ";
         }
-        file_I_peak << std::endl;
-        file_nu_peak << std::endl;
-        file_nu_m << std::endl;
-        file_nu_c << std::endl;
-        file_nu_a << std::endl;
-        file_nu_M << std::endl;
+        file_I_peak << '\n';
+        file_nu_peak << '\n';
+        file_nu_m << '\n';
+        file_nu_c << '\n';
+        file_nu_a << '\n';
+        file_nu_M << '\n';
     }
 }
 
@@ -94,12 +94,12 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
             file_gamma_a << syn_rad[i][j].gamma_a << " ";
             file_gamma_M << syn_rad[i][j].gamma_M << " ";
         }
-        file_n_tot << std::endl;
-        file_gamma_peak << std::endl;
-        file_gamma_m << std::endl;
-        file_gamma_c << std::endl;
-        file_gamma_a << std::endl;
-        file_gamma_M << std::endl;
+        file_n_tot << '\n';
+        file_gamma_peak << '\n';
+        file_gamma_m << '\n';
+        file_gamma_c << '\n';
+        file_gamma_a << '\n';
+        file_gamma_M << '\n';
     }
 }
 
@@ -110,7 +110,7 @@ void write2file(MeshGrid3d const& array, std::string const& filename) {
             for (size_t k = 0; k < array[i][j].size(); ++k) {
                 file << array[i][j][k] << " ";
             }
-            file << std::endl;
+            file << '\n';
         }
     }
 }
@@ -120,7 +120,7 @@ void write2file(MeshGrid const& grid, std::string const& filename) {
         for (size_t j = 0; j < grid[i].size(); ++j) {
             file << grid[i][j] << " ";
         }
-        file << std::endl;
+        file << '\n';
     }
 }
 
