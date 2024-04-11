@@ -6,7 +6,13 @@
 #include "macros.h"
 #include "utilities.h"
 
-void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double z) {
+void Observer::observe(Coord& coord, Shock const& shock, double theta_obs, double z) {
+    if (theta_obs == 0 && coord.phi.size() >= 1) {
+        std::cout << "on-axis observer, reducing phi grid size to 1\n";
+        coord.phi_b = Array{0, 2 * con::pi};
+        coord.phi = Array{con::pi};
+    }
+
     this->theta_obs = theta_obs;
     calc_doppler_grid(coord, shock.Gamma);
     calc_t_obs_grid(coord, shock.Gamma);

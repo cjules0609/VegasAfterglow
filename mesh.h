@@ -48,7 +48,7 @@ Array boundary2centerlog(Array const& boundary);
 
 class Coord {
    public:
-    Coord(Array r_b, Array theta_b, Array phi_b) : r_b(r_b), theta_b(theta_b), phi_b(phi_b) {
+    Coord(Array const& r_b, Array const& theta_b, Array const& phi_b) : r_b(r_b), theta_b(theta_b), phi_b(phi_b) {
         r = boundary2centerlog(r_b);
         theta = boundary2center(theta_b);
         phi = boundary2center(phi_b);

@@ -24,29 +24,37 @@ MeshGrid co_moving_spectrum(size_t spectrum_resol, double nu_min, double nu_max,
     return j_nu;
 }
 
-template <typename PhotonsArray>
-MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, PhotonsArray const& ph) {
+template <typename Photons1Array, typename... Photons2Array>
+MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, Photons1Array const& ph0,
+                             Photons2Array const&... ph) {
     Array nu_bin = logspace(nu_min, nu_max, data_points + 1);
     Array nu_c = boundary2center(nu_bin);
-    MeshGrid j_nu = create_grid(1 + ph.size(), data_points, 0);
+    MeshGrid j_nu = create_grid(1 + ph0.size(), data_points, 0);
     j_nu[0] = nu_c;
-    for (size_t i = 0; i < ph.size(); ++i) {
+    for (size_t i = 0; i < ph0.size(); ++i) {
         for (size_t j = 0; j < j_nu[0].size(); ++j) {
-            j_nu[i + 1][j] = ph[i].j_nu(nu_c[j]);
+            j_nu[i + 1][j] = ph0[i].j_nu(nu_c[j]);
+            if constexpr (sizeof...(ph) > 0) {
+                j_nu[i + 1][j] += (ph[i].j_nu(nu_c[j]) + ...);
+            }
         }
     }
     return j_nu;
 }
 
-template <typename ElectronsArray>
-MeshGrid co_moving_n_spectrum(size_t data_points, double gamma_min, double gamma_max, ElectronsArray const& e) {
+template <typename Electrons1Array, typename... Electrons2Array>
+MeshGrid co_moving_n_spectrums(size_t data_points, double gamma_min, double gamma_max, Electrons1Array const& e0,
+                               Electrons2Array const&... e) {
     Array gamma_bin = logspace(gamma_min, gamma_max, data_points + 1);
     Array gamma = boundary2center(gamma_bin);
-    MeshGrid n_gamma = create_grid(1 + e.size(), data_points, 0);
+    MeshGrid n_gamma = create_grid(1 + e0.size(), data_points, 0);
     n_gamma[0] = gamma;
-    for (size_t i = 0; i < e.size(); ++i) {
+    for (size_t i = 0; i < e0.size(); ++i) {
         for (size_t j = 0; j < n_gamma[0].size(); ++j) {
-            n_gamma[i + 1][j] = e[i].n(gamma[j]);
+            n_gamma[i + 1][j] = e0[i].n(gamma[j]);
+            if constexpr (sizeof...(e) > 0) {
+                n_gamma[i + 1][j] += (e[i].n(gamma[j]) + ...);
+            }
         }
     }
     return n_gamma;

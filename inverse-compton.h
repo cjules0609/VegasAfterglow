@@ -126,10 +126,6 @@ struct ICPhoton {
     double gamma_min;
     size_t integral_resol{80};
     size_t spectrum_resol{50};
-
-   private:
-    void smart_grid(double nu0_min, double nu0_max, double nu0_peak, double gamma_min, double gamma_max,
-                    double gamma_peak, size_t resol);
 };
 
 using ICPhotonArray = std::vector<ICPhoton>;

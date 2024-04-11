@@ -20,7 +20,7 @@ using EATsurface = std::vector<EATinfo>;
 
 class Observer {
    public:
-    void observe(Coord const& coord, Shock const& shock, double theta_obs, double z);
+    void observe(Coord& coord, Shock const& shock, double theta_obs, double z);
 
     template <typename... RadPhotonMesh>
     MeshGrid3d gen_j_nu_grid(double nu_obs, RadPhotonMesh const&... rad_ptc);

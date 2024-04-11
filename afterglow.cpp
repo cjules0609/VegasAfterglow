@@ -22,14 +22,14 @@ void afterglow_gen() {
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t r_grid_num = 500;
-    size_t theta_grid_num = 30;
-    size_t phi_grid_num = 2;
+    size_t r_point_num = 500;
+    size_t theta_point_num = 30;
+    size_t phi_point_num = 37;
 
-    Array r = logspace(R_ES / 100, R_ES * 100, r_grid_num);
+    Array r = logspace(R_ES / 100, R_ES * 100, r_point_num);
     // Array r = linspace(R_ES / 100, R_ES * 50, r_grid_num);
-    Array theta = linspace(0, theta_j, theta_grid_num);
-    Array phi = linspace(0, 2 * con::pi, phi_grid_num);
+    Array theta = linspace(0, theta_j, theta_point_num);
+    Array phi = linspace(0, 2 * con::pi, phi_point_num);
     Coord coord{r, theta, phi};
 
     write2file(coord, prefix + "coord");
@@ -72,7 +72,7 @@ void afterglow_gen() {
     auto IC_spectrum = co_moving_spectrums(50, 1e4 * con::Hz, 1e43 * con::Hz, IC_ph[0]);
     write2file(IC_spectrum, prefix + "IC_spectrum");
 
-    auto n_specturm = co_moving_n_spectrum(50, 1, 1e9, syn_e_IC_KN[0]);
+    auto n_specturm = co_moving_n_spectrums(50, 1, 1e9, syn_e_IC_KN[0]);
     write2file(n_specturm, prefix + "n_spectrum");
 
     Observer obs;

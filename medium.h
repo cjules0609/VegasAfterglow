@@ -13,13 +13,10 @@ class Medium {
     double eps_B{0.01};
     double zeta{1};
     double xi{1};
-    // double p{2.3};
     Profile rho;
     Profile mass;
 };
 
 Medium create_ISM(double n_ism, double eps_e, double eps_B);
-// double co_moving_B(double eps_B, double Gamma, double rho);
-// MeshGrid co_moving_B(Coord const& coord, Shock const& shock, Medium const& medium);
 
 #endif

@@ -34,24 +34,34 @@ size_t get_regime(double a, double c, double m) {
     return 0;
 }
 
+inline double fast_pow(double a, double b) {
+    union {
+        double d;
+        int x[2];
+    } u = {a};
+    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+    u.x[0] = 0;
+    return u.d;
+}
+
 double SynElectrons::n_(double gamma) const {
     switch (regime) {
         case 1:
             if (gamma <= gamma_m) {
                 return 0;
             } else if (gamma <= gamma_c) {
-                return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) / gamma_m;
             } else {
-                return (p - 1) * pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
             }
             break;
         case 2:
             if (gamma <= gamma_m) {
                 return 0;
             } else if (gamma <= gamma_c) {
-                return (p - 1) * pow(gamma / gamma_m, -p) / gamma_m;
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) / gamma_m;
             } else {
-                return (p - 1) * pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
             }
             break;
         case 3:
@@ -60,7 +70,7 @@ double SynElectrons::n_(double gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);
             } else {
-                return gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
         case 4:
@@ -69,33 +79,26 @@ double SynElectrons::n_(double gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);
             } else {
-                return gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
         case 5:
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
-                return (p - 1) * gamma_c / (gamma * gamma_m) * pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
         case 6:
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
-                return pow(gamma_m, p - 1) * gamma_c * pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
+                return fast_pow(gamma_m, p - 1) * gamma_c * fast_pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
             }
             break;
         default:
             return 0;
     }
-    /*if (order(gamma_a, gamma_m, gamma_c)) {
-    } else if (order(gamma_m, gamma_a, gamma_c)) {
-    } else if (order(gamma_a, gamma_c, gamma_m)) {
-    } else if (order(gamma_c, gamma_a, gamma_m)) {
-    } else if (order(gamma_m, gamma_c, gamma_a)) {
-    } else if (order(gamma_c, gamma_m, gamma_a)) {
-    }*/
 }
 
 double SynPhotons::j_nu(double nu) const { return j_nu_peak * j_nu_(nu); }
@@ -108,20 +111,20 @@ double SynPhotons::j_nu_(double nu) const {
             } else if (nu <= nu_m) {
                 return cbrt(nu / nu_m);
             } else if (nu <= nu_c) {
-                return pow(nu / nu_m, -(p - 1) / 2);
+                return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 2:
             if (nu <= nu_m) {
-                return pow(nu_m / nu_a, (p + 4) / 2) * (nu * nu) / (nu_m * nu_m);
+                return fast_pow(nu_m / nu_a, (p + 4) / 2) * (nu / nu_m) * (nu / nu_m);
             } else if (nu <= nu_a) {
-                return pow(nu_a / nu_m, -(p - 1) / 2) * pow(nu / nu_a, 5. / 2);
+                return fast_pow(nu_a / nu_m, -(p - 1) / 2) * fast_pow(nu / nu_a, 5. / 2);
             } else if (nu <= nu_c) {
-                return pow(nu / nu_m, -(p - 1) / 2);
+                return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 3:
@@ -132,7 +135,7 @@ double SynPhotons::j_nu_(double nu) const {
             } else if (nu <= nu_m) {
                 return sqrt(nu_c / nu);
             } else {
-                return sqrt(nu_c / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 4:
@@ -143,36 +146,29 @@ double SynPhotons::j_nu_(double nu) const {
                 return R * sqrt(nu_a / nu);
             } else {
                 double R = sqrt(nu_c / nu_a) / 3;
-                return R * sqrt(nu_a / nu_m) * pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return R * sqrt(nu_a / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                double R = (p - 1) / 3 * sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2);
-                return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                double R = (p - 1) / 3 * sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2);
+                return R * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                double R = sqrt(nu_c / nu_a) * pow(nu_m / nu_a, (p - 1) / 2) / 3;
-                return R * pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                double R = sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2) / 3;
+                return R * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
             }
             break;
 
         default:
             break;
     }
-    /*if (order(nu_a, nu_m, nu_c)) {
-    } else if (order(nu_m, nu_a, nu_c)) {
-    } else if (order(nu_a, nu_c, nu_m)) {
-    } else if (order(nu_c, nu_a, nu_m)) {
-    } else if (order(nu_m, nu_c, nu_a)) {
-    } else if (order(nu_c, nu_m, nu_a)) {
-    }*/
 }
 
 double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p) {
@@ -200,8 +196,8 @@ double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double
     if (p > 2) {
         gamma_m = (p - 2) / (p - 1) * gamma_bar;
     } else if (p < 2) {
-        gamma_m = pow((2 - p) / (p - 1) * gamma_bar * pow(gamma_M, p - 1),
-                      1 / (p - 1));  // need to check in non-relativistic limit
+        // need to check in non-relativistic limit
+        gamma_m = pow((2 - p) / (p - 1) * gamma_bar * pow(gamma_M, p - 1), 1 / (p - 1));
     } else {
         gamma_m = root_bisection(
             [=](double x) -> double { return (x * log(gamma_M) - (x + 1) * log(x) - gamma_bar - log(gamma_M)); }, 1,
@@ -216,8 +212,8 @@ double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double
 
 double syn_gamma_c(double t_com, double B, double Y_tilt) {
     // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
-    double A = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
-    double gamma_c = (A + sqrt(A * A + 4)) / 2;
+    double gamma_bar = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
+    double gamma_c = (gamma_bar + sqrt(gamma_bar * gamma_bar + 4)) / 2;
 
     return gamma_c;
 }
@@ -229,13 +225,12 @@ double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, do
 
     double kT = (gamma_peak - 1) * con::me * con::c2 * (gamma_eos - 1);
     // 2kT(nv_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
-    double nu_a = pow(I_syn_peak * con::c2 / pow(nu_peak, 1. / 3) / kT / 2, 3. / 5);
+    double nu_a = pow(I_syn_peak * con::c2 / cbrt(nu_peak) / kT / 2, 3. / 5);
 
     // the nu_peak is not the real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(gamma_eos-1), I_syn = I_peak;
     if (fabs(gamma_peak - 1) < 1e-6 || nu_a > nu_peak) {
-        /*nu_a = pow(I_syn_peak / con::me / 2 / (gamma_eos - 1) /
-                       sqrt(4 * con::pi / 3 * con::me * con::c / con::e / B),
-                   2.0 / 5);*/ //this works only for gamma >> 1
+        /*nu_a = pow(I_syn_peak / con::me / 2 / (gamma_eos - 1) / sqrt(4 * con::pi / 3 * con::me * con::c / con::e /
+         * B),2.0 / 5);*/ //this works only for gamma >> 1
         double nu_M = syn_nu(gamma_M, B);
         double A = sqrt(4 * con::pi / 3 * con::me * con::c / con::e / B);
         double B = I_syn_peak / (2 * con::me * (gamma_eos - 1));
