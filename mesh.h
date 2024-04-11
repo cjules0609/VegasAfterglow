@@ -6,11 +6,13 @@
 #include <vector>
 
 using MeshGrid = std::vector<std::vector<double>>;
+
 using MeshGrid3d = std::vector<std::vector<std::vector<double>>>;
 
 using Array = std::vector<double>;
 
 using Profile = std::function<double(double)>;
+
 using Profile2d = std::function<double(double, double)>;
 
 Array linspace(double start, double end, size_t num);
@@ -39,11 +41,10 @@ Array boundary2centerlog(Array const& boundary);
 
 class Coord {
    public:
-    Coord(Array const& r_b, Array const& theta_b, Array const& phi_b) : r_b(r_b), theta_b(theta_b), phi_b(phi_b) {
-        r = boundary2centerlog(r_b);
-        theta = boundary2center(theta_b);
-        phi = boundary2center(phi_b);
-    }
+    Coord(Array const& r_b, Array const& theta_b, Array const& phi_b);
+
+    Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num);
+
     Coord() = delete;
     Array r_b;
     Array theta_b;

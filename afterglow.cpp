@@ -22,15 +22,14 @@ void afterglow_gen() {
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t r_point_num = 500;
-    size_t theta_point_num = 30;
-    size_t phi_point_num = 37;
+    size_t r_num = 500;
+    size_t theta_num = 30;
+    size_t phi_num = 37;
 
-    Array r = logspace(R_ES / 100, R_ES * 100, r_point_num);
-    // Array r = linspace(R_ES / 100, R_ES * 50, r_grid_num);
-    Array theta = linspace(0, theta_j, theta_point_num);
-    Array phi = linspace(0, 2 * con::pi, phi_point_num);
-    Coord coord{r, theta, phi};
+    double r_min = R_ES / 100;
+    double r_max = R_ES * 100;
+
+    Coord coord{r_min, r_max, theta_j, r_num, theta_num, phi_num};
 
     write2file(coord, prefix + "coord");
 
@@ -57,12 +56,6 @@ void afterglow_gen() {
     write2file(syn_ph_IC_KN, prefix + "syn_ICKN");
     write2file(syn_e_IC_KN, prefix + "electron_ICKN");
     write2file(Y_eff, prefix + "Y_ICKN");
-
-    /*auto IC_phs = gen_IC_photons(syn_e, syn_ph, shock_f);
-    size_t k = 400;
-    ICPhotons IC_ph.gen(syn_e[0][k], syn_ph[0][k], shock_f.D_com[0][k]);
-    auto spectrum = co_moving_spectrum(100, 1e5 * con::Hz, 1e40 * con::Hz, IC_ph, syn_ph[0][k]);
-    write2file(spectrum, prefix + "spectrum");*/
 
     auto IC_ph = gen_IC_photons(syn_e_IC_KN, syn_ph_IC_KN, shock_f);
 
