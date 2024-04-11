@@ -5,6 +5,7 @@
 
 #include "macros.h"
 #include "utilities.h"
+
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size) {
     return SynPhotonsMesh(theta_size, SynPhotonsArray(r_size));
 }

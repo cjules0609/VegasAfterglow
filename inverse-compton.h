@@ -10,31 +10,6 @@
 #include "shock.h"
 #include "synchrotron.h"
 #include "utilities.h"
-/*
-struct ICPhoton {
-    double I_nu_peak{0};
-    double nu_E_peak{0};
-
-    double nu_mm{0};
-    double nu_mc{0};
-    double nu_ma{0};
-
-    double nu_cm{0};
-    double nu_cc{0};
-    double nu_ca{0};
-
-    double nu_am{0};
-    double nu_ac{0};
-    double nu_aa{0};
-
-    double p{2.3};
-
-    double I_nu(double nu) const;
-
-   private:
-    inline double I_nu_(double nu) const;
-};
-*/
 
 inline const double IC_x0 = sqrt(2) / 3;
 
@@ -92,9 +67,6 @@ struct ICPhoton {
 
         for (size_t i = 0; i < grid.num; i++) {
             grid.j_syn[i] = ph.j_nu(grid.x[i]);
-        }
-
-        for (size_t i = 0; i < grid.num; i++) {
             grid.ns[i] = e.n(grid.y[i]);
         }
 
@@ -121,7 +93,7 @@ struct ICPhoton {
                 double nu0_ = grid.x[i];
                 for (size_t j = 0; j < grid.num; ++j) {
                     double gamma_ = grid.y[j];
-                    if (nu0_ < nu_IC_[k] && nu_IC_[k] < 4 * gamma_ * gamma_ * nu0_ * IC_x0) {
+                    if (nu0_ <= nu_IC_[k] && nu_IC_[k] <= 4 * gamma_ * gamma_ * nu0_ * IC_x0) {
                         j_nu_[k] += grid.I0[i][j] * nu_IC_[k];
                     }
                 }
