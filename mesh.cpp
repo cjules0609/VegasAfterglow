@@ -1,6 +1,7 @@
 #include "mesh.h"
 
 #include <cmath>
+
 Array linspace(double start, double end, size_t num) {
     Array result(num);
     double step = (end - start) / (num - 1);

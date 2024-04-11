@@ -1,6 +1,7 @@
 #ifndef _MESHES_
 #define _MESHES_
 
+#include <cmath>
 #include <functional>
 #include <vector>
 
@@ -25,16 +26,6 @@ MeshGrid create_grid(size_t theta_size, size_t r_size, double val = 0);
 double min(MeshGrid const& grid);
 
 double max(MeshGrid const& grid);
-
-template <typename... MeshGrid>
-double min(MeshGrid const&... grids) {
-    return std::min(min(grids...));
-}
-
-template <typename... MeshGrid>
-double max(MeshGrid const&... grids) {
-    return std::max(max(grids...));
-}
 
 MeshGrid create_grid_like(MeshGrid const& grid, double val = 0);
 
@@ -62,4 +53,46 @@ class Coord {
     Array phi;
 };
 
+template <typename... MeshGrid>
+double min(MeshGrid const&... grids) {
+    return std::min(min(grids...));
+}
+
+template <typename... MeshGrid>
+double max(MeshGrid const&... grids) {
+    return std::max(max(grids...));
+}
+
+template <typename Arr>
+void linspace(double start, double end, Arr& result) {
+    size_t num = result.size();
+    double step = (end - start) / (num - 1);
+    for (size_t i = 0; i < num; i++) {
+        result[i] = start + i * step;
+    }
+}
+
+template <typename Arr>
+void logspace(double start, double end, Arr& result) {
+    size_t num = result.size();
+    double log_start = std::log(start);
+    double log_end = std::log(end);
+    double step = (log_end - log_start) / (num - 1);
+    for (size_t i = 0; i < num; i++) {
+        result[i] = std::exp(log_start + i * step);
+    }
+}
+
+template <typename Arr1, typename Arr2>
+void boundary2center(Arr1 const& boundary, Arr2& center) {
+    for (size_t i = 0; i < center.size(); ++i) {
+        center[i] = 0.5 * (boundary[i] + boundary[i + 1]);
+    }
+}
+template <typename Arr1, typename Arr2>
+void boundary2centerlog(Arr1 const& boundary, Arr2& center) {
+    for (size_t i = 0; i < center.size(); ++i) {
+        center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
+    }
+}
 #endif

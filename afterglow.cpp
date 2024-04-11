@@ -77,7 +77,7 @@ void afterglow_gen() {
 
     Observer obs;
 
-    double theta_obs = 0 * con::deg;
+    double theta_obs = 15 * con::deg;
     double z = 0.003;
     obs.observe(coord, shock_f, theta_obs, z);
     write2file(obs.t_obs, prefix + "t_obs");

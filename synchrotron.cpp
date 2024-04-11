@@ -42,6 +42,7 @@ inline double fast_pow(double a, double b) {
     u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
     u.x[0] = 0;
     return u.d;
+    // return pow(a, b);
 }
 
 double SynElectrons::n_(double gamma) const {

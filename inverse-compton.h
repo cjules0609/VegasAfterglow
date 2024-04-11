@@ -1,5 +1,6 @@
 #ifndef _INVERSECOMPTON_
 #define _INVERSECOMPTON_
+#include <array>
 #include <cmath>
 #include <vector>
 
@@ -49,6 +50,30 @@ inline double compton_sigma(double nu) {
                 (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
     }
 }
+
+struct IntegratorGrid {
+    IntegratorGrid(double x_min, double x_max, double y_min, double y_max)
+        : x_min(x_min), x_max(x_max), y_min(y_min), y_max(y_max) {
+        logspace(x_min, x_max, x_bin);
+        logspace(y_min, y_max, y_bin);
+        boundary2center(x_bin, x);
+        boundary2center(y_bin, y);
+    }
+
+    double x_min;
+    double x_max;
+    double y_min;
+    double y_max;
+    static constexpr size_t num{80};
+    std::array<double, num + 1> x_bin{0};
+    std::array<double, num + 1> y_bin{0};
+    std::array<double, num> x{0};
+    std::array<double, num> y{0};
+    std::array<double, num> j_syn{0};
+    std::array<double, num> ns{0};
+    std::array<std::array<double, num>, num> I0{0};
+};
+
 struct ICPhoton {
     ICPhoton() = default;
 
@@ -59,52 +84,45 @@ struct ICPhoton {
 
         double nu0_max = ph.nu_M * 10;
         double nu0_min = nu_ph_min / 1e5;
-        Array nu0_bin = logspace(nu0_min, nu0_max, integral_resol + 1);
-        Array nu0 = boundary2center(nu0_bin);
 
         double gamma_min = e.gamma_N_peak;
         double gamma_max = e.gamma_M * 10;
-        Array gamma_bin = logspace(gamma_min, gamma_max, integral_resol + 1);
-        Array gamma = boundary2center(gamma_bin);
 
-        this->nu_min = 4 * gamma_min * gamma_min * nu0_min;
-        this->nu_max = 4 * gamma_max * gamma_max * nu0_max;
+        IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
 
-        MeshGrid I0 = create_grid(nu0.size(), gamma.size(), 0);
-
-        Array j_syn = Array(nu0.size(), 0);
-        Array ns = Array(gamma.size(), 0);
-
-        for (size_t i = 0; i < nu0.size(); i++) {
-            j_syn[i] = ph.j_nu(nu0[i]);
+        for (size_t i = 0; i < grid.num; i++) {
+            grid.j_syn[i] = ph.j_nu(grid.x[i]);
         }
 
-        for (size_t i = 0; i < gamma.size(); i++) {
-            ns[i] = e.n(gamma[i]);
+        for (size_t i = 0; i < grid.num; i++) {
+            grid.ns[i] = e.n(grid.y[i]);
         }
 
-        for (size_t i = 0; i < nu0.size(); ++i) {
-            double nu0_ = nu0[i];
-            double dnu = nu0_bin[i + 1] - nu0_bin[i];
-            for (size_t j = 0; j < gamma.size(); ++j) {
-                double gamma_ = gamma[j];
-                double dgamma = gamma_bin[j + 1] - gamma_bin[j];
+        for (size_t i = 0; i < grid.num; ++i) {
+            double nu0_ = grid.x[i];
+            double dnu = grid.x_bin[i + 1] - grid.x_bin[i];
+            for (size_t j = 0; j < grid.num; ++j) {
+                double gamma_ = grid.y[j];
+                double dgamma = grid.y_bin[j + 1] - grid.y_bin[j];
                 double dS = fabs(dnu * dgamma);
                 double f = 4 * gamma_ * gamma_ * nu0_ * nu0_;
-                I0[i][j] = compton_sigma(nu0_ / gamma_) * ns[j] * j_syn[i] * dS / f;
+                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * compton_sigma(nu0_ / gamma_);
             }
         }
+
+        double nu_min = 4 * gamma_min * gamma_min * nu0_min;
+        double nu_max = 4 * gamma_max * gamma_max * nu0_max;
 
         nu_IC_ = logspace(nu_min, nu_max, spectrum_resol);
         j_nu_ = Array(spectrum_resol, 0);
 
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
-            for (size_t i = 0; i < nu0.size(); ++i) {
-                double nu0_ = nu0[i];
-                for (size_t j = 0; j < gamma.size(); ++j) {
-                    double gamma_ = gamma[j];
+            for (size_t i = 0; i < grid.num; ++i) {
+                double nu0_ = grid.x[i];
+                for (size_t j = 0; j < grid.num; ++j) {
+                    double gamma_ = grid.y[j];
                     if (nu0_ < nu_IC_[k] && nu_IC_[k] < 4 * gamma_ * gamma_ * nu0_ * IC_x0) {
-                        j_nu_[k] += I0[i][j] * nu_IC_[k];
+                        j_nu_[k] += grid.I0[i][j] * nu_IC_[k];
                     }
                 }
             }
@@ -118,17 +136,15 @@ struct ICPhoton {
     double j_nu(double nu) const;
 
    public:
+    static constexpr size_t spectrum_resol{50};
+
+   private:
     Array j_nu_;
     Array nu_IC_;
-    double nu_max;
-    double nu_min;
-    double gamma_max;
-    double gamma_min;
-    size_t integral_resol{80};
-    size_t spectrum_resol{50};
 };
 
 using ICPhotonArray = std::vector<ICPhoton>;
+
 using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
 
 ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
