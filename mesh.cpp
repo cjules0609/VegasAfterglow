@@ -36,13 +36,12 @@ Coord::Coord(Array const& r_b, Array const& theta_b, Array const& phi_b) : r_b(r
 }
 
 Coord::Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num)
-    : r_b(linspace(r_min, r_max, r_num + 1)),
+    : r_b(logspace(r_min, r_max, r_num + 1)),
       theta_b(linspace(0, theta_max, theta_num + 1)),
-      phi_b(linspace(0, 2 * con::pi, phi_num + 1)) {
-    r = boundary2centerlog(r_b);
-    theta = boundary2center(theta_b);
-    phi = boundary2center(phi_b);
-}
+      phi_b(linspace(0, 2 * con::pi, phi_num + 1)),
+      r(boundary2centerlog(r_b)),
+      theta(boundary2center(theta_b)),
+      phi(boundary2center(phi_b)) {}
 
 double min(MeshGrid const& grid) {
     double min = grid[0][0];

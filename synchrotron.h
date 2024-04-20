@@ -45,13 +45,11 @@ SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size);
 
 SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size);
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium);
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock);
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium,
-                                   MeshGrid const& Y_tilt);
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt);
 
-SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock,
-                               Medium const& medium);
+SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock);
 
 double syn_gamma_c(double t_com, double B, double Y_tilt);
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);

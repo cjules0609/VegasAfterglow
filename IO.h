@@ -1,7 +1,7 @@
 #ifndef _IO_H_
 #define _IO_H_
 
-#include "forward-shock.h"
+#include "shock.h"
 #include "mesh.h"
 #include "synchrotron.h"
 void print_array(Array const& arr);

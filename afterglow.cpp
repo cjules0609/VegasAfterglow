@@ -32,27 +32,26 @@ void afterglow_gen() {
     Coord coord{r_min, r_max, theta_j, r_num, theta_num, phi_num};
 
     write2file(coord, prefix + "coord");
-
     // solve dynamics
-    auto shock_f = gen_forward_shock(coord, jet, medium);
+    auto [shock_r, shock_f] = gen_shocks(coord, jet, medium);
     write2file(shock_f, prefix + "shock");
 
-    auto syn_e = gen_syn_electrons(p, coord, shock_f, medium);
-    auto syn_ph = gen_syn_photons(syn_e, coord, shock_f, medium);
+    auto syn_e = gen_syn_electrons(p, coord, shock_f);
+    auto syn_ph = gen_syn_photons(syn_e, coord, shock_f);
     write2file(syn_ph, prefix + "syn");
 
     auto Y_eff = create_grid_like(shock_f.Gamma, 0);
     write2file(Y_eff, prefix + "Y");
 
     Y_eff = solve_IC_Y_Thomson(syn_e, shock_f, medium);
-    auto syn_e_IC = gen_syn_electrons(p, coord, shock_f, medium, Y_eff);
-    auto syn_ph_IC = gen_syn_photons(syn_e_IC, coord, shock_f, medium);
+    auto syn_e_IC = gen_syn_electrons(p, coord, shock_f, Y_eff);
+    auto syn_ph_IC = gen_syn_photons(syn_e_IC, coord, shock_f);
     write2file(syn_ph_IC, prefix + "syn_IC");
     write2file(Y_eff, prefix + "Y_IC");
 
     Y_eff = solve_IC_Y_KN(syn_e, shock_f, medium);
-    auto syn_e_IC_KN = gen_syn_electrons(p, coord, shock_f, medium, Y_eff);
-    auto syn_ph_IC_KN = gen_syn_photons(syn_e_IC_KN, coord, shock_f, medium);
+    auto syn_e_IC_KN = gen_syn_electrons(p, coord, shock_f, Y_eff);
+    auto syn_ph_IC_KN = gen_syn_photons(syn_e_IC_KN, coord, shock_f);
     write2file(syn_ph_IC_KN, prefix + "syn_ICKN");
     write2file(syn_e_IC_KN, prefix + "electron_ICKN");
     write2file(Y_eff, prefix + "Y_ICKN");
@@ -70,7 +69,7 @@ void afterglow_gen() {
 
     Observer obs;
 
-    double theta_obs = 15 * con::deg;
+    double theta_obs = 0 * con::deg;
     double z = 0.003;
     obs.observe(coord, shock_f, theta_obs, z);
     write2file(obs.t_obs, prefix + "t_obs");

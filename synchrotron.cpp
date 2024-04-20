@@ -36,14 +36,14 @@ size_t get_regime(double a, double c, double m) {
 }
 
 inline double fast_pow(double a, double b) {
-    union {
-        double d;
-        int x[2];
-    } u = {a};
-    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
-    return u.d;
-    // return pow(a, b);
+    /* union {
+         double d;
+         int x[2];
+     } u = {a};
+     u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+     u.x[0] = 0;
+     return u.d;*/
+    return pow(a, b);
 }
 
 double SynElectrons::n_(double gamma) const {
@@ -173,8 +173,8 @@ double SynPhotons::j_nu_(double nu) const {
     }
 }
 
-double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p) {
-    return (p - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2) * 4 * Gamma * (rho / con::mp) * xi / (4 * con::pi);
+double syn_j_nu_peak(double B, double n_e, double p) {
+    return (p - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2) * n_e / (4 * con::pi);
 }
 
 double syn_nu(double gamma, double B) {
@@ -280,54 +280,51 @@ double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c) {
 
 double syn_gamma_N_peak(SynElectrons const& e) { return syn_gamma_N_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium,
-                                   MeshGrid const& Y_tilt) {
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double r = coord.r[k];
             double dcos = std::fabs(cos(coord.theta_b[j + 1]) - cos(coord.theta_b[j]));
-            double rho = medium.rho(r);
             double Gamma = shock.Gamma[j][k];
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
             double D_com = shock.D_com[j][k];
+            double n_e = shock.n_p[j][k] * shock.xi;
             double Y = Y_tilt[j][k];
 
-            double I_nu_peak = syn_j_nu_peak(r, Gamma, B, rho, medium.xi, p) * D_com;
-            e[j][k].gamma_M = syn_gamma_M(B, medium.zeta, Y);
-            e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, medium.eps_e, medium.xi, p);
+            double I_nu_peak = syn_j_nu_peak(B, n_e, p) * D_com;
+            e[j][k].gamma_M = syn_gamma_M(B, shock.zeta, Y);
+            e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, shock.eps_e, shock.xi, p);
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
             e[j][k].regime = get_regime(e[j][k].gamma_a, e[j][k].gamma_c, e[j][k].gamma_m);
             e[j][k].p = p;
-            e[j][k].n_tot = 4 * Gamma * (rho / con::mp) * medium.xi;  // co-moving frame electron number density
-            //*r* r*(D_com * Gamma) * dcos / (2 * con::pi) * medium.xi;
+            e[j][k].n_tot = n_e;
             e[j][k].gamma_N_peak = syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
         }
     }
     return e;
 }
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, Medium const& medium) {
+SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     MeshGrid Y_tilt = create_grid_like(shock.Gamma, 0);
-    return gen_syn_electrons(p, coord, shock, medium, Y_tilt);
+    return gen_syn_electrons(p, coord, shock, Y_tilt);
 }
 
-SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock,
-                               Medium const& medium) {
+SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock) {
     SynPhotonsMesh ph = create_syn_photons_grid(coord.theta.size(), coord.r.size());
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double r = coord.r[k];
-            double rho = medium.rho(r);
+            double n_e = shock.n_p[j][k] * shock.xi;
             double Gamma = shock.Gamma[j][k];
             double B = shock.B[j][k];
 
-            ph[j][k].j_nu_peak = syn_j_nu_peak(r, Gamma, B, rho, medium.xi, e[j][k].p);
+            ph[j][k].j_nu_peak = syn_j_nu_peak(B, n_e, e[j][k].p);
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
             ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);
