@@ -53,7 +53,7 @@ struct ICPhoton {
     ICPhoton() = default;
 
     template <typename Electrons, typename Photons>
-    void gen(Electrons const& e, Photons const& ph, double D_com) {
+    void gen(Electrons const& e, Photons const& ph, double D) {
         double gamma_e_min = std::min(e.gamma_m, std::min(e.gamma_c, e.gamma_a));
         double nu_ph_min = std::min(ph.nu_m, std::min(ph.nu_c, ph.nu_a));
 
@@ -66,7 +66,7 @@ struct ICPhoton {
         IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
 
         for (size_t i = 0; i < grid.num; i++) {
-            grid.j_syn[i] = ph.j_nu(grid.x[i]);
+            grid.j_syn[i] = ph.L_nu(grid.x[i]);
             grid.ns[i] = e.n(grid.y[i]);
         }
 
@@ -101,11 +101,11 @@ struct ICPhoton {
         }
 
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
-            j_nu_[k] *= D_com;
+            j_nu_[k] *= D;
         }
     };
 
-    double j_nu(double nu) const;
+    double L_nu(double nu) const;
 
    public:
     static constexpr size_t spectrum_resol{50};

@@ -12,7 +12,7 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size) {
 
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
-double ICPhoton::j_nu(double nu) const { return logscale_interp_extrap_eq_spaced(nu, this->nu_IC_, this->j_nu_); }
+double ICPhoton::L_nu(double nu) const { return logscale_interp_extrap_eq_spaced(nu, this->nu_IC_, this->j_nu_); }
 
 inline double eta_rad(double gamma_m, double gamma_c, double p) {
     return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - p));
@@ -88,14 +88,14 @@ void gen_IC_photons_(ICPhotonArray& IC_ph, SynElectronsArray const& e, SynPhoton
 }
 
 ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph, Shock const& shock) {
-    ICPhotonMesh IC_ph = create_IC_photon_grid(shock.D_com.size(), shock.D_com[0].size());
+    ICPhotonMesh IC_ph = create_IC_photon_grid(shock.width.size(), shock.width[0].size());
 
     // multithreading acceleration
     std::vector<std::thread> thread;
     thread.reserve(IC_ph.size());
     for (size_t j = 0; j < IC_ph.size(); ++j) {
         thread.emplace_back(gen_IC_photons_, std::ref(IC_ph[j]), std::cref(e[j]), std::cref(ph[j]),
-                            std::cref(shock.D_com[j]));
+                            std::cref(shock.width[j]));
     }
 
     for (size_t j = 0; j < thread.size(); ++j) {

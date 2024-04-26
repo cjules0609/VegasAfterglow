@@ -13,9 +13,9 @@ class Shock {
     Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta);
     MeshGrid t_com;
     MeshGrid Gamma;
-    MeshGrid B;
-    MeshGrid D_com;  // co-moving shock width
-    MeshGrid n_p;
+    MeshGrid B;      // comoving magnetic field
+    MeshGrid width;  // comoving frame shock width
+    MeshGrid n_p;    // n2
     double eps_e;
     double eps_B;
     double xi;
@@ -40,9 +40,9 @@ class BlastWaveEqn {
 
     inline double dtdr_com(double Gamma);  // co-moving time
 
-    inline double dxdr_com(double r, double Gamma, double D_com, double t_eng);  // co-moving reverse shock width
+    inline double dDdr_RS(double r, double Gamma, double D_com, double t_eng);  // lab frame reverse shock width
 
-    inline double dDdr_com(double Gamma);  // co-moving shell width
+    inline double dDdr_FS(double Gamma);  // lab frame shell width
 
    private:
     double theta_lo;

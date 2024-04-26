@@ -43,7 +43,7 @@ void write2file(Shock const& shock, std::string const& filename) {
         for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
             file << shock.Gamma[j][k] << " ";
             file_B << shock.B[j][k] << " ";
-            file_D_com << shock.D_com[j][k] << " ";
+            file_D_com << shock.width[j][k] << " ";
             file_t_com << shock.t_com[j][k] << " ";
         }
         file << '\n';
@@ -62,7 +62,7 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_nu_M(filename + "_nu_Max.txt");
     for (size_t i = 0; i < syn_rad.size(); ++i) {
         for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_I_peak << syn_rad[i][j].j_nu_peak << " ";
+            file_I_peak << syn_rad[i][j].L_nu_peak << " ";
             file_nu_peak << syn_rad[i][j].nu_E_peak << " ";
             file_nu_m << syn_rad[i][j].nu_m << " ";
             file_nu_c << syn_rad[i][j].nu_c << " ";
@@ -87,7 +87,7 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_gamma_M(filename + "_gamma_Max.txt");
     for (size_t i = 0; i < syn_rad.size(); ++i) {
         for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_n_tot << syn_rad[i][j].n_tot << " ";
+            file_n_tot << syn_rad[i][j].N_tot << " ";
             file_gamma_peak << syn_rad[i][j].gamma_N_peak << " ";
             file_gamma_m << syn_rad[i][j].gamma_m << " ";
             file_gamma_c << syn_rad[i][j].gamma_c << " ";

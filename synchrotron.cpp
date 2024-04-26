@@ -14,7 +14,9 @@ SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size) {
     return SynElectronsMesh(theta_size, SynElectronsArray(r_size));
 }
 
-double SynElectrons::n(double gamma) const { return n_tot * n_(gamma); }
+double SynElectrons::N(double gamma) const { return N_tot * gamma_spectrum_(gamma); }
+
+double SynElectrons::n(double gamma) const { return n_tot * gamma_spectrum_(gamma); }
 
 inline bool order(double a, double b, double c) { return a <= b && b <= c; };
 
@@ -46,7 +48,7 @@ inline double fast_pow(double a, double b) {
     return pow(a, b);
 }
 
-double SynElectrons::n_(double gamma) const {
+double SynElectrons::gamma_spectrum_(double gamma) const {
     switch (regime) {
         case 1:
             if (gamma <= gamma_m) {
@@ -103,9 +105,9 @@ double SynElectrons::n_(double gamma) const {
     }
 }
 
-double SynPhotons::j_nu(double nu) const { return j_nu_peak * j_nu_(nu); }
+double SynPhotons::L_nu(double nu) const { return L_nu_peak * spectrum_(nu); }
 
-double SynPhotons::j_nu_(double nu) const {
+double SynPhotons::spectrum_(double nu) const {
     switch (regime) {
         case 1:
             if (nu <= nu_a) {
@@ -173,9 +175,8 @@ double SynPhotons::j_nu_(double nu) const {
     }
 }
 
-double syn_j_nu_peak(double B, double n_e, double p) {
-    return (p - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2) * n_e / (4 * con::pi);
-}
+// single electron power in the co-moving frame
+double syn_p_nu_peak(double B, double p) { return (p - 1) / 2 * sqrt(3) * con::e3 * B / (con::me * con::c2); }
 
 double syn_nu(double gamma, double B) {
     double nu = 3 * con::e * B / (4 * con::pi * con::me * con::c) * gamma * gamma;
@@ -287,21 +288,23 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double r = coord.r[k];
             double dcos = std::fabs(cos(coord.theta_b[j + 1]) - cos(coord.theta_b[j]));
+            double dS = 2 * con::pi * r * r * dcos;
             double Gamma = shock.Gamma[j][k];
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
-            double D_com = shock.D_com[j][k];
+            double D = shock.width[j][k];
             double n_e = shock.n_p[j][k] * shock.xi;
             double Y = Y_tilt[j][k];
 
-            double I_nu_peak = syn_j_nu_peak(B, n_e, p) * D_com;
+            e[j][k].n_tot = n_e;
+            e[j][k].N_tot = n_e * dS * D;
+            double I_nu_peak = syn_p_nu_peak(B, p) * e[j][k].N_tot / dS / (4 * con::pi);
             e[j][k].gamma_M = syn_gamma_M(B, shock.zeta, Y);
             e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, shock.eps_e, shock.xi, p);
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
             e[j][k].regime = get_regime(e[j][k].gamma_a, e[j][k].gamma_c, e[j][k].gamma_m);
             e[j][k].p = p;
-            e[j][k].n_tot = n_e;
             e[j][k].gamma_N_peak = syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
         }
     }
@@ -319,12 +322,9 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            double r = coord.r[k];
-            double n_e = shock.n_p[j][k] * shock.xi;
-            double Gamma = shock.Gamma[j][k];
             double B = shock.B[j][k];
 
-            ph[j][k].j_nu_peak = syn_j_nu_peak(B, n_e, e[j][k].p);
+            ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot;
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
             ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);

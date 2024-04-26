@@ -9,7 +9,7 @@ Shock::Shock(Coord const& coord, double eps_e, double eps_B, double xi, double z
     : t_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
       Gamma(create_grid(coord.theta.size(), coord.r.size(), 1)),
       B(create_grid(coord.theta.size(), coord.r.size(), 0)),
-      D_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
+      width(create_grid(coord.theta.size(), coord.r.size(), 0)),
       n_p(create_grid(coord.theta.size(), coord.r.size(), 0)),
       eps_e{eps_e},
       eps_B{eps_B},
@@ -21,17 +21,18 @@ void co_moving_B(Shock& shock, Coord const& coord) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double eps_B = shock.eps_B;
             double Gamma = shock.Gamma[j][k];
-            double n_p = shock.n_p[j][k];
-            shock.B[j][k] = sqrt(8 * con::pi * eps_B * n_p * con::mp * (Gamma - 1)) * con::c;
+            double n_2 = shock.n_p[j][k];
+            shock.B[j][k] = sqrt(8 * con::pi * eps_B * n_2 * con::mp * (Gamma - 1)) * con::c;
         }
     }
 }
 
-void FS_co_moving_shock_width(Shock& shock, Coord const& coord) {
+// lab frame FS width
+void co_moving_FS_shock_width(Shock& shock, Coord const& coord) {
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double Gamma = shock.Gamma[j][k];
-            shock.D_com[j][k] = coord.r[k] / shock.Gamma[j][k];
+            shock.width[j][k] = coord.r[k] / shock.Gamma[j][k];
         }
     }
 }
@@ -56,17 +57,17 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
     double Gamma = y[0];
     double u = y[1];
     double t_eng = y[2];  // engine time
-    // double t_com = y[3];  // co-moving time
-    // double D_r = y[4];    // co-moving reverse shock width
-    double D_com = y[5];  // co-moving shell width
+    // double t_com = y[3];  // comoving time
+    // double D_RS = y[4];   // comoving frame reverse shock width
+    double D_FS = y[5];  // comoving frame forward shock width
 
     dydr[0] = dGammadr(r, Gamma, u, t_eng);
     dydr[1] = dUdr(r, Gamma, u, t_eng);
 
     dydr[2] = dtdr_eng(Gamma);
     dydr[3] = dtdr_com(Gamma);
-    dydr[4] = dxdr_com(r, Gamma, D_com, t_eng);
-    dydr[5] = dDdr_com(Gamma);
+    dydr[4] = dDdr_RS(r, Gamma, D_FS, t_eng);
+    dydr[5] = dDdr_FS(Gamma);
 };
 
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
@@ -94,24 +95,25 @@ double BlastWaveEqn::dtdr_eng(double Gamma) {
 
 double BlastWaveEqn::dtdr_com(double Gamma) { return 1 / (std::sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
 
-double BlastWaveEqn::dDdr_com(double Gamma) {
+double BlastWaveEqn::dDdr_FS(double Gamma) {
     double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
     double cs = con::c * std::sqrt(gamma_eos - 1);
-    return cs * dtdr_com(Gamma);
-};  // co-moving shell width
+    return 0;  // cs * dtdr_com(Gamma);
+};            
 
-double BlastWaveEqn::dxdr_com(double r, double Gamma, double D_com, double t_eng) {
-    double Gamma0 = jet.Gamma0(theta);
+double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng) {
+    /*double Gamma0 = jet.Gamma0(theta);
     double dM0 = jet.dEdOmega(theta, t_eng) / (jet.Gamma0(theta) * con::c2);
-    double n4 = dM0 / (r * r * D_com);
+    double n4 = dM0 / (r * r * D_com / Gamma);
     double n1 = medium.rho(r) / con::mp;
     double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
     double gamma34 = (Gamma / Gamma0 + Gamma0 / Gamma) / 2;
     double n3 = n4 * (gamma_eos * gamma34 + 1) / (gamma_eos - 1);
-    return 1 / (Gamma0 * Gamma * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));
-};  // co-moving reverse shock width
+    return 1 / (Gamma0 * Gamma * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));*/
+    return 0;
+};  
 
-void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_com, Array& x, double u0,
+void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_FS, Array& D_RS, double u0,
                         BlastWaveEqn const& eqn) {
     using namespace boost::numeric::odeint;
     double atol = 0;     // integrator absolute tolerance
@@ -141,8 +143,8 @@ void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_com
             // state[1]: u blast wave internal energy
             // state[2]: engine time
             t_com[i] = state[3];
-            x[i] = state[4];
-            D_com[i] = state[5];
+            D_RS[i] = state[4];
+            D_FS[i] = state[5];
         }
     }
 }
@@ -165,11 +167,11 @@ std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium co
 
         // initial internal energy
         double u0 = (Gamma0 - 1) * medium.mass(coord.r[0]) * dOmega / (4 * con::pi) * con::c2;
-        solve_single_shell(coord.r, shock_f.Gamma[i], shock_f.t_com[i], shock_f.D_com[i], shock_r.D_com[i], u0, eqn);
+        solve_single_shell(coord.r, shock_f.Gamma[i], shock_f.t_com[i], shock_f.width[i], shock_r.width[i], u0, eqn);
     }
     FS_n2(shock_f, coord, medium);
     co_moving_B(shock_f, coord);
-    FS_co_moving_shock_width(shock_f, coord);
+    co_moving_FS_shock_width(shock_f, coord);
 
     return std::make_pair(shock_r, shock_f);
 }
