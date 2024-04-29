@@ -27,7 +27,7 @@ void afterglow_gen() {
     size_t phi_num = 100;
 
     double r_min = R_ES / 100;
-    double r_max = R_ES * 100;
+    double r_max = R_ES * 1;
 
     Coord coord{r_min, r_max, theta_j, r_num, theta_num, phi_num};
 
@@ -72,7 +72,7 @@ void afterglow_gen() {
     double theta_obs = 30 * con::deg;
     double z = 0.003;
     obs.observe(coord, shock_f, theta_obs, z);
-    write2file(obs.t_obs, prefix + "t_obs");
+    write2file(obs.t_obs, prefix + "t_obs_grid");
     write2file(obs.doppler, prefix + "doppler");
 
     // specify observables
@@ -80,15 +80,17 @@ void afterglow_gen() {
                  1e19 * con::Hz, 1e20 * con::Hz, 1e21 * con::Hz, 1e22 * con::Hz, 1e23 * con::Hz,
                  1e24 * con::Hz, 1e25 * con::Hz, 1e26 * con::Hz, 1e27 * con::Hz, 1e28 * con::Hz};
 
-    size_t time_resol = 50;
+    Array t_bins = logspace(1 * con::sec, 1e6 * con::sec, 50);
 
-    MeshGrid F_nu_syn = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC_KN);
+    write2file(boundary2centerlog(t_bins), prefix + "t_obs", con::sec);
+
+    MeshGrid F_nu_syn = obs.gen_F_nu(t_bins, nu_obs, syn_ph_IC_KN);
     write2file(F_nu_syn, prefix + "F_nu_syn");
 
-    MeshGrid F_nu_IC = obs.gen_light_curve(time_resol, nu_obs, IC_ph);
+    MeshGrid F_nu_IC = obs.gen_F_nu(t_bins, nu_obs, IC_ph);
     write2file(F_nu_IC, prefix + "F_nu_IC");
 
-    MeshGrid F_nu_tot = obs.gen_light_curve(time_resol, nu_obs, IC_ph, syn_ph_IC_KN);
+    MeshGrid F_nu_tot = obs.gen_F_nu(t_bins, nu_obs, IC_ph, syn_ph_IC_KN);
     write2file(F_nu_tot, prefix + "F_nu_tot");
 }
 
@@ -96,6 +98,7 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
     // std::string prefix = "GCN36236/";
     // double E_iso = 1e53 * con::erg;
     // double Gamma0 = 300;
+    // std::cout << eVtoHz(0.3 * con::keV) / con::Hz << eVtoHz(10 * con::keV) / con::Hz << '\n';
     double n_ism = pow(10, -1.7) / con::cm / con::cm / con::cm;
     double eps_e = 0.01;
     double eps_B = pow(10, -3.7);
@@ -106,20 +109,26 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
     auto medium = create_ISM(n_ism, eps_e, eps_B);
     // auto inj = create_iso_power_law_injection(0 * con::erg / con::sec, 1000 * con::sec, 1 * con::sec, 2);
     // auto jet = create_tophat_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
-    //   auto blast = create_power_law_jet(E_iso, Gamma0, theta_j, 4, inj);
+    // auto blast = create_power_law_jet(E_iso, Gamma0, theta_j, 4, inj);
     auto jet = create_gaussian_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
 
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t r_num = 500;
+    size_t r_num = 400;
     size_t theta_num = 100;
-    size_t phi_num = 37;
+    size_t phi_num = 100;
 
     double r_min = R_ES / 100;
-    double r_max = R_ES * 50;
+    double r_max = R_ES * 200;
 
-    Coord coord{r_min, r_max, 0.6, r_num, theta_num, phi_num};
+    auto r = logspace(r_min, r_max, r_num);
+    auto theta = adaptive_theta_space(theta_num, jet.Gamma0);
+    // auto theta = linspace(0, con::pi / 2, theta_num);
+    auto phi = linspace(0, 2 * con::pi, phi_num);
+
+    // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
+    Coord coord{r, theta, phi};
     write2file(coord, prefix + "coord");
 
     // solve dynamics
@@ -143,27 +152,18 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
 
     obs.D_L = 1.23e26 * con::cm;
 
-    // write2file(obs.t_obs, prefix + "t_obs");
+    write2file(obs.t_obs, prefix + "t_obs_grid", con::sec);
+
     // write2file(obs.doppler, prefix + "doppler");
 
     // specify observables
+    Array t_bins = logspace(100 * con::sec, 1e9 * con::sec, 500);
+    size_t freq_resol = 10;
 
-    Array nu_obsb = logspace(7.25e16 * con::Hz, 2.4e18 * con::Hz, 10);
+    Array F_nu_syn = obs.gen_Flux(t_bins, eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), freq_resol, syn_ph_IC_KN);
+    write2file(F_nu_syn, prefix + "F_nu_syn", con::erg / con::sec / con::cm / con::cm);
 
-    Array nu_obs = boundary2centerlog(nu_obsb);
-
-    for (auto nu : nu_obs) {
-        std::cout << nu / con::Hz << '\n';
-    }
-
-    for (size_t i = 0; i < 10; ++i) {
-        std::cout << (nu_obsb[i + 1] - nu_obsb[i]) / con::Hz << '\n';
-    }
-
-    size_t time_resol = 50;
-
-    MeshGrid F_nu_syn = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC_KN);
-    write2file(F_nu_syn, prefix + "F_nu_syn");
+    write2file(boundary2centerlog(t_bins), prefix + "t_obs", con::sec);
 
     // auto IC_ph = gen_IC_photons(syn_e_IC_KN, syn_ph_IC_KN, shock_f);
     //  F_nu_syn = obs.gen_light_curve(time_resol, nu_obs, syn_ph_IC_KN, IC_ph);
@@ -196,6 +196,7 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
 }
 int main() {
     GCN36236("code-comp/", 1e53 * con::erg, 300, 0.088);
+
     //  GCN36236("GCN36236-2/", pow(10, 52.4) * con::erg, 300, 8.0 * con::deg);
     // afterglow_gen();
     return 0;

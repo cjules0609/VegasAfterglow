@@ -32,7 +32,11 @@ void co_moving_FS_shock_width(Shock& shock, Coord const& coord) {
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double Gamma = shock.Gamma[j][k];
-            shock.width[j][k] = coord.r[k] / shock.Gamma[j][k];
+            if (Gamma == 1) {
+                shock.width[j][k] = 0;
+            } else {
+                shock.width[j][k] = coord.r[k] / shock.Gamma[j][k];
+            }
         }
     }
 }
@@ -99,7 +103,7 @@ double BlastWaveEqn::dDdr_FS(double Gamma) {
     double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
     double cs = con::c * std::sqrt(gamma_eos - 1);
     return 0;  // cs * dtdr_com(Gamma);
-};            
+};
 
 double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng) {
     /*double Gamma0 = jet.Gamma0(theta);
@@ -111,7 +115,7 @@ double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng)
     double n3 = n4 * (gamma_eos * gamma34 + 1) / (gamma_eos - 1);
     return 1 / (Gamma0 * Gamma * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));*/
     return 0;
-};  
+};
 
 void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_FS, Array& D_RS, double u0,
                         BlastWaveEqn const& eqn) {

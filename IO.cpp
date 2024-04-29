@@ -2,6 +2,8 @@
 
 #include <fstream>
 #include <iostream>
+
+#include "macros.h"
 void print_array(Array const& arr) {
     for (auto const& a : arr) {
         std::cout << a << " ";
@@ -15,7 +17,7 @@ void write2file(Coord const& coord, std::string const& filename) {
     std::ofstream file_phi(filename + "_phi.txt");
 
     for (size_t i = 0; i < coord.r.size(); ++i) {
-        file_r << coord.r[i] << " ";
+        file_r << coord.r[i] / con::cm << " ";
     }
 
     file_r << std::endl;
@@ -42,9 +44,9 @@ void write2file(Shock const& shock, std::string const& filename) {
     for (size_t j = 0; j < shock.Gamma.size(); ++j) {
         for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
             file << shock.Gamma[j][k] << " ";
-            file_B << shock.B[j][k] << " ";
-            file_D_com << shock.width[j][k] << " ";
-            file_t_com << shock.t_com[j][k] << " ";
+            file_B << shock.B[j][k] << " ";  // TODO:add B unit
+            file_D_com << shock.width[j][k] / con::cm << " ";
+            file_t_com << shock.t_com[j][k] / con::sec << " ";
         }
         file << '\n';
         file_B << '\n';
@@ -62,12 +64,12 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_nu_M(filename + "_nu_Max.txt");
     for (size_t i = 0; i < syn_rad.size(); ++i) {
         for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_I_peak << syn_rad[i][j].L_nu_peak << " ";
-            file_nu_peak << syn_rad[i][j].nu_E_peak << " ";
-            file_nu_m << syn_rad[i][j].nu_m << " ";
-            file_nu_c << syn_rad[i][j].nu_c << " ";
-            file_nu_a << syn_rad[i][j].nu_a << " ";
-            file_nu_M << syn_rad[i][j].nu_M << " ";
+            file_I_peak << syn_rad[i][j].L_nu_peak / (con::erg / con::sec) << " ";
+            file_nu_peak << syn_rad[i][j].nu_E_peak / con::Hz << " ";
+            file_nu_m << syn_rad[i][j].nu_m / con::Hz << " ";
+            file_nu_c << syn_rad[i][j].nu_c / con::Hz << " ";
+            file_nu_a << syn_rad[i][j].nu_a / con::Hz << " ";
+            file_nu_M << syn_rad[i][j].nu_M / con::Hz << " ";
         }
         file_I_peak << '\n';
         file_nu_peak << '\n';
@@ -128,5 +130,33 @@ void write2file(Array const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
     for (size_t i = 0; i < array.size(); ++i) {
         file << array[i] << " ";
+    }
+}
+
+void write2file(MeshGrid3d const& array, std::string const& filename, double unit) {
+    std::ofstream file(filename + ".txt");
+    for (size_t i = 0; i < array.size(); ++i) {
+        for (size_t j = 0; j < array[i].size(); ++j) {
+            for (size_t k = 0; k < array[i][j].size(); ++k) {
+                file << array[i][j][k] / unit << " ";
+            }
+            file << '\n';
+        }
+    }
+}
+void write2file(MeshGrid const& grid, std::string const& filename, double unit) {
+    std::ofstream file(filename + ".txt");
+    for (size_t i = 0; i < grid.size(); ++i) {
+        for (size_t j = 0; j < grid[i].size(); ++j) {
+            file << grid[i][j] / unit << " ";
+        }
+        file << '\n';
+    }
+}
+
+void write2file(Array const& array, std::string const& filename, double unit) {
+    std::ofstream file(filename + ".txt");
+    for (size_t i = 0; i < array.size(); ++i) {
+        file << array[i] / unit << " ";
     }
 }

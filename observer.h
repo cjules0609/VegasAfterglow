@@ -26,7 +26,11 @@ class Observer {
     MeshGrid3d gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_ptc);
 
     template <typename... RadPhotonMesh>
-    MeshGrid gen_light_curve(size_t time_resolution, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const;
+    MeshGrid gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const;
+
+    template <typename... RadPhotonMesh>
+    Array gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resolution,
+                   RadPhotonMesh const&... rad_ptc) const;
 
     template <typename... RadPhotonMesh>
     MeshGrid spectrum(double nu_min, double nu_max, double t, RadPhotonMesh const&... rad_ptc) const;
@@ -43,19 +47,19 @@ class Observer {
     void calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_sorted_EAT_surface(Coord const& coord, MeshGrid3d const& t_obs);
     void calc_D_L(double z);
+    double first_non_zero_time() const;
     EATsurface eat_s;
     Array phi_b;
     Array phi;
 };
 
 template <typename... RadPhotonMesh>
-MeshGrid Observer::gen_light_curve(size_t time_resolution, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const {
+MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }
-    Array t_bin = logspace(eat_s.front().t_obs, eat_s.back().t_obs, time_resolution + 1);
-    Array t_c = boundary2center(t_bin);
-    MeshGrid F_nu = create_grid(nu_obs.size() + 1, time_resolution, 0);
+
+    MeshGrid F_nu = create_grid(nu_obs.size(), t_bins.size() - 1, 0);
 
     for (size_t l = 0; l < nu_obs.size(); ++l) {
         for (size_t m = 0, n = 0; m < eat_s.size(); ++m) {
@@ -63,6 +67,10 @@ MeshGrid Observer::gen_light_curve(size_t time_resolution, Array const& nu_obs, 
             size_t i_ = eat_s[m].i;
             size_t j_ = eat_s[m].j;
             size_t k_ = eat_s[m].k;
+
+            if (t_ == 0) {  // non-emission region
+                continue;
+            }
 
             double dphi = this->phi_b[i_ + 1] - this->phi_b[i_];
 
@@ -74,23 +82,37 @@ MeshGrid Observer::gen_light_curve(size_t time_resolution, Array const& nu_obs, 
 
             double dL_nu_dOmega_obs = doppler_ * doppler_ * doppler_ * dL_nu_dOmega_com;
 
-            if (t_ > t_bin[n + 1]) {
+            if (t_ > t_bins[n + 1]) {
                 n++;
             }
             if (n < F_nu[0].size()) {
-                F_nu[l + 1][n] += dL_nu_dOmega_obs;
+                F_nu[l][n] += dL_nu_dOmega_obs;
             } else {
                 break;
             }
         }
         for (size_t i = 0; i < F_nu[0].size(); ++i) {
-            if (l == 0) {
-                F_nu[0][i] = t_c[i];
-            }
-            F_nu[l + 1][i] *= (1 + this->z) / (D_L * D_L);
+            // double dt = t_bins[i + 1] - t_bins[i];
+            F_nu[l][i] *= (1 + this->z) / (D_L * D_L);
         }
     }
     return F_nu;
+}
+
+template <typename... RadPhotonMesh>
+Array Observer::gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resolution,
+                         RadPhotonMesh const&... rad_ptc) const {
+    Array nu_obs_b = logspace(band_filter_low, band_filter_hi, freq_resolution);
+    Array nu_obs = boundary2centerlog(nu_obs_b);
+    MeshGrid F_nu = gen_F_nu(t_bins, nu_obs, rad_ptc...);
+    Array flux = zeros(t_bins.size() - 1);
+    for (size_t i = 0; i < F_nu.size(); ++i) {
+        double dnu = nu_obs_b[i + 1] - nu_obs_b[i];
+        for (size_t j = 0; j < flux.size(); ++j) {
+            flux[j] += dnu * F_nu[i][j];
+        }
+    }
+    return flux;
 }
 
 template <typename... RadPhotonMesh>

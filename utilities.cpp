@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "macros.h"
 double interp(double x0, Array const& x, Array const& y) {
     if (x0 < x[0]) {
         return y[0];
@@ -147,4 +148,41 @@ double exp_fast(double a) {
     } u;
     u.x = (long long)(6497320848556798LL * a + 0x3fef127e83d16f12LL);
     return u.d;
+}
+
+double jet_edge(Profile const& gamma) {
+    if (gamma(con::pi / 2) > 1) {
+        return con::pi / 2;
+    }
+    double low = 0;
+    double hi = con::pi / 2;
+    double eps = 1e-9;
+    for (; hi - low > eps;) {
+        double mid = 0.5 * (low + hi);
+        if (gamma(mid) > 1) {
+            low = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return 0.5 * (low + hi);
+}
+
+Array adaptive_theta_space(size_t n, Profile const& gamma) {
+    if (n == 1) {
+        return Array(0, con::pi / 2);
+    }
+    double edge = jet_edge(gamma);
+
+    double dx = con::pi / (n - 1);
+    Array space(n, 0);
+    for (size_t i = 0; i < n - 1; ++i) {
+        double x = i * dx;
+        space[i + 1] = space[i] + 1 / gamma(x);
+    }
+    double rescale = edge / (space[n - 1]);
+    for (size_t i = 0; i < n; ++i) {
+        space[i] = (space[i]) * rescale;
+    }
+    return space;
 }

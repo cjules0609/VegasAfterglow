@@ -44,6 +44,15 @@ void Observer::calc_D_L(double z) {
     this->D_L = (1 + z) * this->D_L * con::c / con::H0;
 }
 
+double Observer::first_non_zero_time() const {
+    for (auto const& eat : eat_s) {
+        if (eat.t_obs != 0) {
+            return eat.t_obs;
+        }
+    }
+    return 0;
+}
+
 void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     t_obs = create_3d_grid(this->phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;
@@ -65,6 +74,13 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
             };
 
             double Gamma0 = Gamma[j][0];
+            if (Gamma0 == 1) {
+                for (size_t k = 0; k < coord.r.size(); ++k) {
+                    t_obs[i][j][k] = 0;
+                }
+
+                continue;
+            }
             double beta0 = sqrt(1 - 1 / Gamma0 / Gamma0);
             t_obs[i][j][0] = coord.r[0] * (1 - beta0 * cos_) / con::c / beta0;
 
