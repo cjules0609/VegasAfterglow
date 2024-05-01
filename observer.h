@@ -87,11 +87,6 @@ MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonM
             }
             if (n < F_nu[0].size()) {
                 F_nu[l][n] += dE_nu_dOmega_obs;
-                /* if (t_ / con::day > 50 && t_ / con::day < 500) {
-                        double dt = (rad_ptc[j_][k_].dt_com + ...);
-                        std::cout << t_ / con::sec << ' ' << dt / doppler_ << ' ' << t_bins[n + 1] - t_bins[n] << '\n';
-                    }
-                    */
             } else {
                 break;
             }
@@ -101,7 +96,6 @@ MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonM
             F_nu[l][i] *= (1 + this->z) / (D_L * D_L) / dt;
         }
     }
-    // exit(0);
     return F_nu;
 }
 
@@ -132,7 +126,7 @@ MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_pt
         for (size_t j = 0; j < F_nu_obs[0].size(); ++j) {
             for (size_t k = 0; k < F_nu_obs[0][0].size(); ++k) {
                 double doppler_ = this->doppler[i][j][k];
-                double nu_prime = nu_obs / doppler_;
+                double nu_prime = (1 + this->z) * nu_obs / doppler_;
                 double dphi = this->phi_b[i + 1] - this->phi_b[i];
 
                 F_nu_obs[i][j][k] = (1 + this->z) / (this->D_L * this->D_L) * doppler_ * doppler_ * doppler_ * dphi /

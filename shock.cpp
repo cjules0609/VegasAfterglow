@@ -71,7 +71,7 @@ BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_
       theta_lo(theta_lo),
       theta_hi(theta_hi),
       theta(0.5 * (theta_lo + theta_hi)),
-      dOmega(4 * con::pi * std::fabs(std::cos(theta_hi) - std::cos(theta_lo))){};  // bipolar outflow
+      dOmega(2 * con::pi * std::fabs(std::cos(theta_hi) - std::cos(theta_lo))){};
 
 void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
     double Gamma = y[0];
@@ -188,8 +188,7 @@ std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium co
 
         // shell solid angle
         double dcos = std::fabs(std::cos(coord.theta_b[i + 1]) - std::cos(coord.theta_b[i]));
-        double dphi = 2 * con::pi;
-        double dOmega = 2 * dphi * dcos;  // bipolar outflow
+        double dOmega = 2 * con::pi * dcos;
 
         // initial internal energy
         double u0 = (Gamma0 - 1) * medium.mass(coord.r[0]) * dOmega / (4 * con::pi) * con::c2;

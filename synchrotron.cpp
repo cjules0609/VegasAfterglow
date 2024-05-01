@@ -295,11 +295,24 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             double n_e = shock.n_p[j][k] * shock.xi;
             double Y = Y_tilt[j][k];
 
-            e[j][k].n_tot = n_e;
-            e[j][k].N_tot = n_e * dS * D;
-            double I_nu_peak = syn_p_nu_peak(B, p) * e[j][k].N_tot / dS / (4 * con::pi);
+            constexpr double gamma_syn_limit = 10;
+
             e[j][k].gamma_M = syn_gamma_M(B, shock.zeta, Y);
             e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, shock.eps_e, shock.xi, p);
+
+            // fraction of synchrotron electron; the rest electrons are cyclotron
+            double f = pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - e[j][k].p);
+            if (f > 1) {
+                f = 1;
+            } else {
+                e[j][k].gamma_m = gamma_syn_limit;
+            }
+
+            e[j][k].n_tot = n_e;
+            e[j][k].N_tot = n_e * dS * D * f;
+
+            double I_nu_peak = syn_p_nu_peak(B, p) * e[j][k].N_tot / dS / (4 * con::pi);
+
             e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
             e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
             e[j][k].regime = get_regime(e[j][k].gamma_a, e[j][k].gamma_c, e[j][k].gamma_m);
@@ -318,20 +331,15 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
 
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock) {
     SynPhotonsMesh ph = create_syn_photons_grid(coord.theta.size(), coord.r.size());
-    constexpr double gamma_syn_limit = 1.5;
+
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double B = shock.B[j][k];
             double dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
 
-            double f = pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - e[j][k].p);
-            if (f > 1) {
-                f = 1;
-            }
-
-            ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot * f;
+            ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot;
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
-            ph[j][k].nu_m = syn_nu(std::max(e[j][k].gamma_m, gamma_syn_limit), B);
+            ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);
             ph[j][k].nu_a = syn_nu(e[j][k].gamma_a, B);
             ph[j][k].regime = e[j][k].regime;

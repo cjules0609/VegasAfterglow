@@ -110,14 +110,14 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
     auto medium = create_ISM(n_ism, eps_e, eps_B);
     // auto inj = create_iso_power_law_injection(0 * con::erg / con::sec, 1000 * con::sec, 1 * con::sec, 2);
     // auto jet = create_tophat_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
-    // auto blast = create_power_law_jet(E_iso, Gamma0, theta_j, 4, inj);
+
     auto jet = create_gaussian_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
 
     // generate grid
     double M0 = E_iso / (Gamma0 * con::c * con::c);
     double R_ES = pow(3 * M0 / (4 * con::pi * n_ism * con::mp * Gamma0), 1.0 / 3);
-    size_t r_num = 400;
-    size_t theta_num = 150;
+    size_t r_num = 500;
+    size_t theta_num = 100;
     size_t phi_num = 37;
 
     double r_min = R_ES / 100;
@@ -162,7 +162,7 @@ void GCN36236(std::string prefix, double E_iso, double Gamma0, double theta_j) {
     write2file(obs.doppler, prefix + "doppler");
 
     // specify observables
-    Array t_bins = logspace(1e3 * con::sec, 1e9 * con::sec, 100);
+    Array t_bins = logspace(1e3 * con::sec, 1e10 * con::sec, 100);
     size_t freq_resol = 5;
 
     Array F_nu_syn = obs.gen_Flux(t_bins, eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), freq_resol, syn_ph_IC_KN);
