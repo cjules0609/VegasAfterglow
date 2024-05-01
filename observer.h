@@ -76,33 +76,39 @@ MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonM
 
             double doppler_ = doppler[i_][j_][k_];
 
-            double nu_prime = nu_obs[l] / doppler_;
+            double nu_prime = (1 + this->z) * nu_obs[l] / doppler_;
 
-            double dL_nu_dOmega_com = dphi / (2 * con::pi) * (rad_ptc[j_][k_].L_nu(nu_prime) + ...) / (4 * con::pi);
+            double dE_nu_dOmega_com = dphi / (2 * con::pi) * (rad_ptc[j_][k_].E_nu(nu_prime) + ...) / (4 * con::pi);
 
-            double dL_nu_dOmega_obs = doppler_ * doppler_ * doppler_ * dL_nu_dOmega_com;
+            double dE_nu_dOmega_obs = doppler_ * doppler_ * dE_nu_dOmega_com;
 
             if (t_ > t_bins[n + 1]) {
                 n++;
             }
             if (n < F_nu[0].size()) {
-                F_nu[l][n] += dL_nu_dOmega_obs;
+                F_nu[l][n] += dE_nu_dOmega_obs;
+                /* if (t_ / con::day > 50 && t_ / con::day < 500) {
+                        double dt = (rad_ptc[j_][k_].dt_com + ...);
+                        std::cout << t_ / con::sec << ' ' << dt / doppler_ << ' ' << t_bins[n + 1] - t_bins[n] << '\n';
+                    }
+                    */
             } else {
                 break;
             }
         }
         for (size_t i = 0; i < F_nu[0].size(); ++i) {
-            // double dt = t_bins[i + 1] - t_bins[i];
-            F_nu[l][i] *= (1 + this->z) / (D_L * D_L);
+            double dt = t_bins[i + 1] - t_bins[i];
+            F_nu[l][i] *= (1 + this->z) / (D_L * D_L) / dt;
         }
     }
+    // exit(0);
     return F_nu;
 }
 
 template <typename... RadPhotonMesh>
-Array Observer::gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resolution,
+Array Observer::gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resol,
                          RadPhotonMesh const&... rad_ptc) const {
-    Array nu_obs_b = logspace(band_filter_low, band_filter_hi, freq_resolution);
+    Array nu_obs_b = logspace(band_filter_low, band_filter_hi, freq_resol + 1);
     Array nu_obs = boundary2centerlog(nu_obs_b);
     MeshGrid F_nu = gen_F_nu(t_bins, nu_obs, rad_ptc...);
     Array flux = zeros(t_bins.size() - 1);

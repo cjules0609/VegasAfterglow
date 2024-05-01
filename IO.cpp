@@ -1,6 +1,7 @@
 #include "IO.h"
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #include "macros.h"
@@ -40,6 +41,9 @@ void write2file(Shock const& shock, std::string const& filename) {
     std::ofstream file_B(filename + "_B.txt");
     std::ofstream file_D_com(filename + "_D_com.txt");
     std::ofstream file_t_com(filename + "_t_com.txt");
+    std::ofstream file_np(filename + "_n_p.txt");
+
+    file << std::setprecision(16);
 
     for (size_t j = 0; j < shock.Gamma.size(); ++j) {
         for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
@@ -47,11 +51,13 @@ void write2file(Shock const& shock, std::string const& filename) {
             file_B << shock.B[j][k] << " ";  // TODO:add B unit
             file_D_com << shock.width[j][k] / con::cm << " ";
             file_t_com << shock.t_com[j][k] / con::sec << " ";
+            file_np << shock.n_p[j][k] * (con::cm * con::cm * con::cm) << " ";
         }
         file << '\n';
         file_B << '\n';
         file_D_com << '\n';
         file_t_com << '\n';
+        file_np << '\n';
     }
 }
 
@@ -87,14 +93,16 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_gamma_c(filename + "_gamma_c.txt");
     std::ofstream file_gamma_a(filename + "_gamma_a.txt");
     std::ofstream file_gamma_M(filename + "_gamma_Max.txt");
+    std::ofstream file_N_tot(filename + "_N.txt");
     for (size_t i = 0; i < syn_rad.size(); ++i) {
         for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_n_tot << syn_rad[i][j].N_tot << " ";
+            file_n_tot << syn_rad[i][j].n_tot * (con::cm * con::cm * con::cm) << " ";
             file_gamma_peak << syn_rad[i][j].gamma_N_peak << " ";
             file_gamma_m << syn_rad[i][j].gamma_m << " ";
             file_gamma_c << syn_rad[i][j].gamma_c << " ";
             file_gamma_a << syn_rad[i][j].gamma_a << " ";
             file_gamma_M << syn_rad[i][j].gamma_M << " ";
+            file_N_tot << syn_rad[i][j].N_tot << " ";
         }
         file_n_tot << '\n';
         file_gamma_peak << '\n';
@@ -102,6 +110,7 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
         file_gamma_c << '\n';
         file_gamma_a << '\n';
         file_gamma_M << '\n';
+        file_N_tot << '\n';
     }
 }
 

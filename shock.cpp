@@ -7,6 +7,7 @@
 
 Shock::Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta)
     : t_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
+      t_com_b(create_grid(coord.theta.size(), coord.r_b.size(), 0)),
       Gamma(create_grid(coord.theta.size(), coord.r.size(), 1)),
       B(create_grid(coord.theta.size(), coord.r.size(), 0)),
       width(create_grid(coord.theta.size(), coord.r.size(), 0)),
@@ -22,20 +23,23 @@ void co_moving_B(Shock& shock, Coord const& coord) {
             double eps_B = shock.eps_B;
             double Gamma = shock.Gamma[j][k];
             double n_2 = shock.n_p[j][k];
-            shock.B[j][k] = sqrt(8 * con::pi * eps_B * n_2 * con::mp * (Gamma - 1)) * con::c;
+            shock.B[j][k] = sqrt(8 * con::pi * eps_B * n_2 * con::mp * con::c2 * (Gamma - 1));
         }
     }
 }
 
 // lab frame FS width
-void co_moving_FS_shock_width(Shock& shock, Coord const& coord) {
+void co_moving_FS_shock_width(Shock& shock, Coord const& coord, Medium const& medium) {
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double Gamma = shock.Gamma[j][k];
-            if (Gamma == 1) {
-                shock.width[j][k] = 0;
+            double u4 = sqrt(Gamma * Gamma - 1);
+            double us4 = 4 * u4 * sqrt((1 + u4 * u4) / (8 * u4 * u4 + 9));
+            double M = us4 / medium.cs;
+            if (M <= 1) {
+                shock.width[j][k] = 0;  // shock cannot be formed
             } else {
-                shock.width[j][k] = coord.r[k] / shock.Gamma[j][k];
+                shock.width[j][k] = coord.r[k] / shock.Gamma[j][k] / 12;
             }
         }
     }
@@ -44,7 +48,19 @@ void co_moving_FS_shock_width(Shock& shock, Coord const& coord) {
 void FS_n2(Shock& shock, Coord const& coord, Medium const& medium) {
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            shock.n_p[j][k] = 4 * shock.Gamma[j][k] * medium.rho(coord.r[k]) / con::mp;
+            double Gamma = shock.Gamma[j][k];
+            double u4 = sqrt(Gamma * Gamma - 1);
+            double us4 = 4 * u4 * sqrt((1 + u4 * u4) / (8 * u4 * u4 + 9));
+            double M = us4 / medium.cs;
+            double n1 = medium.rho(coord.r[k]) / con::mp;
+            if (M > 10) {
+                shock.n_p[j][k] = 4 * shock.Gamma[j][k] * n1;
+            } else if (M >= 1) {
+                double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
+                shock.n_p[j][k] = n1 * (gamma_eos + 1) * M * M / ((gamma_eos - 1) * M * M + 2);
+            } else {
+                shock.n_p[j][k] = 0;  // shock cannot be formed
+            }
         }
     }
 }
@@ -117,8 +133,8 @@ double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng)
     return 0;
 };
 
-void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_FS, Array& D_RS, double u0,
-                        BlastWaveEqn const& eqn) {
+void solve_single_shell(Array const& r_b, Array const& r, Array& Gamma, Array& t_com, Array& t_com_b, Array& D_FS,
+                        Array& D_RS, double u0, BlastWaveEqn const& eqn) {
     using namespace boost::numeric::odeint;
     double atol = 0;     // integrator absolute tolerance
     double rtol = 1e-9;  // integrator relative tolerance
@@ -137,7 +153,7 @@ void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_FS,
     // initialize the integrator
     stepper.initialize(Array{Gamma0, u0, t_eng0, t_com0, 0, 0}, r0, dr);
     // integrate the shell over r
-    for (int i = 0; stepper.current_time() <= r.back();) {
+    for (int i = 0, j = 0; stepper.current_time() <= r.back();) {
         stepper.do_step(eqn);
 
         for (; stepper.current_time() > r[i + 1] && i + 1 < r.size();) {
@@ -149,6 +165,12 @@ void solve_single_shell(Array const& r, Array& Gamma, Array& t_com, Array& D_FS,
             t_com[i] = state[3];
             D_RS[i] = state[4];
             D_FS[i] = state[5];
+        }
+
+        for (; stepper.current_time() > r_b[j + 1] && j + 1 < r_b.size();) {
+            j++;
+            stepper.calc_state(r_b[j], state);
+            t_com_b[j] = state[3];
         }
     }
 }
@@ -171,11 +193,12 @@ std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium co
 
         // initial internal energy
         double u0 = (Gamma0 - 1) * medium.mass(coord.r[0]) * dOmega / (4 * con::pi) * con::c2;
-        solve_single_shell(coord.r, shock_f.Gamma[i], shock_f.t_com[i], shock_f.width[i], shock_r.width[i], u0, eqn);
+        solve_single_shell(coord.r_b, coord.r, shock_f.Gamma[i], shock_f.t_com[i], shock_f.t_com_b[i], shock_f.width[i],
+                           shock_r.width[i], u0, eqn);
     }
     FS_n2(shock_f, coord, medium);
     co_moving_B(shock_f, coord);
-    co_moving_FS_shock_width(shock_f, coord);
+    co_moving_FS_shock_width(shock_f, coord, medium);
 
     return std::make_pair(shock_r, shock_f);
 }

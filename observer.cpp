@@ -57,7 +57,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     t_obs = create_3d_grid(this->phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;
     double atol = 0;
-    double rtol = 1e-6;
+    double rtol = 1e-9;
     auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
 
     double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;
@@ -69,8 +69,8 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
 
             auto eqn = [&](double const& t, double& dtdr, double r) {
                 double Gamma_ = interp(r, coord.r, Gamma[j]);
-                double beta = sqrt(1 - 1 / Gamma_ / Gamma_);
-                dtdr = (1 - beta * cos_) / (beta * con::c);
+                double beta = sqrt(fabs((Gamma_ * Gamma_ - 1) / (Gamma_ * Gamma_)));
+                dtdr = (1 / beta - cos_) / con::c;
             };
 
             double Gamma0 = Gamma[j][0];
@@ -81,7 +81,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
 
                 continue;
             }
-            double beta0 = sqrt(1 - 1 / Gamma0 / Gamma0);
+            double beta0 = sqrt(fabs((Gamma0 * Gamma0 - 1) / (Gamma0 * Gamma0)));
             t_obs[i][j][0] = coord.r[0] * (1 - beta0 * cos_) / con::c / beta0;
 
             stepper.initialize(t_obs[i][j][0], coord.r[0], dr0);
@@ -105,7 +105,7 @@ void Observer::calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma) {
             double cos_ = sin(theta_) * cos(phi_) * sin(theta_obs) + cos(theta_) * cos(theta_obs);
             for (size_t k = 0; k < Gamma[j].size(); ++k) {
                 double gamma_ = Gamma[j][k];
-                double beta = sqrt(1 - 1 / gamma_ / gamma_);
+                double beta = sqrt(fabs(1 - 1 / gamma_ / gamma_));
                 this->doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_));
             }
         }

@@ -107,6 +107,8 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
 
 double SynPhotons::L_nu(double nu) const { return L_nu_peak * spectrum_(nu); }
 
+double SynPhotons::E_nu(double nu) const { return L_nu_peak * spectrum_(nu) * dt_com; }
+
 double SynPhotons::spectrum_(double nu) const {
     switch (regime) {
         case 1:
@@ -193,24 +195,21 @@ double syn_gamma_M(double B, double zeta, double Y_tilt) {
 }
 
 double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double p) {
-    double gamma_bar = 1 + eps_e * (Gamma - 1) * 1836 / xi;
-    double gamma_m = 1;
-
+    double gamma_bar_minus_1 = eps_e * (Gamma - 1) * 1836 / xi;
+    double gamma_m_minus_1 = 1;
     if (p > 2) {
-        gamma_m = (p - 2) / (p - 1) * gamma_bar;
+        gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_bar_minus_1;
     } else if (p < 2) {
         // need to check in non-relativistic limit
-        gamma_m = pow((2 - p) / (p - 1) * gamma_bar * pow(gamma_M, p - 1), 1 / (p - 1));
+        gamma_m_minus_1 = pow((2 - p) / (p - 1) * gamma_bar_minus_1 * pow(gamma_M, p - 2), 1 / (p - 1));
     } else {
-        gamma_m = root_bisection(
-            [=](double x) -> double { return (x * log(gamma_M) - (x + 1) * log(x) - gamma_bar - log(gamma_M)); }, 1,
-            gamma_M);
+        gamma_m_minus_1 = root_bisection(
+            [=](double x) -> double {
+                return (x * log(gamma_M) - (x + 1) * log(x) - gamma_bar_minus_1 - log(gamma_M));
+            },
+            0, gamma_M);
     }
-
-    if (gamma_m < 1) {
-        gamma_m = 1;
-    }
-    return gamma_m;
+    return gamma_m_minus_1 + 1;
 }
 
 double syn_gamma_c(double t_com, double B, double Y_tilt) {
@@ -319,19 +318,26 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
 
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock) {
     SynPhotonsMesh ph = create_syn_photons_grid(coord.theta.size(), coord.r.size());
-
+    constexpr double gamma_syn_limit = 1.5;
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double B = shock.B[j][k];
+            double dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
 
-            ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot;
+            double f = pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - e[j][k].p);
+            if (f > 1) {
+                f = 1;
+            }
+
+            ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot * f;
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
-            ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
+            ph[j][k].nu_m = syn_nu(std::max(e[j][k].gamma_m, gamma_syn_limit), B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);
             ph[j][k].nu_a = syn_nu(e[j][k].gamma_a, B);
             ph[j][k].regime = e[j][k].regime;
             ph[j][k].nu_E_peak = syn_nu_E_peak(ph[j][k]);
             ph[j][k].p = e[j][k].p;
+            ph[j][k].dt_com = dt_com;
         }
     }
     return ph;

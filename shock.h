@@ -12,6 +12,7 @@ class Shock {
    public:
     Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta);
     MeshGrid t_com;
+    MeshGrid t_com_b;
     MeshGrid Gamma;
     MeshGrid B;      // comoving magnetic field
     MeshGrid width;  // comoving frame shock width

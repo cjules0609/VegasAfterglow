@@ -33,7 +33,9 @@ struct SynPhotons {
     double nu_M{0};
     double p{2.3};
     size_t regime{0};
+    double dt_com{0};
     double L_nu(double nu) const;
+    double E_nu(double nu) const;
 
    private:
     inline double spectrum_(double nu) const;
