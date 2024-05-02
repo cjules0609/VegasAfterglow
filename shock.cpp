@@ -4,7 +4,7 @@
 #include <boost/numeric/odeint.hpp>
 
 #include "macros.h"
-#include "relativity.h"
+#include "physics.h"
 Shock::Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta)
     : t_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
       t_com_b(create_grid(coord.theta.size(), coord.r_b.size(), 0)),
@@ -83,7 +83,6 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
 
     dydr[0] = dGammadr(r, Gamma, u, t_eng);
     dydr[1] = dUdr(r, Gamma, u, t_eng);
-
     dydr[2] = dtdr_eng(Gamma);
     dydr[3] = dtdr_com(Gamma);
     dydr[4] = dDdr_RS(r, Gamma, D_FS, t_eng);
@@ -93,7 +92,7 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabatic_index(Gamma);
     double dm = medium.mass(r) * dOmega / (4 * con::pi);
-    double dM0 = jet.dEdOmega(theta, t_eng) * dOmega / (jet.Gamma0(theta) * con::c2);
+    double dM0 = jet.dEdOmega(theta, t_eng) * dOmega / (jet.Gamma0_profile(theta) * con::c2);
     double Gamma2 = Gamma * Gamma;
     double a1 = dOmega * r * r * medium.rho(r) / Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1);
     double a2 = -(ad_idx - 1) / Gamma * (ad_idx * Gamma2 - ad_idx + 1) * 3 * u / r;
@@ -182,7 +181,7 @@ std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium co
 
     for (size_t i = 0; i < coord.theta.size(); ++i) {
         auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[i], coord.theta_b[i + 1]);
-        double Gamma0 = jet.Gamma0(coord.theta[i]);
+        double Gamma0 = jet.Gamma0_profile(coord.theta[i]);
 
         shock_f.Gamma[i][0] = Gamma0;
         shock_f.t_com[i][0] = coord.r[0] / sqrt(Gamma0 * Gamma0 - 1) / con::c;

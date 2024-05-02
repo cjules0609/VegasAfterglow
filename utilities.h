@@ -34,6 +34,6 @@ inline double step_func(double x) { return x > 0 ? 1 : 0; }
 inline double eVtoHz(double eV) { return eV / con::h; }
 
 Array adaptive_theta_space(size_t n, Profile const& gamma);
-Array adaptive_theta_space(double edge, size_t n, Profile const& gamma);
+Array adaptive_theta_space(size_t n, Profile const& gamma, double edge);
 
 #endif  // _UTILITIES_H_

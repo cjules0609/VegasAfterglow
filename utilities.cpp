@@ -135,20 +135,10 @@ Array adaptive_theta_space(size_t n, Profile const& gamma) {
     }
     double edge = jet_edge(gamma);
 
-    double dx = con::pi / (n - 1);
-    Array space(n, 0);
-    for (size_t i = 0; i < n - 1; ++i) {
-        double x = i * dx;
-        space[i + 1] = space[i] + 1 / gamma(x);
-    }
-    double rescale = edge / (space[n - 1]);
-    for (size_t i = 0; i < n; ++i) {
-        space[i] = (space[i]) * rescale;
-    }
-    return space;
+    return adaptive_theta_space(n, gamma, edge);
 }
 
-Array adaptive_theta_space(double edge, size_t n, Profile const& gamma) {
+Array adaptive_theta_space(size_t n, Profile const& gamma, double edge) {
     if (n == 1) {
         return Array(0, con::pi / 2);
     }

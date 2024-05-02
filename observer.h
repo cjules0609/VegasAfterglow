@@ -21,34 +21,33 @@ using EATsurface = std::vector<EATinfo>;
 
 class Observer {
    public:
-    void observe(Coord const& coord, Shock const& shock, double theta_obs, double z);
+    void observe(Coord const& coord, Shock const& shock, double theta_obs, double lumi_dist, double z);
 
     template <typename... RadPhotonMesh>
-    MeshGrid3d gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_ptc);
+    MeshGrid3d specific_flux_grid(double nu_obs, RadPhotonMesh const&... rad_ptc);
 
     template <typename... RadPhotonMesh>
-    MeshGrid gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const;
+    MeshGrid specific_flux(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const;
 
     template <typename... RadPhotonMesh>
-    Array gen_flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const;
+    Array flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const;
 
     template <typename... RadPhotonMesh>
     MeshGrid spectrum(double nu_min, double nu_max, double t, RadPhotonMesh const&... photons) const;
 
+    MeshGrid3d doppler;
+    MeshGrid3d t_obs;
     double theta_obs{0};
     double z{0};
     double lumi_dist{1};
-    MeshGrid3d doppler;
-    MeshGrid3d t_obs;
 
    private:
     template <typename... RadPhotonMesh>
-    void gen_F_nu_(Array& F_nu, Array const& t_bins, double nu_obs, RadPhotonMesh const&... photons) const;
+    void calc_specific_flux(Array& F_nu, Array const& t_bins, double nu_obs, RadPhotonMesh const&... photons) const;
     void gen_phi_grid(Coord const& coord, double theta_obs);
     void calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_sorted_EAT_surface(Coord const& coord, MeshGrid3d const& t_obs);
-    void calc_luminosity_distance(double z);
     double first_non_zero_time() const;
     EATsurface eat_s;
     Array phi_b;
@@ -56,8 +55,8 @@ class Observer {
 };
 
 template <typename... RadPhotonMesh>
-void Observer::gen_F_nu_(std::vector<double>& f_nu, const std::vector<double>& t_bins, double nu_obs,
-                         const RadPhotonMesh&... photons) const {
+void Observer::calc_specific_flux(std::vector<double>& f_nu, const std::vector<double>& t_bins, double nu_obs,
+                                  const RadPhotonMesh&... photons) const {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }
@@ -105,28 +104,29 @@ void Observer::gen_F_nu_(std::vector<double>& f_nu, const std::vector<double>& t
 }
 
 template <typename... RadPhotonMesh>
-MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const {
+MeshGrid Observer::specific_flux(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }
 
     MeshGrid F_nu = create_grid(nu_obs.size(), t_bins.size() - 1, 0);
-    std::vector<std::thread> threads;
+    // std::vector<std::thread> threads;
     for (size_t l = 0; l < nu_obs.size(); ++l) {
-        threads.emplace_back(&Observer::gen_F_nu_<RadPhotonMesh...>, this, std::ref(F_nu[l]), std::cref(t_bins),
-                             nu_obs[l], std::cref(photons)...);
-        // gen_F_nu_(F_nu[l], t_bins, nu_obs[l], photons...);
+        //  threads.emplace_back(&Observer::calc_specific_flux<RadPhotonMesh...>, this, std::ref(F_nu[l]),
+        //  std::cref(t_bins),
+        //                       nu_obs[l], std::cref(photons)...);
+        calc_specific_flux(F_nu[l], t_bins, nu_obs[l], photons...);
     }
-    for (auto& thread : threads) {
-        thread.join();
-    }
+    // for (auto& thread : threads) {
+    //     thread.join();
+    // }
     return F_nu;
 }
 
 template <typename... RadPhotonMesh>
-Array Observer::gen_flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const {
+Array Observer::flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const {
     Array nu_obs = boundary2centerlog(band_pass_freq);
-    MeshGrid F_nu = gen_F_nu(t_bins, nu_obs, photons...);
+    MeshGrid F_nu = specific_flux(t_bins, nu_obs, photons...);
     Array flux = zeros(t_bins.size() - 1);
     for (size_t i = 0; i < F_nu.size(); ++i) {
         double dnu = band_pass_freq[i + 1] - band_pass_freq[i];
@@ -138,7 +138,7 @@ Array Observer::gen_flux(Array const& t_bins, Array const& band_pass_freq, RadPh
 }
 
 template <typename... RadPhotonMesh>
-MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... photons) {
+MeshGrid3d Observer::specific_flux_grid(double nu_obs, RadPhotonMesh const&... photons) {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }

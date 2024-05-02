@@ -8,6 +8,7 @@
 #include "medium.h"
 #include "mesh.h"
 #include "observer.h"
+#include "physics.h"
 #include "shock.h"
 #include "synchrotron.h"
 #include "utilities.h"

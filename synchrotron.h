@@ -37,7 +37,18 @@ struct SynPhotons {
     double L_nu(double nu) const;
     double E_nu(double nu) const;
 
+    void update_constant();
+
    private:
+    double a_m_1_3{0};     // a_m_1_3 represents (nu_a / nu_m)^(1/3)
+    double c_m_1_2{0};     // c_m_1_2 represents (nu_c / nu_m)^(1/2)
+    double m_a_pa4_2{0};   // m_a_pa4_2 represents (nu_m / nu_a)^((p+4)/2)
+    double a_m_mpa1_2{0};  // a_m_mpa1_2 represents (nu_a / nu_m)^((-p+1)/2)
+    double a_c_1_3{0};     // a_c_1_3 represents (nu_a / nu_c)^(1/3)
+    double a_m_1_2{0};     // a_m_1_2 represents (nu_a / nu_m)^(1/2)
+    double R4{0};          // R coefficient in case4 in Bing Zhang's Book page 199
+    double R5{0};          // R coefficient in case5 in Bing Zhang's Book page 200
+    double R6{0};          // R coefficient in case6 in Bing Zhang's Book page 200
     inline double spectrum_(double nu) const;
 };
 

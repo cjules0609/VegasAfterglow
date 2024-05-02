@@ -4,16 +4,16 @@
 #include <cmath>
 
 #include "macros.h"
-#include "relativity.h"
+#include "physics.h"
 #include "utilities.h"
-void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double z) {
+void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double lumi_dist, double z) {
     this->theta_obs = theta_obs;
     this->z = z;
+    this->lumi_dist = lumi_dist;
     gen_phi_grid(coord, theta_obs);
     calc_doppler_grid(coord, shock.Gamma);
     calc_t_obs_grid(coord, shock.Gamma);
     calc_sorted_EAT_surface(coord, t_obs);
-    calc_luminosity_distance(z);
 }
 
 void Observer::gen_phi_grid(Coord const& coord, double theta_obs) {
@@ -23,25 +23,6 @@ void Observer::gen_phi_grid(Coord const& coord, double theta_obs) {
         phi_b = coord.phi_b;
     }
     phi = boundary2center(phi_b);
-}
-
-void Observer::calc_luminosity_distance(double z) {
-    using namespace boost::numeric::odeint;
-    double atol = 0;
-    double rtol = 1e-6;
-    // auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
-
-    auto eqn = [&](double const& y, double& dydz, double z0) {
-        dydz = 1 / sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
-    };
-    stepper.initialize(0, 0, 1e-6);
-
-    for (; stepper.current_time() <= z;) {
-        stepper.do_step(eqn);
-    }
-    stepper.calc_state(z, this->lumi_dist);
-    this->lumi_dist = (1 + z) * this->lumi_dist * con::c / con::H0;
 }
 
 double Observer::first_non_zero_time() const {
@@ -58,8 +39,6 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     using namespace boost::numeric::odeint;
     double atol = 0;
     double rtol = 1e-6;
-    // auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
-    // using Stepper = dense_output_runge_kutta<runge_kutta_dopri5<double>>;
     auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
 
     double delta_r = (coord.r_b[1] - coord.r_b[0]) / 100;

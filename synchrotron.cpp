@@ -5,7 +5,7 @@
 
 #include "inverse-compton.h"
 #include "macros.h"
-#include "relativity.h"
+#include "physics.h"
 #include "utilities.h"
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size) {
     return SynPhotonsMesh(theta_size, SynPhotonsArray(r_size));
@@ -110,66 +110,75 @@ double SynPhotons::L_nu(double nu) const { return L_nu_peak * spectrum_(nu); }
 
 double SynPhotons::E_nu(double nu) const { return L_nu_peak * spectrum_(nu) * dt_com; }
 
+void SynPhotons::update_constant() {
+    // Update constants based on spectral parameters
+    a_m_1_3 = cbrt(nu_a / nu_m);                       // a_m_1_3 represents (nu_a / nu_m)^(1/3)
+    c_m_1_2 = sqrt(nu_c / nu_m);                       // c_m_1_2 represents (nu_c / nu_m)^(1/2)
+    m_a_pa4_2 = fast_pow(nu_m / nu_a, (p + 4) / 2);    // m_a_pa4_2 represents (nu_m / nu_a)^((p+4)/2)
+    a_m_mpa1_2 = fast_pow(nu_a / nu_m, (-p + 1) / 2);  // a_m_mpa1_2 represents (nu_a / nu_m)^((-p+1)/2)
+    a_c_1_3 = cbrt(nu_a / nu_c);                       // a_c_1_3 represents (nu_a / nu_c)^(1/3)
+    a_m_1_2 = sqrt(nu_a / nu_m);                       // a_m_1_2 represents (nu_a / nu_m)^(1/2)
+    R4 = sqrt(nu_c / nu_a) / 3;                        // R4 is a scaling factor based on (nu_c / nu_a)^(1/2) / 3
+    R6 = sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2) / 3;  // R6 is used in regime 6 for scaling
+    R5 = (p - 1) * R6;                                                // R5 scales R6 by a factor of (p - 1)
+}
+
 double SynPhotons::spectrum_(double nu) const {
     switch (regime) {
         case 1:
             if (nu <= nu_a) {
-                return cbrt(nu_a / nu_m) * (nu / nu_a) * (nu / nu_a);
+                return a_m_1_3 * (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_m) {
                 return cbrt(nu / nu_m);
             } else if (nu <= nu_c) {
                 return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 2:
             if (nu <= nu_m) {
-                return fast_pow(nu_m / nu_a, (p + 4) / 2) * (nu / nu_m) * (nu / nu_m);
+                return m_a_pa4_2 * (nu / nu_m) * (nu / nu_m);
             } else if (nu <= nu_a) {
-                return fast_pow(nu_a / nu_m, -(p - 1) / 2) * fast_pow(nu / nu_a, 5. / 2);
+                return a_m_mpa1_2 * fast_pow(nu / nu_a, 5. / 2);
             } else if (nu <= nu_c) {
                 return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 3:
             if (nu <= nu_a) {
-                return cbrt(nu_a / nu_c) * (nu / nu_a) * (nu / nu_a);
+                return a_c_1_3 * (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_c) {
                 return cbrt(nu / nu_c);
             } else if (nu <= nu_m) {
                 return sqrt(nu_c / nu);
             } else {
-                return sqrt(nu_c / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 4:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else if (nu <= nu_m) {
-                double R = sqrt(nu_c / nu_a) / 3;
-                return R * sqrt(nu_a / nu);
+                return R4 * sqrt(nu_a / nu);
             } else {
-                double R = sqrt(nu_c / nu_a) / 3;
-                return R * sqrt(nu_a / nu_m) * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return R4 * a_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                double R = (p - 1) / 3 * sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2);
-                return R * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                return R5 * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
             }
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                double R = sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2) / 3;
-                return R * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                return R6 * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
             }
             break;
 
@@ -354,6 +363,7 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
             ph[j][k].nu_E_peak = syn_nu_E_peak(ph[j][k]);
             ph[j][k].p = e[j][k].p;
             ph[j][k].dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
+            ph[j][k].update_constant();
         }
     }
     return ph;

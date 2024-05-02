@@ -7,7 +7,7 @@ class Jet {
    public:
     double duration{1 * con::sec};
     Profile2d dEdOmega;
-    Profile Gamma0;
+    Profile Gamma0_profile;
 };
 
 static Profile2d noInjection = Profile2d([](double theta, double t_lab) { return 0; });
