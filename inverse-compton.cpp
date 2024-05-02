@@ -12,7 +12,7 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size) {
 
 inline bool order(double a, double b, double c) { return a < b && b < c; };
 
-double ICPhoton::L_nu(double nu) const { return logscale_interp_extrap_eq_spaced(nu, this->nu_IC_, this->j_nu_); }
+double ICPhoton::L_nu(double nu) const { return loglog_interp_eq_spaced(nu, this->nu_IC_, this->j_nu_, true, true); }
 
 inline double eta_rad(double gamma_m, double gamma_c, double p) {
     return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - p));

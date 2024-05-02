@@ -3,9 +3,10 @@
 
 #include <cmath>
 
+#include "inverse-compton.h"
 #include "macros.h"
+#include "relativity.h"
 #include "utilities.h"
-
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size) {
     return SynPhotonsMesh(theta_size, SynPhotonsArray(r_size));
 }
@@ -223,19 +224,19 @@ double syn_gamma_c(double t_com, double B, double Y_tilt) {
 double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M) {
     double gamma_peak = std::min(gamma_m, gamma_c);
     double nu_peak = syn_nu(gamma_peak, B);
-    double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);  // adiabatic index
+    double ad_idx = adiabatic_index(Gamma);
 
-    double kT = (gamma_peak - 1) * con::me * con::c2 * (gamma_eos - 1);
+    double kT = (gamma_peak - 1) * con::me * con::c2 * (ad_idx - 1);
     // 2kT(nv_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
     double nu_a = pow(I_syn_peak * con::c2 / cbrt(nu_peak) / kT / 2, 3. / 5);
 
-    // the nu_peak is not the real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(gamma_eos-1), I_syn = I_peak;
+    // the nu_peak is not the real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(ad_idx-1), I_syn = I_peak;
     if (fabs(gamma_peak - 1) < 1e-6 || nu_a > nu_peak) {
-        /*nu_a = pow(I_syn_peak / con::me / 2 / (gamma_eos - 1) / sqrt(4 * con::pi / 3 * con::me * con::c / con::e /
+        /*nu_a = pow(I_syn_peak / con::me / 2 / (ad_idx - 1) / sqrt(4 * con::pi / 3 * con::me * con::c / con::e /
          * B),2.0 / 5);*/ //this works only for gamma >> 1
         double nu_M = syn_nu(gamma_M, B);
         double A = sqrt(4 * con::pi / 3 * con::me * con::c / con::e / B);
-        double B = I_syn_peak / (2 * con::me * (gamma_eos - 1));
+        double B = I_syn_peak / (2 * con::me * (ad_idx - 1));
         nu_a = root_bisection([=](double x) -> double { return A * x * x * x * x * x - x * x * x * x - B; },
                               sqrt(nu_peak), sqrt(nu_M));
         nu_a *= nu_a;
@@ -280,14 +281,17 @@ double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c) {
 
 double syn_gamma_N_peak(SynElectrons const& e) { return syn_gamma_N_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
+double calc_surface_element(double r, double theta_start, double theta_end) {
+    double dcos = std::fabs(cos(theta_end) - cos(theta_start));
+    return 2 * con::pi * r * r * dcos;
+}
+
 SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            double r = coord.r[k];
-            double dcos = std::fabs(cos(coord.theta_b[j + 1]) - cos(coord.theta_b[j]));
-            double dS = 2 * con::pi * r * r * dcos;
+            double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
@@ -301,10 +305,8 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, shock.eps_e, shock.xi, p);
 
             // fraction of synchrotron electron; the rest electrons are cyclotron
-            double f = pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - e[j][k].p);
-            if (f > 1) {
-                f = 1;
-            } else {
+            double f = std::min(pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - p), 1.0);
+            if (f < 1) {
                 e[j][k].gamma_m = gamma_syn_limit;
             }
 
@@ -327,6 +329,13 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     MeshGrid Y_tilt = create_grid_like(shock.Gamma, 0);
     return gen_syn_electrons(p, coord, shock, Y_tilt);
+}
+
+SynElectronsMesh gen_syn_electrons_w_IC_cooling(double p, Coord const& coord, Shock const& shock,
+                                                Medium const& medium) {
+    auto syn_e = gen_syn_electrons(p, coord, shock);
+    auto Y_eff = solve_IC_Y_Thomson(syn_e, shock, medium);
+    return gen_syn_electrons(p, coord, shock, Y_eff);
 }
 
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock) {

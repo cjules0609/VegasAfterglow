@@ -4,8 +4,8 @@
 #include <cmath>
 
 #include "macros.h"
+#include "relativity.h"
 #include "utilities.h"
-
 void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double z) {
     this->theta_obs = theta_obs;
     this->z = z;
@@ -29,8 +29,8 @@ void Observer::calc_D_L(double z) {
     using namespace boost::numeric::odeint;
     double atol = 0;
     double rtol = 1e-6;
-    auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
-    // auto stepper = make_dense_output(1.0e-6, 1.0e-6, runge_kutta_cash_karp54<std::vector<double>>());
+    // auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
 
     auto eqn = [&](double const& y, double& dydz, double z0) {
         dydz = 1 / sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
@@ -57,10 +57,13 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     t_obs = create_3d_grid(this->phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;
     double atol = 0;
-    double rtol = 1e-9;
-    auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
+    double rtol = 1e-6;
+    // auto stepper = bulirsch_stoer_dense_out<double>{atol, rtol};
+    // using Stepper = dense_output_runge_kutta<runge_kutta_dopri5<double>>;
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
 
-    double dr0 = (coord.r_b[1] - coord.r_b[0]) / 1000;
+    double delta_r = (coord.r_b[1] - coord.r_b[0]) / 100;
+
     for (size_t i = 0; i < this->phi.size(); ++i) {
         double phi_ = this->phi[i];
         for (size_t j = 0; j < coord.theta.size(); ++j) {
@@ -69,22 +72,20 @@ void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
 
             auto eqn = [&](double const& t, double& dtdr, double r) {
                 double Gamma_ = interp(r, coord.r, Gamma[j]);
-                double beta = sqrt(fabs((Gamma_ * Gamma_ - 1) / (Gamma_ * Gamma_)));
+                double beta = gamma_to_beta(Gamma_);
                 dtdr = (1 / beta - cos_) / con::c;
             };
 
             double Gamma0 = Gamma[j][0];
             if (Gamma0 == 1) {
-                for (size_t k = 0; k < coord.r.size(); ++k) {
-                    t_obs[i][j][k] = 0;
-                }
-
+                std::fill(t_obs[i][j].begin(), t_obs[i][j].end(), 0);
                 continue;
             }
-            double beta0 = sqrt(fabs((Gamma0 * Gamma0 - 1) / (Gamma0 * Gamma0)));
+
+            double beta0 = gamma_to_beta(Gamma0);
             t_obs[i][j][0] = coord.r[0] * (1 - beta0 * cos_) / con::c / beta0;
 
-            stepper.initialize(t_obs[i][j][0], coord.r[0], dr0);
+            stepper.initialize(t_obs[i][j][0], coord.r[0], delta_r);
             for (size_t k = 0; stepper.current_time() <= coord.r.back();) {
                 stepper.do_step(eqn);
                 for (; stepper.current_time() > coord.r[k + 1] && k + 1 < coord.r.size();) {
@@ -105,7 +106,7 @@ void Observer::calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma) {
             double cos_ = sin(theta_) * cos(phi_) * sin(theta_obs) + cos(theta_) * cos(theta_obs);
             for (size_t k = 0; k < Gamma[j].size(); ++k) {
                 double gamma_ = Gamma[j][k];
-                double beta = sqrt(fabs(1 - 1 / gamma_ / gamma_));
+                double beta = gamma_to_beta(gamma_);
                 this->doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_));
             }
         }

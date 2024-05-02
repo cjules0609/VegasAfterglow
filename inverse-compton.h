@@ -53,7 +53,7 @@ struct ICPhoton {
     ICPhoton() = default;
 
     template <typename Electrons, typename Photons>
-    void gen(Electrons const& e, Photons const& ph, double D) {
+    void gen(Electrons const& e, Photons const& ph, double D_shock_com) {
         double gamma_e_min = std::min(e.gamma_m, std::min(e.gamma_c, e.gamma_a));
         double nu_ph_min = std::min(ph.nu_m, std::min(ph.nu_c, ph.nu_a));
 
@@ -101,7 +101,7 @@ struct ICPhoton {
         }
 
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
-            j_nu_[k] *= D;
+            j_nu_[k] *= D_shock_com;
         }
     };
 

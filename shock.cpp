@@ -4,7 +4,7 @@
 #include <boost/numeric/odeint.hpp>
 
 #include "macros.h"
-
+#include "relativity.h"
 Shock::Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta)
     : t_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
       t_com_b(create_grid(coord.theta.size(), coord.r_b.size(), 0)),
@@ -56,8 +56,8 @@ void FS_n2(Shock& shock, Coord const& coord, Medium const& medium) {
             if (M > 10) {
                 shock.n_p[j][k] = 4 * shock.Gamma[j][k] * n1;
             } else if (M >= 1) {
-                double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
-                shock.n_p[j][k] = n1 * (gamma_eos + 1) * M * M / ((gamma_eos - 1) * M * M + 2);
+                double ad_idx = adiabatic_index(Gamma);
+                shock.n_p[j][k] = n1 * (ad_idx + 1) * M * M / ((ad_idx - 1) * M * M + 2);
             } else {
                 shock.n_p[j][k] = 0;  // shock cannot be formed
             }
@@ -91,21 +91,21 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
 };
 
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
-    double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
+    double ad_idx = adiabatic_index(Gamma);
     double dm = medium.mass(r) * dOmega / (4 * con::pi);
     double dM0 = jet.dEdOmega(theta, t_eng) * dOmega / (jet.Gamma0(theta) * con::c2);
     double Gamma2 = Gamma * Gamma;
-    double a1 = dOmega * r * r * medium.rho(r) / Gamma * (Gamma2 - 1) * (gamma_eos * Gamma - gamma_eos + 1);
-    double a2 = -(gamma_eos - 1) / Gamma * (gamma_eos * Gamma2 - gamma_eos + 1) * 3 * u / r;
+    double a1 = dOmega * r * r * medium.rho(r) / Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1);
+    double a2 = -(ad_idx - 1) / Gamma * (ad_idx * Gamma2 - ad_idx + 1) * 3 * u / r;
     double b1 = (dM0 + dm) * con::c2;
-    double b2 = (gamma_eos * gamma_eos * (Gamma2 - 1) + 3 * gamma_eos - 2) * u / Gamma2;
+    double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u / Gamma2;
     return -(a1 + a2) / (b1 + b2);
 };
 
 double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
-    double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
+    double ad_idx = adiabatic_index(Gamma);
     double E = dOmega * r * r * medium.rho(r) * con::c2;
-    return (1 - medium.eps_e) * (Gamma - 1) * E - (gamma_eos - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u;
+    return (1 - medium.eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u;
 };
 
 double BlastWaveEqn::dtdr_eng(double Gamma) {
@@ -116,8 +116,8 @@ double BlastWaveEqn::dtdr_eng(double Gamma) {
 double BlastWaveEqn::dtdr_com(double Gamma) { return 1 / (std::sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
 
 double BlastWaveEqn::dDdr_FS(double Gamma) {
-    double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
-    double cs = con::c * std::sqrt(gamma_eos - 1);
+    double ad_idx = adiabatic_index(Gamma);
+    double cs = con::c * std::sqrt(ad_idx - 1);
     return 0;  // cs * dtdr_com(Gamma);
 };
 
@@ -126,9 +126,9 @@ double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng)
     double dM0 = jet.dEdOmega(theta, t_eng) / (jet.Gamma0(theta) * con::c2);
     double n4 = dM0 / (r * r * D_com / Gamma);
     double n1 = medium.rho(r) / con::mp;
-    double gamma_eos = (4 * Gamma + 1) / (3 * Gamma);
+    double ad_idx = adiabatic_index(Gamma);
     double gamma34 = (Gamma / Gamma0 + Gamma0 / Gamma) / 2;
-    double n3 = n4 * (gamma_eos * gamma34 + 1) / (gamma_eos - 1);
+    double n3 = n4 * (ad_idx * gamma34 + 1) / (ad_idx - 1);
     return 1 / (Gamma0 * Gamma * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));*/
     return 0;
 };
@@ -137,14 +137,15 @@ void solve_single_shell(Array const& r_b, Array const& r, Array& Gamma, Array& t
                         Array& D_RS, double u0, BlastWaveEqn const& eqn) {
     using namespace boost::numeric::odeint;
     double atol = 0;     // integrator absolute tolerance
-    double rtol = 1e-9;  // integrator relative tolerance
-    auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
+    double rtol = 1e-6;  // integrator relative tolerance
+    // auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
     Array state{0, 0, 0, 0, 0, 0};
 
     double dr = (r[1] - r[0]) / 1000;
     double r0 = r[0];
     double Gamma0 = Gamma[0];
-    double beta0 = sqrt(Gamma0 * Gamma0 - 1) / Gamma0;
+    double beta0 = gamma_to_beta(Gamma0);
     double t_com0 = t_com[0];
 
     // engine time used to calculate the energy injection

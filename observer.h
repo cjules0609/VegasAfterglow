@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 #include "mesh.h"
@@ -26,14 +27,13 @@ class Observer {
     MeshGrid3d gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_ptc);
 
     template <typename... RadPhotonMesh>
-    MeshGrid gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const;
+    MeshGrid gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const;
 
     template <typename... RadPhotonMesh>
-    Array gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resolution,
-                   RadPhotonMesh const&... rad_ptc) const;
+    Array gen_flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const;
 
     template <typename... RadPhotonMesh>
-    MeshGrid spectrum(double nu_min, double nu_max, double t, RadPhotonMesh const&... rad_ptc) const;
+    MeshGrid spectrum(double nu_min, double nu_max, double t, RadPhotonMesh const&... photons) const;
 
     double theta_obs{0};
     double z{0};
@@ -42,6 +42,8 @@ class Observer {
     MeshGrid3d t_obs;
 
    private:
+    template <typename... RadPhotonMesh>
+    void gen_F_nu_(Array& F_nu, Array const& t_bins, double nu_obs, RadPhotonMesh const&... photons) const;
     void gen_phi_grid(Coord const& coord, double theta_obs);
     void calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma);
@@ -54,60 +56,79 @@ class Observer {
 };
 
 template <typename... RadPhotonMesh>
-MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... rad_ptc) const {
+void Observer::gen_F_nu_(std::vector<double>& f_nu, const std::vector<double>& t_bins, double nu_obs,
+                         const RadPhotonMesh&... photons) const {
+    if (eat_s.empty()) {
+        throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
+    }
+
+    // Variables for tracking and indexing
+    size_t next_idx = 0;
+
+    for (const auto& rad_unit : eat_s) {
+        double t_obs = rad_unit.t_obs;
+        if (t_obs == 0) {  // Skip non-emission regions
+            continue;
+        }
+
+        // Compute the differential angle in phi
+        double dphi = this->phi_b[rad_unit.i + 1] - this->phi_b[rad_unit.i];
+
+        // Compute doppler shift
+        double D = doppler[rad_unit.i][rad_unit.j][rad_unit.k];
+        double nu_com = (1 + this->z) * nu_obs / D;
+
+        // Compute differential energy per unit solid angle in comoving frame
+        double dE_nu_dOmega_com =
+            dphi / (2 * con::pi) * (photons[rad_unit.j][rad_unit.k].E_nu(nu_com) + ...) / (4 * con::pi);
+
+        // Convert to observer frame
+        double dE_nu_dOmega_obs = D * D * dE_nu_dOmega_com;
+
+        // Accumulate flux in the appropriate time bin
+        if (t_obs > t_bins[next_idx + 1] && next_idx + 1 < t_bins.size()) {
+            ++next_idx;
+        }
+
+        if (next_idx < f_nu.size()) {
+            f_nu[next_idx] += dE_nu_dOmega_obs;
+        } else {
+            break;
+        }
+    }
+
+    // Normalize the flux for each bin
+    for (size_t i = 0; i < f_nu.size(); ++i) {
+        double dt_obs = t_bins[i + 1] - t_bins[i];
+        f_nu[i] *= (1 + this->z) / (D_L * D_L) / dt_obs;
+    }
+}
+
+template <typename... RadPhotonMesh>
+MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonMesh const&... photons) const {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }
 
     MeshGrid F_nu = create_grid(nu_obs.size(), t_bins.size() - 1, 0);
-
+    std::vector<std::thread> threads;
     for (size_t l = 0; l < nu_obs.size(); ++l) {
-        for (size_t m = 0, n = 0; m < eat_s.size(); ++m) {
-            double t_ = eat_s[m].t_obs;
-            size_t i_ = eat_s[m].i;
-            size_t j_ = eat_s[m].j;
-            size_t k_ = eat_s[m].k;
-
-            if (t_ == 0) {  // non-emission region
-                continue;
-            }
-
-            double dphi = this->phi_b[i_ + 1] - this->phi_b[i_];
-
-            double doppler_ = doppler[i_][j_][k_];
-
-            double nu_prime = (1 + this->z) * nu_obs[l] / doppler_;
-
-            double dE_nu_dOmega_com = dphi / (2 * con::pi) * (rad_ptc[j_][k_].E_nu(nu_prime) + ...) / (4 * con::pi);
-
-            double dE_nu_dOmega_obs = doppler_ * doppler_ * dE_nu_dOmega_com;
-
-            if (t_ > t_bins[n + 1]) {
-                n++;
-            }
-            if (n < F_nu[0].size()) {
-                F_nu[l][n] += dE_nu_dOmega_obs;
-            } else {
-                break;
-            }
-        }
-        for (size_t i = 0; i < F_nu[0].size(); ++i) {
-            double dt = t_bins[i + 1] - t_bins[i];
-            F_nu[l][i] *= (1 + this->z) / (D_L * D_L) / dt;
-        }
+        threads.emplace_back(&Observer::gen_F_nu_<RadPhotonMesh...>, this, std::ref(F_nu[l]), std::cref(t_bins),
+                             nu_obs[l], std::cref(photons)...);
+    }
+    for (auto& thread : threads) {
+        thread.join();
     }
     return F_nu;
 }
 
 template <typename... RadPhotonMesh>
-Array Observer::gen_Flux(Array const& t_bins, double band_filter_low, double band_filter_hi, size_t freq_resol,
-                         RadPhotonMesh const&... rad_ptc) const {
-    Array nu_obs_b = logspace(band_filter_low, band_filter_hi, freq_resol + 1);
-    Array nu_obs = boundary2centerlog(nu_obs_b);
-    MeshGrid F_nu = gen_F_nu(t_bins, nu_obs, rad_ptc...);
+Array Observer::gen_flux(Array const& t_bins, Array const& band_pass_freq, RadPhotonMesh const&... photons) const {
+    Array nu_obs = boundary2centerlog(band_pass_freq);
+    MeshGrid F_nu = gen_F_nu(t_bins, nu_obs, photons...);
     Array flux = zeros(t_bins.size() - 1);
     for (size_t i = 0; i < F_nu.size(); ++i) {
-        double dnu = nu_obs_b[i + 1] - nu_obs_b[i];
+        double dnu = band_pass_freq[i + 1] - band_pass_freq[i];
         for (size_t j = 0; j < flux.size(); ++j) {
             flux[j] += dnu * F_nu[i][j];
         }
@@ -116,7 +137,7 @@ Array Observer::gen_Flux(Array const& t_bins, double band_filter_low, double ban
 }
 
 template <typename... RadPhotonMesh>
-MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_ptc) {
+MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... photons) {
     if (eat_s.empty()) {
         throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
     }
@@ -125,12 +146,12 @@ MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... rad_pt
     for (size_t i = 0; i < F_nu_obs.size(); ++i) {
         for (size_t j = 0; j < F_nu_obs[0].size(); ++j) {
             for (size_t k = 0; k < F_nu_obs[0][0].size(); ++k) {
-                double doppler_ = this->doppler[i][j][k];
-                double nu_prime = (1 + this->z) * nu_obs / doppler_;
+                double D = this->doppler[i][j][k];
+                double nu_com = (1 + this->z) * nu_obs / D;
                 double dphi = this->phi_b[i + 1] - this->phi_b[i];
 
-                F_nu_obs[i][j][k] = (1 + this->z) / (this->D_L * this->D_L) * doppler_ * doppler_ * doppler_ * dphi /
-                                    (2 * con::pi) * (rad_ptc[j][k].L_nu(nu_prime) + ...) / (4 * con::pi);
+                F_nu_obs[i][j][k] = (1 + this->z) / (this->D_L * this->D_L) * D * D * D * dphi / (2 * con::pi) *
+                                    (photons[j][k].L_nu(nu_com) + ...) / (4 * con::pi);
             }
         }
     }
