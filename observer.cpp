@@ -13,7 +13,7 @@ void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs,
     calc_doppler_grid(coord, shock.Gamma);
     calc_t_obs_grid(coord, shock.Gamma);
     calc_sorted_EAT_surface(coord, t_obs);
-    calc_D_L(z);
+    calc_luminosity_distance(z);
 }
 
 void Observer::gen_phi_grid(Coord const& coord, double theta_obs) {
@@ -25,7 +25,7 @@ void Observer::gen_phi_grid(Coord const& coord, double theta_obs) {
     phi = boundary2center(phi_b);
 }
 
-void Observer::calc_D_L(double z) {
+void Observer::calc_luminosity_distance(double z) {
     using namespace boost::numeric::odeint;
     double atol = 0;
     double rtol = 1e-6;
@@ -40,8 +40,8 @@ void Observer::calc_D_L(double z) {
     for (; stepper.current_time() <= z;) {
         stepper.do_step(eqn);
     }
-    stepper.calc_state(z, this->D_L);
-    this->D_L = (1 + z) * this->D_L * con::c / con::H0;
+    stepper.calc_state(z, this->lumi_dist);
+    this->lumi_dist = (1 + z) * this->lumi_dist * con::c / con::H0;
 }
 
 double Observer::first_non_zero_time() const {

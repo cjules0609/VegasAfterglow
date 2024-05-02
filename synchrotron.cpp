@@ -344,7 +344,6 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double B = shock.B[j][k];
-            double dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
 
             ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot;
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
@@ -354,7 +353,7 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
             ph[j][k].regime = e[j][k].regime;
             ph[j][k].nu_E_peak = syn_nu_E_peak(ph[j][k]);
             ph[j][k].p = e[j][k].p;
-            ph[j][k].dt_com = dt_com;
+            ph[j][k].dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
         }
     }
     return ph;

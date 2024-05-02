@@ -37,7 +37,7 @@ class Observer {
 
     double theta_obs{0};
     double z{0};
-    double D_L{1};
+    double lumi_dist{1};
     MeshGrid3d doppler;
     MeshGrid3d t_obs;
 
@@ -48,7 +48,7 @@ class Observer {
     void calc_doppler_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma);
     void calc_sorted_EAT_surface(Coord const& coord, MeshGrid3d const& t_obs);
-    void calc_D_L(double z);
+    void calc_luminosity_distance(double z);
     double first_non_zero_time() const;
     EATsurface eat_s;
     Array phi_b;
@@ -100,7 +100,7 @@ void Observer::gen_F_nu_(std::vector<double>& f_nu, const std::vector<double>& t
     // Normalize the flux for each bin
     for (size_t i = 0; i < f_nu.size(); ++i) {
         double dt_obs = t_bins[i + 1] - t_bins[i];
-        f_nu[i] *= (1 + this->z) / (D_L * D_L) / dt_obs;
+        f_nu[i] *= (1 + this->z) / (lumi_dist * lumi_dist) / dt_obs;
     }
 }
 
@@ -115,6 +115,7 @@ MeshGrid Observer::gen_F_nu(Array const& t_bins, Array const& nu_obs, RadPhotonM
     for (size_t l = 0; l < nu_obs.size(); ++l) {
         threads.emplace_back(&Observer::gen_F_nu_<RadPhotonMesh...>, this, std::ref(F_nu[l]), std::cref(t_bins),
                              nu_obs[l], std::cref(photons)...);
+        // gen_F_nu_(F_nu[l], t_bins, nu_obs[l], photons...);
     }
     for (auto& thread : threads) {
         thread.join();
@@ -147,10 +148,10 @@ MeshGrid3d Observer::gen_F_nu_grid(double nu_obs, RadPhotonMesh const&... photon
         for (size_t j = 0; j < F_nu_obs[0].size(); ++j) {
             for (size_t k = 0; k < F_nu_obs[0][0].size(); ++k) {
                 double D = this->doppler[i][j][k];
-                double nu_com = (1 + this->z) * nu_obs / D;
+                double nu_com = (1 + z) * nu_obs / D;
                 double dphi = this->phi_b[i + 1] - this->phi_b[i];
 
-                F_nu_obs[i][j][k] = (1 + this->z) / (this->D_L * this->D_L) * D * D * D * dphi / (2 * con::pi) *
+                F_nu_obs[i][j][k] = (1 + z) / (lumi_dist * lumi_dist) * D * D * D * dphi / (2 * con::pi) *
                                     (photons[j][k].L_nu(nu_com) + ...) / (4 * con::pi);
             }
         }
