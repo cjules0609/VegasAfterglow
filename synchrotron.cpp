@@ -204,8 +204,8 @@ double syn_gamma_M(double B, double zeta, double Y_tilt) {
     return sqrt(6 * con::pi * con::e / (con::sigmaT * B * zeta * (1 + Y_tilt)));
 }
 
-double syn_gamma_m(double Gamma, double gamma_M, double eps_e, double xi, double p) {
-    double gamma_bar_minus_1 = eps_e * (Gamma - 1) * 1836 / xi;
+double syn_gamma_m(double e_th, double gamma_M, double eps_e, double n_e, double p) {
+    double gamma_bar_minus_1 = eps_e * e_th / (n_e * con::me * con::c2);
     double gamma_m_minus_1 = 1;
     if (p > 2) {
         gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_bar_minus_1;
@@ -302,6 +302,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
         for (size_t k = 0; k < coord.r.size(); ++k) {
             double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
+            double e_th = shock.e_th[j][k];
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
             double D = shock.width[j][k];
@@ -311,7 +312,7 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             constexpr double gamma_syn_limit = 10;
 
             e[j][k].gamma_M = syn_gamma_M(B, shock.zeta, Y);
-            e[j][k].gamma_m = syn_gamma_m(Gamma, e[j][k].gamma_M, shock.eps_e, shock.xi, p);
+            e[j][k].gamma_m = syn_gamma_m(e_th, e[j][k].gamma_M, shock.eps_e, n_e, p);
 
             // fraction of synchrotron electron; the rest electrons are cyclotron
             double f = std::min(pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - p), 1.0);

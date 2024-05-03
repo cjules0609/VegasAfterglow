@@ -28,9 +28,16 @@ void write2file(Coord const& coord, std::string const& filename) {
 
     for (size_t i = 0; i < coord.r.size(); ++i) {
         file_r << coord.r[i] / con::cm << " ";
+    }
+
+    for (size_t i = 0; i < coord.theta.size(); ++i) {
         file_theta << coord.theta[i] << " ";
+    }
+
+    for (size_t i = 0; i < coord.phi.size(); ++i) {
         file_phi << coord.phi[i] << " ";
     }
+
     file_r << std::endl;
     file_theta << std::endl;
     file_phi << std::endl;

@@ -72,8 +72,8 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& c
 
 double syn_gamma_c(double t_com, double B, double Y_tilt);
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
-double syn_gamma_M(double B, double zeta, double Y_tilt);
-double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M);
-// double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p);
+// double syn_gamma_M(double B, double zeta, double Y_tilt);
+// double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M);
+//  double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p);
 double syn_nu(double gamma, double B);
 #endif

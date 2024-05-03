@@ -25,15 +25,6 @@ void Observer::gen_phi_grid(Coord const& coord, double theta_obs) {
     phi = boundary2center(phi_b);
 }
 
-double Observer::first_non_zero_time() const {
-    for (auto const& eat : eat_s) {
-        if (eat.t_obs != 0) {
-            return eat.t_obs;
-        }
-    }
-    return 0;
-}
-
 void Observer::calc_t_obs_grid(Coord const& coord, MeshGrid const& Gamma) {
     t_obs = create_3d_grid(this->phi.size(), coord.theta.size(), coord.r.size());
     using namespace boost::numeric::odeint;

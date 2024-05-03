@@ -16,12 +16,12 @@ void GCN36236(std::string prefix, double Gamma0, double theta_j, Array const& th
     // auto jet = create_tophat_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
     auto jet = create_gaussian_jet(E_iso, Gamma0, theta_j, 1 * con::sec);
 
-    size_t r_num = 1000;
-    size_t theta_num = 150;
+    size_t r_num = 800;
+    size_t theta_num = 50;
     size_t phi_num = 37;
     double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
 
-    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
+    auto r = logspace(R_dec / 1000, R_dec * 1000, r_num);
     auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile, 0.6);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
@@ -34,6 +34,7 @@ void GCN36236(std::string prefix, double Gamma0, double theta_j, Array const& th
     write2file(shock_f, prefix + "shock");
 
     auto syn_e = gen_syn_electrons_w_IC_cooling(p, coord, shock_f, medium);
+    // auto syn_e = gen_syn_electrons(p, coord, shock_f);
     auto syn_ph = gen_syn_photons(syn_e, coord, shock_f);
 
     write2file(syn_ph, prefix + "syn_ph");
@@ -41,8 +42,9 @@ void GCN36236(std::string prefix, double Gamma0, double theta_j, Array const& th
 
     //
 
-    Array t_bins = logspace(5e-2 * con::day, 5e2 * con::day, 100);
-    double lumi_dist = 6.6e26 * con::cm;
+    Array t_bins = logspace(5e-2 * con::day, 5e3 * con::day, 100);
+    // double lumi_dist = 6.6e26 * con::cm;
+    double lumi_dist = 1.23e26 * con::cm;
     double z = luminosity_distance_to_z(lumi_dist);
 
     for (auto theta_v : theta_obs) {
@@ -76,19 +78,21 @@ void GCN36236(std::string prefix, double Gamma0, double theta_j, Array const& th
     write2file(boundary2centerlog(t_bins), prefix + "t_obs", con::sec);
 }
 int main() {
-    Array theta_obs = linspace(5 * con::deg, 30 * con::deg, 26);
+    double theta = 5 * con::deg, eps_e = 0.01;
+    GCN36236("tests/", 300, theta, {0.54}, eps_e);
+    /* Array theta_obs = linspace(5 * con::deg, 30 * con::deg, 26);
 
-    double eps_e = 0.1;
-    Array theta_c = {3 * con::deg, 4 * con::deg, 5 * con::deg, 6 * con::deg, 7 * con::deg, 8 * con::deg};
-    std::vector<std::thread> threads;
+     double eps_e = 0.1;
+     Array theta_c = {3 * con::deg, 4 * con::deg, 5 * con::deg, 6 * con::deg, 7 * con::deg, 8 * con::deg};
+     std::vector<std::thread> threads;
 
-    for (auto theta : theta_c) {
-        threads.emplace_back(GCN36236, "prediction-n1/", 300, theta, theta_obs, eps_e);
-    }
+     for (auto theta : theta_c) {
+         threads.emplace_back(GCN36236, "prediction-n1/", 300, theta, theta_obs, eps_e);
+     }
 
-    for (auto& thread : threads) {
-        thread.join();
-    }
+     for (auto& thread : threads) {
+         thread.join();
+     }*/
 
     // afterglow_gen();
     return 0;

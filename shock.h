@@ -13,7 +13,8 @@ class Shock {
     Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta);
     MeshGrid t_com;
     MeshGrid t_com_b;
-    MeshGrid Gamma;
+    MeshGrid Gamma;  // bulk Lorentz factor
+    MeshGrid e_th;   // internal energy density
     MeshGrid B;      // comoving magnetic field
     MeshGrid width;  // comoving frame shock width
     MeshGrid n_p;    // n2
@@ -31,6 +32,8 @@ class BlastWaveEqn {
 
     Medium medium;
     Jet jet;
+    double dOmega;
+    double theta;
 
    private:
     inline double dGammadr(double r, double Gamma, double u, double t_eng);
@@ -43,13 +46,11 @@ class BlastWaveEqn {
 
     inline double dDdr_RS(double r, double Gamma, double D_com, double t_eng);  // lab frame reverse shock width
 
-    inline double dDdr_FS(double Gamma);  // lab frame shell width
+    inline double dDdr_FS(double r, double Gamma);  // lab frame shell width
 
    private:
     double theta_lo;
     double theta_hi;
-    double theta;
-    double dOmega;
 };
 
 std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& blast, Medium const& medium);
