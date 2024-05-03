@@ -112,6 +112,39 @@ double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng)
     return Gamma / (Gamma0 * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));
 };
 
+void update_shock_state(size_t j, size_t k, Shock& shock, Array& state, double Gamma_up_str, double n_up_str,
+                        double cs_up_str, double shock_width) {
+    double Gamma = state[0];
+    // state[1]: u blast wave internal energy
+    double t_eng = state[2];
+    double t_com = state[3];
+
+    double Gamma_rel =
+        fabs(Gamma_up_str - 1.) < 1e-6 ? Gamma : (Gamma / Gamma_up_str + Gamma_up_str / Gamma) / 2;  // can be improved
+
+    shock.Gamma[j][k] = Gamma;
+    shock.t_com[j][k] = t_com;
+    shock.width[j][k] = shock_width;
+    shock.n_p[j][k] = n_down_str(Gamma_rel, n_up_str, cs_up_str);
+    shock.e_th[j][k] = e_thermal_down_str(Gamma_rel, shock.n_p[j][k]);
+    shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
+}
+
+void Blandford_McKee(size_t j, size_t k, Shock& shock, Array& state, double r, double N3, double E_th3) {
+    double Gamma = state[0];
+    // state[1]: u blast wave internal energy
+    double t_eng = state[2];
+    double t_com = state[3];
+    double D_FS = state[5];
+
+    shock.Gamma[j][k] = Gamma;
+    shock.t_com[j][k] = t_com;
+    shock.width[j][k] = D_FS;
+    shock.n_p[j][k] = N3 / (D_FS * r * r);
+    shock.e_th[j][k] = E_th3 / (D_FS * r * r);
+    shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
+}
+
 void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& shock_r, Shock& shock_f,
                         BlastWaveEqn const& eqn) {
     using namespace boost::numeric::odeint;
@@ -120,71 +153,57 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& shock
     // auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
     auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
 
-    Array state{0, 0, 0, 0, 0, 0};
-
-    double r0 = r[0];
-    double Gamma0 = shock_f.Gamma[j][0];
+    double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
+    double u0 = (Gamma0 - 1) * eqn.medium.mass(r[0]) * eqn.dOmega / (4 * con::pi) * con::c2;
     double beta0 = gamma_to_beta(Gamma0);
-    double t_eng0 = r0 * (1 - beta0) / beta0 / con::c;
-    double u0 = (Gamma0 - 1) * eqn.medium.mass(r0) * eqn.dOmega / (4 * con::pi) * con::c2;
+    double t_eng0 = r[0] * (1 - beta0) / beta0 / con::c;
     double t_com0 = shock_f.t_com[j][0];
-    double FS_width0 = shock_f.width[j][0];
-    double RS_width0 = shock_r.width[j][0];
+    double D_RS0 = 0;
+    double D_FS0 = con::c * eqn.jet.duration * Gamma0;
+
+    Array state{Gamma0, u0, t_eng0, t_com0, D_RS0, D_FS0};
+
+    double n1_0 = eqn.medium.rho(r[0]) / con::mp;
+    double n4_0 = eqn.jet.dEdOmega(eqn.theta, t_eng0) / (Gamma0 * con::mp * con::c2 * r[0] * r[0] * D_FS0);
+
+    update_shock_state(j, 0, shock_r, state, Gamma0, n4_0, 1e-8, D_RS0);
+    update_shock_state(j, 0, shock_f, state, 1., n1_0, eqn.medium.cs, D_FS0);
 
     // initialize the integrator
     double dr = (r[1] - r[0]) / 1000;
-    stepper.initialize(Array{Gamma0, u0, t_eng0, t_com0, RS_width0, FS_width0}, r0, dr);
-    // integrate the shell over r
+    stepper.initialize(state, r[0], dr);
 
     double N3 = 0;
     double E_th = 0;
     bool RS_crossed = false;
+
+    // integrate the shell over r
     for (int k = 0, k1 = 0; stepper.current_time() <= r.back();) {
         stepper.do_step(eqn);
 
         for (; stepper.current_time() > r[k + 1] && k + 1 < r.size();) {
             k++;
             stepper.calc_state(r[k], state);
-            double Gamma = state[0];
             // state[1]: u blast wave internal energy
             double t_eng = state[2];
-            double t_com = state[3];
             double D_RS = state[4];
             double D_FS = state[5];
 
             double n1 = eqn.medium.rho(r[k]) / con::mp;
-            double Gamma12 = Gamma;
-            shock_f.Gamma[j][k] = Gamma;
 
-            shock_f.t_com[j][k] = t_com;
-            // shock_f.width[theta_idx][i] = r[i] / Gamma / 12;  // D_FS;
-            shock_f.width[j][k] = D_FS;
-            shock_f.n_p[j][k] = n_down_str(Gamma12, n1, eqn.medium.cs);
-            shock_f.e_th[j][k] = e_thermal_down_str(Gamma12, shock_f.n_p[j][k]);
-            shock_f.B[j][k] = co_moving_B(shock_f.eps_B, shock_f.e_th[j][k]);
+            update_shock_state(j, k, shock_f, state, 1., n1, eqn.medium.cs, D_FS);
 
-            shock_r.Gamma[j][k] = Gamma;
-            shock_r.t_com[j][k] = t_com;
-
-            // reverse shock crossing
-            if (D_RS < D_FS && !RS_crossed) {
-                double Gamma34 = (Gamma0 / Gamma + Gamma / Gamma0) / 2;
-                shock_r.width[j][k] = D_RS;
+            if (!RS_crossed) {
                 double n4 = eqn.jet.dEdOmega(eqn.theta, t_eng) / (Gamma0 * con::mp * con::c2 * r[k] * r[k] * D_FS);
-                shock_r.n_p[j][k] = n4 * 4 * Gamma34;  // n_down(gamma34, n4, cs_4); can be improved
-                shock_r.e_th[j][k] = e_thermal_down_str(Gamma34, shock_r.n_p[j][k]);
-
-            } else {  // reverse shock crossed
-                if (!RS_crossed) {
+                update_shock_state(j, k, shock_r, state, Gamma0, n4, 1E-8, D_RS);
+                if (D_RS > D_FS) {
                     N3 = shock_r.n_p[j][k] * D_RS * r[k] * r[k];
                     E_th = shock_r.e_th[j][k] * D_RS * r[k] * r[k];
                     RS_crossed = true;
                 }
-                shock_r.width[j][k] = D_FS;
-                shock_r.n_p[j][k] = N3 / (D_FS * r[k] * r[k]);
-                shock_r.e_th[j][k] = E_th / (D_FS * r[k] * r[k]);
+            } else {
+                Blandford_McKee(j, k, shock_r, state, r[k], N3, E_th);
             }
-            shock_r.B[j][k] = co_moving_B(shock_r.eps_B, shock_r.e_th[j][k]);
         }
 
         for (; stepper.current_time() > r_b[k1 + 1] && k1 + 1 < r_b.size();) {
@@ -199,30 +218,9 @@ std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium co
     Shock shock_f(coord, medium.eps_e, medium.eps_B, medium.xi, medium.zeta);  // forward shock
     Shock shock_r(coord, medium.eps_e, medium.eps_B, medium.xi, medium.zeta);  // reverse shock
 
-    for (size_t i = 0; i < coord.theta.size(); ++i) {
-        auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[i], coord.theta_b[i + 1]);
-        double Gamma0 = jet.Gamma0_profile(coord.theta[i]);
-
-        double n1 = medium.rho(coord.r[0]) / con::mp;
-
-        shock_f.Gamma[i][0] = Gamma0;
-
-        shock_f.t_com[i][0] = coord.r[0] / sqrt(Gamma0 * Gamma0 - 1) / con::c;
-        shock_f.t_com_b[i][0] = coord.r_b[0] / sqrt(Gamma0 * Gamma0 - 1) / con::c;
-        shock_f.width[i][0] = con::c * jet.duration * Gamma0;
-        shock_f.n_p[i][0] = n_down_str(Gamma0, n1, medium.cs);
-        shock_f.e_th[i][0] = e_thermal_down_str(Gamma0, shock_f.n_p[i][0]);
-        shock_f.B[i][0] = co_moving_B(shock_f.eps_B, shock_f.e_th[i][0]);
-
-        shock_r.Gamma[i][0] = shock_f.Gamma[i][0];
-        shock_r.t_com[i][0] = shock_f.t_com[i][0];
-        shock_r.t_com_b[i][0] = shock_f.t_com_b[i][0];
-        shock_r.width[i][0] = 0;
-        shock_r.n_p[i][0] = 0;
-        shock_r.e_th[i][0] = 0;
-        shock_r.B[i][0] = 0;
-
-        solve_single_shell(i, coord.r_b, coord.r, shock_r, shock_f, eqn);
+    for (size_t j = 0; j < coord.theta.size(); ++j) {
+        auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[j], coord.theta_b[j + 1]);
+        solve_single_shell(j, coord.r_b, coord.r, shock_r, shock_f, eqn);
     }
     return std::make_pair(shock_r, shock_f);
 }
