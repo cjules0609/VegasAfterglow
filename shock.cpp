@@ -163,36 +163,36 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& r_sho
     // auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
     auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
 
+    double r0 = r_b[0];
     double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
-    double u0 = (Gamma0 - 1) * eqn.medium.mass(r[0]) * eqn.dOmega / (4 * con::pi) * con::c2;
+    double u0 = (Gamma0 - 1) * eqn.medium.mass(r0) * eqn.dOmega / (4 * con::pi) * con::c2;
     double beta0 = gamma_to_beta(Gamma0);
-    double t_eng0 = r[0] * (1 - beta0) / beta0 / con::c;
-    double t_com0 = f_shock.t_com[j][0];
+    double t_eng0 = r0 * (1 - beta0) / beta0 / con::c;
+    double t_com0 = r0 / sqrt(Gamma0 * Gamma0 - 1) / con::c;
     double D_RS0 = 0;
     double D_FS0 = con::c * eqn.jet.duration * Gamma0;
 
     Array state{Gamma0, u0, t_eng0, t_com0, D_RS0, D_FS0};
 
-    double n1_0 = eqn.medium.rho(r[0]) / con::mp;
-    double n4_0 = eqn.jet.dEdOmega(eqn.theta, t_eng0) / (Gamma0 * con::mp * con::c2 * r[0] * r[0] * D_FS0);
+    double n1_0 = eqn.medium.rho(r0) / con::mp;
+    double n4_0 = eqn.jet.dEdOmega(eqn.theta, t_eng0) / (Gamma0 * con::mp * con::c2 * r0 * r0 * D_FS0);
 
-    update_shock_state(j, 0, f_shock, state, 1., n1_0, eqn.medium.cs, D_FS0);
-    update_shock_state(j, 0, r_shock, state, Gamma0, n4_0, 1e-8, D_RS0);
-
+    // update_shock_state(j, 0, f_shock, state, 1., n1_0, eqn.medium.cs, D_FS0);
+    // update_shock_state(j, 0, r_shock, state, Gamma0, n4_0, 1e-8, D_RS0);
+    f_shock.t_com_b[j][0] = r_shock.t_com_b[j][0] = t_com0;
     // initialize the integrator
     double dr = (r[1] - r[0]) / 100;
-    stepper.initialize(state, r[0], dr);
+    stepper.initialize(state, r0, dr);
 
     double N3 = 0;
     double E_th = 0;
     bool RS_crossed = false;
 
     // integrate the shell over r
-    for (int k = 0, k1 = 0; stepper.current_time() <= r.back();) {
+    for (int k = 0, k1 = 0; stepper.current_time() <= r_b.back();) {
         stepper.do_step(eqn);
 
-        for (; stepper.current_time() > r[k + 1] && k + 1 < r.size();) {
-            k++;
+        for (; stepper.current_time() > r[k] && k < r.size(); k++) {
             stepper.calc_state(r[k], state);
             // state[1]: u blast wave internal energy
             double t_eng = state[2];

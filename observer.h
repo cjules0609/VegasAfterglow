@@ -61,11 +61,11 @@ void Observer::calc_specific_flux(std::vector<double>& f_nu, const std::vector<d
     }
 
     // Variables for tracking and indexing
-    size_t next_idx = 0;
+    size_t now_idx = 0;
 
     for (const auto& rad_unit : eat_s) {
         double t_obs = rad_unit.t_obs;
-        if (t_obs == 0) {  // Skip non-emission regions
+        if (t_obs < t_bins[0] || t_obs == 0) {  // Skip unobserved and non-emission regions
             continue;
         }
 
@@ -84,12 +84,12 @@ void Observer::calc_specific_flux(std::vector<double>& f_nu, const std::vector<d
         double dE_nu_dOmega_obs = D * D * dE_nu_dOmega_com;
 
         // Accumulate flux in the appropriate time bin
-        if (t_obs > t_bins[next_idx + 1] && next_idx + 1 < t_bins.size()) {
-            ++next_idx;
+        if (t_obs > t_bins[now_idx + 1] && now_idx + 1 < t_bins.size()) {
+            ++now_idx;
         }
 
-        if (next_idx < f_nu.size()) {
-            f_nu[next_idx] += dE_nu_dOmega_obs;
+        if (now_idx < f_nu.size()) {
+            f_nu[now_idx] += dE_nu_dOmega_obs;
         } else {
             break;
         }

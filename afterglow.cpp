@@ -136,7 +136,7 @@ void lc_gen(std::string folder_name) {
 
     double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
 
-    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
+    auto r = logspace(R_dec / 100, R_dec * 300, r_num);
     auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile, theta_w);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
@@ -144,6 +144,10 @@ void lc_gen(std::string folder_name) {
 
     // solve dynamics
     auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
+
+    // print_array(r_shock.t_com_b[0]);
+
+    // print_array(r_shock.t_com[0]);
 
     auto syn_e = gen_syn_electrons_w_IC_cooling(p, coord, f_shock, medium);
     // auto syn_e = gen_syn_electrons(p, coord, shock_f);
