@@ -17,23 +17,24 @@ auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0
     return 0.5 * (high + low);
 }
 
-double exp_fast(double a);  // Fast exponentiation function
+double exp_fast(double a);
 
 // Linear interpolation function
 double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+
 double interp_eq_spaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 
 double loglog_interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+
 double loglog_interp_eq_spaced(double x0, Array const& x, Array const& y, bool lo_extrap = false,
                                bool hi_extrap = false);
 
-// Step function returning 1 for positive x, otherwise 0
 inline double step_func(double x) { return x > 0 ? 1 : 0; }
 
-// Converts energy in electron volts to frequency in Hz
 inline double eVtoHz(double eV) { return eV / con::h; }
 
 Array adaptive_theta_space(size_t n, Profile const& gamma);
+
 Array adaptive_theta_space(size_t n, Profile const& gamma, double edge);
 
 #endif  // _UTILITIES_H_

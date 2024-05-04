@@ -53,9 +53,11 @@ struct SynPhotons {
 };
 
 using SynPhotonsArray = std::vector<SynPhotons>;
+
 using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
 
 using SynElectronsArray = std::vector<SynElectrons>;
+
 using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;
 
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size);
@@ -71,6 +73,7 @@ SynElectronsMesh gen_syn_electrons_w_IC_cooling(double p, Coord const& coord, Sh
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock);
 
 double syn_gamma_c(double t_com, double B, double Y_tilt);
+
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
 // double syn_gamma_M(double B, double zeta, double Y_tilt);
 // double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M);

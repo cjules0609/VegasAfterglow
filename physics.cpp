@@ -52,3 +52,9 @@ double thin_shell_dec_radius(double E_iso, double n_ism, double Gamma0) {
 double thick_shell_dec_radius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
     return pow(3 * E_iso * engine_dura * con::c / (4 * con::pi * n_ism * con::mp * con::c2), 0.25);
 }
+
+double shell_spreading_radius(double Gamma0, double engine_dura) { return Gamma0 * Gamma0 * con::c * engine_dura; }
+
+double RS_transition_radius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
+    return pow(Sedov_length(E_iso, n_ism), 1.5) / sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
+}
