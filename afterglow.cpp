@@ -145,10 +145,6 @@ void lc_gen(std::string folder_name) {
     // solve dynamics
     auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
 
-    // print_array(r_shock.t_com_b[0]);
-
-    // print_array(r_shock.t_com[0]);
-
     auto syn_e = gen_syn_electrons_w_IC_cooling(p, coord, f_shock, medium);
     // auto syn_e = gen_syn_electrons(p, coord, shock_f);
     auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
@@ -157,7 +153,7 @@ void lc_gen(std::string folder_name) {
 
     Observer obs;
 
-    obs.observe(coord, r_shock, theta_view, lumi_dist, z);
+    obs.observe(coord, f_shock, theta_view, lumi_dist, z);
 
     Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 10);
 
