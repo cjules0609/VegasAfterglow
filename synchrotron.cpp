@@ -226,6 +226,7 @@ double syn_gamma_c(double t_com, double B, double Y_tilt) {
     // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
     double gamma_bar = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
     double gamma_c = (gamma_bar + sqrt(gamma_bar * gamma_bar + 4)) / 2;
+    // double gamma_c = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
 
     return gamma_c;
 }
@@ -295,7 +296,7 @@ double calc_surface_element(double r, double theta_start, double theta_end) {
     return 2 * con::pi * r * r * dcos;
 }
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt) {
+SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
 
     for (size_t j = 0; j < coord.theta.size(); ++j) {
@@ -305,47 +306,48 @@ SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& sh
             double e_th = shock.e_th[j][k];
             double t_com = shock.t_com[j][k];
             double B = shock.B[j][k];
-            double D = shock.width[j][k];
+            double D = shock.width_eff[j][k];
             double n_e = shock.n_p[j][k] * shock.xi;
             double Y = Y_tilt[j][k];
 
-            constexpr double gamma_syn_limit = 10;
+            constexpr double gamma_syn_limit = 1;
 
-            e[j][k].gamma_M = syn_gamma_M(B, shock.zeta, Y);
-            e[j][k].gamma_m = syn_gamma_m(e_th, e[j][k].gamma_M, shock.eps_e, n_e, p);
+            auto& electron = e[j][k];
 
-            // fraction of synchrotron electron; the rest electrons are cyclotron
-            double f = std::min(pow((gamma_syn_limit - 1) / (e[j][k].gamma_m - 1), 1 - p), 1.0);
+            electron.gamma_M = syn_gamma_M(B, shock.zeta, Y);
+            electron.gamma_m = syn_gamma_m(e_th, electron.gamma_M, shock.eps_e, n_e, shock.p);
+
+            // fraction of synchrotron electron; the rest are cyclotron
+            double f = std::min(std::pow((gamma_syn_limit - 1) / (electron.gamma_m - 1), 1 - shock.p), 1.0);
             if (f < 1) {
-                e[j][k].gamma_m = gamma_syn_limit;
+                electron.gamma_m = gamma_syn_limit;
             }
 
-            e[j][k].n_tot = n_e;
-            e[j][k].N_tot = n_e * dS * D * f;
+            electron.n_tot = n_e;
+            electron.N_tot = n_e * dS * D * f;
 
-            double I_nu_peak = syn_p_nu_peak(B, p) * e[j][k].N_tot / dS / (4 * con::pi);
+            double I_nu_peak = syn_p_nu_peak(B, shock.p) * electron.N_tot / dS / (4 * con::pi);
 
-            e[j][k].gamma_c = syn_gamma_c(t_com, B, Y);
-            e[j][k].gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, e[j][k].gamma_m, e[j][k].gamma_c, e[j][k].gamma_M);
-            e[j][k].regime = get_regime(e[j][k].gamma_a, e[j][k].gamma_c, e[j][k].gamma_m);
-            e[j][k].p = p;
-            e[j][k].gamma_N_peak = syn_gamma_N_peak(e[j][k].gamma_a, e[j][k].gamma_m, e[j][k].gamma_c);
+            electron.gamma_c = syn_gamma_c(t_com, B, Y);
+            electron.gamma_a = syn_gamma_a(Gamma, B, I_nu_peak, electron.gamma_m, electron.gamma_c, electron.gamma_M);
+            electron.regime = get_regime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
+            electron.p = shock.p;
+            electron.gamma_N_peak = syn_gamma_N_peak(electron.gamma_a, electron.gamma_m, electron.gamma_c);
         }
     }
     return e;
 }
 
-SynElectronsMesh gen_syn_electrons(double p, Coord const& coord, Shock const& shock) {
+SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     MeshGrid Y_tilt = create_grid_like(shock.Gamma, 0);
-    return gen_syn_electrons(p, coord, shock, Y_tilt);
+    return gen_syn_electrons(coord, shock, Y_tilt);
 }
 
-SynElectronsMesh gen_syn_electrons_w_IC_cooling(double p, Coord const& coord, Shock const& shock,
-                                                Medium const& medium) {
-    auto syn_e = gen_syn_electrons(p, coord, shock);
-    auto Y_eff = solve_IC_Y_Thomson(syn_e, shock, medium);
-    return gen_syn_electrons(p, coord, shock, Y_eff);
+SynElectronsMesh gen_syn_electrons_w_IC_cooling(Coord const& coord, Shock const& shock) {
+    auto syn_e = gen_syn_electrons(coord, shock);
+    auto Y_eff = solve_IC_Y_Thomson(syn_e, shock);
+    return gen_syn_electrons(coord, shock, Y_eff);
 }
 
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Shock const& shock) {
@@ -368,4 +370,16 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
         }
     }
     return ph;
+}
+
+SynPhotonsMesh gen_syn_photons(Coord const& coord, Shock const& shock) {
+    SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
+    MeshGrid Y_tilt = create_grid_like(shock.Gamma, 0);
+    return gen_syn_photons(e, coord, shock);
+}
+
+SynPhotonsMesh gen_syn_photons_w_IC_cooling(Coord const& coord, Shock const& shock) {
+    SynElectronsMesh syn_e = gen_syn_electrons(coord, shock);
+    MeshGrid Y_eff = solve_IC_Y_Thomson(syn_e, shock);
+    return gen_syn_photons(syn_e, coord, shock);
 }

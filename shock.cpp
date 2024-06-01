@@ -5,18 +5,19 @@
 
 #include "macros.h"
 #include "physics.h"
-Shock::Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta)
+Shock::Shock(Coord const& coord, double eps_e, double eps_B, double p, double xi, double zeta)
     : t_com(create_grid(coord.theta.size(), coord.r.size(), 0)),
       t_com_b(create_grid(coord.theta.size(), coord.r_b.size(), 0)),
       Gamma(create_grid(coord.theta.size(), coord.r.size(), 1)),
       e_th(create_grid(coord.theta.size(), coord.r.size(), 1)),
       B(create_grid(coord.theta.size(), coord.r.size(), 0)),
-      width(create_grid(coord.theta.size(), coord.r.size(), 0)),
+      width_eff(create_grid(coord.theta.size(), coord.r.size(), 0)),
       n_p(create_grid(coord.theta.size(), coord.r.size(), 0)),
       eps_e{eps_e},
       eps_B{eps_B},
       xi{xi},
-      zeta{zeta} {}
+      zeta{zeta},
+      p{p} {}
 
 double co_moving_B(double eps_B, double e_thermal) { return sqrt(8 * con::pi * eps_B * e_thermal); }
 
@@ -30,7 +31,7 @@ double n_down_str(double Gamma_relative, double n_up_str, double cs_up_str) {
         double ad_idx = adiabatic_index(Gamma_relative);
         return n_up_str * (ad_idx + 1) * M * M / ((ad_idx - 1) * M * M + 2);
     } else {
-        return 0;  // shock cannot be formed
+        return n_up_str;  // shock cannot be formed
     }
 }
 
@@ -42,28 +43,29 @@ double sound_speed(double pressure, double ad_idx, double rho_rest) {
     return sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
 }
 
-BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_lo, double theta_hi)
+BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_lo, double theta_hi, double eps_e)
     : medium(medium),
       jet(blast),
       theta_lo(theta_lo),
       theta_hi(theta_hi),
       theta(0.5 * (theta_lo + theta_hi)),
-      dOmega(2 * con::pi * std::fabs(std::cos(theta_hi) - std::cos(theta_lo))){};
+      dOmega(2 * con::pi * std::fabs(std::cos(theta_hi) - std::cos(theta_lo))),
+      eps_e{eps_e} {};
 
 void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
     double Gamma = y[0];
     double u = y[1];
     double t_eng = y[2];  // engine time
     // double t_com = y[3];  // co-moving time
-    // double D_RS = y[4];   // co-moving frame reverse shock width
-    double D_FS = y[5];  // co-moving frame forward shock width
+    double D_FS = y[4];  // co-moving frame forward shock width
+    // double D_RS = y[5];   // co-moving frame reverse shock width
 
     dydr[0] = dGammadr(r, Gamma, u, t_eng);
     dydr[1] = dUdr(r, Gamma, u, t_eng);
     dydr[2] = dtdr_eng(Gamma);
     dydr[3] = dtdr_com(Gamma);
-    dydr[4] = dDdr_RS(r, Gamma, D_FS, t_eng);
-    dydr[5] = dDdr_FS(r, Gamma);
+    dydr[4] = dDdr_FS(r, Gamma);
+    dydr[5] = dDdr_RS(r, Gamma, D_FS, t_eng);
 };
 
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
@@ -81,7 +83,7 @@ double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
 double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabatic_index(Gamma);
     double E = dOmega * r * r * medium.rho(r) * con::c2;
-    return (1 - medium.eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u;
+    return (1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u;
 };
 
 double BlastWaveEqn::dtdr_eng(double Gamma) {
@@ -112,54 +114,90 @@ double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng)
     return Gamma / (Gamma0 * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));
 };
 
-void update_shock_state(size_t j, size_t k, Shock& shock, Array& state, double Gamma_up_str, double n_up_str,
-                        double cs_up_str, double shock_width) {
+void update_forward_shock_state(size_t j, size_t k, double r, Shock& shock, Array& state, BlastWaveEqn const& eqn) {
     double Gamma = state[0];
-    // state[1]: u blast wave internal energy
+    double u = state[1];  // u blast wave internal energy
     double t_eng = state[2];
     double t_com = state[3];
 
-    double Gamma_rel =
-        fabs(Gamma_up_str - 1.) < 1e-6 ? Gamma : (Gamma / Gamma_up_str + Gamma_up_str / Gamma) / 2;  // can be improved
+    double n1 = eqn.medium.rho(r) / con::mp;
+
+    double Gamma_rel = Gamma;
 
     shock.Gamma[j][k] = Gamma;
     shock.t_com[j][k] = t_com;
-    shock.width[j][k] = shock_width;
-    shock.n_p[j][k] = n_down_str(Gamma_rel, n_up_str, cs_up_str);
+
+    shock.n_p[j][k] = n_down_str(Gamma_rel, n1, eqn.medium.cs);
+    shock.width_eff[j][k] = eqn.medium.mass(r) / (4 * con::pi * r * r * shock.n_p[j][k] * con::mp);
     shock.e_th[j][k] = e_thermal_down_str(Gamma_rel, shock.n_p[j][k]);
     shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
 }
 
-void Blandford_McKee(size_t j, size_t k, Shock& shock, Array& state, double r, double N3, double E_th3) {
+void update_reverse_shock_state(size_t j, size_t k, double r, Shock& shock, Array& state, BlastWaveEqn const& eqn,
+                                double e2_th) {
     double Gamma = state[0];
     // state[1]: u blast wave internal energy
     double t_eng = state[2];
     double t_com = state[3];
-    double D_FS = state[5];
+    double D_FS = state[4];
+    double D_RS = state[5];
+
+    double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
+
+    double n4 = eqn.jet.dEdOmega(eqn.theta, t_eng) / (Gamma0 * con::mp * con::c2 * r * r * D_FS);
+
+    double Gamma_rel = (Gamma / Gamma0 + Gamma0 / Gamma) / 2;
 
     shock.Gamma[j][k] = Gamma;
     shock.t_com[j][k] = t_com;
-    shock.width[j][k] = D_FS;
-    shock.n_p[j][k] = N3 / (D_FS * r * r);
-    shock.e_th[j][k] = E_th3 / (D_FS * r * r);
+    shock.width_eff[j][k] = D_RS;
+    shock.n_p[j][k] = n_down_str(Gamma_rel, n4, 1e-8);
+    shock.e_th[j][k] = e2_th;
     shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
 }
 
-bool RS_cross_check(double D_RS, double D_FS, double r, double n_p, double e_th, double& N3, double& E_th3) {
+void Blandford_McKee(size_t j, size_t k, Shock& shock, Array& state, double r, double N3_cross, double Gamma_cross,
+                     double r_cross, double e3_cross, double D_cross) {
+    double const g = 2.;
+    double Gamma = state[0];
+    // state[1]: u blast wave internal energy
+    double t_eng = state[2];
+    double t_com = state[3];
+    double D_FS = state[4];
+
+    shock.Gamma[j][k] = (Gamma_cross - 1) * pow(r / r_cross, -g) + 1;
+    shock.t_com[j][k] = t_com;
+    shock.width_eff[j][k] = D_cross * pow(r / r_cross, (6. * (3. + g) - 14.) / 7.);
+    shock.n_p[j][k] = N3_cross / (4 * con::pi * shock.width_eff[j][k] * r * r);
+    shock.e_th[j][k] = e3_cross * pow(r / r_cross, -8. * (3. + g) / 7.);
+    shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
+}
+
+bool RS_cross_check(Array& state) {
+    double D_FS = state[4];
+    double D_RS = state[5];
+
     if (D_RS < D_FS) {
         return false;
     } else {
-        N3 = n_p * D_RS * r * r;
-        E_th3 = e_th * D_RS * r * r;
         return true;
     }
 }
 
-void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& r_shock, Shock& f_shock,
+void save_cross_state(double& N3_cross, double& Gamma_cross, double& r_cross, double& e3_cross, double& D_cross,
+                      double N3, double Gamma, double r, double e3, double D) {
+    N3_cross = N3;
+    Gamma_cross = Gamma;
+    r_cross = r;
+    e3_cross = e3;
+    D_cross = D;
+}
+
+void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock,
                         BlastWaveEqn const& eqn) {
     using namespace boost::numeric::odeint;
     double atol = 0;     // integrator absolute tolerance
-    double rtol = 1e-6;  // integrator relative tolerance
+    double rtol = 1e-9;  // integrator relative tolerance
     // auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
     auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
 
@@ -169,23 +207,21 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& r_sho
     double beta0 = gamma_to_beta(Gamma0);
     double t_eng0 = r0 * (1 - beta0) / beta0 / con::c;
     double t_com0 = r0 / sqrt(Gamma0 * Gamma0 - 1) / con::c;
-    double D_RS0 = 0;
     double D_FS0 = con::c * eqn.jet.duration * Gamma0;
+    double D_RS0 = 0;
 
-    Array state{Gamma0, u0, t_eng0, t_com0, D_RS0, D_FS0};
+    Array state{Gamma0, u0, t_eng0, t_com0, D_FS0, D_RS0};
 
-    double n1_0 = eqn.medium.rho(r0) / con::mp;
-    double n4_0 = eqn.jet.dEdOmega(eqn.theta, t_eng0) / (Gamma0 * con::mp * con::c2 * r0 * r0 * D_FS0);
-
-    // update_shock_state(j, 0, f_shock, state, 1., n1_0, eqn.medium.cs, D_FS0);
-    // update_shock_state(j, 0, r_shock, state, Gamma0, n4_0, 1e-8, D_RS0);
     f_shock.t_com_b[j][0] = r_shock.t_com_b[j][0] = t_com0;
     // initialize the integrator
     double dr = (r[1] - r[0]) / 100;
     stepper.initialize(state, r0, dr);
 
-    double N3 = 0;
-    double E_th = 0;
+    double N3_cross = 0;
+    double Gamma_cross = 0;
+    double r_cross = 0;
+    double e3_cross = 0;
+    double D_cross = 0;
     bool RS_crossed = false;
 
     // integrate the shell over r
@@ -194,21 +230,18 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& r_sho
 
         for (; stepper.current_time() > r[k] && k < r.size(); k++) {
             stepper.calc_state(r[k], state);
-            // state[1]: u blast wave internal energy
-            double t_eng = state[2];
-            double D_RS = state[4];
-            // double D_FS = state[5];
-            double D_FS = r[k] / state[0] / 12;
-
-            double n1 = eqn.medium.rho(r[k]) / con::mp;
-            update_shock_state(j, k, f_shock, state, 1., n1, eqn.medium.cs, D_FS);
+            update_forward_shock_state(j, k, r[k], f_shock, state, eqn);
 
             if (!RS_crossed) {
-                double n4 = eqn.jet.dEdOmega(eqn.theta, t_eng) / (Gamma0 * con::mp * con::c2 * r[k] * r[k] * D_FS);
-                update_shock_state(j, k, r_shock, state, Gamma0, n4, 1E-8, D_RS);
-                RS_crossed = RS_cross_check(D_RS, D_FS, r[k], r_shock.n_p[j][k], r_shock.e_th[j][k], N3, E_th);
+                update_reverse_shock_state(j, k, r[k], r_shock, state, eqn, f_shock.e_th[j][k]);
+                RS_crossed = RS_cross_check(state);
+                if (RS_crossed) {
+                    double N3 = 4 * con::pi * r_shock.n_p[j][k] * r[k] * r[k] * state[5];
+                    save_cross_state(N3_cross, Gamma_cross, r_cross, e3_cross, D_cross, N3, state[0], r[k],
+                                     r_shock.e_th[j][k], state[5]);
+                }
             } else {
-                Blandford_McKee(j, k, r_shock, state, r[k], N3, E_th);
+                Blandford_McKee(j, k, r_shock, state, r[k], N3_cross, Gamma_cross, r_cross, e3_cross, D_cross);
             }
         }
 
@@ -220,13 +253,17 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& r_sho
     }
 }
 
-std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& jet, Medium const& medium) {
-    Shock f_shock(coord, medium.eps_e, medium.eps_B, medium.xi, medium.zeta);  // forward shock
-    Shock r_shock(coord, medium.eps_e, medium.eps_B, medium.xi, medium.zeta);  // reverse shock
-
+void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock, Shock& r_shock) {
     for (size_t j = 0; j < coord.theta.size(); ++j) {
-        auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[j], coord.theta_b[j + 1]);
-        solve_single_shell(j, coord.r_b, coord.r, r_shock, f_shock, eqn);
+        auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[j], coord.theta_b[j + 1], f_shock.eps_e);
+        solve_single_shell(j, coord.r_b, coord.r, f_shock, r_shock, eqn);
     }
-    return std::make_pair(r_shock, f_shock);
+}
+
+void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock) {
+    Shock r_shock(coord, f_shock.eps_e, f_shock.eps_B, f_shock.p, f_shock.xi, f_shock.zeta);
+    for (size_t j = 0; j < coord.theta.size(); ++j) {
+        auto eqn = BlastWaveEqn(medium, jet, coord.theta_b[j], coord.theta_b[j + 1], f_shock.eps_e);
+        solve_single_shell(j, coord.r_b, coord.r, f_shock, r_shock, eqn);
+    }
 }

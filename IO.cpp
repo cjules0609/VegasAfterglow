@@ -49,6 +49,7 @@ void write2file(Shock const& shock, std::string const& filename) {
     std::ofstream file_D_com(filename + "_D_com.txt");
     std::ofstream file_t_com(filename + "_t_com.txt");
     std::ofstream file_np(filename + "_n_p.txt");
+    std::ofstream file_e_th(filename + "_e_th.txt");
 
     if (!file || !file_B || !file_D_com || !file_t_com || !file_np) {
         std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
@@ -60,20 +61,23 @@ void write2file(Shock const& shock, std::string const& filename) {
     file_D_com.precision(16);
     file_t_com.precision(16);
     file_np.precision(16);
+    file_e_th.precision(16);
 
     for (size_t j = 0; j < shock.Gamma.size(); ++j) {
         for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
             file << shock.Gamma[j][k] << " ";
             file_B << shock.B[j][k] << " ";  // TODO:add B unit
-            file_D_com << shock.width[j][k] / con::cm << " ";
+            file_D_com << shock.width_eff[j][k] / con::cm << " ";
             file_t_com << shock.t_com[j][k] / con::sec << " ";
             file_np << shock.n_p[j][k] * (con::cm * con::cm * con::cm) << " ";
+            file_e_th << shock.e_th[j][k] / con::erg << " ";
         }
         file << '\n';
         file_B << '\n';
         file_D_com << '\n';
         file_t_com << '\n';
         file_np << '\n';
+        file_e_th << '\n';
     }
 }
 

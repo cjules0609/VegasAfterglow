@@ -10,23 +10,24 @@
 
 class Shock {
    public:
-    Shock(Coord const& coord, double eps_e, double eps_B, double xi, double zeta);
+    Shock(Coord const& coord, double eps_e, double eps_B, double p, double xi = 1, double zeta = 1);
     MeshGrid t_com;
     MeshGrid t_com_b;
-    MeshGrid Gamma;  // bulk Lorentz factor
-    MeshGrid e_th;   // internal energy density
-    MeshGrid B;      // comoving magnetic field
-    MeshGrid width;  // comoving frame shock width
-    MeshGrid n_p;    // n2
+    MeshGrid Gamma;      // bulk Lorentz factor
+    MeshGrid e_th;       // internal energy density
+    MeshGrid B;          // comoving magnetic field
+    MeshGrid width_eff;  // comoving frame effective shock width that contains all shocked electrons
+    MeshGrid n_p;        // n2
     double eps_e;
     double eps_B;
+    double p;
     double xi;
     double zeta;
 };
 
 class BlastWaveEqn {
    public:
-    BlastWaveEqn(Medium const& medium, Jet const& jet, double theta_lo, double theta_hi);
+    BlastWaveEqn(Medium const& medium, Jet const& jet, double theta_lo, double theta_hi, double eps_e);
 
     void operator()(Array const& y, Array& dydr, double r);
 
@@ -34,6 +35,7 @@ class BlastWaveEqn {
     Jet jet;
     double dOmega;
     double theta;
+    double eps_e;
 
    private:
     inline double dGammadr(double r, double Gamma, double u, double t_eng);
@@ -53,5 +55,7 @@ class BlastWaveEqn {
     double theta_hi;
 };
 
-std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& blast, Medium const& medium);
+void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock, Shock& r_shock);
+void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock);
+// std::pair<Shock, Shock> gen_shocks(Coord const& coord, Jet const& blast, Medium const& medium);
 #endif

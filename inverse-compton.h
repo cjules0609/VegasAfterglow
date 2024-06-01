@@ -123,8 +123,8 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
 
 ICPhotonMesh gen_IC_photons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
-MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& electron, Shock const& shock, Medium const& medium);
+MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& electron, Shock const& shock);
 
-MeshGrid solve_IC_Y_KN(SynElectronsMesh const& electron, Shock const& shock, Medium const& medium);
+MeshGrid solve_IC_Y_KN(SynElectronsMesh const& electron, Shock const& shock);
 
 #endif

@@ -5,6 +5,8 @@ namespace con {
 
     constexpr double sec = 1.0 / 500;
     constexpr double cm = 1 / 1.5e13;
+    constexpr double cm2 = cm * cm;
+    constexpr double cm3 = cm * cm * cm;
     constexpr double g = 1 / 2e33;
     constexpr double Hz = 1 / sec;
     constexpr double erg = g * cm * cm / sec / sec;

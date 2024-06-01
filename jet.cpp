@@ -7,7 +7,7 @@
 #include "utilities.h"
 
 double E_iso2Gamma0(double E_iso, double gamma_max, double E) {
-    double u = pow(E / E_iso, 1.0 / 4) * gamma_max;
+    double u = pow(E / E_iso, 1) * gamma_max;
     double gamma = sqrt(1 + u * u);
     return gamma;
 }

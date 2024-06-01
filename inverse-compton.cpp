@@ -57,25 +57,25 @@ double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double ep
     return Y0;
 }
 
-MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock, Medium const& medium) {
+MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
         for (size_t k = 0; k < e[j].size(); ++k) {
-            Y_eff[j][k] = eff_Y_IC_Thomson(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], medium.eps_e,
-                                           medium.eps_B, e[j][k]);
+            Y_eff[j][k] = eff_Y_IC_Thomson(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], shock.eps_e,
+                                           shock.eps_B, e[j][k]);
         }
     }
     return Y_eff;
 }
 
-MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock, Medium const& medium) {
+MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
         for (size_t k = 0; k < e[j].size(); ++k) {
             Y_eff[j][k] =
-                eff_Y_IC_KN(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], medium.eps_e, medium.eps_B, e[j][k]);
+                eff_Y_IC_KN(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], shock.eps_e, shock.eps_B, e[j][k]);
         }
     }
     return Y_eff;
@@ -88,14 +88,14 @@ void gen_IC_photons_(ICPhotonArray& IC_ph, SynElectronsArray const& e, SynPhoton
 }
 
 ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph, Shock const& shock) {
-    ICPhotonMesh IC_ph = create_IC_photon_grid(shock.width.size(), shock.width[0].size());
+    ICPhotonMesh IC_ph = create_IC_photon_grid(shock.width_eff.size(), shock.width_eff[0].size());
 
     // multithreading acceleration
     std::vector<std::thread> thread;
     thread.reserve(IC_ph.size());
     for (size_t j = 0; j < IC_ph.size(); ++j) {
         thread.emplace_back(gen_IC_photons_, std::ref(IC_ph[j]), std::cref(e[j]), std::cref(ph[j]),
-                            std::cref(shock.width[j]));
+                            std::cref(shock.width_eff[j]));
     }
 
     for (size_t j = 0; j < thread.size(); ++j) {
