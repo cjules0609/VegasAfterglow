@@ -310,7 +310,7 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, MeshG
             double n_e = shock.n_p[j][k] * shock.xi;
             double Y = Y_tilt[j][k];
 
-            constexpr double gamma_syn_limit = 1;
+            constexpr double gamma_syn_limit = 10;
 
             auto& electron = e[j][k];
 

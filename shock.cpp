@@ -66,7 +66,7 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
     dydr[3] = dtdr_com(Gamma);
     dydr[4] = dDdr_FS(r, Gamma);
     dydr[5] = dDdr_RS(r, Gamma, D_FS, t_eng);
-};
+}
 
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabatic_index(Gamma);
@@ -78,18 +78,18 @@ double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
     double b1 = (dM0 + dm) * con::c2;
     double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u / Gamma2;
     return -(a1 + a2) / (b1 + b2);
-};
+}
 
 double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabatic_index(Gamma);
     double E = dOmega * r * r * medium.rho(r) * con::c2;
     return (1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u;
-};
+}
 
 double BlastWaveEqn::dtdr_eng(double Gamma) {
     double Gb = std::sqrt(Gamma * Gamma - 1);
     return (Gamma - Gb) / (Gb * con::c);
-};
+}
 
 double BlastWaveEqn::dtdr_com(double Gamma) { return 1 / (std::sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
 
@@ -100,19 +100,52 @@ double BlastWaveEqn::dDdr_FS(double r, double Gamma) {
     double p2 = (ad_idx - 1) * e_thermal_down_str(Gamma, n2);
     double cs = sound_speed(p2, ad_idx, n2 * con::mp);
     return cs * dtdr_com(Gamma);
-};
+}
+
+double u3s(double sigma, double gamma34) { return 1; }
+
+double u4s(double u3s, double gamma34) { return sqrt((1 + u3s * u3s) * (gamma34 - 1)) + u3s; }
+
+double fa(double gamma34, double u3s_, double sigma) {
+    return 1 - sigma * (gamma34 + 1) / (u3s_ * u3s_ * gamma34 + u3s_ * sqrt((1 + u3s_ * u3s_) * (gamma34 - 1))) / 2;
+}
+
+double fb(double gamma34, double u3s_) {
+    return (gamma34 + (sqrt(u3s_ * u3s_ + 1) / u3s_) * sqrt(gamma34 * gamma34 - 1)) / (4 * gamma34 + 3);
+}
+
+double fc(double e2, double pB3) { return e2 / (e2 - 3 * pB3); }
+
+double calc_n4(double dEdOmega, double Gamma0, double r, double D_com_FS, double sigma) {
+    return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * D_com_FS) / (1 + sigma);
+}
+
+double calc_pB4(double n4, double sigma) { return 1; }
 
 double BlastWaveEqn::dDdr_RS(double r, double Gamma, double D_com, double t_eng) {
     double Gamma0 = jet.Gamma0_profile(theta);
-    double n4 = jet.dEdOmega(theta, t_eng) / (Gamma0 * con::mp * con::c2 * r * r * D_com);
-    double n1 = medium.rho(r) / con::mp;
-    // double gamma34 = sqrt(Gamma0 / (2 * sqrt(n4 / n1)));
     double Gamma34 = (Gamma0 / Gamma + Gamma / Gamma0) / 2;
-    double ad_idx3 = adiabatic_index(Gamma34);
-    double n3 = n4 * (ad_idx3 * Gamma34 + 1) / (ad_idx3 - 1);
 
-    return Gamma / (Gamma0 * std::sqrt(n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));
-};
+    double u3s_ = u3s(jet.sigma, Gamma34);
+    double u4s_ = u4s(u3s_, Gamma34);
+
+    // jet.dEdOmega(theta, t_eng) / (Gamma0 * con::mp * con::c2 * r * r * D_com) / (1 + sigma);
+    double n4 = calc_n4(jet.dEdOmega(theta, t_eng), Gamma0, r, D_com, jet.sigma);
+    double n1 = medium.rho(r) / con::mp;
+    double n2 = n_down_str(Gamma, n1, medium.cs);
+    double e2 = e_thermal_down_str(Gamma, n2);
+    double pB4 = calc_pB4(n4, jet.sigma);
+    double pB3 = pB4 * u4s_ * u4s_ / (u3s_ * u3s_);
+
+    double f_a = fa(Gamma34, u3s_, jet.sigma);
+    double f_b = fb(Gamma34, u3s_);
+    double f_c = fc(e2, pB3);
+
+    double ad_idx3 = adiabatic_index(Gamma34);
+    double n3 = n4 * (ad_idx3 * Gamma34 + 1) / (ad_idx3 - 1) * f_b;
+
+    return Gamma / (Gamma0 * std::sqrt(f_a * f_b * f_c * n4 / n1) * (1 - Gamma0 * n4 / Gamma / n3));
+}
 
 void update_forward_shock_state(size_t j, size_t k, double r, Shock& shock, Array& state, BlastWaveEqn const& eqn) {
     double Gamma = state[0];
@@ -143,17 +176,33 @@ void update_reverse_shock_state(size_t j, size_t k, double r, Shock& shock, Arra
     double D_RS = state[5];
 
     double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
-
-    double n4 = eqn.jet.dEdOmega(eqn.theta, t_eng) / (Gamma0 * con::mp * con::c2 * r * r * D_FS);
-
     double Gamma_rel = (Gamma / Gamma0 + Gamma0 / Gamma) / 2;
+
+    double u3s_ = u3s(eqn.jet.sigma, Gamma_rel);
+    double u4s_ = u4s(u3s_, Gamma_rel);
+    // eqn.jet.dEdOmega(eqn.theta, t_eng) / (Gamma0 * con::mp * con::c2 * r * r * D_FS);
+    double n4 = calc_n4(eqn.jet.dEdOmega(eqn.theta, t_eng), Gamma0, r, D_FS, eqn.jet.sigma);
+    double pB4 = calc_pB4(n4, eqn.jet.sigma);
+    double pB3 = pB4 * u4s_ * u4s_ / (u3s_ * u3s_);
 
     shock.Gamma[j][k] = Gamma;
     shock.t_com[j][k] = t_com;
-    shock.width_eff[j][k] = D_RS;
-    shock.n_p[j][k] = n_down_str(Gamma_rel, n4, 1e-8);
-    shock.e_th[j][k] = e2_th;
-    shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
+
+    shock.e_th[j][k] = e2_th - 3 * pB3;
+
+    if (shock.e_th[j][k] >= 0) {
+        shock.width_eff[j][k] = D_RS;
+        shock.n_p[j][k] = n_down_str(Gamma_rel, n4, 1e-8);
+        shock.B[j][k] = sqrt(pB4 * 8 * con::pi);
+    } else {
+        shock.e_th[j][k] = 0;
+        shock.width_eff[j][k] = 0;
+        shock.n_p[j][k] = 0;
+        shock.B[j][k] = sqrt(pB4 * 8 * con::pi);
+    }
+
+    // shock.e_th[j][k] = e2_th;
+    // shock.B[j][k] = co_moving_B(shock.eps_B, shock.e_th[j][k]);
 }
 
 void Blandford_McKee(size_t j, size_t k, Shock& shock, Array& state, double r, double N3_cross, double Gamma_cross,

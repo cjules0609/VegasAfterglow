@@ -50,7 +50,12 @@ struct IntegratorGrid {
 };
 
 struct ICPhoton {
+   public:
     ICPhoton() = default;
+
+    double L_nu(double nu) const;
+
+    double E_nu(double nu) const;
 
     template <typename Electrons, typename Photons>
     void gen(Electrons const& e, Photons const& ph, double D_shock_com) {
@@ -103,9 +108,8 @@ struct ICPhoton {
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
             j_nu_[k] *= D_shock_com;
         }
+        this->dt_com_ = ph.dt_com;
     };
-
-    double L_nu(double nu) const;
 
    public:
     static constexpr size_t spectrum_resol{50};
@@ -113,6 +117,7 @@ struct ICPhoton {
    private:
     Array j_nu_;
     Array nu_IC_;
+    double dt_com_{0};
 };
 
 using ICPhotonArray = std::vector<ICPhoton>;

@@ -7,31 +7,31 @@
 #include "utilities.h"
 
 double E_iso2Gamma0(double E_iso, double gamma_max, double E) {
-    double u = pow(E / E_iso, 1) * gamma_max;
+    double u = pow(E / E_iso, 0.25) * gamma_max;
     double gamma = sqrt(1 + u * u);
     return gamma;
 }
 
-Jet create_isotropic_jet(double E_iso, double Gamma0, double t_eng, Profile2d inject) {
+Jet create_isotropic_jet(double E_iso, double Gamma0, double t_eng, double sigma, Profile2d inject) {
     auto dEdOmega = [=](double theta, double t_lab) { return E_iso / (4 * con::pi) + inject(theta, t_lab); };
 
     auto Gamma = [=](double theta) { return Gamma0; };
 
-    return Jet{t_eng, dEdOmega, Gamma};
+    return Jet{t_eng, sigma, dEdOmega, Gamma};
 }
 
-Jet create_tophat_jet(double E_iso, double Gamma0, double theta_c, double t_eng, Profile2d inject) {
+Jet create_tophat_jet(double E_iso, double Gamma0, double theta_c, double t_eng, double sigma, Profile2d inject) {
     auto dEdOmega = [=](double theta, double t_lab) {
         return (theta < theta_c ? (E_iso / (4 * con::pi)) : 0) + inject(theta, t_lab);
     };
 
     auto Gamma = [=](double theta) { return theta < theta_c ? Gamma0 : 1; };
 
-    return Jet{t_eng, dEdOmega, Gamma};
+    return Jet{t_eng, sigma, dEdOmega, Gamma};
 }
 
 Jet create_power_law_jet(double E_iso_on_axis, double Gamma0_on_axis, double theta_m, double k, double t_eng,
-                         Profile2d inject) {
+                         double sigma, Profile2d inject) {
     double e0 = E_iso_on_axis / (4 * con::pi);
     auto dEdOmega = [=](double theta, double t_lab) {
         return (theta < theta_m ? e0 : e0 * std::pow(theta / theta_m, -k)) + inject(theta, t_lab);
@@ -39,10 +39,11 @@ Jet create_power_law_jet(double E_iso_on_axis, double Gamma0_on_axis, double the
 
     auto Gamma = [=](double theta) { return E_iso2Gamma0(e0, Gamma0_on_axis, dEdOmega(theta, 0)); };
 
-    return Jet{t_eng, dEdOmega, Gamma};
+    return Jet{t_eng, sigma, dEdOmega, Gamma};
 }
 
-Jet create_gaussian_jet(double E_iso_on_axis, double Gamma0_on_axis, double theta_c, double t_eng, Profile2d inject) {
+Jet create_gaussian_jet(double E_iso_on_axis, double Gamma0_on_axis, double theta_c, double t_eng, double sigma,
+                        Profile2d inject) {
     double e0 = E_iso_on_axis / (4 * con::pi);
     auto dEdOmega = [=](double theta, double t_lab) {
         return e0 * std::exp(-theta * theta / (2 * theta_c * theta_c)) + inject(theta, t_lab);
@@ -50,7 +51,7 @@ Jet create_gaussian_jet(double E_iso_on_axis, double Gamma0_on_axis, double thet
 
     auto Gamma = [=](double theta) { return E_iso2Gamma0(e0, Gamma0_on_axis, dEdOmega(theta, 0)); };
     // auto Gamma = [=](double theta) { return Gamma0_on_axis; };
-    return Jet{t_eng, dEdOmega, Gamma};
+    return Jet{t_eng, sigma, dEdOmega, Gamma};
 }
 
 Profile2d create_iso_power_law_injection(double L0, double t0, double t_wait, double q) {

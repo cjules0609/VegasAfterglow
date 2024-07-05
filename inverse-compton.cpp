@@ -14,6 +14,8 @@ inline bool order(double a, double b, double c) { return a < b && b < c; };
 
 double ICPhoton::L_nu(double nu) const { return loglog_interp_eq_spaced(nu, this->nu_IC_, this->j_nu_, true, true); }
 
+double ICPhoton::E_nu(double nu) const { return L_nu(nu) * dt_com_; }
+
 inline double eta_rad(double gamma_m, double gamma_c, double p) {
     return gamma_c < gamma_m ? 1 : pow(gamma_c / gamma_m, (2 - p));
 }

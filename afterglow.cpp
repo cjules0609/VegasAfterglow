@@ -5,13 +5,13 @@
 #include <fstream>
 
 #include "json.hpp"
-
-void test() {
+/*
+void tests() {
     double n_ism = 1 / con::cm3;
     double eps_e = 0.1;
     double eps_B = 0.001;
-    double eps_e_r = 0.3;
-    double eps_B_r = 0.1;
+    double eps_e_r = 0.1;
+    double eps_B_r = 0.001;
     double p = 2.2;
     double E_iso = 1e53 * con::erg;
     double Gamma0 = 300;
@@ -35,7 +35,116 @@ void test() {
     std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
               << '\n';
 
-    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
+    auto r = logspace(R_dec / 1000, R_dec * 100, r_num);
+    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
+    auto phi = linspace(0, 2 * con::pi, phi_num);
+
+    // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
+    Coord coord{r, theta, phi};
+
+    write2file(coord, "tests/coord");
+
+    // solve dynamics
+    // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
+    Shock f_shock(coord, eps_e, eps_B, p);
+    Shock r_shock(coord, eps_e_r, eps_B_r, p);
+
+    solve_shocks(coord, jet, medium, f_shock, r_shock);
+
+    write2file(r_shock, "tests/r_shock");
+    write2file(f_shock, "tests/f_shock");
+
+    auto syn_e = gen_syn_electrons_w_IC_cooling(coord, f_shock);
+
+    auto syn_e_r = gen_syn_electrons_w_IC_cooling(coord, r_shock);
+
+    auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
+
+    auto syn_ph_r = gen_syn_photons(syn_e_r, coord, r_shock);
+
+    auto ic_ff = gen_IC_photons(syn_e, syn_ph, f_shock);
+
+    auto ic_fr = gen_IC_photons(syn_e, syn_ph_r, f_shock);
+
+    auto ic_rf = gen_IC_photons(syn_e_r, syn_ph, r_shock);
+
+    auto ic_rr = gen_IC_photons(syn_e_r, syn_ph_r, r_shock);
+
+    Array t_bins = logspace(1e-6 * con::day, 1e2 * con::day, 100);
+
+    double theta_v = 0.;
+    double lumi_dist = 1.23e26 * con::cm;
+    double z = 0.01;
+
+    Observer obs;
+
+    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
+
+    // Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
+
+    // Array band_pass = logspace(eVtoHz(1e2 * con::keV), eVtoHz(1e3 * con::keV), 10);
+
+    Array band_pass = {1e14 * con::Hz, 1e17 * con::Hz};
+
+    auto to_suffix = [](double theta) { return std::to_string(int(ceil(theta / con::deg))); };
+
+    auto F_syn_f = obs.specific_flux(t_bins, band_pass, syn_ph);
+
+    auto F_syn_r = obs.specific_flux(t_bins, band_pass, syn_ph_r);
+
+    auto F_syn_ic_ff = obs.specific_flux(t_bins, band_pass, ic_ff);
+
+    auto F_syn_ic_fr = obs.specific_flux(t_bins, band_pass, ic_fr);
+
+    auto F_syn_ic_rf = obs.specific_flux(t_bins, band_pass, ic_rf);
+
+    auto F_syn_ic_rr = obs.specific_flux(t_bins, band_pass, ic_rr);
+
+    write2file(F_syn_f, "tests/Flux_f", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(F_syn_r, "tests/Flux_r", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(F_syn_ic_ff, "tests/Flux_ic_ff", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(F_syn_ic_fr, "tests/Flux_ic_fr", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(F_syn_ic_rf, "tests/Flux_ic_rf", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(F_syn_ic_rr, "tests/Flux_ic_rr", con::erg / con::sec / con::cm / con::cm);
+
+    write2file(boundary2centerlog(t_bins), "tests/t_obs", con::sec);
+}
+
+void test() {
+    double n_ism = 1 / con::cm3;
+    double eps_e = 0.1;
+    double eps_B = 0.001;
+    double eps_e_r = 0.1;
+    double eps_B_r = 0.001;
+    double p = 2.2;
+    double E_iso = 1e53 * con::erg;
+    double Gamma0 = 300;
+    double theta_c = 0.1;
+
+    // create model
+    auto medium = create_ISM(n_ism);
+    auto jet = create_tophat_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
+    // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
+
+    size_t r_num = 500;
+    size_t theta_num = 250;
+    size_t phi_num = 37;
+
+    double R_thin = thin_shell_dec_radius(E_iso, n_ism, Gamma0);
+    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_cross = RS_crossing_radius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_spread = shell_spreading_radius(Gamma0, jet.duration);
+    double R_N = RS_transition_radius(E_iso, n_ism, Gamma0, jet.duration);
+
+    std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
+              << '\n';
+
+    auto r = logspace(R_dec / 1000, R_dec * 100, r_num);
     auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
@@ -58,7 +167,7 @@ void test() {
 
     auto syn_ph_r = gen_syn_photons_w_IC_cooling(coord, r_shock);
 
-    Array t_bins = logspace(1e-5 * con::day, 1e2 * con::day, 100);
+    Array t_bins = logspace(1e-6 * con::day, 1e2 * con::day, 100);
 
     double theta_v = 0.;
     double lumi_dist = 1.23e26 * con::cm;
@@ -72,7 +181,8 @@ void test() {
 
     // Array band_pass = logspace(eVtoHz(1e2 * con::keV), eVtoHz(1e3 * con::keV), 10);
 
-    Array band_pass = {1e11 * con::Hz, 1e12 * con::Hz, 1e13 * con::Hz, 1e14 * con::Hz, 1e15 * con::Hz, 1e16 * con::Hz};
+    Array band_pass = {1e11 * con::Hz, 1e12 * con::Hz, 1e13 * con::Hz, 1e14 * con::Hz,
+                       1e15 * con::Hz, 1e16 * con::Hz, 1e17 * con::Hz, 1e18 * con::Hz};
 
     auto to_suffix = [](double theta) { return std::to_string(int(ceil(theta / con::deg))); };
 
@@ -174,19 +284,6 @@ void GCN36236(std::string folder_name) {
 
         write2file(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
     }
-
-    /* Observer obs;
-     double z = 0.01;
-     double theta_v = 0.54;
-     obs.observe(coord, shock_f, theta_v, z);
-     std::cout << obs.lumi_dist / con::cm << '\n';
-     obs.lumi_dist = 1.23e26 * con::cm;
-     Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
-
-     Array F_nu_syn = obs.gen_flux(t_bins, band_pass, syn_ph);
-     write2file(F_nu_syn, prefix + "F_nu_syn", con::erg / con::sec / con::cm / con::cm);*/
-
-    // specify observables
 
     write2file(boundary2centerlog(t_bins), "t_obs", con::sec);
 }
@@ -298,28 +395,6 @@ void lc_gen(std::string folder_name) {
     // specify observables
 }
 int main() {
-    // double theta = 5 * con::deg, eps_e = 0.01;
-    // GCN36236("tests/", 300, theta, {0.54}, eps_e);
-    /* Array theta_obs = linspace(5 * con::deg, 30 * con::deg, 26);
 
-     double eps_e = 0.1;
-     Array theta_c = {3 * con::deg, 4 * con::deg, 5 * con::deg, 6 * con::deg, 7 * con::deg, 8 * con::deg};
-     std::vector<std::thread> threads;
-
-     for (auto theta : theta_c) {
-         threads.emplace_back(GCN36236, "prediction-n1/", 300, theta, theta_obs, eps_e);
-     }
-
-     for (auto& thread : threads) {
-         thread.join();
-     }*/
-    // GCN36236("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case6");
-    //  afterglow_gen();
-    /*lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1");
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2");
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3");
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4");
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5");*/
-    test();
     return 0;
-}
+}*/
