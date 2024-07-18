@@ -7,12 +7,12 @@
 #include "medium.h"
 #include "mesh.h"
 #include "shock.h"
-
+#include "physics.h"
 class Shock {
    public:
     Shock(Coord const& coord, double eps_e, double eps_B, double p, double xi = 1, double zeta = 1);
     MeshGrid t_com;
-    MeshGrid t_com_b;
+    MeshGrid dt_com;
     MeshGrid Gamma;      // bulk Lorentz factor
     MeshGrid e_th;       // internal energy density
     MeshGrid B;          // comoving magnetic field
@@ -27,15 +27,19 @@ class Shock {
 
 class BlastWaveEqn {
    public:
-    BlastWaveEqn(Medium const& medium, Jet const& jet, double theta_lo, double theta_hi, double eps_e);
+    BlastWaveEqn(Medium const& medium, Jet const& jet, double theta_lo, double theta_hi, double eps_e,
+                 bool reverse_shock);
 
     void operator()(Array const& y, Array& dydr, double r);
 
     Medium medium;
     Jet jet;
+    UDownStr u_down;
+    double sigma;
     double dOmega;
     double theta;
     double eps_e;
+    bool reverse_shock;
 
    private:
     inline double dGammadr(double r, double Gamma, double u, double t_eng);

@@ -9,7 +9,7 @@ auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0
     using Scalar = decltype(f(0));
     for (; fabs((high - low)) > fabs(high) * eps;) {
         Scalar mid = 0.5 * (high + low);
-        if (f(mid) > 0)
+        if (f(mid) * f(high) > 0)
             high = mid;
         else
             low = mid;

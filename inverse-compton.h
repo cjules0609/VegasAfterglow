@@ -108,7 +108,7 @@ struct ICPhoton {
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
             j_nu_[k] *= D_shock_com;
         }
-        this->dt_com_ = ph.dt_com;
+        this->dt_com_ = ph.E_nu_peak / ph.L_nu_peak;
     };
 
    public:

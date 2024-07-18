@@ -3,6 +3,16 @@
 #include <cmath>
 
 #include "macros.h"
+#include "mesh.h"
+class UDownStr {
+   public:
+    UDownStr(double sigma);
+    UDownStr(){};
+    double interp(double gamma) const;
+    double sigma;
+    Array gamma_1;
+    Array u2s;
+};
 
 inline double gamma_to_beta(double gamma) { return sqrt(1 - 1 / (gamma * gamma)); }
 

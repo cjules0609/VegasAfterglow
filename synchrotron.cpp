@@ -108,7 +108,7 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
 
 double SynPhotons::L_nu(double nu) const { return L_nu_peak * spectrum_(nu); }
 
-double SynPhotons::E_nu(double nu) const { return L_nu_peak * spectrum_(nu) * dt_com; }
+double SynPhotons::E_nu(double nu) const { return E_nu_peak * spectrum_(nu); }
 
 void SynPhotons::update_constant() {
     // Update constants based on spectral parameters
@@ -358,6 +358,7 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
             double B = shock.B[j][k];
 
             ph[j][k].L_nu_peak = syn_p_nu_peak(B, e[j][k].p) * e[j][k].N_tot;
+            ph[j][k].E_nu_peak = ph[j][k].L_nu_peak * shock.dt_com[j][k];
             ph[j][k].nu_M = syn_nu(e[j][k].gamma_M, B);
             ph[j][k].nu_m = syn_nu(e[j][k].gamma_m, B);
             ph[j][k].nu_c = syn_nu(e[j][k].gamma_c, B);
@@ -365,7 +366,6 @@ SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& e, Coord const& coord, Sh
             ph[j][k].regime = e[j][k].regime;
             ph[j][k].nu_E_peak = syn_nu_E_peak(ph[j][k]);
             ph[j][k].p = e[j][k].p;
-            ph[j][k].dt_com = shock.t_com_b[j][k + 1] - shock.t_com_b[j][k];
             ph[j][k].update_constant();
         }
     }

@@ -26,6 +26,7 @@ struct SynElectrons {
 struct SynPhotons {
     // all in comoving frame
     double L_nu_peak{0};
+    double E_nu_peak{0};
     double nu_E_peak{0};
     double nu_m{0};
     double nu_c{0};
@@ -33,7 +34,6 @@ struct SynPhotons {
     double nu_M{0};
     double p{2.3};
     size_t regime{0};
-    double dt_com{0};
     double L_nu(double nu) const;
     double E_nu(double nu) const;
 

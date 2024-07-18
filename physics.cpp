@@ -2,6 +2,7 @@
 
 #include <boost/numeric/odeint.hpp>
 
+#include "utilities.h"
 double z_to_luminosity_distance(double z) {
     using namespace boost::numeric::odeint;
     double atol = 0;
@@ -58,3 +59,24 @@ double shell_spreading_radius(double Gamma0, double engine_dura) { return Gamma0
 double RS_transition_radius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
     return pow(Sedov_length(E_iso, n_ism), 1.5) / sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
 }
+
+UDownStr::UDownStr(double sigma) : sigma(sigma), gamma_1(logspace(1e-5, 1e3, 100)), u2s(zeros(100)) {
+    for (size_t i = 0; i < gamma_1.size(); ++i) {
+        double gamma = gamma_1[i] + 1;
+        double ad_idx = adiabatic_index(gamma);
+        double A = ad_idx * (2 - ad_idx) * (gamma - 1) + 2;
+        double B =
+            -(gamma + 1) * ((2 - ad_idx) * (ad_idx * gamma * gamma + 1) + ad_idx * (ad_idx - 1) * gamma) * sigma -
+            (gamma - 1) * (ad_idx * (2 - ad_idx) * (gamma * gamma - 2) + 2 * gamma + 3);
+        double C = (gamma + 1) * (ad_idx * (1 - ad_idx / 4) * (gamma * gamma - 1) + 1) * sigma * sigma +
+                   (gamma * gamma - 1) * (2 * gamma - (2 - ad_idx) * (ad_idx * gamma - 1)) * sigma +
+                   (gamma + 1) * (gamma - 1) * (gamma - 1) * (ad_idx - 1) * (ad_idx - 1);
+        double D = -(gamma - 1) * (gamma + 1) * (gamma + 1) * (2 - ad_idx) * (2 - ad_idx) * sigma * sigma / 4;
+        double x0 = (-B - sqrt(B * B - 3 * A * C)) / 3 / A;
+        double x1 = (-B + sqrt(B * B - 3 * A * C)) / 3 / A;
+        u2s[i] =
+            sqrt(root_bisection([=](double x) -> double { return A * x * x * x + B * x * x + C * x + D; }, x0, x1));
+    }
+}
+
+double UDownStr::interp(double gamma) const { return loglog_interp_eq_spaced(gamma - 1, gamma_1, u2s, true, true); }
