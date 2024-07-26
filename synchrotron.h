@@ -5,8 +5,29 @@
 #include "medium.h"
 #include "mesh.h"
 #include "shock.h"
+
+struct Y_IC {
+    Y_IC(double nu_m, double nu_c, double B, double Y_T);
+    Y_IC(double Y_T);
+    Y_IC();
+    double nu_hat_m{0};
+    double nu_hat_c{0};
+    double gamma_hat_m{0};
+    double gamma_hat_c{0};
+    double Y_T{0};
+    size_t regime{0};
+
+    double as_nu(double nu, double p) const;
+    double as_gamma(double gamma, double p) const;
+
+    static double Y_T_tilt(std::vector<Y_IC> const& Ys);
+    static double Y_tilt_at_gamma(std::vector<Y_IC> const& Ys, double gamma, double p);
+    static double Y_tilt_at_nu(std::vector<Y_IC> const& Ys, double nu, double p);
+};
+
 struct SynElectrons {
     // all in comoving frame
+    double I_nu_peak{0};
     double gamma_m{0};
     double gamma_c{0};
     double gamma_a{0};
@@ -18,6 +39,9 @@ struct SynElectrons {
     size_t regime{0};
     double N(double gamma) const;
     double n(double gamma) const;
+
+    double Y_c{0};
+    std::vector<Y_IC> Ys;
 
    private:
     inline double gamma_spectrum_(double gamma) const;
@@ -36,6 +60,9 @@ struct SynPhotons {
     size_t regime{0};
     double L_nu(double nu) const;
     double E_nu(double nu) const;
+
+    double Y_c{0};
+    std::vector<Y_IC> Ys;
 
     void update_constant();
 
@@ -66,21 +93,15 @@ SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size);
 
 SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock);
 
-SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock, MeshGrid const& Y_tilt);
-
-SynElectronsMesh gen_syn_electrons_w_IC_cooling(Coord const& coord, Shock const& shock);
-
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock);
 
 SynPhotonsMesh gen_syn_photons(Coord const& coord, Shock const& shock);
 
-SynPhotonsMesh gen_syn_photons_w_IC_cooling(Coord const& coord, Shock const& shock);
+void update_electrons_4_Y(SynElectronsMesh& e, Shock const& shock);
 
-double syn_gamma_c(double t_com, double B, double Y_tilt);
+double syn_gamma_c(double t_com, double B, std::vector<Y_IC> const& Ys, double p);
 
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
-// double syn_gamma_M(double B, double zeta, double Y_tilt);
-// double syn_gamma_a(double Gamma, double B, double I_syn_peak, double gamma_m, double gamma_c, double gamma_M);
-//  double syn_j_nu_peak(double r, double Gamma, double B, double rho, double xi, double p);
+
 double syn_nu(double gamma, double B);
 #endif

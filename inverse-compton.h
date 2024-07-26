@@ -15,15 +15,21 @@ inline const double IC_x0 = sqrt(2) / 3;
 
 inline double compton_sigma(double nu) {
     double x = con::h * nu / (con::me * con::c2);
-    if (x < 1e-2) {
-        return con::sigmaT * (1 - 2 * x);
-    } else if (x > 1e2) {
-        return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
+    if (x <= 1) {
+        return con::sigmaT;
     } else {
-        return 0.75 * con::sigmaT *
-               ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-                (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
+        return 0;
     }
+
+    /* if (x < 1e-2) {
+         return con::sigmaT * (1 - 2 * x);
+     } else if (x > 1e2) {
+         return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
+     } else {
+         return 0.75 * con::sigmaT *
+                ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
+                 (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
+     }*/
 }
 
 struct IntegratorGrid {
@@ -128,8 +134,8 @@ ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
 
 ICPhotonMesh gen_IC_photons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
-MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& electron, Shock const& shock);
+void IC_cooling_Thomson(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
-MeshGrid solve_IC_Y_KN(SynElectronsMesh const& electron, Shock const& shock);
+void IC_cooling_KN(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
 #endif

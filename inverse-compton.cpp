@@ -34,7 +34,7 @@ double eff_Y_IC_Thomson(double Gamma, double B, double t_com, double eps_e, doub
     double Y1 = 2 * Y0;
     for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
         Y1 = Y0;
-        double gamma_c = syn_gamma_c(t_com, B, Y1);
+        double gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
         b = eta_e * eps_e / eps_B;
         Y0 = IC_Y_tilt(b);
@@ -42,7 +42,8 @@ double eff_Y_IC_Thomson(double Gamma, double B, double t_com, double eps_e, doub
     return Y0;
 }
 
-double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double eps_B, SynElectrons const& e) {
+/*
+double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double eps_B, SynElectrons& e) {
     double eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
     double b = eta_e * eps_e / eps_B;
     double Y0 = IC_Y_tilt(b);
@@ -57,9 +58,9 @@ double eff_Y_IC_KN(double Gamma, double B, double t_com, double eps_e, double ep
         Y0 = IC_Y_tilt(b);
     }
     return Y0;
-}
+}*/
 
-MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock) {
+MeshGrid solve_SSC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
@@ -71,7 +72,8 @@ MeshGrid solve_IC_Y_Thomson(SynElectronsMesh const& e, Shock const& shock) {
     return Y_eff;
 }
 
-MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock) {
+/*
+MeshGrid solve_IC_Y_KN(SynElectronsMesh& e, Shock const& shock) {
     MeshGrid Y_eff = create_grid_like(shock.Gamma);
 
     for (size_t j = 0; j < e.size(); ++j) {
@@ -81,7 +83,7 @@ MeshGrid solve_IC_Y_KN(SynElectronsMesh const& e, Shock const& shock) {
         }
     }
     return Y_eff;
-}
+}*/
 
 void gen_IC_photons_(ICPhotonArray& IC_ph, SynElectronsArray const& e, SynPhotonsArray const& ph, Array const& D_com) {
     for (size_t k = 0; k < IC_ph.size(); ++k) {
@@ -110,4 +112,29 @@ ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph,
         }
     }*/
     return IC_ph;
+}
+
+void IC_cooling_Thomson(SynElectronsMesh& e, SynPhotonsMesh const& ph, Shock const& shock) {
+    for (size_t j = 0; j < e.size(); ++j) {
+        for (size_t k = 0; k < e[j].size(); ++k) {
+            double Y_T = eff_Y_IC_Thomson(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], shock.eps_e, shock.eps_B,
+                                          e[j][k]);
+
+            e[j][k].Ys.clear();
+            e[j][k].Ys.emplace_back(Y_T);
+        }
+    }
+    update_electrons_4_Y(e, shock);
+}
+
+void IC_cooling_KN(SynElectronsMesh& e, SynPhotonsMesh const& ph, Shock const& shock) {
+    for (size_t j = 0; j < e.size(); ++j) {
+        for (size_t k = 0; k < e[j].size(); ++k) {
+            double Y_T = eff_Y_IC_Thomson(shock.Gamma[j][k], shock.B[j][k], shock.t_com[j][k], shock.eps_e, shock.eps_B,
+                                          e[j][k]);
+            e[j][k].Ys.clear();
+            e[j][k].Ys.emplace_back(ph[j][k].nu_m, ph[j][k].nu_c, shock.B[j][k], Y_T);
+        }
+    }
+    update_electrons_4_Y(e, shock);
 }

@@ -5,21 +5,19 @@
 #include <fstream>
 
 #include "json.hpp"
-/*
+
 void tests() {
-    double n_ism = 1 / con::cm3;
-    double eps_e = 0.1;
-    double eps_B = 0.001;
-    double eps_e_r = 0.1;
-    double eps_B_r = 0.001;
-    double p = 2.2;
-    double E_iso = 1e53 * con::erg;
+    double n_ism = 1e-3 / con::cm3;
+    double eps_e = 0.15;
+    double eps_B = 0.02;
+    double p = 2.1;
+    double E_iso = 1e54 * con::erg;
     double Gamma0 = 300;
     double theta_c = 0.1;
 
     // create model
     auto medium = create_ISM(n_ism);
-    auto jet = create_tophat_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
+    auto jet = create_tophat_jet(E_iso, Gamma0, 0, theta_c, 1 * con::sec);
     // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
 
     size_t r_num = 500;
@@ -35,7 +33,7 @@ void tests() {
     std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
               << '\n';
 
-    auto r = logspace(R_dec / 1000, R_dec * 100, r_num);
+    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
     auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
@@ -47,247 +45,77 @@ void tests() {
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
     Shock f_shock(coord, eps_e, eps_B, p);
-    Shock r_shock(coord, eps_e_r, eps_B_r, p);
+    // Shock r_shock(coord, eps_e_r, eps_B_r, p);
 
-    solve_shocks(coord, jet, medium, f_shock, r_shock);
+    solve_shocks(coord, jet, medium, f_shock);
 
-    write2file(r_shock, "tests/r_shock");
     write2file(f_shock, "tests/f_shock");
 
-    auto syn_e = gen_syn_electrons_w_IC_cooling(coord, f_shock);
-
-    auto syn_e_r = gen_syn_electrons_w_IC_cooling(coord, r_shock);
+    auto syn_e = gen_syn_electrons(coord, f_shock);
 
     auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    auto syn_ph_r = gen_syn_photons(syn_e_r, coord, r_shock);
+    write2file(syn_e, "tests/syn_e");
 
-    auto ic_ff = gen_IC_photons(syn_e, syn_ph, f_shock);
+    write2file(syn_ph, "tests/syn_ph");
 
-    auto ic_fr = gen_IC_photons(syn_e, syn_ph_r, f_shock);
+    size_t j = 0;
+    size_t k = 200;
+    size_t resol = 60;
+    double gamma_min = 6e3;
+    double gamma_max = 4e6;
+    double nu_min = 1e12 * con::Hz;
+    double nu_max = 1e20 * con::Hz;
 
-    auto ic_rf = gen_IC_photons(syn_e_r, syn_ph, r_shock);
+    auto syn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    auto ic_rr = gen_IC_photons(syn_e_r, syn_ph_r, r_shock);
+    write2file(syn_e_sptr, "tests/syn_e_sptr");
 
-    Array t_bins = logspace(1e-6 * con::day, 1e2 * con::day, 100);
+    auto syn_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, syn_ph[j][k]);
 
-    double theta_v = 0.;
-    double lumi_dist = 1.23e26 * con::cm;
-    double z = 0.01;
+    write2file(syn_ph_sptr, "tests/syn_ph_sptr");
 
-    Observer obs;
+    IC_cooling_Thomson(syn_e, syn_ph, f_shock);
 
-    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
+    auto ICT_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    // Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
+    write2file(syn_e, "tests/ICT_e");
 
-    // Array band_pass = logspace(eVtoHz(1e2 * con::keV), eVtoHz(1e3 * con::keV), 10);
+    write2file(ICT_ph, "tests/ICT_ph");
 
-    Array band_pass = {1e14 * con::Hz, 1e17 * con::Hz};
+    auto ict_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    auto to_suffix = [](double theta) { return std::to_string(int(ceil(theta / con::deg))); };
+    write2file(ict_e_sptr, "tests/ict_e_sptr");
 
-    auto F_syn_f = obs.specific_flux(t_bins, band_pass, syn_ph);
+    auto ict_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, ICT_ph[j][k]);
 
-    auto F_syn_r = obs.specific_flux(t_bins, band_pass, syn_ph_r);
+    write2file(ict_ph_sptr, "tests/ict_ph_sptr");
 
-    auto F_syn_ic_ff = obs.specific_flux(t_bins, band_pass, ic_ff);
+    IC_cooling_KN(syn_e, syn_ph, f_shock);
 
-    auto F_syn_ic_fr = obs.specific_flux(t_bins, band_pass, ic_fr);
+    auto ICKN_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    auto F_syn_ic_rf = obs.specific_flux(t_bins, band_pass, ic_rf);
+    auto& ee = syn_e[j][k];
 
-    auto F_syn_ic_rr = obs.specific_flux(t_bins, band_pass, ic_rr);
+    std::cout << ee.gamma_c << " " << ee.gamma_m << " " << ee.Ys[0].gamma_hat_m << " " << ee.Ys[0].gamma_hat_c << " "
+              << ee.Ys[0].Y_T << '\n';
 
-    write2file(F_syn_f, "tests/Flux_f", con::erg / con::sec / con::cm / con::cm);
+    std::cout << ee.Ys[0].nu_hat_m << " " << ee.Ys[0].nu_hat_c << '\n';
 
-    write2file(F_syn_r, "tests/Flux_r", con::erg / con::sec / con::cm / con::cm);
+    write2file(syn_e, "tests/ICKN_e");
 
-    write2file(F_syn_ic_ff, "tests/Flux_ic_ff", con::erg / con::sec / con::cm / con::cm);
+    write2file(ICKN_ph, "tests/ICKN_ph");
 
-    write2file(F_syn_ic_fr, "tests/Flux_ic_fr", con::erg / con::sec / con::cm / con::cm);
+    auto ickn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    write2file(F_syn_ic_rf, "tests/Flux_ic_rf", con::erg / con::sec / con::cm / con::cm);
+    write2file(ickn_e_sptr, "tests/ickn_e_sptr");
 
-    write2file(F_syn_ic_rr, "tests/Flux_ic_rr", con::erg / con::sec / con::cm / con::cm);
+    auto ickn_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, ICKN_ph[j][k]);
 
-    write2file(boundary2centerlog(t_bins), "tests/t_obs", con::sec);
+    write2file(ickn_ph_sptr, "tests/ickn_ph_sptr");
 }
 
-void test() {
-    double n_ism = 1 / con::cm3;
-    double eps_e = 0.1;
-    double eps_B = 0.001;
-    double eps_e_r = 0.1;
-    double eps_B_r = 0.001;
-    double p = 2.2;
-    double E_iso = 1e53 * con::erg;
-    double Gamma0 = 300;
-    double theta_c = 0.1;
-
-    // create model
-    auto medium = create_ISM(n_ism);
-    auto jet = create_tophat_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
-    // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
-
-    size_t r_num = 500;
-    size_t theta_num = 250;
-    size_t phi_num = 37;
-
-    double R_thin = thin_shell_dec_radius(E_iso, n_ism, Gamma0);
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_cross = RS_crossing_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_spread = shell_spreading_radius(Gamma0, jet.duration);
-    double R_N = RS_transition_radius(E_iso, n_ism, Gamma0, jet.duration);
-
-    std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
-              << '\n';
-
-    auto r = logspace(R_dec / 1000, R_dec * 100, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
-    auto phi = linspace(0, 2 * con::pi, phi_num);
-
-    // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
-    Coord coord{r, theta, phi};
-
-    write2file(coord, "tests/coord");
-
-    // solve dynamics
-    // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
-    Shock f_shock(coord, eps_e, eps_B, p);
-    Shock r_shock(coord, eps_e_r, eps_B_r, p);
-
-    solve_shocks(coord, jet, medium, f_shock, r_shock);
-
-    write2file(r_shock, "tests/r_shock");
-    write2file(f_shock, "tests/f_shock");
-
-    auto syn_ph = gen_syn_photons_w_IC_cooling(coord, f_shock);
-
-    auto syn_ph_r = gen_syn_photons_w_IC_cooling(coord, r_shock);
-
-    Array t_bins = logspace(1e-6 * con::day, 1e2 * con::day, 100);
-
-    double theta_v = 0.;
-    double lumi_dist = 1.23e26 * con::cm;
-    double z = 0.01;
-
-    Observer obs;
-
-    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
-
-    // Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
-
-    // Array band_pass = logspace(eVtoHz(1e2 * con::keV), eVtoHz(1e3 * con::keV), 10);
-
-    Array band_pass = {1e11 * con::Hz, 1e12 * con::Hz, 1e13 * con::Hz, 1e14 * con::Hz,
-                       1e15 * con::Hz, 1e16 * con::Hz, 1e17 * con::Hz, 1e18 * con::Hz};
-
-    auto to_suffix = [](double theta) { return std::to_string(int(ceil(theta / con::deg))); };
-
-    auto F_syn = obs.specific_flux(t_bins, band_pass, syn_ph);
-
-    write2file(syn_ph, "tests/ph_f");
-
-    write2file(F_syn, "tests/Flux_f", con::erg / con::sec / con::cm / con::cm);
-
-    auto F_syn_r = obs.specific_flux(t_bins, band_pass, syn_ph_r);
-
-    write2file(syn_ph_r, "tests/ph_r");
-
-    write2file(F_syn_r, "tests/Flux_r", con::erg / con::sec / con::cm / con::cm);
-
-    write2file(boundary2centerlog(t_bins), "tests/t_obs", con::sec);
-}
-
-void GCN36236(std::string folder_name) {
-    using json = nlohmann::json;
-
-    std::ifstream f(folder_name + "/problem-setups.json");
-    json data = json::parse(f);
-
-    double E_iso = data["E_iso"];
-    E_iso *= con::erg;
-
-    double lumi_dist = data["luminosity distance"];
-    lumi_dist *= con::cm;
-    double z = data["z"];
-    std::string jet_type = data["jet type"];
-    double theta_c = data["theta_core"];
-    double theta_w = data["theta_wing"];
-    double Gamma0 = data["Gamma0"];
-
-    double n_ism = data["n_ism"];
-    n_ism /= (con::cm * con::cm * con::cm);
-
-    double eps_e = data["epsilon_e"];
-    double eps_B = data["epsilon_B"];
-    double p = data["p"];
-
-    double theta_view = data["theta_view"];
-
-    Array t_obs = data["t_obs"];
-
-    Array band_pass_ = data["band pass (kev)"];
-
-    // create model
-    auto medium = create_ISM(n_ism);
-    // auto jet = create_tophat_jet(E_iso, Gamma0, theta_j, 2 * con::sec);
-    auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 100 * con::sec);
-
-    size_t r_num = 800;
-    size_t theta_num = 150;
-    size_t phi_num = 37;
-    double R_thin = thin_shell_dec_radius(E_iso, n_ism, Gamma0);
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_cross = RS_crossing_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_spread = shell_spreading_radius(Gamma0, jet.duration);
-    double R_N = RS_transition_radius(E_iso, n_ism, Gamma0, jet.duration);
-
-    std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
-              << '\n';
-
-    auto r = logspace(R_dec / 1000, R_dec * 1000, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile, 0.6);
-    auto phi = linspace(0, 2 * con::pi, phi_num);
-
-    // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
-    Coord coord{r, theta, phi};
-
-    // solve dynamics
-    Shock f_shock(coord, eps_e, eps_B, p);
-    Shock r_shock(coord, eps_e, eps_B, p);
-
-    solve_shocks(coord, jet, medium, f_shock, r_shock);
-
-    auto syn_e = gen_syn_electrons_w_IC_cooling(coord, f_shock);
-    // auto syn_e = gen_syn_electrons(coord, shock_f);
-    auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
-
-    Array t_bins = logspace(5e-4 * con::day, 5e3 * con::day, 100);
-
-    Array theta_obs = {0, 5 * con::deg, 10 * con::deg, 15 * con::deg, 20 * con::deg, 25 * con::deg, 30 * con::deg};
-
-    for (auto theta_v : theta_obs) {
-        Observer obs;
-
-        obs.observe(coord, f_shock, theta_v, lumi_dist, z);
-
-        Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
-
-        auto to_suffix = [](double theta) { return std::to_string(int(ceil(theta / con::deg))); };
-
-        Array F_syn = obs.flux(t_bins, band_pass, syn_ph);
-
-        std::string fname = "F_nu_syn_" + to_suffix(theta_v) + "_" + to_suffix(theta_v);
-
-        write2file(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
-    }
-
-    write2file(boundary2centerlog(t_bins), "t_obs", con::sec);
-}
-
+/*
 void lc_gen(std::string folder_name) {
     using json = nlohmann::json;
 
@@ -393,8 +221,8 @@ void lc_gen(std::string folder_name) {
     }
     std::cout << "finish" + working_dir << '\n';
     // specify observables
-}
-int main() {
-
-    return 0;
 }*/
+int main() {
+    tests();
+    return 0;
+}

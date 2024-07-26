@@ -26,11 +26,11 @@ MeshGrid co_moving_spectrum(size_t spectrum_resol, double nu_min, double nu_max,
 }
 
 template <typename Photons1Array, typename... Photons2Array>
-MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, Photons1Array const& ph0,
+MeshGrid co_moving_spectrums(size_t spectrum_resol, double nu_min, double nu_max, Photons1Array const& ph0,
                              Photons2Array const&... ph) {
-    Array nu_bin = logspace(nu_min, nu_max, data_points + 1);
+    Array nu_bin = logspace(nu_min, nu_max, spectrum_resol + 1);
     Array nu_c = boundary2center(nu_bin);
-    MeshGrid L_nu = create_grid(1 + ph0.size(), data_points, 0);
+    MeshGrid L_nu = create_grid(1 + ph0.size(), spectrum_resol, 0);
     L_nu[0] = nu_c;
     for (size_t i = 0; i < ph0.size(); ++i) {
         for (size_t j = 0; j < L_nu[0].size(); ++j) {
@@ -43,12 +43,24 @@ MeshGrid co_moving_spectrums(size_t data_points, double nu_min, double nu_max, P
     return L_nu;
 }
 
-template <typename Electrons1Array, typename... Electrons2Array>
-MeshGrid co_moving_n_spectrums(size_t data_points, double gamma_min, double gamma_max, Electrons1Array const& e0,
-                               Electrons2Array const&... e) {
-    Array gamma_bin = logspace(gamma_min, gamma_max, data_points + 1);
+template <typename... Electrons>
+MeshGrid co_moving_e_spectrum(size_t spectrum_resol, double gamma_min, double gamma_max, Electrons const&... e) {
+    Array gamma_bin = logspace(gamma_min, gamma_max, spectrum_resol + 1);
     Array gamma = boundary2center(gamma_bin);
-    MeshGrid n_gamma = create_grid(1 + e0.size(), data_points, 0);
+    MeshGrid n_gamma = create_grid(2, spectrum_resol, 0);
+    for (size_t i = 0; i < n_gamma[0].size(); ++i) {
+        n_gamma[0][i] = gamma[i];
+        n_gamma[1][i] = (e.N(gamma[i]) + ...);
+    }
+    return n_gamma;
+}
+
+template <typename Electrons1Array, typename... Electrons2Array>
+MeshGrid co_moving_e_spectrums(size_t spectrum_resol, double gamma_min, double gamma_max, Electrons1Array const& e0,
+                               Electrons2Array const&... e) {
+    Array gamma_bin = logspace(gamma_min, gamma_max, spectrum_resol + 1);
+    Array gamma = boundary2center(gamma_bin);
+    MeshGrid n_gamma = create_grid(1 + e0.size(), spectrum_resol, 0);
     n_gamma[0] = gamma;
     for (size_t i = 0; i < e0.size(); ++i) {
         for (size_t j = 0; j < n_gamma[0].size(); ++j) {

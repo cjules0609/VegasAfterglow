@@ -130,7 +130,7 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
 
     if (!file_n_tot || !file_gamma_peak || !file_gamma_m || !file_gamma_c || !file_gamma_a || !file_gamma_M ||
         !file_N_tot) {
-        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
+        std::cerr << "Error opening files " << std::endl;
         return;
     }
 
@@ -159,6 +159,33 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
         file_gamma_a << '\n';
         file_gamma_M << '\n';
         file_N_tot << '\n';
+    }
+
+    for (size_t i = 0; i < syn_rad[0][0].Ys.size(); ++i) {
+        std::ofstream file_Y(filename + "_Yt-" + std::to_string(i) + ".txt");
+        std::ofstream file_gamma_hat_m(filename + "_gamma_hat_m-" + std::to_string(i) + ".txt");
+        std::ofstream file_gamma_hat_c(filename + "_gamma_hat_c-" + std::to_string(i) + ".txt");
+
+        if (!file_Y || !file_gamma_hat_m || !file_gamma_hat_c) {
+            std::cerr << "Error opening files " << std::endl;
+            return;
+        }
+
+        file_Y.precision(16);
+        file_gamma_hat_m.precision(16);
+        file_gamma_hat_c.precision(16);
+
+        for (size_t i = 0; i < syn_rad.size(); ++i) {
+            for (size_t j = 0; j < syn_rad[i].size(); ++j) {
+                file_N_tot << syn_rad[i][j].N_tot << " ";
+                file_Y << syn_rad[i][j].Ys[i].Y_T << " ";
+                file_gamma_hat_m << syn_rad[i][j].Ys[i].gamma_hat_m << " ";
+                file_gamma_hat_c << syn_rad[i][j].Ys[i].gamma_hat_c << " ";
+            }
+            file_Y << '\n';
+            file_gamma_hat_m << '\n';
+            file_gamma_hat_c << '\n';
+        }
     }
 }
 
