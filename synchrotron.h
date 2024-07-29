@@ -80,28 +80,20 @@ struct SynPhotons {
 };
 
 using SynPhotonsArray = std::vector<SynPhotons>;
-
 using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
-
 using SynElectronsArray = std::vector<SynElectrons>;
-
 using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;
 
+
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size);
-
 SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size);
-
 SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock);
-
 SynPhotonsMesh gen_syn_photons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock);
-
 SynPhotonsMesh gen_syn_photons(Coord const& coord, Shock const& shock);
 
 void update_electrons_4_Y(SynElectronsMesh& e, Shock const& shock);
 
 double syn_gamma_c(double t_com, double B, std::vector<Y_IC> const& Ys, double p);
-
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
-
 double syn_nu(double gamma, double B);
 #endif

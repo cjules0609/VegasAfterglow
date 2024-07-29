@@ -17,6 +17,26 @@ auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0
     return 0.5 * (high + low);
 }
 
+template <typename T>
+T min(T value) {
+    return value;
+}
+
+template <typename T, typename... Args>
+T min(T first, Args... args) {
+    return std::min(first, min(args...));
+}
+
+template <typename T>
+T max(T value) {
+    return value;
+}
+
+template <typename T, typename... Args>
+T max(T first, Args... args) {
+    return std::max(first, max(args...));
+}
+
 double exp_fast(double a);
 
 // Linear interpolation function

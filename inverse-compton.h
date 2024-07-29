@@ -65,8 +65,8 @@ struct ICPhoton {
 
     template <typename Electrons, typename Photons>
     void gen(Electrons const& e, Photons const& ph, double D_shock_com) {
-        double gamma_e_min = std::min(e.gamma_m, std::min(e.gamma_c, e.gamma_a));
-        double nu_ph_min = std::min(ph.nu_m, std::min(ph.nu_c, ph.nu_a));
+        double gamma_e_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
+        double nu_ph_min = min(ph.nu_m, ph.nu_c, ph.nu_a);
 
         double nu0_max = ph.nu_M * 10;
         double nu0_min = nu_ph_min / 1e5;

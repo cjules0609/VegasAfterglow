@@ -173,15 +173,7 @@ size_t get_regime(double a, double c, double m) {
 
 double SynElectrons::gamma_spectrum_(double gamma) const {
     switch (regime) {
-        case 1:
-            if (gamma <= gamma_m) {
-                return 0;
-            } else if (gamma <= gamma_c) {
-                return (p - 1) * fast_pow(gamma / gamma_m, -p) / gamma_m;
-            } else {
-                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
-            }
-            break;
+        case 1:  // same as case 2
         case 2:
             if (gamma <= gamma_m) {
                 return 0;
@@ -200,7 +192,7 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
                 return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
-        case 4:
+        case 4:  // Gao, Lei, Wu and Zhang 2013 Eq 18
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else if (gamma <= gamma_m) {
@@ -209,14 +201,14 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
                 return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
-        case 5:
+        case 5:  // Gao, Lei, Wu and Zhang 2013 Eq 19
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
                 return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
             }
             break;
-        case 6:
+        case 6:  // Gao, Lei, Wu and Zhang 2013 Eq 20
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
@@ -477,6 +469,7 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
+            constexpr double gamma_syn_limit = 10;
             double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
             double e_th = shock.e_th[j][k];
@@ -484,8 +477,6 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
             double B = shock.B[j][k];
             double D = shock.width_eff[j][k];
             double n_e = shock.n_p[j][k] * shock.xi;
-
-            constexpr double gamma_syn_limit = 10;
 
             auto& electron = e[j][k];
 
