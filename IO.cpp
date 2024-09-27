@@ -12,7 +12,7 @@ void print_array(Array const& arr) {
     std::cout << std::endl;
 }
 
-void write2file(Coord const& coord, std::string const& filename) {
+void output(Coord const& coord, std::string const& filename) {
     std::ofstream file_r(filename + "_r.txt");
     std::ofstream file_theta(filename + "_theta.txt");
     std::ofstream file_phi(filename + "_phi.txt");
@@ -43,7 +43,7 @@ void write2file(Coord const& coord, std::string const& filename) {
     file_phi << std::endl;
 }
 
-void write2file(Shock const& shock, std::string const& filename) {
+void output(Shock const& shock, std::string const& filename) {
     std::ofstream file(filename + "_Gamma.txt");
     std::ofstream file_B(filename + "_B.txt");
     std::ofstream file_D_com(filename + "_D_com.txt");
@@ -81,7 +81,7 @@ void write2file(Shock const& shock, std::string const& filename) {
     }
 }
 
-void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
+void output(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_I_peak(filename + "_I_nu_peak.txt");
     std::ofstream file_nu_peak(filename + "_nu_E_peak.txt");
     std::ofstream file_nu_m(filename + "_nu_m.txt");
@@ -119,7 +119,7 @@ void write2file(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     }
 }
 
-void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
+void output(SynElectronsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_n_tot(filename + "_n_tot.txt");
     std::ofstream file_gamma_peak(filename + "_gamma_N_peak.txt");
     std::ofstream file_gamma_m(filename + "_gamma_m.txt");
@@ -189,7 +189,7 @@ void write2file(SynElectronsMesh const& syn_rad, std::string const& filename) {
     }
 }
 
-void write2file(MeshGrid3d const& array, std::string const& filename) {
+void output(MeshGrid3d const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -207,7 +207,7 @@ void write2file(MeshGrid3d const& array, std::string const& filename) {
         }
     }
 }
-void write2file(MeshGrid const& grid, std::string const& filename) {
+void output(MeshGrid const& grid, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -224,7 +224,7 @@ void write2file(MeshGrid const& grid, std::string const& filename) {
     }
 }
 
-void write2file(Array const& array, std::string const& filename) {
+void output(Array const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -238,7 +238,7 @@ void write2file(Array const& array, std::string const& filename) {
     }
 }
 
-void write2file(MeshGrid3d const& array, std::string const& filename, double unit) {
+void output(MeshGrid3d const& array, std::string const& filename, double unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -255,7 +255,7 @@ void write2file(MeshGrid3d const& array, std::string const& filename, double uni
         }
     }
 }
-void write2file(MeshGrid const& grid, std::string const& filename, double unit) {
+void output(MeshGrid const& grid, std::string const& filename, double unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -271,7 +271,7 @@ void write2file(MeshGrid const& grid, std::string const& filename, double unit) 
     }
 }
 
-void write2file(Array const& array, std::string const& filename, double unit) {
+void output(Array const& array, std::string const& filename, double unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {

@@ -331,7 +331,7 @@ double syn_gamma_M(double B, double zeta, std::vector<Y_IC> const& Ys, double p)
     double gamma_M = sqrt(6 * con::pi * con::e / (con::sigmaT * B * zeta * (1 + Y0)));
     double Y1 = Y_IC::Y_tilt_at_gamma(Ys, gamma_M, p);
 
-    for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
+    for (; fabs((Y1 - Y0) / Y0) > 1e-5;) {
         gamma_M = sqrt(6 * con::pi * con::e / (con::sigmaT * B * zeta * (1 + Y1)));
         Y0 = Y1;
         Y1 = Y_IC::Y_tilt_at_gamma(Ys, gamma_M, p);
@@ -367,7 +367,7 @@ double syn_gamma_c(double t_com, double B, std::vector<Y_IC> const& Ys, double p
     double gamma_c = (gamma_bar + sqrt(gamma_bar * gamma_bar + 4)) / 2;
     double Y1 = Y_IC::Y_tilt_at_gamma(Ys, gamma_c, p);
 
-    for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
+    for (; fabs((Y1 - Y0) / Y0) > 1e-5;) {
         gamma_bar = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y1) * t_com);
         gamma_c = (gamma_bar + sqrt(gamma_bar * gamma_bar + 4)) / 2;
         Y0 = Y1;
@@ -469,7 +469,7 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            constexpr double gamma_syn_limit = 10;
+            constexpr double gamma_syn_limit = 5;
             double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
             double e_th = shock.e_th[j][k];

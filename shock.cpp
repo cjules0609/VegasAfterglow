@@ -49,6 +49,7 @@ BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_
                            bool reverse_shock)
     : medium(medium),
       jet(blast),
+      u_down(),
       theta_lo(theta_lo),
       theta_hi(theta_hi),
       theta(0.5 * (theta_lo + theta_hi)),
@@ -56,7 +57,7 @@ BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_
       eps_e(eps_e),
       reverse_shock(reverse_shock),
       sigma(blast.sigma_profile(theta)),
-      u_down() {
+      dM0(blast.dE0dOmega(theta) * dOmega / (blast.Gamma0_profile(theta) * con::c2)) {
     if (reverse_shock) {
         u_down = UDownStr(sigma);
     }
@@ -84,13 +85,18 @@ void BlastWaveEqn::operator()(Array const& y, Array& dydr, double r) {
 double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabatic_index(Gamma);
     double dm = medium.mass(r) * dOmega / (4 * con::pi);
-    double dM0 = jet.dEdOmega(theta, t_eng) * dOmega / (jet.Gamma0_profile(theta) * con::c2);
     double Gamma2 = Gamma * Gamma;
     double a1 = dOmega * r * r * medium.rho(r) / Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1);
     double a2 = -(ad_idx - 1) / Gamma * (ad_idx * Gamma2 - ad_idx + 1) * 3 * u / r;
+    double L_inj = jet.inj.dLdOmega(theta, t_eng);
+    double a3 = 0;
+    if (L_inj != 0) {
+        a3 = -L_inj * dtdr_eng(Gamma) * dOmega;
+    }
+
     double b1 = (dM0 + dm) * con::c2;
     double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u / Gamma2;
-    return -(a1 + a2) / (b1 + b2);
+    return -(a1 + a2 + a3) / (b1 + b2);
 }
 
 double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
@@ -101,7 +107,7 @@ double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
 
 double BlastWaveEqn::dtdr_eng(double Gamma) {
     double Gb = std::sqrt(Gamma * Gamma - 1);
-    return (Gamma - Gb) / (Gb * con::c);
+    return fabs(Gamma - Gb) / (Gb * con::c);
 }
 
 double BlastWaveEqn::dtdr_com(double Gamma) { return 1 / (std::sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
@@ -186,7 +192,7 @@ void update_reverse_shock_state(size_t j, size_t k, double r, Shock& shock, Arra
     double D_FS = state[4];
     double D_RS = state[5];
 
-    double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
+    double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);  // check if this holds true for energy injection
     double Gamma_rel = (Gamma / Gamma0 + Gamma0 / Gamma) / 2;
 
     double u3s_ = eqn.u_down.interp(Gamma_rel);
@@ -253,11 +259,31 @@ void save_cross_state(double& N3_cross, double& Gamma_cross, double& r_cross, do
     D_cross = D;
 }
 
-void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock,
-                        BlastWaveEqn const& eqn) {
+double find_Gamma_start(double r0, BlastWaveEqn& eqn) {
+    double E_iso = eqn.jet.dE0dOmega(eqn.theta) * eqn.dOmega;
+    double Gamma0 = eqn.jet.Gamma0_profile(eqn.theta);
+    double M0 = E_iso / (Gamma0 * con::c2);
+    double m = eqn.medium.mass(r0) * eqn.dOmega / (4 * con::pi);
+    double Gamma = Gamma0;
+    double Gamma_new = Gamma0;
+    do {
+        Gamma = (Gamma_new + Gamma) / 2;
+        double beta = gamma_to_beta(Gamma);
+        double t_eng0 = fabs(r0 * (1 - beta) / beta / con::c);
+        double E_inj = eqn.jet.inj.dEdOmega(eqn.theta, t_eng0) * eqn.dOmega;
+        double ad_idx = adiabatic_index(Gamma);
+        double a = ad_idx * m * con::c2;
+        double b = (M0 + m) * con::c2 - ad_idx * m * con::c2;
+        double c = -E_inj - E_iso;
+        Gamma_new = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+    } while (fabs((Gamma_new - Gamma) / Gamma) > 1e-6);
+    return (Gamma_new + Gamma) / 2;
+}
+
+void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock, BlastWaveEqn& eqn) {
     using namespace boost::numeric::odeint;
     double atol = 0;     // integrator absolute tolerance
-    double rtol = 1e-9;  // integrator relative tolerance
+    double rtol = 1e-6;  // integrator relative tolerance
     // auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
     auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
 
@@ -314,6 +340,26 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_sho
             t_com_current = state[3];
             f_shock.dt_com[j][k1 - 1] = r_shock.dt_com[j][k1 - 1] = (t_com_current - t_com_last);
             t_com_last = t_com_current;
+        }
+
+        if (eqn.jet.spreading) {  // check if this works for sigma!=0. should be sound speed in region 3;
+            double dr = stepper.current_time_step();
+            double r_last = stepper.current_time() - dr;
+            double Gamma_axis = loglog_interp(r_last, r, f_shock.Gamma[0]);
+            if (k == 0) {
+                Gamma_axis = eqn.jet.Gamma0_profile(0);
+            }
+            double ad_idx = adiabatic_index(Gamma_axis);
+            double n1 = eqn.medium.rho(r_last) / con::mp;
+            double n2 = n_down_str(Gamma_axis, n1, eqn.medium.cs);
+            double p2 = (ad_idx - 1) * e_thermal_down_str(Gamma_axis, n2);
+            double jet_cs = sound_speed(p2, ad_idx, n2 * con::mp);
+
+            eqn.jet.jet_spread(Gamma_axis, jet_cs, r_last, dr);
+            /*if (j == 0) {
+                std::cout << r_last << " " << eqn.jet.theta_c << " " << Gamma_axis << " " << n1 << " " << n2 << " "
+                          << p2 << " " << jet_cs << " " << dr << std::endl;
+            }*/
         }
     }
 }

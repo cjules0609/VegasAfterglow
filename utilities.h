@@ -51,6 +51,14 @@ double loglog_interp_eq_spaced(double x0, Array const& x, Array const& y, bool l
 
 inline double step_func(double x) { return x > 0 ? 1 : 0; }
 
+inline double boxcar(double x, double a, double b) {
+    if (a <= x && x <= b) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 inline double eVtoHz(double eV) { return eV / con::h; }
 
 Array adaptive_theta_space(size_t n, Profile const& gamma);

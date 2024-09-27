@@ -47,22 +47,27 @@ void lc_gen(std::string folder_name) {
 
     double sigma = 0;
 
-    auto jet = create_tophat_jet(E_iso, Gamma0, sigma, theta_c, 1 * con::sec);
+    auto jet_top = TophatJet(theta_c, E_iso, Gamma0);
+
+    auto jet_gauss = GaussianJet(theta_c, E_iso, Gamma0, 1);
+
+    Jet* jet = &jet_top;
+
     if (jet_type == "Gaussian") {
-        jet = create_gaussian_jet(E_iso, Gamma0, sigma, theta_c, 1 * con::sec);
+        jet = &jet_gauss;
     } else if (jet_type == "tophat") {
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
 
-    size_t r_num = 1000;
-    size_t theta_num = 250;
+    size_t r_num = 800;
+    size_t theta_num = 150;
     size_t phi_num = 100;
 
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet->duration);
 
     auto r = logspace(R_dec / 1000, R_dec * 500, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile, theta_w);
+    auto theta = adaptive_theta_space(theta_num, jet->Gamma0_profile, theta_w);
     // auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
@@ -70,9 +75,8 @@ void lc_gen(std::string folder_name) {
 
     // solve dynamics
     Shock f_shock(coord, eps_e, eps_B, p);
-    Shock r_shock(coord, eps_e, eps_B, p);
 
-    solve_shocks(coord, jet, medium, f_shock, r_shock);
+    solve_shocks(coord, *jet, medium, f_shock);
 
     auto syn_e = gen_syn_electrons(coord, f_shock);
 

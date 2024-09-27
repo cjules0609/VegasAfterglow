@@ -6,8 +6,8 @@
 #include "jet.h"
 #include "medium.h"
 #include "mesh.h"
-#include "shock.h"
 #include "physics.h"
+#include "shock.h"
 class Shock {
    public:
     Shock(Coord const& coord, double eps_e, double eps_B, double p, double xi = 1, double zeta = 1);
@@ -57,6 +57,7 @@ class BlastWaveEqn {
    private:
     double theta_lo;
     double theta_hi;
+    double dM0;
 };
 
 void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock, Shock& r_shock);

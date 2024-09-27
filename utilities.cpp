@@ -117,7 +117,7 @@ double jet_edge(Profile const& gamma) {
     }
     double low = 0;
     double hi = con::pi / 2;
-    double eps = 1e-9;
+    double eps = 1e-6;
     for (; hi - low > eps;) {
         double mid = 0.5 * (low + hi);
         if (gamma(mid) > 1) {

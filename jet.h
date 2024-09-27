@@ -3,26 +3,50 @@
 
 #include "macros.h"
 #include "mesh.h"
+
+struct Injection {
+    Profile2d dLdOmega;
+    Profile2d dEdOmega;
+};
 class Jet {
    public:
     double duration{1 * con::sec};
+    double theta_c{0};
+    bool spreading{false};
     Profile2d dEdOmega;
+    Profile dE0dOmega;
     Profile Gamma0_profile;
     Profile sigma_profile;
+    Injection inj;
+    void jet_spread(double Gamma, double cs, double r, double dr);
 };
 
-static Profile2d noInjection = Profile2d([](double theta, double t_lab) { return 0; });
+static Injection noInjection = {Profile2d([](double theta, double t_lab) { return 0; }),
+                                Profile2d([](double theta, double t_lab) { return 0; })};
+class IsoJet : public Jet {
+   public:
+    IsoJet(double E_iso, double Gamma0, double duration = 1 * con::sec, double sigma0 = 0,
+           Injection inject = noInjection);
+};
 
-Jet create_isotropic_jet(double E_iso, double Gamma0, double sigma0, double t_eng, Profile2d inject = noInjection);
+class TophatJet : public Jet {
+   public:
+    TophatJet(double theta_c0, double E_iso, double Gamma0, double duration = 1 * con::sec, double sigma0 = 0,
+              Injection inject = noInjection);
+};
 
-Jet create_tophat_jet(double E_iso, double Gamma0, double sigma0, double theta_c, double t_eng,
-                      Profile2d inject = noInjection);
+class GaussianJet : public Jet {
+   public:
+    GaussianJet(double theta_c0, double E_iso, double Gamma0, double Gamma_idx = 1, double duration = 1 * con::sec,
+                double sigma0 = 0, Injection inject = noInjection);
+};
 
-Jet create_power_law_jet(double E_iso, double Gamma0, double sigma0, double theta_m, double k, double t_eng,
-                         Profile2d inject = noInjection);
+class PowerLawJet : public Jet {
+   public:
+    PowerLawJet(double theta_c0, double k, double E_iso, double Gamma0, double Gamma_idx = 1,
+                double duration = 1 * con::sec, double sigma0 = 0, Injection inject = noInjection);
+};
 
-Jet create_gaussian_jet(double E_iso, double Gamma0, double sigma0, double theta_c, double t_eng,
-                        Profile2d inject = noInjection);
-
-Profile2d create_iso_power_law_injection(double L0, double t0, double t_wait, double q);
+Injection create_iso_const_injection(double L0, double t0);
+Injection create_iso_power_law_injection(double L0, double t0, double q);
 #endif

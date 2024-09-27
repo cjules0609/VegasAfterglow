@@ -17,13 +17,13 @@ void tests() {
     double eps_e = 0.15;
     double eps_B = 0.02;
     double p = 2.1;
-    double E_iso = 1e54 * con::erg;
+    double E_iso = 1e53 * con::erg;
     double Gamma0 = 300;
     double theta_c = 0.1;
 
     // create model
     auto medium = create_ISM(n_ism);
-    auto jet = create_tophat_jet(E_iso, Gamma0, 0, theta_c, 1 * con::sec);
+    auto jet = TophatJet(theta_c, E_iso, Gamma0);
     // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
 
     size_t r_num = 500;
@@ -46,7 +46,7 @@ void tests() {
     // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
     Coord coord{r, theta, phi};
 
-    write2file(coord, data_folder+"/coord");
+    output(coord, data_folder + "/coord");
 
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
@@ -55,15 +55,15 @@ void tests() {
 
     solve_shocks(coord, jet, medium, f_shock);
 
-    write2file(f_shock, data_folder+"/f_shock");
+    output(f_shock, data_folder + "/f_shock");
 
     auto syn_e = gen_syn_electrons(coord, f_shock);
 
     auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    write2file(syn_e, data_folder+"/syn_e");
+    output(syn_e, data_folder + "/syn_e");
 
-    write2file(syn_ph, data_folder+"/syn_ph");
+    output(syn_ph, data_folder + "/syn_ph");
 
     size_t j = 0;
     size_t k = 200;
@@ -75,27 +75,27 @@ void tests() {
 
     auto syn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    write2file(syn_e_sptr, data_folder+"/syn_e_sptr");
+    output(syn_e_sptr, data_folder + "/syn_e_sptr");
 
     auto syn_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, syn_ph[j][k]);
 
-    write2file(syn_ph_sptr, data_folder+"/syn_ph_sptr");
+    output(syn_ph_sptr, data_folder + "/syn_ph_sptr");
 
     IC_cooling_Thomson(syn_e, syn_ph, f_shock);
 
     auto ICT_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    write2file(syn_e, data_folder+"/ICT_e");
+    output(syn_e, data_folder + "/ICT_e");
 
-    write2file(ICT_ph, data_folder+"/ICT_ph");
+    output(ICT_ph, data_folder + "/ICT_ph");
 
     auto ict_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    write2file(ict_e_sptr, data_folder+"/ict_e_sptr");
+    output(ict_e_sptr, data_folder + "/ict_e_sptr");
 
     auto ict_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, ICT_ph[j][k]);
 
-    write2file(ict_ph_sptr, data_folder+"/ict_ph_sptr");
+    output(ict_ph_sptr, data_folder + "/ict_ph_sptr");
 
     IC_cooling_KN(syn_e, syn_ph, f_shock);
 
@@ -108,17 +108,17 @@ void tests() {
 
     std::cout << ee.Ys[0].nu_hat_m << " " << ee.Ys[0].nu_hat_c << '\n';
 
-    write2file(syn_e, data_folder+"/ICKN_e");
+    output(syn_e, data_folder + "/ICKN_e");
 
-    write2file(ICKN_ph, data_folder+"/ICKN_ph");
+    output(ICKN_ph, data_folder + "/ICKN_ph");
 
     auto ickn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
-    write2file(ickn_e_sptr, data_folder+"/ickn_e_sptr");
+    output(ickn_e_sptr, data_folder + "/ickn_e_sptr");
 
     auto ickn_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, ICKN_ph[j][k]);
 
-    write2file(ickn_ph_sptr, data_folder+"/ickn_ph_sptr");
+    output(ickn_ph_sptr, data_folder + "/ickn_ph_sptr");
 }
 
 int main() {

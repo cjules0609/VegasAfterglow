@@ -25,7 +25,7 @@ double eff_Y_IC_Thomson(double Gamma, double B, double t_com, double eps_e, doub
     double b = eta_e * eps_e / eps_B;
     double Y0 = (sqrt(1 + 4 * b) - 1) / 2;
     double Y1 = 2 * Y0;
-    for (; fabs((Y1 - Y0) / Y0) > 1e-6;) {
+    for (; fabs((Y1 - Y0) / Y0) > 1e-5;) {
         Y1 = Y0;
         double gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);

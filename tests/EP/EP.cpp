@@ -18,7 +18,7 @@ void GCN36236(double theta_c) {
 
     // create model
     auto medium = create_ISM(n_ism);
-    auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec, 0.0);
+    auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
 
     size_t r_num = 500;
     size_t theta_num = 150;
@@ -75,11 +75,11 @@ void GCN36236(double theta_c) {
 
         std::string fname = buff;
 
-        write2file(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
+        output(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
         std::cout << theta_v / con::deg << std::endl;
     }
 
-    write2file(boundary2centerlog(t_bins), "ep/t_obs", con::sec);
+    output(boundary2centerlog(t_bins), "ep/t_obs", con::sec);
 }
 
 auto solve_u2s1(double sigma, double gamma_max, size_t size) {
@@ -114,7 +114,6 @@ auto solve_u2s1(double sigma, double gamma_max, size_t size) {
     return std::make_pair(gamma_rel, u2s);
 }
 
-
 int main() {
     Array theta_c = {1 * con::deg,  2 * con::deg,  3 * con::deg,  4 * con::deg,  5 * con::deg,  6 * con::deg,
                      7 * con::deg,  8 * con::deg,  9 * con::deg,  10 * con::deg, 11 * con::deg, 12 * con::deg,
@@ -124,6 +123,6 @@ int main() {
     for (auto theta : theta_c) {
         GCN36236(theta);
     }
-   
+
     return 0;
 }
