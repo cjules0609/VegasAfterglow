@@ -39,6 +39,7 @@ class BlastWaveEqn {
     double dOmega;
     double theta;
     double eps_e;
+    double spreading_factor;
     bool reverse_shock;
 
    private:

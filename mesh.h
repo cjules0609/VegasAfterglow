@@ -15,6 +15,8 @@ using Profile = std::function<double(double)>;
 
 using Profile2d = std::function<double(double, double)>;
 
+using Profile3d = std::function<double(double, double, double)>;
+
 Array linspace(double start, double end, size_t num);
 
 Array logspace(double start, double end, size_t num);

@@ -55,6 +55,7 @@ BlastWaveEqn::BlastWaveEqn(Medium const& medium, Jet const& blast, double theta_
       theta(0.5 * (theta_lo + theta_hi)),
       dOmega(2 * con::pi * std::fabs(std::cos(theta_hi) - std::cos(theta_lo))),
       eps_e(eps_e),
+      spreading_factor(1),
       reverse_shock(reverse_shock),
       sigma(blast.sigma_profile(theta)),
       dM0(blast.dE0dOmega(theta) * dOmega / (blast.Gamma0_profile(theta) * con::c2)) {
@@ -94,9 +95,9 @@ double BlastWaveEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
         a3 = -L_inj * dtdr_eng(Gamma) * dOmega;
     }
 
-    double b1 = (dM0 + dm) * con::c2;
+    double b1 = (dM0 + dm) * con::c2 * spreading_factor;
     double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u / Gamma2;
-    return -(a1 + a2 + a3) / (b1 + b2);
+    return -(a1 + a2 + a3) / ((b1 + b2));
 }
 
 double BlastWaveEqn::dUdr(double r, double Gamma, double u, double t_eng) {
@@ -295,6 +296,7 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_sho
     double t_com0 = r0 / sqrt(Gamma0 * Gamma0 - 1) / con::c;
     double D_FS0 = con::c * eqn.jet.duration * Gamma0;
     double D_RS0 = 0;
+    double theta_c = eqn.jet.theta_c0;
 
     Array state{Gamma0, u0, t_eng0, t_com0, D_FS0, D_RS0};
 
@@ -354,16 +356,27 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_sho
             double n2 = n_down_str(Gamma_axis, n1, eqn.medium.cs);
             double p2 = (ad_idx - 1) * e_thermal_down_str(Gamma_axis, n2);
             double jet_cs = sound_speed(p2, ad_idx, n2 * con::mp);
+            if (theta_c < con::pi / 2) {
+                theta_c += jet_cs / con::c * dr / (r_last * Gamma_axis * Gamma_axis * theta_c);
+                // theta_c += jet_cs / con::c * dr / (r_last * Gamma_axis);
+            }
+            double t_eng = state[2];
+            double dEdOmega_init = eqn.jet.dEdOmega(eqn.theta, t_eng);
+            double dEdOmega_spread = eqn.jet.dEdOmega_spread(eqn.theta, theta_c, t_eng);
 
-            eqn.jet.jet_spread(Gamma_axis, jet_cs, r_last, dr);
-            /*if (j == 0) {
-                std::cout << r_last << " " << eqn.jet.theta_c << " " << Gamma_axis << " " << n1 << " " << n2 << " "
-                          << p2 << " " << jet_cs << " " << dr << std::endl;
-            }*/
+            if (dEdOmega_init == 0) {
+                eqn.spreading_factor = 1;
+            } else {
+                eqn.spreading_factor = dEdOmega_spread / dEdOmega_init;
+            }
+
+            if (j == 0) {
+                std::cout << r_last << " " << theta_c << " " << Gamma_axis << " " << n1 << " " << n2 << " " << p2 << " "
+                          << jet_cs << " " << dr << std::endl;
+            }
         }
     }
 }
-
 void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock, Shock& r_shock) {
     bool reverse_shock = true;
     for (size_t j = 0; j < coord.theta.size(); ++j) {

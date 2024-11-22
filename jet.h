@@ -11,14 +11,14 @@ struct Injection {
 class Jet {
    public:
     double duration{1 * con::sec};
-    double theta_c{0};
+    double theta_c0{0};
     bool spreading{false};
+    Profile3d dEdOmega_spread;
     Profile2d dEdOmega;
     Profile dE0dOmega;
     Profile Gamma0_profile;
     Profile sigma_profile;
     Injection inj;
-    void jet_spread(double Gamma, double cs, double r, double dr);
 };
 
 static Injection noInjection = {Profile2d([](double theta, double t_lab) { return 0; }),
