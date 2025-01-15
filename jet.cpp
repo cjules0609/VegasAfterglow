@@ -86,11 +86,11 @@ GaussianJet::GaussianJet(double theta_c0, double E_iso, double Gamma0, double Ga
     this->sigma_profile = [=](double theta) { return sigma0; };
 
     this->inj.dLdOmega = [=](double theta, double t_lab) {
-        return theta < theta_c0 ? inject.dLdOmega(theta, t_lab) : 0;
+        return theta < 10 * theta_c0 ? inject.dLdOmega(theta, t_lab) : 0;
     };
 
     this->inj.dEdOmega = [=](double theta, double t_lab) {
-        return theta < theta_c0 ? inject.dEdOmega(theta, t_lab) : 0;
+        return theta < 10 * theta_c0 ? inject.dEdOmega(theta, t_lab) : 0;
     };
 
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
@@ -130,6 +130,40 @@ PowerLawJet::PowerLawJet(double theta_c0, double k, double E_iso, double Gamma0,
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
         return (1 - cos(theta_c0)) / (1 - cos(theta_c)) *
                ((theta < theta_c ? e_iso : e_iso * std::pow(theta / theta_c, -k)) + inj.dEdOmega(theta, t_lab));
+    };
+}
+
+CosJet::CosJet(double theta_c0, double E_iso, double Gamma0, double Gamma_idx, double duration, double sigma0,
+               Injection inject) {
+    this->duration = duration;
+
+    this->theta_c0 = theta_c0;
+
+    this->spreading = false;
+
+    double e_iso = E_iso / (4 * con::pi);
+
+    this->dE0dOmega = [=](double theta) {
+        return e_iso * std::fabs(std::exp(-theta * 30 / con::pi) * std::cos(theta / theta_c0));
+    };
+
+    this->Gamma0_profile = [=](double theta) { return E2Gamma0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
+
+    this->sigma_profile = [=](double theta) { return sigma0; };
+
+    this->inj.dLdOmega = [=](double theta, double t_lab) {
+        return theta < theta_c0 ? inject.dLdOmega(theta, t_lab) : 0;
+    };
+
+    this->inj.dEdOmega = [=](double theta, double t_lab) {
+        return theta < theta_c0 ? inject.dEdOmega(theta, t_lab) : 0;
+    };
+
+    this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
+
+    this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
+        return (1 - cos(theta_c0)) / (1 - cos(theta_c)) *
+               (e_iso * std::fabs(std::cos(theta / theta_c)) + inj.dEdOmega(theta, t_lab));
     };
 }
 

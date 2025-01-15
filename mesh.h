@@ -4,6 +4,7 @@
 #include <cmath>
 #include <functional>
 #include <vector>
+#include <boost/multi_array.hpp>
 
 using MeshGrid = std::vector<std::vector<double>>;
 

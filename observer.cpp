@@ -6,13 +6,13 @@
 #include "macros.h"
 #include "physics.h"
 #include "utilities.h"
-void Observer::observe(Coord const& coord, Shock const& shock, double theta_obs, double lumi_dist, double z) {
+void Observer::observe(Coord const& coord, MeshGrid const& Gamma, double theta_obs, double lumi_dist, double z) {
     this->theta_obs = theta_obs;
     this->z = z;
     this->lumi_dist = lumi_dist;
     gen_phi_grid(coord, theta_obs);
-    calc_doppler_grid(coord, shock.Gamma);
-    calc_t_obs_grid(coord, shock.Gamma);
+    calc_doppler_grid(coord, Gamma);
+    calc_t_obs_grid(coord, Gamma);
     calc_sorted_EAT_surface(coord, t_obs);
 }
 

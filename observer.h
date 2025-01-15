@@ -6,9 +6,8 @@
 #include <thread>
 #include <vector>
 
+#include "macros.h"
 #include "mesh.h"
-#include "shock.h"
-
 struct EATinfo {
     double t_obs;
     size_t i;  // index of phi
@@ -21,10 +20,13 @@ using EATsurface = std::vector<EATinfo>;
 
 class Observer {
    public:
-    void observe(Coord const& coord, Shock const& shock, double theta_obs, double lumi_dist, double z);
+    void observe(Coord const& coord, MeshGrid const& Gamma, double theta_obs, double lumi_dist, double z);
 
     template <typename... PhotonMesh>
     MeshGrid3d specific_flux_grid(double nu_obs, PhotonMesh const&... rad_ptc);
+
+    template <typename... PhotonMesh>
+    Array specific_flux(Array const& t_bins, double nu_obs, PhotonMesh const&... photons) const;
 
     template <typename... PhotonMesh>
     MeshGrid specific_flux(Array const& t_bins, Array const& nu_obs, PhotonMesh const&... photons) const;
@@ -122,6 +124,17 @@ MeshGrid3d Observer::specific_flux_grid(double nu_obs, PhotonMesh const&... phot
         }
     }
     return F_nu_obs;
+}
+
+template <typename... PhotonMesh>
+Array Observer::specific_flux(Array const& t_bins, double nu_obs, PhotonMesh const&... photons) const {
+    if (eat_s.empty()) {
+        throw std::runtime_error("EAT surface is not defined. Please call observe() method first.");
+    }
+
+    Array F_nu = zeros(t_bins.size() - 1);
+    calc_specific_flux(F_nu, t_bins, nu_obs, photons...);
+    return F_nu;
 }
 
 template <typename... PhotonMesh>

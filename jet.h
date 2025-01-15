@@ -47,6 +47,12 @@ class PowerLawJet : public Jet {
                 double duration = 1 * con::sec, double sigma0 = 0, Injection inject = noInjection);
 };
 
+class CosJet : public Jet {
+   public:
+    CosJet(double theta_c0, double E_iso, double Gamma0, double Gamma_idx, double duration = 1 * con::sec,
+           double sigma0 = 0, Injection inject = noInjection);
+};
+
 Injection create_iso_const_injection(double L0, double t0);
 Injection create_iso_power_law_injection(double L0, double t0, double q);
 #endif

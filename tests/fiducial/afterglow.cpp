@@ -50,10 +50,8 @@ void tests() {
 
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
-    Shock f_shock(coord, eps_e, eps_B, p);
+    Shock f_shock = gen_forward_shock(coord, jet, medium, eps_e, eps_B, p);
     // Shock r_shock(coord, eps_e_r, eps_B_r, p);
-
-    solve_shocks(coord, jet, medium, f_shock);
 
     output(f_shock, data_folder + "/f_shock");
 

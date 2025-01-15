@@ -61,7 +61,7 @@ void lc_gen(std::string folder_name) {
     }
 
     size_t r_num = 800;
-    size_t theta_num = 150;
+    size_t theta_num = 100;
     size_t phi_num = 100;
 
     double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet->duration);
@@ -74,9 +74,7 @@ void lc_gen(std::string folder_name) {
     Coord coord{r, theta, phi};
 
     // solve dynamics
-    Shock f_shock(coord, eps_e, eps_B, p);
-
-    solve_shocks(coord, *jet, medium, f_shock);
+    Shock f_shock = gen_forward_shock(coord, *jet, medium, eps_e, eps_B, p);
 
     auto syn_e = gen_syn_electrons(coord, f_shock);
 
@@ -88,7 +86,7 @@ void lc_gen(std::string folder_name) {
 
     Observer obs;
 
-    obs.observe(coord, f_shock, theta_view, lumi_dist, z);
+    obs.observe(coord, f_shock.Gamma, theta_view, lumi_dist, z);
 
     Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 10);
 

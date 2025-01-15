@@ -34,10 +34,10 @@ void GCN36236(double theta_c) {
     Coord coord{r, theta, phi};
 
     // solve dynamics
-    Shock f_shock(coord, eps_e, eps_B, p);
+    // Shock f_shock(coord, eps_e, eps_B, p);
 
-    solve_shocks(coord, jet, medium, f_shock);
-
+    // solve_shocks(coord, jet, medium, f_shock);
+    Shock f_shock = gen_forward_shock(coord, jet, medium, eps_e, eps_B, p);
     auto syn_e = gen_syn_electrons(coord, f_shock);
     auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
 
@@ -61,7 +61,7 @@ void GCN36236(double theta_c) {
     for (auto theta_v : theta_obs) {
         Observer obs;
 
-        obs.observe(coord, f_shock, theta_v, lumi_dist, z);
+        obs.observe(coord, f_shock.Gamma, theta_v, lumi_dist, z);
 
         Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
 

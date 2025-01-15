@@ -15,4 +15,6 @@ class Medium {
 
 Medium create_ISM(double n_ism, double cs = 1e-5 * con::c);
 
+Medium create_wind(double n_r, double r_c, double k, double cs = 1e-5 * con::c);
+
 #endif

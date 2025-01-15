@@ -4,11 +4,14 @@
 #include "mesh.h"
 #include "shock.h"
 #include "synchrotron.h"
+#include "prompt.h"
 void print_array(Array const& arr);
 
 void output(SynPhotonsMesh const& syn_ph, std::string const& filename);
 
 void output(SynElectronsMesh const& syn_e, std::string const& filename);
+
+void output(PromptPhotonsMesh const& prompt_pj, std::string const& filename);
 
 void output(Shock const& shock, std::string const& filename);
 

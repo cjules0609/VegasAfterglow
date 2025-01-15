@@ -36,13 +36,13 @@ Y_IC::Y_IC() {
 }
 
 inline double fast_pow(double a, double b) {
-    /* union {
-         double d;
-         int x[2];
-     } u = {a};
-     u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
-     u.x[0] = 0;
-     return u.d;*/
+    /*union {
+        double d;
+        int x[2];
+    } u = {a};
+    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+    u.x[0] = 0;
+    return u.d;*/
     return pow(a, b);
 }
 
@@ -469,7 +469,7 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            constexpr double gamma_syn_limit = 5;
+            constexpr double gamma_syn_limit = 2;
             double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
             double e_th = shock.e_th[j][k];
@@ -493,7 +493,6 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
             electron.N_tot = n_e * dS * D * f;
 
             electron.I_nu_peak = syn_p_nu_peak(B, shock.p) * electron.N_tot / dS / (4 * con::pi);
-
             electron.gamma_c = syn_gamma_c(t_com, B, e[j][k].Ys, shock.p);
             electron.gamma_a =
                 syn_gamma_a(Gamma, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c, electron.gamma_M);

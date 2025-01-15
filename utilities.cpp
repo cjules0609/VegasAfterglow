@@ -87,6 +87,7 @@ double loglog_interp_eq_spaced(double xi, const Array& x, const Array& y, bool l
     }
 
     if (xi <= x[0]) {
+        // std::cout << "here!" << (!lo_extrap || x[0] == xi) ? y[0] : point_loglog_interp(x[0], x[1], y[0], y[1], xi);
         return (!lo_extrap || x[0] == xi) ? y[0] : point_loglog_interp(x[0], x[1], y[0], y[1], xi);
     } else if (xi >= x.back()) {
         return (!hi_extrap || x.back() == xi)

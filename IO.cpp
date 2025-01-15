@@ -49,7 +49,7 @@ void output(Shock const& shock, std::string const& filename) {
     std::ofstream file_D_com(filename + "_D_com.txt");
     std::ofstream file_t_com(filename + "_t_com.txt");
     std::ofstream file_np(filename + "_n_p.txt");
-    std::ofstream file_e_th(filename + "_e_th.txt");
+    // std::ofstream file_u(filename + "_e_th.txt");
 
     if (!file || !file_B || !file_D_com || !file_t_com || !file_np) {
         std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
@@ -61,7 +61,7 @@ void output(Shock const& shock, std::string const& filename) {
     file_D_com.precision(16);
     file_t_com.precision(16);
     file_np.precision(16);
-    file_e_th.precision(16);
+    // file_u.precision(16);
 
     for (size_t j = 0; j < shock.Gamma.size(); ++j) {
         for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
@@ -70,17 +70,33 @@ void output(Shock const& shock, std::string const& filename) {
             file_D_com << shock.width_eff[j][k] / con::cm << " ";
             file_t_com << shock.t_com[j][k] / con::sec << " ";
             file_np << shock.n_p[j][k] * (con::cm * con::cm * con::cm) << " ";
-            file_e_th << shock.e_th[j][k] / con::erg << " ";
+            // file_u << shock.u[j][k] / con::erg << " ";
         }
         file << '\n';
         file_B << '\n';
         file_D_com << '\n';
         file_t_com << '\n';
         file_np << '\n';
-        file_e_th << '\n';
+        // file_u << '\n';
     }
 }
+void output(PromptPhotonsMesh const& prompt_pj, std::string const& filename) {
+    std::ofstream file_E_nu_peak(filename + "_E_nu_peak.txt");
 
+    if (!file_E_nu_peak) {
+        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
+        return;
+    }
+
+    file_E_nu_peak.precision(16);
+
+    for (size_t i = 0; i < prompt_pj.size(); ++i) {
+        for (size_t j = 0; j < prompt_pj[i].size(); ++j) {
+            file_E_nu_peak << prompt_pj[i][j].E_nu_peak / (con::erg / con::sec) << " ";
+        }
+        file_E_nu_peak << '\n';
+    }
+}
 void output(SynPhotonsMesh const& syn_rad, std::string const& filename) {
     std::ofstream file_I_peak(filename + "_I_nu_peak.txt");
     std::ofstream file_nu_peak(filename + "_nu_E_peak.txt");
