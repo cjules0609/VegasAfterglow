@@ -35,6 +35,25 @@ Y_IC::Y_IC() {
     regime = 0;
 }
 
+inline double fast_exp(double x) {
+    /*constexpr double a = (1ll << 52) / 0.6931471805599453;
+    constexpr double b = (1ll << 52) * (1023 - 0.04367744890362246);
+    x = a * x + b;
+
+    // Remove these lines if bounds checking is not needed
+    // constexpr double c = (1ll << 52);
+    // constexpr double d = (1ll << 52) * 2047;
+    // if (x < c || x > d)
+    //    x = (x < c) ? 0.0 : d;
+
+    // With C++20 one can use std::bit_cast instead
+    uint64_t n = static_cast<uint64_t>(x);
+    memcpy(&x, &n, 8);
+
+    return x;*/
+    return exp(x);
+}
+
 inline double fast_pow(double a, double b) {
     /*union {
         double d;
@@ -180,7 +199,8 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
             } else if (gamma <= gamma_c) {
                 return (p - 1) * fast_pow(gamma / gamma_m, -p) / gamma_m;
             } else {
-                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * exp(-gamma / gamma_M);
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) *
+                       fast_exp(-gamma / gamma_M);
             }
             break;
         case 3:
@@ -189,7 +209,7 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);
             } else {
-                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * fast_exp(-gamma / gamma_M);
             }
             break;
         case 4:  // Gao, Lei, Wu and Zhang 2013 Eq 18
@@ -198,21 +218,22 @@ double SynElectrons::gamma_spectrum_(double gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);
             } else {
-                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * fast_exp(-gamma / gamma_M);
             }
             break;
         case 5:  // Gao, Lei, Wu and Zhang 2013 Eq 19
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
-                return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * exp(-gamma / gamma_M);
+                return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) *
+                       fast_exp(-gamma / gamma_M);
             }
             break;
         case 6:  // Gao, Lei, Wu and Zhang 2013 Eq 20
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);
             } else {
-                return fast_pow(gamma_m, p - 1) * gamma_c * fast_pow(gamma, -(p + 1)) * exp(-gamma / gamma_M);
+                return fast_pow(gamma_m, p - 1) * gamma_c * fast_pow(gamma, -(p + 1)) * fast_exp(-gamma / gamma_M);
             }
             break;
         default:
@@ -259,7 +280,7 @@ double SynPhotons::spectrum_(double nu) const {
             } else if (nu <= nu_c) {
                 return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
         case 2:
@@ -270,7 +291,7 @@ double SynPhotons::spectrum_(double nu) const {
             } else if (nu <= nu_c) {
                 return fast_pow(nu / nu_m, -(p - 1) / 2);
             } else {
-                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
         case 3:
@@ -281,7 +302,7 @@ double SynPhotons::spectrum_(double nu) const {
             } else if (nu <= nu_m) {
                 return sqrt(nu_c / nu);
             } else {
-                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return c_m_1_2 * fast_pow(nu / nu_m, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
         case 4:
@@ -290,21 +311,21 @@ double SynPhotons::spectrum_(double nu) const {
             } else if (nu <= nu_m) {
                 return R4 * sqrt(nu_a / nu);
             } else {
-                return R4 * a_m_1_2 * fast_pow(nu / nu_m, -p / 2) * exp(-nu / nu_M);
+                return R4 * a_m_1_2 * fast_pow(nu / nu_m, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                return R5 * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                return R5 * fast_pow(nu / nu_a, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             } else {
-                return R6 * fast_pow(nu / nu_a, -p / 2) * exp(-nu / nu_M);
+                return R6 * fast_pow(nu / nu_a, -p / 2) * fast_exp(-nu / nu_M);
             }
             break;
 
@@ -469,7 +490,7 @@ SynElectronsMesh gen_syn_electrons(Coord const& coord, Shock const& shock) {
     SynElectronsMesh e = create_syn_electrons_grid(coord.theta.size(), coord.r.size());
     for (size_t j = 0; j < coord.theta.size(); ++j) {
         for (size_t k = 0; k < coord.r.size(); ++k) {
-            constexpr double gamma_syn_limit = 2;
+            constexpr double gamma_syn_limit = 5;
             double dS = calc_surface_element(coord.r[k], coord.theta_b[j], coord.theta_b[j + 1]);
             double Gamma = shock.Gamma[j][k];
             double e_th = shock.e_th[j][k];

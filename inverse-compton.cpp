@@ -45,22 +45,22 @@ ICPhotonMesh gen_IC_photons(SynElectronsMesh const& e, SynPhotonsMesh const& ph,
     ICPhotonMesh IC_ph = create_IC_photon_grid(shock.width_eff.size(), shock.width_eff[0].size());
 
     // multithreading acceleration
-    std::vector<std::thread> thread;
-    thread.reserve(IC_ph.size());
+    /* std::vector<std::thread> thread;
+     thread.reserve(IC_ph.size());
+     for (size_t j = 0; j < IC_ph.size(); ++j) {
+         thread.emplace_back(gen_IC_photons_, std::ref(IC_ph[j]), std::cref(e[j]), std::cref(ph[j]),
+                             std::cref(shock.width_eff[j]));
+     }
+
+     for (size_t j = 0; j < thread.size(); ++j) {
+         thread[j].join();
+     }*/
+
     for (size_t j = 0; j < IC_ph.size(); ++j) {
-        thread.emplace_back(gen_IC_photons_, std::ref(IC_ph[j]), std::cref(e[j]), std::cref(ph[j]),
-                            std::cref(shock.width_eff[j]));
-    }
-
-    for (size_t j = 0; j < thread.size(); ++j) {
-        thread[j].join();
-    }
-
-    /*for (size_t j = 0; j < IC_ph.size(); ++j) {
         for (size_t k = 0; k < IC_ph[0].size(); ++k) {
-            IC_ph[j][k].gen(e[j][k], ph[j][k], shock.D_com[j][k]);
+            IC_ph[j][k].gen(e[j][k], ph[j][k], shock.width_eff[j][k]);
         }
-    }*/
+    }
     return IC_ph;
 }
 

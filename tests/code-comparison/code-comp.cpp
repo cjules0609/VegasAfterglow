@@ -33,9 +33,9 @@ void lc_gen(std::string folder_name) {
 
     double theta_view = data["theta_view"];
 
-    Array t_obs = data["t_obs"];
+    std::vector<double> t_obs = data["t_obs"];
 
-    Array band_pass_ = data["band pass (kev)"];
+    std::vector<double> band_pass_ = data["band pass (kev)"];
 
     std::cout << E_iso / con::erg << ' ' << lumi_dist / con::cm << ' ' << z << ' ' << jet_type << ' ' << theta_c << ' '
               << theta_w << ' ' << Gamma0 << ' ' << n_ism * con::cm * con::cm * con::cm << ' ' << eps_e << ' ' << eps_B
@@ -84,11 +84,11 @@ void lc_gen(std::string folder_name) {
 
     Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 200);
 
-    Observer obs;
+    Observer obs(coord);
 
-    obs.observe(coord, f_shock.Gamma, theta_view, lumi_dist, z);
+    obs.observe(f_shock.Gamma, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 10);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 3);
 
     Array F_nu_syn = obs.flux(t_bins, band_pass, syn_ph);
     Array F_nu_syn_no_cool = obs.flux(t_bins, band_pass, syn_ph);

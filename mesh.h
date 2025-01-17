@@ -1,16 +1,17 @@
 #ifndef _MESHES_
 #define _MESHES_
 
+#define BOOST_DISABLE_ASSERTS
+#include <boost/multi_array.hpp>
 #include <cmath>
 #include <functional>
 #include <vector>
-#include <boost/multi_array.hpp>
 
-using MeshGrid = std::vector<std::vector<double>>;
+using Array = boost::multi_array<double, 1>;
 
-using MeshGrid3d = std::vector<std::vector<std::vector<double>>>;
+using MeshGrid = boost::multi_array<double, 2>;
 
-using Array = std::vector<double>;
+using MeshGrid3d = boost::multi_array<double, 3>;
 
 using Profile = std::function<double(double)>;
 
@@ -48,7 +49,7 @@ class Coord {
 
     Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num);
 
-    Coord() = delete;
+    Coord();
     Array r_b;
     Array theta_b;
     Array phi_b;
@@ -93,6 +94,7 @@ void boundary2center(Arr1 const& boundary, Arr2& center) {
         center[i] = 0.5 * (boundary[i] + boundary[i + 1]);
     }
 }
+
 template <typename Arr1, typename Arr2>
 void boundary2centerlog(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {

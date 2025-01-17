@@ -27,9 +27,10 @@ class Shock {
 
 class ForwardShockEqn {
    public:
+    using State = std::array<double, 5>;
     ForwardShockEqn(Medium const& medium, Jet const& jet, double theta, double eps_e);
 
-    void operator()(Array const& y, Array& dydr, double r);
+    void operator()(State const& y, State& dydr, double r);
 
     Medium const& medium;
     Jet const& jet;
@@ -49,9 +50,10 @@ class ForwardShockEqn {
 
 class FRShockEqn {
    public:
+    using State = std::array<double, 5>;
     FRShockEqn(Medium const& medium, Jet const& jet, double theta);
 
-    void operator()(Array const& y, Array& dydr, double r);
+    void operator()(State const& y, State& dydr, double r);
 
     Medium const& medium;
     Jet const& jet;

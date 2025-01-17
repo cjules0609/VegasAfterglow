@@ -97,7 +97,7 @@ struct ICPhoton {
         double nu_max = 4 * gamma_max * gamma_max * nu0_max;
 
         nu_IC_ = logspace(nu_min, nu_max, spectrum_resol);
-        j_nu_ = Array(spectrum_resol, 0);
+        j_nu_ = Array(boost::extents[spectrum_resol]);
 
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
             for (size_t i = 0; i < grid.num; ++i) {

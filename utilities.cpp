@@ -27,12 +27,14 @@ double interp(double xi, Array const& x, Array const& y, bool lo_extrap, bool hi
         std::cout << "incorrect array size for interpolation!\n";
         return 0;
     }
+    auto x_back = x[x.size() - 1];
+    auto y_back = y[y.size() - 1];
 
     if (xi < x[0]) {
         return (!lo_extrap || x[0] == xi) ? y[0] : point_interp(x[0], x[1], y[0], y[1], xi);
-    } else if (xi > x.back()) {
-        return (!hi_extrap || x.back() == xi) ? y.back()
-                                              : point_interp(x[x.size() - 2], x.back(), y[y.size() - 2], y.back(), xi);
+    } else if (xi > x_back) {
+        return (!hi_extrap || x_back == xi) ? y_back
+                                            : point_interp(x[x.size() - 2], x_back, y[y.size() - 2], y_back, xi);
     } else {
         auto it = std::lower_bound(x.begin(), x.end(), xi);
         size_t idx = it - x.begin();
@@ -47,11 +49,14 @@ double interp_eq_spaced(double xi, Array const& x, Array const& y, bool lo_extra
         return 0;
     }
 
+    auto x_back = x[x.size() - 1];
+    auto y_back = y[y.size() - 1];
+
     if (xi <= x[0])
         return (!lo_extrap || x[0] == xi) ? y[0] : point_interp(x[0], x[1], y[0], y[1], xi);
-    else if (xi >= x.back())
-        return (!hi_extrap || x.back() == xi) ? y.back()
-                                              : point_interp(x[x.size() - 2], x.back(), y[y.size() - 2], y.back(), xi);
+    else if (xi >= x_back)
+        return (!hi_extrap || x_back == xi) ? y_back
+                                            : point_interp(x[x.size() - 2], x_back, y[y.size() - 2], y_back, xi);
     else {
         double dx = x[1] - x[0];
         size_t idx = static_cast<size_t>((xi - x[0]) / dx + 1);
@@ -65,13 +70,14 @@ double loglog_interp(double xi, const Array& x, const Array& y, bool lo_extrap, 
         std::cout << "incorrect array size for interpolation!\n";
         return 0;
     }
+    auto x_back = x[x.size() - 1];
+    auto y_back = y[y.size() - 1];
 
     if (xi <= x[0]) {
         return (!lo_extrap || x[0] == xi) ? y[0] : point_loglog_interp(x[0], x[1], y[0], y[1], xi);
-    } else if (xi >= x.back()) {
-        return (!hi_extrap || x.back() == xi)
-                   ? y.back()
-                   : point_loglog_interp(x[x.size() - 2], x.back(), y[y.size() - 2], y.back(), xi);
+    } else if (xi >= x_back) {
+        return (!hi_extrap || x_back == xi) ? y_back
+                                            : point_loglog_interp(x[x.size() - 2], x_back, y[y.size() - 2], y_back, xi);
     } else {
         auto it = std::lower_bound(x.begin(), x.end(), xi);
         size_t idx = it - x.begin();
@@ -85,14 +91,15 @@ double loglog_interp_eq_spaced(double xi, const Array& x, const Array& y, bool l
         std::cout << "incorrect array size for interpolation!\n";
         return 0;
     }
+    auto x_back = x[x.size() - 1];
+    auto y_back = y[y.size() - 1];
 
     if (xi <= x[0]) {
         // std::cout << "here!" << (!lo_extrap || x[0] == xi) ? y[0] : point_loglog_interp(x[0], x[1], y[0], y[1], xi);
         return (!lo_extrap || x[0] == xi) ? y[0] : point_loglog_interp(x[0], x[1], y[0], y[1], xi);
-    } else if (xi >= x.back()) {
-        return (!hi_extrap || x.back() == xi)
-                   ? y.back()
-                   : point_loglog_interp(x[x.size() - 2], x.back(), y[y.size() - 2], y.back(), xi);
+    } else if (xi >= x_back) {
+        return (!hi_extrap || x_back == xi) ? y_back
+                                            : point_loglog_interp(x[x.size() - 2], x_back, y[y.size() - 2], y_back, xi);
     } else {
         double log_x0 = log(x[0]);
         double dx = log(x[1]) - log_x0;
@@ -132,7 +139,8 @@ double jet_edge(Profile const& gamma) {
 
 Array adaptive_theta_space(size_t n, Profile const& gamma) {
     if (n == 1) {
-        return Array(0, con::pi / 2);
+        return linspace(0, 2 * con::pi, 2);
+        ;
     }
     double edge = jet_edge(gamma);
 
@@ -141,11 +149,12 @@ Array adaptive_theta_space(size_t n, Profile const& gamma) {
 
 Array adaptive_theta_space(size_t n, Profile const& gamma, double edge) {
     if (n == 1) {
-        return Array(0, con::pi / 2);
+        return linspace(0, 2 * con::pi, 2);
+        ;
     }
 
     double dx = con::pi / (n - 1);
-    Array space(n, 0);
+    Array space = zeros(n);
     for (size_t i = 0; i < n - 1; ++i) {
         double x = i * dx;
         space[i + 1] = space[i] + 1 / gamma(x);

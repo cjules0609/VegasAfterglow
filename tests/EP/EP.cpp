@@ -43,25 +43,12 @@ void GCN36236(double theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
-    Array theta_obs = {
-        5 * con::deg,  6 * con::deg,  7 * con::deg,  8 * con::deg,  9 * con::deg,  10 * con::deg, 11 * con::deg,
-        12 * con::deg, 13 * con::deg, 14 * con::deg, 15 * con::deg, 16 * con::deg, 17 * con::deg, 18 * con::deg,
-        19 * con::deg, 20 * con::deg, 21 * con::deg, 22 * con::deg, 23 * con::deg, 24 * con::deg, 25 * con::deg,
-        26 * con::deg, 27 * con::deg, 28 * con::deg, 29 * con::deg, 30 * con::deg, 31 * con::deg, 32 * con::deg,
-        33 * con::deg, 34 * con::deg, 35 * con::deg, 36 * con::deg, 37 * con::deg, 38 * con::deg, 39 * con::deg,
-        40 * con::deg, 41 * con::deg, 42 * con::deg, 43 * con::deg, 44 * con::deg, 45 * con::deg, 46 * con::deg,
-        47 * con::deg, 48 * con::deg, 49 * con::deg, 50 * con::deg, 51 * con::deg, 52 * con::deg, 53 * con::deg,
-        54 * con::deg, 55 * con::deg, 56 * con::deg, 57 * con::deg, 58 * con::deg, 59 * con::deg, 60 * con::deg};
+    Array theta_obs = linspace(5 * con::deg, 60 * con::deg, 56);
 
-    /*Array theta_obs = {40 * con::deg, 41 * con::deg, 42 * con::deg, 43 * con::deg, 44 * con::deg, 45 * con::deg,
-                       46 * con::deg, 47 * con::deg, 48 * con::deg, 49 * con::deg, 50 * con::deg, 51 * con::deg,
-                       52 * con::deg, 53 * con::deg, 54 * con::deg, 55 * con::deg, 56 * con::deg, 57 * con::deg,
-                       58 * con::deg, 59 * con::deg, 60 * con::deg};*/
+    Observer obs(coord);
 
     for (auto theta_v : theta_obs) {
-        Observer obs;
-
-        obs.observe(coord, f_shock.Gamma, theta_v, lumi_dist, z);
+        obs.observe(f_shock.Gamma, theta_v, lumi_dist, z);
 
         Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
 
@@ -115,11 +102,8 @@ auto solve_u2s1(double sigma, double gamma_max, size_t size) {
 }
 
 int main() {
-    Array theta_c = {1 * con::deg,  2 * con::deg,  3 * con::deg,  4 * con::deg,  5 * con::deg,  6 * con::deg,
-                     7 * con::deg,  8 * con::deg,  9 * con::deg,  10 * con::deg, 11 * con::deg, 12 * con::deg,
-                     13 * con::deg, 14 * con::deg, 15 * con::deg, 16 * con::deg, 17 * con::deg, 18 * con::deg,
-                     19 * con::deg, 20 * con::deg, 21 * con::deg, 22 * con::deg, 23 * con::deg, 24 * con::deg,
-                     25 * con::deg, 26 * con::deg, 27 * con::deg, 28 * con::deg, 29 * con::deg, 30 * con::deg};
+    Array theta_c = linspace(1 * con::deg, 30 * con::deg, 30);
+
     for (auto theta : theta_c) {
         GCN36236(theta);
     }

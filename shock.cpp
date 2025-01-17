@@ -109,7 +109,7 @@ ForwardShockEqn::ForwardShockEqn(Medium const& medium, Jet const& jet, double th
       gamma4(jet.Gamma0_profile(theta)),
       dM0dOmega(jet.dE0dOmega(theta) / (jet.Gamma0_profile(theta) * con::c2)) {};
 
-void ForwardShockEqn::operator()(Array const& y, Array& dydr, double r) {
+void ForwardShockEqn::operator()(State const& y, State& dydr, double r) {
     double Gamma = y[0];
     double u = y[1];
     double t_eng = y[2];  // engine time
@@ -183,7 +183,7 @@ double FRShockEqn::dN3dr_per_Omega(double r, double n1, double n4, double gamma3
 FRShockEqn::FRShockEqn(Medium const& medium, Jet const& jet, double theta)
     : medium(medium), jet(jet), theta(theta), sigma(jet.sigma_profile(theta)), gamma4(jet.Gamma0_profile(theta)) {}
 
-void FRShockEqn::operator()(Array const& y, Array& dydr, double r) {
+void FRShockEqn::operator()(State const& y, State& dydr, double r) {
     // y[0] leave blank
     // double D_rs = y[1];
     double t_eng = y[2];
@@ -263,7 +263,7 @@ double find_Gamma_start(double r0, ForwardShockEqn& eqn) {
     return (Gamma_new + Gamma) / 2;
 }
 
-void set_forward_init(ForwardShockEqn& eqn, Array& state, double r0) {
+void set_forward_init(ForwardShockEqn& eqn, ForwardShockEqn::State& state, double r0) {
     double gamma2 = eqn.jet.Gamma0_profile(eqn.theta);
     double u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
     double beta0 = gamma_to_beta(gamma2);
@@ -273,7 +273,7 @@ void set_forward_init(ForwardShockEqn& eqn, Array& state, double r0) {
     state = {gamma2, u0, t_eng0, t_com0, D_jet0};
 }
 
-void set_reverse_init(FRShockEqn& eqn, Array& state, double r0) {
+void set_reverse_init(FRShockEqn& eqn, FRShockEqn::State& state, double r0) {
     double gamma4 = eqn.jet.Gamma0_profile(eqn.theta);
     double u0 = (gamma4 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
     double beta0 = gamma_to_beta(gamma4);
@@ -281,10 +281,11 @@ void set_reverse_init(FRShockEqn& eqn, Array& state, double r0) {
     double t_com0 = r0 / sqrt(gamma4 * gamma4 - 1) / con::c;
     double D_jet0 = con::c * eqn.jet.duration;
     double dN3dOmega = 0;
-    state = {0, dN3dOmega, t_eng0, t_com0, D_jet0};
+    state = {0., dN3dOmega, t_eng0, t_com0, D_jet0};
 }
 
-void update_forward_shock(size_t j, int k, double r_k, ForwardShockEqn& eqn, const Array& state, Shock& f_shock) {
+void update_forward_shock(size_t j, int k, double r_k, ForwardShockEqn& eqn, const FRShockEqn::State& state,
+                          Shock& f_shock) {
     double n1 = eqn.medium.rho(r_k) / con::mp;
     double Gamma = state[0];
     double t_com = state[3];
@@ -298,18 +299,20 @@ void solve_forward_single_shell(size_t j, const Array& r_b, const Array& r, Shoc
 
     double atol = 0, rtol = 1e-6, r0 = r_b[0];
     double dr = (r[1] - r[0]) / 100;
-    Array state;
+    ForwardShockEqn::State state;
     set_forward_init(eqn, state, r0);
     if (state[0] <= 1 + 1e-6) {  // initial low Lorentz factor
         return;
     }
 
-    auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
+    auto stepper = bulirsch_stoer_dense_out<ForwardShockEqn::State>{atol, rtol};
     stepper.initialize(state, r0, dr);
 
     double t_com_last = state[3];
 
-    for (int k = 0, k1 = 1; stepper.current_time() <= r_b.back();) {
+    double r_back = r_b[r_b.size() - 1];
+
+    for (int k = 0, k1 = 1; stepper.current_time() <= r_back;) {
         stepper.do_step(eqn);
 
         // Process grid points `r`
@@ -335,9 +338,9 @@ void solve_FR_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_
     using namespace boost::numeric::odeint;
     double atol = 0, rtol = 1e-6, r0 = r_b[0];
     double dr = (r[1] - r[0]) / 100;
-    Array state;
+    std::array<double, 5> state;
 
-    auto stepper = bulirsch_stoer_dense_out<std::vector<double>>{atol, rtol};
+    auto stepper = bulirsch_stoer_dense_out<ForwardShockEqn::State>{atol, rtol};
     // auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
     double theta_c = eqn_f.jet.theta_c0;
 
@@ -365,7 +368,8 @@ void solve_FR_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_
     CrossState state_c;
     stepper.initialize(state, r0, dr);
     // integrate the shell over r
-    for (int k = 0, k1 = 1; stepper.current_time() <= r_b.back();) {
+    double r_back = r_b[r_b.size() - 1];
+    for (int k = 0, k1 = 1; stepper.current_time() <= r_back;) {
         RS_crossing ? stepper.do_step(eqn_r) : stepper.do_step(eqn_f);
 
         for (; stepper.current_time() > r[k] && k < r.size(); k++) {
@@ -404,7 +408,7 @@ void solve_FR_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_
             } else if (!crossed && !RS_crossing) {
                 RS_crossing = check_reverse_shock_generation(eqn_r, r0, gamma3, t_eng, D_jet);
                 if (RS_crossing) {
-                    state = {0, 0, t_eng, t_com, D_jet};
+                    state = {0., 0., t_eng, t_com, D_jet};
                     stepper.initialize(state, r[k], dr);
                 }
             } else {
