@@ -1,7 +1,7 @@
 #ifndef _MESHES_
 #define _MESHES_
 
-#define BOOST_DISABLE_ASSERTS
+#define NDEBUG
 #include <boost/multi_array.hpp>
 #include <cmath>
 #include <functional>
@@ -26,6 +26,10 @@ Array logspace(double start, double end, size_t num);
 Array zeros(size_t num);
 
 Array ones(size_t num);
+
+bool is_linear_scale(Array const& arr, double tolerance = 1e-6);
+
+bool is_log_scale(Array const& arr, double tolerance = 1e-6);
 
 MeshGrid create_grid(size_t theta_size, size_t r_size, double val = 0);
 

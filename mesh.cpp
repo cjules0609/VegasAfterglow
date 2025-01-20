@@ -37,6 +37,31 @@ MeshGrid create_grid(size_t theta_size, size_t r_size, double val) {
     return grid;
 }
 
+bool is_linear_scale(Array const& arr, double tolerance) {
+    if (arr.size() < 2) return false;  // Need at least two elements
+
+    double diff = arr[1] - arr[0];
+    for (size_t i = 2; i < arr.size(); ++i) {
+        if (std::fabs((arr[i] - arr[i - 1] - diff) / diff) > tolerance) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool is_log_scale(Array const& arr, double tolerance) {
+    if (arr.size() < 2) return false;  // Need at least two elements
+
+    double ratio = arr[1] / arr[0];
+    for (size_t i = 2; i < arr.size(); ++i) {
+        if (std::fabs((arr[i] / arr[i - 1] - ratio) / ratio) > tolerance) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 Coord::Coord(Array const& r_b, Array const& theta_b, Array const& phi_b)
     : r_b(r_b),
       theta_b(theta_b),

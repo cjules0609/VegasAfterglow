@@ -79,11 +79,15 @@ struct SynPhotons {
     inline double spectrum_(double nu) const;
 };
 
-using SynPhotonsArray = std::vector<SynPhotons>;
+/*using SynPhotonsArray = std::vector<SynPhotons>;
 using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
 using SynElectronsArray = std::vector<SynElectrons>;
-using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;
+using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;*/
 
+using SynPhotonsArray = boost::multi_array<SynPhotons, 1>;
+using SynPhotonsMesh = boost::multi_array<SynPhotons, 2>;
+using SynElectronsArray = boost::multi_array<SynElectrons, 1>;
+using SynElectronsMesh = boost::multi_array<SynElectrons, 2>;
 
 SynPhotonsMesh create_syn_photons_grid(size_t theta_size, size_t r_size);
 SynElectronsMesh create_syn_electrons_grid(size_t theta_size, size_t r_size);

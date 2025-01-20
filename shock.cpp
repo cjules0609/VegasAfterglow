@@ -3,11 +3,11 @@
 
 #include <boost/numeric/odeint.hpp>
 
+#include "afterglow.h"
 #include "macros.h"
 #include "mesh.h"
 #include "physics.h"
 #include "utilities.h"
-
 double Weibel_B_com(double eps_B, double e_thermal) { return sqrt(8 * con::pi * eps_B * e_thermal); }
 
 double u_down_str(double gamma_rel, double sigma) {
@@ -465,10 +465,17 @@ void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_sho
 Shock gen_forward_shock(Coord const& coord, Jet const& jet, Medium const& medium, double eps_e, double eps_B, double p,
                         double xi, double zeta) {
     Shock f_shock(coord, eps_e, eps_B, p, xi, zeta);
-    for (size_t j = 0; j < coord.theta.size(); ++j) {
+    th_pool.detach_blocks(0, coord.theta.size(), [&](size_t start, size_t end) {
+        for (size_t j = start; j < end; ++j) {
+            auto eqn = ForwardShockEqn(medium, jet, coord.theta[j], eps_e);
+            solve_forward_single_shell(j, coord.r_b, coord.r, f_shock, eqn);
+        }
+    });
+    th_pool.wait();
+    /*for (size_t j = 0; j < coord.theta.size(); ++j) {
         auto eqn = ForwardShockEqn(medium, jet, coord.theta[j], eps_e);
         solve_forward_single_shell(j, coord.r_b, coord.r, f_shock, eqn);
-    }
+    }*/
     return f_shock;
 }
 
@@ -476,10 +483,18 @@ std::pair<Shock, Shock> gen_fr_shocks(Coord const& coord, Jet const& jet, Medium
                                       double eps_B, double p, double xi, double zeta) {
     Shock f_shock(coord, eps_e, eps_B, p, xi, zeta);
     Shock r_shock(coord, eps_e, eps_B, p, xi, zeta);
-    for (size_t j = 0; j < coord.theta.size(); ++j) {
+    th_pool.detach_blocks(0, coord.theta.size(), [&](size_t start, size_t end) {
+        for (size_t j = start; j < end; ++j) {
+            auto eqn_f = ForwardShockEqn(medium, jet, coord.theta[j], eps_e);
+            auto eqn_r = FRShockEqn(medium, jet, coord.theta[j]);
+            solve_FR_single_shell(j, coord.r_b, coord.r, f_shock, r_shock, eqn_f, eqn_r);
+        }
+    });
+    th_pool.wait();
+    /*for (size_t j = 0; j < coord.theta.size(); ++j) {
         auto eqn_f = ForwardShockEqn(medium, jet, coord.theta[j], eps_e);
         auto eqn_r = FRShockEqn(medium, jet, coord.theta[j]);
         solve_FR_single_shell(j, coord.r_b, coord.r, f_shock, r_shock, eqn_f, eqn_r);
-    }
+    }*/
     return std::make_pair(f_shock, r_shock);
 }

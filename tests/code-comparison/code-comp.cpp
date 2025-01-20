@@ -60,7 +60,7 @@ void lc_gen(std::string folder_name) {
         throw std::runtime_error("Jet type not recognized");
     }
 
-    size_t r_num = 800;
+    size_t r_num = 500;
     size_t theta_num = 100;
     size_t phi_num = 100;
 
@@ -80,7 +80,8 @@ void lc_gen(std::string folder_name) {
 
     auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
 
-    IC_cooling_KN(syn_e, syn_ph, f_shock);
+    //(syn_e, syn_ph, f_shock);
+    // std::cout << "cooling\n";
 
     Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 200);
 
@@ -88,10 +89,7 @@ void lc_gen(std::string folder_name) {
 
     obs.observe(f_shock.Gamma, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 3);
-
-    Array F_nu_syn = obs.flux(t_bins, band_pass, syn_ph);
-    Array F_nu_syn_no_cool = obs.flux(t_bins, band_pass, syn_ph);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 5);
 
     auto t_c = boundary2centerlog(t_bins);
 
@@ -104,10 +102,12 @@ void lc_gen(std::string folder_name) {
     std::ofstream file(working_dir + "/flux.csv");
 
     if (ic_cool) {
+        Array F_nu_syn = obs.flux(t_bins, band_pass, syn_ph);
         for (size_t i = 0; i < t_c.size(); ++i) {
             file << t_c[i] / con::sec << ',' << F_nu_syn[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
         }
     } else {
+        Array F_nu_syn_no_cool = obs.flux(t_bins, band_pass, syn_ph);
         for (size_t i = 0; i < t_c.size(); ++i) {
             file << t_c[i] / con::sec << ',' << F_nu_syn_no_cool[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
         }

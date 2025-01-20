@@ -1,6 +1,9 @@
 #ifndef _AFTERGLOW_
 #define _AFTERGLOW_
 
+#include "BS_thread_pool.hpp"
+inline BS::thread_pool th_pool;
+
 #include "IO.h"
 #include "inverse-compton.h"
 #include "jet.h"
