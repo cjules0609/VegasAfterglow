@@ -11,7 +11,6 @@ Observer::Observer(Coord const& coord)
     : coord(coord),
       doppler(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
       t_obs(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
-      flux_grid(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
       lg_t_obs(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())) {}
 
 void Observer::observe(MeshGrid const& Gamma, double theta_obs, double lumi_dist, double z) {
@@ -24,6 +23,8 @@ void Observer::observe(MeshGrid const& Gamma, double theta_obs, double lumi_dist
         effective_phi_size = coord.phi.size();
     }
     calc_t_obs_grid(Gamma);
+    optimized_search = false;  // reset to default;
+    log_tab_calculated = false;
 }
 
 inline double fast_log2(double x) {
@@ -41,22 +42,34 @@ void Observer::calc_t_obs_grid(MeshGrid const& Gamma) {
     double sin_obs = sin(theta_obs);
     th_pool.detach_blocks(0, effective_phi_size, [&](size_t start, size_t end) {
         for (size_t i = start; i < end; ++i) {
-            double phi_ = coord.phi[i];
-            double cosphi = cos(phi_);
+            double cos_phi = cos(coord.phi[i]);
             for (size_t j = 0; j < coord.theta.size(); ++j) {
-                double theta_ = coord.theta[j];
-                double cos_ = sin(theta_) * cosphi * sin_obs + cos(theta_) * cos_obs;
-                for (size_t k = 0; k < coord.r.size(); ++k) {
+                double cos_theta = cos(coord.theta[j]);
+                double sin_theta = sqrt(1 - cos_theta * cos_theta);
+                double cos_ = sin_theta * cos_phi * sin_obs + cos_theta * cos_obs;
+
+                double beta0 = gamma_to_beta(Gamma[j][0]);
+                t_obs[i][j][0] = coord.r_b[0] * (1 / beta0 - cos_) / con::c;
+
+                for (size_t k = 1; k < coord.r.size(); ++k) {
                     double gamma_ = Gamma[j][k];
                     double beta = gamma_to_beta(gamma_);
-                    if (k == 0) {
-                        t_obs[i][j][k] = coord.r_b[0] * (1 / beta - cos_) / con::c;
-                    } else {
-                        double dr = coord.r_b[k] - coord.r_b[k - 1];
-                        this->t_obs[i][j][k] = dr * (1 / beta - cos_) / con::c + t_obs[i][j][k - 1];
-                    }
-                    this->lg_t_obs[i][j][k] = log2(t_obs[i][j][k]);
+                    double dr = coord.r_b[k] - coord.r_b[k - 1];
+                    this->t_obs[i][j][k] = dr * (1 / beta - cos_) / con::c + t_obs[i][j][k - 1];
                     this->doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_));
+                }
+            }
+        }
+    });
+    th_pool.wait();
+}
+
+void Observer::calc_log_t_obs_grid() {
+    th_pool.detach_blocks(0, effective_phi_size, [&](size_t start, size_t end) {
+        for (size_t i = start; i < end; ++i) {
+            for (size_t j = 0; j < coord.theta.size(); ++j) {
+                for (size_t k = 0; k < coord.r.size(); ++k) {
+                    this->lg_t_obs[i][j][k] = std::log10(t_obs[i][j][k]);
                 }
             }
         }
@@ -70,7 +83,7 @@ int Observer::find_idx(Array const& T, double t) const {
     }
 
     if (optimized_search) {
-        return static_cast<int>(std::floor((t - t_min) / t_space));
+        return static_cast<int>((t - t_min) / t_space);
     } else {  // binary search
         int n = T.size();
         int low = 0, high = n - 1;
@@ -91,11 +104,15 @@ int Observer::find_idx(Array const& T, double t) const {
 
 void Observer::optimize_idx_search(Array const& t_bins) {
     if (is_log_scale(t_bins)) {  // optimization for log scale
-        t_min = log2(t_bins[0]);
-        t_max = log2(t_bins[t_bins.size() - 1]);
-        t_space = log2(t_bins[1]) - t_min;
+        t_min = std::log10(t_bins[0]);
+        t_max = std::log10(t_bins[t_bins.size() - 1]);
+        t_space = std::log10(t_bins[1]) - t_min;
         t_tab = &lg_t_obs;
         optimized_search = true;
+        if (log_tab_calculated == false) {
+            calc_log_t_obs_grid();
+            log_tab_calculated = true;
+        }
     } else if (is_linear_scale(t_bins)) {  // optimization for linear scale
         t_min = t_bins[0];
         t_max = t_bins[t_bins.size() - 1];

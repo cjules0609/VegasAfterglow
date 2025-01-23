@@ -36,54 +36,12 @@ Y_IC::Y_IC() {
     regime = 0;
 }
 
-inline double fast_exp(double x) {
-    /*constexpr double a = (1ll << 52) / 0.6931471805599453;
-    constexpr double b = (1ll << 52) * (1023 - 0.04367744890362246);
-    x = a * x + b;
-
-    // Remove these lines if bounds checking is not needed
-    // constexpr double c = (1ll << 52);
-    // constexpr double d = (1ll << 52) * 2047;
-    // if (x < c || x > d)
-    //    x = (x < c) ? 0.0 : d;
-
-    // With C++20 one can use std::bit_cast instead
-    uint64_t n = static_cast<uint64_t>(x);
-    memcpy(&x, &n, 8);
-
-    return x;*/
-    return exp(x);
-}
-
-inline double fast_pow(double a, double b) {
-    uint64_t bits = std::bit_cast<uint64_t>(a);
-
-    uint64_t exponent = static_cast<uint64_t>(b * ((static_cast<int64_t>((bits >> 52) & 0x7FF) - 1023)) + 1023);
-
-    bits = (exponent << 52);
-
-    return std::bit_cast<double>(bits);
-}
-/*
-inline double fast_pow(double a, double b) {
-    union {
-        double d;
-        int x[2];
-    } u = {a};
-    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
-    return u.d;
-    // return pow(a, b);
-}*/
-
-inline double pow52(double a) { return sqrt(a * a * a * a * a); }
-
-inline double pow43(double a) { return cbrt(a * a * a * a); }
-
-inline double pow23(double a) { return cbrt(a * a); }
 
 double Y_IC::as_gamma(double gamma, double p) const {
     switch (regime) {
+        case 3:
+            return Y_T;
+            break;
         case 1:
             if (gamma <= gamma_hat_m) {
                 return Y_T;
@@ -102,9 +60,6 @@ double Y_IC::as_gamma(double gamma, double p) const {
                 return Y_T * pow43(gamma_hat_m / gamma) * fast_pow(gamma_hat_m / gamma_hat_c, (p - 3) / 2);
             }
             break;
-        case 3:
-            return Y_T;
-            break;
         default:
             return 0;
             break;
@@ -113,13 +68,16 @@ double Y_IC::as_gamma(double gamma, double p) const {
 
 double Y_IC::as_nu(double nu, double p) const {
     switch (regime) {
+        case 3:
+            return Y_T;
+            break;
         case 1:
             if (nu <= nu_hat_m) {
                 return Y_T;
             } else if (nu <= nu_hat_c) {
-                return Y_T * fast_pow(nu / nu_hat_m, -0.25);
+                return Y_T * sqrt(sqrt(nu_hat_m / nu));
             } else {
-                return Y_T * pow23(nu_hat_c / nu) * fast_pow(nu / nu_hat_m, -0.25);
+                return Y_T * pow23(nu_hat_c / nu) * sqrt(sqrt(nu_hat_m / nu));
             }
             break;
         case 2:
@@ -130,9 +88,6 @@ double Y_IC::as_nu(double nu, double p) const {
             } else {
                 return Y_T * pow23(nu_hat_m / nu) * fast_pow(nu_hat_m / nu_hat_c, (p - 3) / 4);
             }
-            break;
-        case 3:
-            return Y_T;
             break;
         default:
             return 0;

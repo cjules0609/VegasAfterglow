@@ -32,7 +32,6 @@ class Observer {
 
     MeshGrid3d doppler;
     MeshGrid3d t_obs;
-    MeshGrid3d flux_grid;
 
     double theta_obs{0};
     double z{0};
@@ -42,15 +41,18 @@ class Observer {
     template <typename Iter, typename... PhotonMesh>
     void calc_specific_flux(Iter f_nu, Array const& t_bins, double nu_obs, PhotonMesh const&... photons) const;
     void calc_t_obs_grid(MeshGrid const& Gamma);
+    void calc_log_t_obs_grid();
     void optimize_idx_search(Array const& t_bins);
     int find_idx(Array const& T, double t) const;
     MeshGrid3d lg_t_obs;
-    Coord const& coord;
     double t_max{0};
     double t_min{0};
     double t_space{1};
     MeshGrid3d* t_tab{&t_obs};
     bool optimized_search{false};
+    bool log_tab_calculated{false};
+
+    Coord const& coord;
     size_t effective_phi_size{1};
 };
 
@@ -64,8 +66,8 @@ void Observer::calc_specific_flux(Iter f_nu, Array const& t_bins, double nu_obs,
 
     th_pool.detach_blocks(0, effective_phi_size, [&](size_t start, size_t end) {
         auto const thread_id = BS::this_thread::get_index().value();
+        double dphi = 2 * con::pi;
         for (size_t i = start; i < end; i++) {
-            double dphi = 2 * con::pi;
             if (effective_phi_size != 1) {
                 dphi = coord.phi_b[i + 1] - coord.phi_b[i];
             }

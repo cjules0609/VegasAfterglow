@@ -37,7 +37,15 @@ T max(T first, Args... args) {
     return std::max(first, max(args...));
 }
 
-double exp_fast(double a);
+inline double pow52(double a) { return sqrt(a * a * a * a * a); }
+
+inline double pow43(double a) { return cbrt(a * a * a * a); }
+
+inline double pow23(double a) { return cbrt(a * a); }
+
+double fast_exp(double x);
+
+double fast_pow(double a, double b);
 
 // Linear interpolation function
 double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);

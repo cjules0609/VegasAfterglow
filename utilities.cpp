@@ -110,14 +110,56 @@ double loglog_interp_eq_spaced(double xi, const Array& x, const Array& y, bool l
     }
 }
 
-double exp_fast(double a) {
+double fast_exp(double x) {
+    /*constexpr double a = (1ll << 52) / 0.6931471805599453;
+    constexpr double b = (1ll << 52) * (1023 - 0.04367744890362246);
+    x = a * x + b;
+
+    // Remove these lines if bounds checking is not needed
+    // constexpr double c = (1ll << 52);
+    // constexpr double d = (1ll << 52) * 2047;
+    // if (x < c || x > d)
+    //    x = (x < c) ? 0.0 : d;
+
+    // With C++20 one can use std::bit_cast instead
+    uint64_t n = static_cast<uint64_t>(x);
+    memcpy(&x, &n, 8);
+
+    return x;*/
+    return std::exp(x);
+}
+
+/*inline double exp_fast(double a) {
     union {
         double d;
         long long x;
     } u;
     u.x = (long long)(6497320848556798LL * a + 0x3fef127e83d16f12LL);
     return u.d;
+}*/
+
+double fast_pow(double a, double b) {
+    uint64_t bits = std::bit_cast<uint64_t>(a);
+
+    uint64_t exponent = static_cast<uint64_t>(b * ((static_cast<int64_t>((bits >> 52) & 0x7FF) - 1023)) + 1023);
+
+    bits = (exponent << 52);
+
+    return std::bit_cast<double>(bits);
+
+    // return std::pow(a, b);
 }
+/*
+inline double fast_pow(double a, double b) {
+    union {
+        double d;
+        int x[2];
+    } u = {a};
+    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+    u.x[0] = 0;
+    return u.d;
+    // return pow(a, b);
+}*/
 
 double jet_edge(Profile const& gamma) {
     if (gamma(con::pi / 2) > 1) {
