@@ -11,7 +11,9 @@ Observer::Observer(Coord const& coord)
     : coord(coord),
       doppler(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
       t_obs(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
-      lg_t_obs(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())) {}
+      lg_t_obs(create_3d_grid(coord.phi.size(), coord.theta.size(), coord.r.size())),
+      dphi(zeros(coord.phi.size())) {}
+
 
 void Observer::observe(MeshGrid const& Gamma, double theta_obs, double lumi_dist, double z) {
     this->theta_obs = theta_obs;
@@ -19,8 +21,12 @@ void Observer::observe(MeshGrid const& Gamma, double theta_obs, double lumi_dist
     this->lumi_dist = lumi_dist;
     if (theta_obs == 0) {
         effective_phi_size = 1;
+        std::fill(dphi.begin(), dphi.end(), 2 * con::pi);
     } else {
         effective_phi_size = coord.phi.size();
+        for (size_t i = 0; i < coord.phi.size(); ++i) {
+            dphi[i] = coord.phi_b[i + 1] - coord.phi_b[i];
+        }
     }
     calc_t_obs_grid(Gamma);
     optimized_search = false;  // reset to default;
@@ -102,7 +108,7 @@ int Observer::find_idx(Array const& T, double t) const {
     }
 }
 
-void Observer::optimize_idx_search(Array const& t_bins) {
+void Observer::optimize_EAT_idx_search(Array const& t_bins) {
     if (is_log_scale(t_bins)) {  // optimization for log scale
         t_min = std::log10(t_bins[0]);
         t_max = std::log10(t_bins[t_bins.size() - 1]);

@@ -65,6 +65,7 @@ void lc_gen(std::string folder_name) {
     size_t phi_num = 100;
 
     double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet->duration);
+    std::cout << R_dec / con::cm << std::endl;
 
     auto r = logspace(R_dec / 1000, R_dec * 500, r_num);
     auto theta = adaptive_theta_space(theta_num, jet->Gamma0_profile, theta_w);

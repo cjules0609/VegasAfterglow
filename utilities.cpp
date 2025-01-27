@@ -139,15 +139,15 @@ double fast_exp(double x) {
 }*/
 
 double fast_pow(double a, double b) {
-    uint64_t bits = std::bit_cast<uint64_t>(a);
+    /*uint64_t bits = std::bit_cast<uint64_t>(a);
 
     uint64_t exponent = static_cast<uint64_t>(b * ((static_cast<int64_t>((bits >> 52) & 0x7FF) - 1023)) + 1023);
 
     bits = (exponent << 52);
 
-    return std::bit_cast<double>(bits);
+    return std::bit_cast<double>(bits);*/
 
-    // return std::pow(a, b);
+    return std::pow(a, b);
 }
 /*
 inline double fast_pow(double a, double b) {
