@@ -42,6 +42,8 @@ namespace con {
     constexpr double Omega_m = 0.27;
     constexpr double Omega_L = 0.73;
     constexpr double H0 = 67.66 * km / sec / Mpc;
+
+    constexpr double Gamma_cut = 1 + 1e-6;
 }  // namespace con
 
 #endif

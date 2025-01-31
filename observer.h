@@ -9,6 +9,43 @@
 #include "afterglow.h"
 #include "macros.h"
 #include "mesh.h"
+
+class LogScaleInterp {
+   public:
+    double z{0};
+
+    inline void reset() { idx_hi = 0; }
+
+    inline double interpRadius(double log_t) const {
+        return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
+    }
+    inline double interpIntensity(double log_t) const {
+        return fastExp(log_I_lo + (log_I_hi - log_I_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
+    }
+    inline double interpDoppler(double log_t) const {
+        return fastExp(log_d_lo + (log_d_hi - log_d_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
+    }
+
+    template <typename... PhotonMesh>
+    void setBoundary(size_t i, size_t j, size_t k, Array const& log_r, MeshGrid3d const& t_obs,
+                     MeshGrid3d const& doppler, double nu_obs, PhotonMesh const&... photons);
+
+   private:
+    double log_r_lo{0};
+    double log_r_hi{0};
+
+    double log_t_lo{0};
+    double log_t_hi{0};
+
+    double log_d_lo{0};
+    double log_d_hi{0};
+
+    double log_I_lo{0};
+    double log_I_hi{0};
+
+    size_t idx_hi{0};
+};
+
 class Observer {
    public:
     Observer(Coord const& coord);
@@ -37,9 +74,8 @@ class Observer {
     MeshGrid spectrum(Array const& t_obs, Array const& band_pass_freq, PhotonMesh const&... photons);
 
    private:
-    MeshGrid3d log_t_obs;    // for log scale interpolation
-    MeshGrid3d log_doppler;  // for log scale interpolation
-    Array log_r;             // for log scale interpolation
+    Array log_r;  // for log scale interpolation
+    LogScaleInterp interp;
     Coord const& coord;
     size_t effective_phi_size{1};
 
@@ -49,10 +85,7 @@ class Observer {
     void calcObsTimeGrid(MeshGrid const& Gamma, MeshGrid const& t_eng);
 
     template <typename Iter, typename... PhotonMesh>
-    void calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, PhotonMesh const&... photons) const;
-
-    template <typename... PhotonMesh>
-    double getSpecificIntensity(size_t i, size_t j, size_t k, double nu, PhotonMesh const&... photons) const;
+    void calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, PhotonMesh const&... photons);
 };
 
 #include "observer.tpp"
@@ -72,18 +105,39 @@ void Observer::observe(Dynamics const& dyn, double theta_obs, double lumi_dist, 
         }
     }
     calcObsTimeGrid(dyn.Gamma, dyn.t_eng);
+    interp.z = z;
 }
 
 template <typename... PhotonMesh>
-inline double Observer::getSpecificIntensity(size_t i, size_t j, size_t k, double nu_obs,
-                                             PhotonMesh const&... photons) const {
-    double D = doppler[i][j][k];
+void LogScaleInterp::setBoundary(size_t i, size_t j, size_t k_lo, Array const& log_r, MeshGrid3d const& t_obs,
+                                 MeshGrid3d const& doppler, double nu_obs, PhotonMesh const&... photons) {
+    if (idx_hi != 0 && k_lo == idx_hi) {  // just move one grid, lower->higher
+        log_r_lo = log_r_hi;
+        log_t_lo = log_t_hi;
+        log_d_lo = log_d_hi;
+        log_I_lo = log_I_hi;
+    } else {
+        log_r_lo = log_r[k_lo];
+        log_t_lo = fastLog(t_obs[i][j][k_lo]);
+        log_d_lo = fastLog(doppler[i][j][k_lo]);
+
+        double D = doppler[i][j][k_lo];
+        double nu = (1 + z) * nu_obs / D;
+        log_I_lo = fastLog((photons[j][k_lo].I_nu(nu) + ...));
+    }
+    log_r_hi = log_r[k_lo + 1];
+    log_t_hi = fastLog(t_obs[i][j][k_lo + 1]);
+    log_d_hi = fastLog(doppler[i][j][k_lo + 1]);
+
+    double D = doppler[i][j][k_lo + 1];
     double nu = (1 + z) * nu_obs / D;
-    return (photons[j][k].I_nu(nu) + ...);
+    log_I_hi = fastLog((photons[j][k_lo + 1].I_nu(nu) + ...));
+
+    idx_hi = k_lo + 1;
 }
 
 template <typename Iter, typename... PhotonMesh>
-void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, const PhotonMesh&... photons) const {
+void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, const PhotonMesh&... photons) {
     size_t const theta_size = coord.theta.size();
     size_t const r_size = coord.r.size();
     size_t const t_size = t_obs.size();
@@ -92,9 +146,8 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
         for (size_t j = 0; j < theta_size; j++) {
             double const dOmega = std::fabs(std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j])) * dphi[i];
 
-            double log_I_lo = 0;
-            double log_I_hi = 0;
-            for (size_t k = 0, t_idx = 0, k_old = 0; k < r_size - 1 && t_idx < t_size; k++) {
+            interp.reset();
+            for (size_t k = 0, t_idx = 0; k < r_size - 1 && t_idx < t_size; k++) {
                 double const t_obs_lo = t_obs_grid[i][j][k];
                 double const t_obs_hi = t_obs_grid[i][j][k + 1];
 
@@ -103,21 +156,14 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
                 }
 
                 if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
-                    if (k_old == k && k != 0) {
-                        log_I_lo = log_I_hi;
-                    } else {
-                        log_I_lo = fastLog(getSpecificIntensity(i, j, k, nu_obs, photons...));
-                    }
-                    log_I_hi = fastLog(getSpecificIntensity(i, j, k + 1, nu_obs, photons...));
-                    k_old = k + 1;
+                    interp.setBoundary(i, j, k, log_r, t_obs_grid, doppler, nu_obs, photons...);
                 }
 
-#pragma omp simd
                 for (; t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi && t_idx < t_size; t_idx++) {
                     double const log_t = fastLog(t_obs[t_idx]);
-                    double const D = dopplerInterp(log_t, i, j, k);
-                    double const r = radiusInterp(log_t, i, j, k);
-                    double I_nu = intensityInterp(log_t, i, j, k, log_I_lo, log_I_hi);
+                    double const D = interp.interpDoppler(log_t);
+                    double const r = interp.interpRadius(log_t);
+                    double const I_nu = interp.interpIntensity(log_t);
 
                     f_nu[t_idx] += D * D * D * I_nu * r * r * dOmega;
                 }
@@ -126,7 +172,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
     }
 
     // normalize the flux
-    double coef = (1 + z) / (lumi_dist * lumi_dist);
+    double const coef = (1 + z) / (lumi_dist * lumi_dist);
     for (size_t i = 0; i < t_size; ++i) {
         f_nu[i] *= coef;
     }

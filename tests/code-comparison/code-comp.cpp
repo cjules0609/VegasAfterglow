@@ -80,7 +80,7 @@ void lc_gen(std::string folder_name) {
 
     obs.observe(f_shock, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 15);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 5);
 
     namespace fs = std::filesystem;
 

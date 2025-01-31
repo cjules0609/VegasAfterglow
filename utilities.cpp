@@ -117,7 +117,7 @@ double fastLog(double a) {
     int64_t t = static_cast<int64_t>(ex) - 1023;
     bx = 0x3FF0000000000000ULL | (bx & 0x000FFFFFFFFFFFFFULL);
     double x = std::bit_cast<double>(bx);*/
-    if (a <= 0) return std::numeric_limits<double>::quiet_NaN();
+    // if (a <= 0) return std::numeric_limits<double>::quiet_NaN();
 
     uint64_t bx = *(uint64_t*)&a;
     uint64_t ex = bx >> 52;
@@ -134,8 +134,8 @@ double fastLog(double a) {
 double fastExp(double a) {
 #ifdef EXTREME_SPEED
     static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Little endian required!");
-    if (a < -708.39641853226408) return 0;
-    if (a > 709.782712893384) return std::numeric_limits<double>::infinity();
+    // if (a < -708.39641853226408) return 0;
+    // if (a > 709.782712893384) return std::numeric_limits<double>::infinity();
     union {
         double d;
         long long x;

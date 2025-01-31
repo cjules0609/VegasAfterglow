@@ -53,6 +53,8 @@ class CosJet : public Jet {
            double sigma0 = 0, Injection inject = noInjection);
 };
 
+std::tuple<double, double> findRadiusRange(double t_min, double t_max, double z, Jet const& jet);
+
 Injection create_iso_const_injection(double L0, double t0);
 Injection create_iso_power_law_injection(double L0, double t0, double q);
 #endif

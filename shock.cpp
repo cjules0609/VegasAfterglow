@@ -315,7 +315,7 @@ void solveForwardShell(size_t j, const Array& r_b, const Array& r, Shock& f_shoc
     double dr = (r[1] - r[0]) / 100;
     ForwardShockEqn::State state;
     setForwardInit(eqn, state, r0);
-    if (state[0] <= 1 + 1e-6) {  // initial low Lorentz factor
+    if (state[0] <= con::Gamma_cut) {  // initial low Lorentz factor
         return;
     }
 

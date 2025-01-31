@@ -5,8 +5,8 @@
 #include <iostream>
 
 #include "macros.h"
+#include "physics.h"
 #include "utilities.h"
-
 double E_isoToGamma_0(double gamma_max, double e_iso, double e, double idex) {
     double u = std::pow(e / e_iso, idex) * gamma_max;
     double gamma = std::sqrt(1 + u * u);
@@ -65,7 +65,9 @@ TophatJet::TophatJet(double theta_c0, double E_iso, double Gamma0, double durati
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
 
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
-        return theta < theta_c ? (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) * (e_iso + inj.dEdOmega(theta, t_lab)) : 0;
+        return theta < theta_c
+                   ? (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) * (e_iso + inj.dEdOmega(theta, t_lab))
+                   : 0;
     };
 }
 
@@ -195,4 +197,31 @@ Injection create_iso_power_law_injection(double L0, double t0, double q) {
         }
     };
     return Injection{dLdOmega, dEdOmega};
+}
+
+std::tuple<double, double> findRadiusRange(double t_min, double t_max, double z, Jet const& jet) {
+    auto theta = linspace(0, con::pi / 2, 50);
+    double r_min = 0;
+    double r_max = 0;
+
+    /*double Gamma_min = jet.Gamma0_profile(0);
+
+    double theta_max = 0;
+    for (auto th : theta) {
+        double G0 = jet.Gamma0_profile(th);
+        if (G0 > con::Gamma_cut && G0 < Gamma_min) {
+            Gamma_min = G0;
+            theta_max = th;
+        }
+    }
+    double beta_min = gammaTobeta(Gamma_min);
+
+    r_min = t_min * con::c / ((1 + z) * (1 / beta_min - std::cos(theta_max)));*/
+
+    r_min = t_min * con::c / (1 + z);
+
+    double beta_max = gammaTobeta(jet.Gamma0_profile(0));
+    r_max = t_max * con::c / ((1 + z) * (1 / beta_max - 1)) / jet.Gamma0_profile(0);
+
+    return {r_min, r_max};
 }

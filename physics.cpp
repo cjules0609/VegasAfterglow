@@ -59,6 +59,7 @@ double RSTransitionRadius(double E_iso, double n_ism, double Gamma0, double engi
     return std::pow(SedovLength(E_iso, n_ism), 1.5) / std::sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
 }
 
+
 /*
 UDownStr::UDownStr(double sigma) : sigma(sigma), gamma_1(logspace(1e-6, 1e4, 100)), u2s(zeros(100)) {
     for (size_t i = 0; i < gamma_1.size(); ++i) {

@@ -17,6 +17,8 @@
 #include "synchrotron.h"
 #include "utilities.h"
 
+
+
 inline void print() {  // Base case
     std::cout << std::endl;
 }
