@@ -11,9 +11,9 @@
 #include "synchrotron.h"
 #include "utilities.h"
 
-inline const double IC_x0 = sqrt(2) / 3;
+inline const double IC_x0 = std::sqrt(2) / 3;
 
-inline double compton_sigma(double nu) {
+inline double comptonSigma(double nu) {
     double x = con::h * nu / (con::me * con::c2);
     if (x <= 1) {
         return con::sigmaT;
@@ -37,8 +37,8 @@ struct IntegratorGrid {
         : x_min(x_min), x_max(x_max), y_min(y_min), y_max(y_max) {
         logspace(x_min, x_max, x_bin);
         logspace(y_min, y_max, y_bin);
-        boundary2center(x_bin, x);
-        boundary2center(y_bin, y);
+        boundaryToCenter(x_bin, x);
+        boundaryToCenter(y_bin, y);
     }
 
     double x_min;
@@ -59,9 +59,9 @@ struct ICPhoton {
    public:
     ICPhoton() = default;
 
-    double L_nu(double nu) const;
+    static constexpr size_t spectrum_resol{50};
 
-    double E_nu(double nu) const;
+    double I_nu(double nu) const;
 
     template <typename Electrons, typename Photons>
     void gen(Electrons const& e, Photons const& ph, double D_shock_com) {
@@ -77,7 +77,7 @@ struct ICPhoton {
         IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
 
         for (size_t i = 0; i < grid.num; i++) {
-            grid.j_syn[i] = ph.L_nu(grid.x[i]);
+            grid.j_syn[i] = ph.I_nu(grid.x[i]);
             grid.ns[i] = e.n(grid.y[i]);
         }
 
@@ -87,9 +87,9 @@ struct ICPhoton {
             for (size_t j = 0; j < grid.num; ++j) {
                 double gamma_ = grid.y[j];
                 double dgamma = grid.y_bin[j + 1] - grid.y_bin[j];
-                double dS = fabs(dnu * dgamma);
+                double dS = std::fabs(dnu * dgamma);
                 double f = 4 * gamma_ * gamma_ * nu0_ * nu0_;
-                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * compton_sigma(nu0_ / gamma_);
+                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * comptonSigma(nu0_ / gamma_);
             }
         }
 
@@ -114,28 +114,18 @@ struct ICPhoton {
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
             j_nu_[k] *= D_shock_com;
         }
-        this->dt_com_ = ph.E_nu_peak / ph.L_nu_peak;
     };
-
-   public:
-    static constexpr size_t spectrum_resol{50};
 
    private:
     Array j_nu_;
     Array nu_IC_;
-    double dt_com_{0};
 };
 
 using ICPhotonArray = std::vector<ICPhoton>;
-
 using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
-
-ICPhotonMesh create_IC_photon_grid(size_t theta_size, size_t r_size);
-
-ICPhotonMesh gen_IC_photons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
-
-void IC_cooling_Thomson(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
-
-void IC_cooling_KN(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
+ICPhotonMesh createICPhotonGrid(size_t theta_size, size_t r_size);
+ICPhotonMesh genICPhotons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
+void eCoolingThomson(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
+void eCoolingKleinNishina(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
 
 #endif

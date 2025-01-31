@@ -1,7 +1,6 @@
 #ifndef _OBSERVER_
 #define _OBSERVER_
 
-#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <thread>
@@ -13,117 +12,148 @@
 class Observer {
    public:
     Observer(Coord const& coord);
-
     Observer() = delete;
 
-    void observe(MeshGrid const& Gamma, double theta_obs, double lumi_dist, double z);
-
-    template <typename... PhotonMesh>
-    Array specific_flux(Array const& t_bins, double nu_obs, PhotonMesh const&... photons);
-
-    template <typename... PhotonMesh>
-    MeshGrid specific_flux(Array const& t_bins, Array const& nu_obs, PhotonMesh const&... photons);
-
-    template <typename... PhotonMesh>
-    Array flux(Array const& t_bins, Array const& band_pass_freq, PhotonMesh const&... photons);
-
-    template <typename... PhotonMesh>
-    MeshGrid spectrum(Array const& t_bins, Array const& band_pass_freq, PhotonMesh const&... photons);
-
+    MeshGrid3d t_obs_grid;
     MeshGrid3d doppler;
-    MeshGrid3d t_obs;
     Array dphi;
-
     double theta_obs{0};
     double lumi_dist{1};
     double z{0};
 
+    template <typename Dynamics>
+    void observe(Dynamics const& dyn, double theta_obs, double lumi_dist, double z);
+
+    template <typename... PhotonMesh>
+    Array specificFlux(Array const& t_obs, double nu_obs, PhotonMesh const&... photons);
+
+    template <typename... PhotonMesh>
+    MeshGrid specificFlux(Array const& t_obs, Array const& nu_obs, PhotonMesh const&... photons);
+
+    template <typename... PhotonMesh>
+    Array flux(Array const& t_obs, Array const& band_pass_freq, PhotonMesh const&... photons);
+
+    template <typename... PhotonMesh>
+    MeshGrid spectrum(Array const& t_obs, Array const& band_pass_freq, PhotonMesh const&... photons);
+
    private:
-    template <typename Iter, typename... PhotonMesh>
-    void calc_specific_flux(Iter f_nu, Array const& t_bins, double nu_obs, PhotonMesh const&... photons) const;
-    void calc_t_obs_grid(MeshGrid const& Gamma);
-    void calc_log_t_obs_grid();
-    void optimize_EAT_idx_search(Array const& t_bins);
-    int find_idx(Array const& T, double t) const;
-    MeshGrid3d lg_t_obs;
-    double t_max{0};
-    double t_min{0};
-    double t_space{1};
-    MeshGrid3d* t_tab{&t_obs};
-    bool optimized_search{false};
-    bool log_tab_calculated{false};
+    MeshGrid3d log_t_obs;    // for log scale interpolation
+    MeshGrid3d log_doppler;  // for log scale interpolation
+    Array log_r;             // for log scale interpolation
     Coord const& coord;
     size_t effective_phi_size{1};
+
+    double dopplerInterp(double log_t, size_t i, size_t j, size_t k) const;
+    double radiusInterp(double log_t, size_t i, size_t j, size_t k) const;
+    double intensityInterp(double log_t, size_t i, size_t j, size_t k, double log_I_lo, double log_I_hi) const;
+    void calcObsTimeGrid(MeshGrid const& Gamma, MeshGrid const& t_eng);
+
+    template <typename Iter, typename... PhotonMesh>
+    void calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, PhotonMesh const&... photons) const;
+
+    template <typename... PhotonMesh>
+    double getSpecificIntensity(size_t i, size_t j, size_t k, double nu, PhotonMesh const&... photons) const;
 };
 
+#include "observer.tpp"
+
+template <typename Dynamics>
+void Observer::observe(Dynamics const& dyn, double theta_obs, double lumi_dist, double z) {
+    this->theta_obs = theta_obs;
+    this->z = z;
+    this->lumi_dist = lumi_dist;
+    if (theta_obs == 0) {
+        effective_phi_size = 1;
+        std::fill(dphi.begin(), dphi.end(), 2 * con::pi);
+    } else {
+        effective_phi_size = coord.phi.size();
+        for (size_t i = 0; i < coord.phi.size(); ++i) {
+            dphi[i] = coord.phi_b[i + 1] - coord.phi_b[i];
+        }
+    }
+    calcObsTimeGrid(dyn.Gamma, dyn.t_eng);
+}
+
+template <typename... PhotonMesh>
+inline double Observer::getSpecificIntensity(size_t i, size_t j, size_t k, double nu_obs,
+                                             PhotonMesh const&... photons) const {
+    double D = doppler[i][j][k];
+    double nu = (1 + z) * nu_obs / D;
+    return (photons[j][k].I_nu(nu) + ...);
+}
+
 template <typename Iter, typename... PhotonMesh>
-void Observer::calc_specific_flux(Iter f_nu, Array const& t_bins, double nu_obs, const PhotonMesh&... photons) const {
-    size_t const thread_num = th_pool.get_thread_count();
-    MeshGrid f_grid = create_grid(thread_num, t_bins.size() - 1, 0);
+void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, const PhotonMesh&... photons) const {
+    size_t const theta_size = coord.theta.size();
+    size_t const r_size = coord.r.size();
+    size_t const t_size = t_obs.size();
 
-    size_t const theta_size = t_obs[0].size();
-    size_t const r_size = t_obs[0][0].size();
+    for (size_t i = 0; i < effective_phi_size; i++) {
+        for (size_t j = 0; j < theta_size; j++) {
+            double const dOmega = std::fabs(std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j])) * dphi[i];
 
-    // calculate specific energy on each grid
-    th_pool.detach_blocks(0, effective_phi_size, [&](size_t start, size_t end) {
-        auto const thread_id = BS::this_thread::get_index().value();
-        for (size_t i = start; i < end; i++) {
-            for (size_t j = 0; j < theta_size; j++) {
-                for (size_t k = 0; k < r_size; k++) {
-                    int const bin_id = find_idx(t_bins, (*t_tab)[i][j][k]);
-                    if (bin_id == -1) {  // Skip unobserved and non-emission regions
-                        continue;
+            double log_I_lo = 0;
+            double log_I_hi = 0;
+            for (size_t k = 0, t_idx = 0, k_old = 0; k < r_size - 1 && t_idx < t_size; k++) {
+                double const t_obs_lo = t_obs_grid[i][j][k];
+                double const t_obs_hi = t_obs_grid[i][j][k + 1];
+
+                if (k == 0) {
+                    while (t_idx < t_size - 1 && t_obs[t_idx] < t_obs_lo) ++t_idx;
+                }
+
+                if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
+                    if (k_old == k && k != 0) {
+                        log_I_lo = log_I_hi;
+                    } else {
+                        log_I_lo = fastLog(getSpecificIntensity(i, j, k, nu_obs, photons...));
                     }
-                    double const D = doppler[i][j][k];
-                    double const nu_com = (1 + z) * nu_obs / D;
-                    // Compute differential energy per unit solid angle in comoving frame
-                    double const dE_nu_com = dphi[i] * (photons[j][k].E_nu(nu_com) + ...);
-                    f_grid[thread_id][bin_id] += D * D * dE_nu_com;
+                    log_I_hi = fastLog(getSpecificIntensity(i, j, k + 1, nu_obs, photons...));
+                    k_old = k + 1;
+                }
+
+#pragma omp simd
+                for (; t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi && t_idx < t_size; t_idx++) {
+                    double const log_t = fastLog(t_obs[t_idx]);
+                    double const D = dopplerInterp(log_t, i, j, k);
+                    double const r = radiusInterp(log_t, i, j, k);
+                    double I_nu = intensityInterp(log_t, i, j, k, log_I_lo, log_I_hi);
+
+                    f_nu[t_idx] += D * D * D * I_nu * r * r * dOmega;
                 }
             }
         }
-    });
-    th_pool.wait();
-
-    // Sum up the energy from all threads
-    for (size_t i = 0; i < thread_num; i++) {
-        for (size_t j = 0; j < t_bins.size() - 1; j++) {
-            f_nu[j] += f_grid[i][j];
-        }
     }
 
-    // sign to time bin based on EAT and divide by bin width->specific flux
-    double coef = (1 + this->z) / (lumi_dist * lumi_dist * 4 * con::pi);
-    for (size_t i = 0; i < t_bins.size() - 1; ++i) {
-        double dt_obs = t_bins[i + 1] - t_bins[i];
-        f_nu[i] *= coef / dt_obs;
+    // normalize the flux
+    double coef = (1 + z) / (lumi_dist * lumi_dist);
+    for (size_t i = 0; i < t_size; ++i) {
+        f_nu[i] *= coef;
     }
 }
 
 template <typename... PhotonMesh>
-Array Observer::specific_flux(Array const& t_bins, double nu_obs, PhotonMesh const&... photons) {
-    Array F_nu = zeros(t_bins.size() - 1);
-    optimize_EAT_idx_search(t_bins);
-    calc_specific_flux(F_nu.data(), t_bins, nu_obs, photons...);
+Array Observer::specificFlux(Array const& t_obs, double nu_obs, PhotonMesh const&... photons) {
+    Array F_nu = zeros(t_obs.size());
+    calcSpecificFlux(F_nu.data(), t_obs, nu_obs, photons...);
     return F_nu;
 }
 
 template <typename... PhotonMesh>
-MeshGrid Observer::specific_flux(Array const& t_bins, Array const& nu_obs, PhotonMesh const&... photons) {
-    MeshGrid F_nu = create_grid(nu_obs.size(), t_bins.size() - 1, 0);
-    size_t bin_num = (t_bins.size() - 1);
-    optimize_EAT_idx_search(t_bins);
+MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonMesh const&... photons) {
+    MeshGrid F_nu = createGrid(nu_obs.size(), t_obs.size(), 0);
+    size_t t_num = t_obs.size();
     for (size_t l = 0; l < nu_obs.size(); ++l) {
-        calc_specific_flux(F_nu.data() + l * bin_num, t_bins, nu_obs[l], photons...);
+        calcSpecificFlux(F_nu.data() + l * t_num, t_obs, nu_obs[l], photons...);
     }
     return F_nu;
 }
 
 template <typename... PhotonMesh>
-Array Observer::flux(Array const& t_bins, Array const& band_pass_freq, PhotonMesh const&... photons) {
-    Array nu_obs = boundary2centerlog(band_pass_freq);
-    MeshGrid F_nu = specific_flux(t_bins, nu_obs, photons...);
-    Array flux = zeros(t_bins.size() - 1);
+Array Observer::flux(Array const& t_obs, Array const& band_pass_freq, PhotonMesh const&... photons) {
+    Array nu_obs = boundaryToCenterLog(band_pass_freq);
+    MeshGrid F_nu = specificFlux(t_obs, nu_obs, photons...);
+    Array flux = zeros(t_obs.size());
     for (size_t i = 0; i < F_nu.size(); ++i) {
         double dnu = band_pass_freq[i + 1] - band_pass_freq[i];
         for (size_t j = 0; j < flux.size(); ++j) {
@@ -132,5 +162,4 @@ Array Observer::flux(Array const& t_bins, Array const& band_pass_freq, PhotonMes
     }
     return flux;
 }
-
 #endif

@@ -17,17 +17,17 @@ void GCN36236(double theta_c) {
     double p = 2.139;
 
     // create model
-    auto medium = create_ISM(n_ism);
+    auto medium = createISM(n_ism);
     auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
 
     size_t r_num = 500;
     size_t theta_num = 150;
     size_t phi_num = 50;
 
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
 
     auto r = logspace(R_dec / 100, R_dec * 100, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile, 0.6);
+    auto theta = adaptiveThetaSpace(theta_num, jet.Gamma0_profile, 0.6);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
     ;
@@ -37,9 +37,9 @@ void GCN36236(double theta_c) {
     // Shock f_shock(coord, eps_e, eps_B, p);
 
     // solve_shocks(coord, jet, medium, f_shock);
-    Shock f_shock = gen_forward_shock(coord, jet, medium, eps_e, eps_B, p);
-    auto syn_e = gen_syn_electrons(coord, f_shock);
-    auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
+    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B, p);
+    auto syn_e = genSynElectrons(coord, f_shock);
+    auto syn_ph = genSynPhotons(syn_e, coord, f_shock);
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
@@ -48,7 +48,7 @@ void GCN36236(double theta_c) {
     Observer obs(coord);
 
     for (auto theta_v : theta_obs) {
-        obs.observe(f_shock.Gamma, theta_v, lumi_dist, z);
+        obs.observe(f_shock, theta_v, lumi_dist, z);
 
         Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
 
@@ -66,7 +66,7 @@ void GCN36236(double theta_c) {
         std::cout << theta_v / con::deg << std::endl;
     }
 
-    output(boundary2centerlog(t_bins), "ep/t_obs", con::sec);
+    output(boundaryToCenterLog(t_bins), "ep/t_obs", con::sec);
 }
 
 auto solve_u2s1(double sigma, double gamma_max, size_t size) {
@@ -75,7 +75,7 @@ auto solve_u2s1(double sigma, double gamma_max, size_t size) {
 
     for (size_t i = 0; i < size; ++i) {
         double gamma = gamma_rel[i] + 1;
-        double ad_idx = adiabatic_index(gamma);
+        double ad_idx = adiabaticIndex(gamma);
         double A = ad_idx * (2 - ad_idx) * (gamma - 1) + 2;
         double B =
             -(gamma + 1) * ((2 - ad_idx) * (ad_idx * gamma * gamma + 1) + ad_idx * (ad_idx - 1) * gamma) * sigma -
@@ -88,7 +88,7 @@ auto solve_u2s1(double sigma, double gamma_max, size_t size) {
         double x0 = (-B - sqrt(B * B - 3 * A * C)) / 3 / A;
         double x1 = (-B + sqrt(B * B - 3 * A * C)) / 3 / A;
         u2s[i] = sqrt(
-            root_bisection([=](double x) -> double { return A * x * x * x + B * x * x + C * x + D; }, x0, x1, 1e-13));
+            rootBisection([=](double x) -> double { return A * x * x * x + B * x * x + C * x + D; }, x0, x1, 1e-13));
 
         double exp = sqrt((gamma - 1) * (ad_idx - 1) * (ad_idx - 1) / (ad_idx * (2 - ad_idx) * (gamma - 1) + 2));
         double y = exp * exp;

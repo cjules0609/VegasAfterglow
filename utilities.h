@@ -3,11 +3,27 @@
 #include "macros.h"
 #include "mesh.h"
 
+inline double pow52(double a) { return std::sqrt(a * a * a * a * a); }
+inline double pow43(double a) { return std::cbrt(a * a * a * a); }
+inline double pow23(double a) { return std::cbrt(a * a); }
+inline double stepFunc(double x) { return x > 0 ? 1 : 0; }
+inline double eVtoHz(double eV) { return eV / con::h; }
+
+double fastExp(double x);
+double fastPow(double a, double b);
+double fastLog(double x);
+double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+double interpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+double loglogInterp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+double loglogInterpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+Array adaptiveThetaSpace(size_t n, Profile const& gamma);
+Array adaptiveThetaSpace(size_t n, Profile const& gamma, double edge);
+
 // Function to find the root of a function using the bisection method
 template <typename Fun>
-auto root_bisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
+auto rootBisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
     using Scalar = decltype(f(0));
-    for (; fabs((high - low)) > fabs(high) * eps;) {
+    for (; std::fabs((high - low)) > std::fabs(high) * eps;) {
         Scalar mid = 0.5 * (high + low);
         if (f(mid) * f(high) > 0)
             high = mid;
@@ -24,7 +40,7 @@ T min(T value) {
 
 template <typename T, typename... Args>
 T min(T first, Args... args) {
-    return std::min(first, min(args...));
+    return std::min(first, std::min(args...));
 }
 
 template <typename T>
@@ -34,30 +50,8 @@ T max(T value) {
 
 template <typename T, typename... Args>
 T max(T first, Args... args) {
-    return std::max(first, max(args...));
+    return std::max(first, std::max(args...));
 }
-
-inline double pow52(double a) { return sqrt(a * a * a * a * a); }
-
-inline double pow43(double a) { return cbrt(a * a * a * a); }
-
-inline double pow23(double a) { return cbrt(a * a); }
-
-double fast_exp(double x);
-
-double fast_pow(double a, double b);
-
-// Linear interpolation function
-double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-
-double interp_eq_spaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-
-double loglog_interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-
-double loglog_interp_eq_spaced(double x0, Array const& x, Array const& y, bool lo_extrap = false,
-                               bool hi_extrap = false);
-
-inline double step_func(double x) { return x > 0 ? 1 : 0; }
 
 inline double boxcar(double x, double a, double b) {
     if (a <= x && x <= b) {
@@ -66,11 +60,4 @@ inline double boxcar(double x, double a, double b) {
         return 0;
     }
 }
-
-inline double eVtoHz(double eV) { return eV / con::h; }
-
-Array adaptive_theta_space(size_t n, Profile const& gamma);
-
-Array adaptive_theta_space(size_t n, Profile const& gamma, double edge);
-
 #endif  // _UTILITIES_H_

@@ -36,14 +36,8 @@ void lc_gen(std::string folder_name) {
     std::vector<double> t_obs = data["t_obs"];
 
     std::vector<double> band_pass_ = data["band pass (kev)"];
-
-    std::cout << E_iso / con::erg << ' ' << lumi_dist / con::cm << ' ' << z << ' ' << jet_type << ' ' << theta_c << ' '
-              << theta_w << ' ' << Gamma0 << ' ' << n_ism * con::cm * con::cm * con::cm << ' ' << eps_e << ' ' << eps_B
-              << ' ' << p << ' ' << theta_view << ' ' << t_obs[0] << ' ' << t_obs[1] << ' ' << band_pass_[0] << ' '
-              << band_pass_[1] << '\n';
-
     // create model
-    auto medium = create_ISM(n_ism);
+    auto medium = createISM(n_ism);
 
     double sigma = 0;
 
@@ -60,39 +54,33 @@ void lc_gen(std::string folder_name) {
         throw std::runtime_error("Jet type not recognized");
     }
 
-    size_t r_num = 500;
+    size_t r_num = 100;
     size_t theta_num = 100;
     size_t phi_num = 100;
 
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet->duration);
-    std::cout << R_dec / con::cm << std::endl;
+    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet->duration);
 
     auto r = logspace(R_dec / 1000, R_dec * 500, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet->Gamma0_profile, theta_w);
-    // auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
+    auto theta = adaptiveThetaSpace(theta_num, jet->Gamma0_profile, theta_w);
+    // auto theta = linspace(0, theta_w, theta_num);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
     Coord coord{r, theta, phi};
 
     // solve dynamics
-    Shock f_shock = gen_forward_shock(coord, *jet, medium, eps_e, eps_B, p);
+    Shock f_shock = genForwardShock(coord, *jet, medium, eps_e, eps_B, p);
 
-    auto syn_e = gen_syn_electrons(coord, f_shock);
+    auto syn_e = genSynElectrons(coord, f_shock);
 
-    auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
+    auto syn_ph = genSynPhotons(syn_e, coord, f_shock);
 
-    //(syn_e, syn_ph, f_shock);
-    // std::cout << "cooling\n";
-
-    Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 200);
+    Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
 
     Observer obs(coord);
 
-    obs.observe(f_shock.Gamma, theta_view, lumi_dist, z);
+    obs.observe(f_shock, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 5);
-
-    auto t_c = boundary2centerlog(t_bins);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 15);
 
     namespace fs = std::filesystem;
 
@@ -104,13 +92,14 @@ void lc_gen(std::string folder_name) {
 
     if (ic_cool) {
         Array F_nu_syn = obs.flux(t_bins, band_pass, syn_ph);
-        for (size_t i = 0; i < t_c.size(); ++i) {
-            file << t_c[i] / con::sec << ',' << F_nu_syn[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
+        for (size_t i = 0; i < t_bins.size(); ++i) {
+            file << t_bins[i] / con::sec << ',' << F_nu_syn[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
         }
     } else {
         Array F_nu_syn_no_cool = obs.flux(t_bins, band_pass, syn_ph);
-        for (size_t i = 0; i < t_c.size(); ++i) {
-            file << t_c[i] / con::sec << ',' << F_nu_syn_no_cool[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
+        for (size_t i = 0; i < t_bins.size(); ++i) {
+            file << t_bins[i] / con::sec << ',' << F_nu_syn_no_cool[i] / (con::erg / con::cm / con::cm / con::sec)
+                 << '\n';
         }
     }
     std::cout << "finish" + working_dir << '\n';
@@ -118,10 +107,21 @@ void lc_gen(std::string folder_name) {
 }
 
 int main() {
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1");
+    std::vector<std::thread> threads;
+
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5"));
+
+    for (auto& t : threads) {
+        t.join();
+    }
+    /*lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1");
     lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2");
     lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3");
     lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4");
-    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5");
+    lc_gen("/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5");*/
     return 0;
 }

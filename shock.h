@@ -11,8 +11,9 @@
 class Shock {
    public:
     Shock(Coord const& coord, double eps_e, double eps_B, double p, double xi = 1, double zeta = 1);
+
     MeshGrid t_com;
-    MeshGrid dt_com;
+    MeshGrid t_eng;
     MeshGrid Gamma;      // bulk Lorentz factor
     MeshGrid e_th;       // internal energy density
     MeshGrid B;          // comoving magnetic field
@@ -28,9 +29,8 @@ class Shock {
 class ForwardShockEqn {
    public:
     using State = std::array<double, 5>;
-    ForwardShockEqn(Medium const& medium, Jet const& jet, double theta, double eps_e);
 
-    void operator()(State const& y, State& dydr, double r);
+    ForwardShockEqn(Medium const& medium, Jet const& jet, double theta, double eps_e);
 
     Medium const& medium;
     Jet const& jet;
@@ -39,9 +39,10 @@ class ForwardShockEqn {
     double gamma4;
     double spreading_factor;
 
+    void operator()(State const& y, State& dydr, double r);
+
    private:
     inline double dGammadr(double r, double Gamma, double u, double t_eng);
-
     inline double dUdr(double r, double Gamma, double u, double t_eng);
 
    private:
@@ -51,9 +52,8 @@ class ForwardShockEqn {
 class FRShockEqn {
    public:
     using State = std::array<double, 5>;
-    FRShockEqn(Medium const& medium, Jet const& jet, double theta);
 
-    void operator()(State const& y, State& dydr, double r);
+    FRShockEqn(Medium const& medium, Jet const& jet, double theta);
 
     Medium const& medium;
     Jet const& jet;
@@ -61,15 +61,15 @@ class FRShockEqn {
     double theta;
     double gamma4;
 
+    void operator()(State const& y, State& dydr, double r);
+
    private:
-    inline double dN3dr_per_Omega(double r, double n1, double n4, double gamma3);
+    inline double dN3drPerOmega(double r, double n1, double n4, double gamma3);
 };
 
-// void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock, Shock& r_shock);
-// void solve_shocks(Coord const& coord, Jet const& jet, Medium const& medium, Shock& f_shock);
-Shock gen_forward_shock(Coord const& coord, Jet const& jet, Medium const& medium, double eps_e, double eps_B, double p,
-                        double xi = 1, double zeta = 1);
+Shock genForwardShock(Coord const& coord, Jet const& jet, Medium const& medium, double eps_e, double eps_B, double p,
+                      double xi = 1, double zeta = 1);
 
-std::pair<Shock, Shock> gen_fr_shocks(Coord const& coord, Jet const& jet, Medium const& medium, double eps_e,
-                                      double eps_B, double p, double xi = 1, double zeta = 1);
+std::pair<Shock, Shock> genFRShocks(Coord const& coord, Jet const& jet, Medium const& medium, double eps_e,
+                                    double eps_B, double p, double xi = 1, double zeta = 1);
 #endif

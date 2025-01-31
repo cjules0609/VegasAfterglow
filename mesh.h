@@ -8,52 +8,33 @@
 #include <vector>
 
 using Array = boost::multi_array<double, 1>;
-
 using MeshGrid = boost::multi_array<double, 2>;
-
 using MeshGrid3d = boost::multi_array<double, 3>;
-
 using Profile = std::function<double(double)>;
-
 using Profile2d = std::function<double(double, double)>;
-
 using Profile3d = std::function<double(double, double, double)>;
 
+Array boundaryToCenter(Array const& boundary);
+Array boundaryToCenterLog(Array const& boundary);
 Array linspace(double start, double end, size_t num);
-
 Array logspace(double start, double end, size_t num);
-
 Array zeros(size_t num);
-
 Array ones(size_t num);
-
-bool is_linear_scale(Array const& arr, double tolerance = 1e-6);
-
-bool is_log_scale(Array const& arr, double tolerance = 1e-6);
-
-MeshGrid create_grid(size_t theta_size, size_t r_size, double val = 0);
-
 double min(MeshGrid const& grid);
-
 double max(MeshGrid const& grid);
-
-MeshGrid create_grid_like(MeshGrid const& grid, double val = 0);
-
-MeshGrid3d create_3d_grid(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
-
-MeshGrid3d create_3d_grid_like(MeshGrid3d const& grid, double val = 0);
-
-Array boundary2center(Array const& boundary);
-
-Array boundary2centerlog(Array const& boundary);
+bool isLinearScale(Array const& arr, double tolerance = 1e-6);
+bool isLogScale(Array const& arr, double tolerance = 1e-6);
+MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
+MeshGrid createGridLike(MeshGrid const& grid, double val = 0);
+MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
+MeshGrid3d create3DGridLike(MeshGrid3d const& grid, double val = 0);
 
 class Coord {
    public:
     Coord(Array const& r_b, Array const& theta_b, Array const& phi_b);
-
     Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num);
-
     Coord();
+
     Array r_b;
     Array theta_b;
     Array phi_b;
@@ -64,12 +45,12 @@ class Coord {
 
 template <typename... MeshGrid>
 double min(MeshGrid const&... grids) {
-    return std::min(min(grids...));
+    return std::min(std::min(grids...));
 }
 
 template <typename... MeshGrid>
 double max(MeshGrid const&... grids) {
-    return std::max(max(grids...));
+    return std::max(std::max(grids...));
 }
 
 template <typename Arr>
@@ -93,14 +74,14 @@ void logspace(double start, double end, Arr& result) {
 }
 
 template <typename Arr1, typename Arr2>
-void boundary2center(Arr1 const& boundary, Arr2& center) {
+void boundaryToCenter(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = 0.5 * (boundary[i] + boundary[i + 1]);
     }
 }
 
 template <typename Arr1, typename Arr2>
-void boundary2centerlog(Arr1 const& boundary, Arr2& center) {
+void boundaryToCenterLog(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }

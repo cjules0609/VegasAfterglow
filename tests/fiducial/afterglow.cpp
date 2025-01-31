@@ -22,7 +22,7 @@ void tests() {
     double theta_c = 0.1;
 
     // create model
-    auto medium = create_ISM(n_ism);
+    auto medium = createISM(n_ism);
     auto jet = TophatJet(theta_c, E_iso, Gamma0);
     // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
 
@@ -30,17 +30,17 @@ void tests() {
     size_t theta_num = 250;
     size_t phi_num = 37;
 
-    double R_thin = thin_shell_dec_radius(E_iso, n_ism, Gamma0);
-    double R_dec = dec_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_cross = RS_crossing_radius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_spread = shell_spreading_radius(Gamma0, jet.duration);
-    double R_N = RS_transition_radius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_thin = thinShellDecRadius(E_iso, n_ism, Gamma0);
+    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_cross = RShockCrossingRadius(E_iso, n_ism, Gamma0, jet.duration);
+    double R_spread = shellSpreadingRadius(Gamma0, jet.duration);
+    double R_N = RSTransitionRadius(E_iso, n_ism, Gamma0, jet.duration);
 
     std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
               << '\n';
 
     auto r = logspace(R_dec / 100, R_dec * 100, r_num);
-    auto theta = adaptive_theta_space(theta_num, jet.Gamma0_profile);
+    auto theta = adaptiveThetaSpace(theta_num, jet.Gamma0_profile);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
     // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
@@ -50,14 +50,14 @@ void tests() {
 
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
-    Shock f_shock = gen_forward_shock(coord, jet, medium, eps_e, eps_B, p);
+    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B, p);
     // Shock r_shock(coord, eps_e_r, eps_B_r, p);
 
     output(f_shock, data_folder + "/f_shock");
 
-    auto syn_e = gen_syn_electrons(coord, f_shock);
+    auto syn_e = genSynElectrons(coord, f_shock);
 
-    auto syn_ph = gen_syn_photons(syn_e, coord, f_shock);
+    auto syn_ph = genSynPhotons(syn_e, coord, f_shock);
 
     output(syn_e, data_folder + "/syn_e");
 
@@ -71,7 +71,7 @@ void tests() {
     double nu_min = 1e12 * con::Hz;
     double nu_max = 1e20 * con::Hz;
 
-    auto syn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
+    /*auto syn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 
     output(syn_e_sptr, data_folder + "/syn_e_sptr");
 
@@ -79,9 +79,9 @@ void tests() {
 
     output(syn_ph_sptr, data_folder + "/syn_ph_sptr");
 
-    IC_cooling_Thomson(syn_e, syn_ph, f_shock);
+    eCoolingThomson(syn_e, syn_ph, f_shock);
 
-    auto ICT_ph = gen_syn_photons(syn_e, coord, f_shock);
+    auto ICT_ph = genSynPhotons(syn_e, coord, f_shock);
 
     output(syn_e, data_folder + "/ICT_e");
 
@@ -95,9 +95,9 @@ void tests() {
 
     output(ict_ph_sptr, data_folder + "/ict_ph_sptr");
 
-    IC_cooling_KN(syn_e, syn_ph, f_shock);
+    eCoolingKleinNishina(syn_e, syn_ph, f_shock);
 
-    auto ICKN_ph = gen_syn_photons(syn_e, coord, f_shock);
+    auto ICKN_ph = genSynPhotons(syn_e, coord, f_shock);
 
     auto& ee = syn_e[j][k];
 
@@ -116,7 +116,7 @@ void tests() {
 
     auto ickn_ph_sptr = co_moving_spectrum(resol, nu_min, nu_max, ICKN_ph[j][k]);
 
-    output(ickn_ph_sptr, data_folder + "/ickn_ph_sptr");
+    output(ickn_ph_sptr, data_folder + "/ickn_ph_sptr");*/
 }
 
 int main() {

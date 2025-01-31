@@ -7,9 +7,9 @@
 #include "macros.h"
 #include "utilities.h"
 
-double E2Gamma0(double gamma_max, double e_iso, double e, double idex) {
-    double u = pow(e / e_iso, idex) * gamma_max;
-    double gamma = sqrt(1 + u * u);
+double E_isoToGamma_0(double gamma_max, double e_iso, double e, double idex) {
+    double u = std::pow(e / e_iso, idex) * gamma_max;
+    double gamma = std::sqrt(1 + u * u);
     return gamma;
 }
 
@@ -65,7 +65,7 @@ TophatJet::TophatJet(double theta_c0, double E_iso, double Gamma0, double durati
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
 
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
-        return theta < theta_c ? (1 - cos(theta_c0)) / (1 - cos(theta_c)) * (e_iso + inj.dEdOmega(theta, t_lab)) : 0;
+        return theta < theta_c ? (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) * (e_iso + inj.dEdOmega(theta, t_lab)) : 0;
     };
 }
 
@@ -81,7 +81,7 @@ GaussianJet::GaussianJet(double theta_c0, double E_iso, double Gamma0, double Ga
 
     this->dE0dOmega = [=](double theta) { return e_iso * std::exp(-theta * theta / (2 * theta_c0 * theta_c0)); };
 
-    this->Gamma0_profile = [=](double theta) { return E2Gamma0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
+    this->Gamma0_profile = [=](double theta) { return E_isoToGamma_0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
 
     this->sigma_profile = [=](double theta) { return sigma0; };
 
@@ -96,7 +96,7 @@ GaussianJet::GaussianJet(double theta_c0, double E_iso, double Gamma0, double Ga
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
 
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
-        return (1 - cos(theta_c0)) / (1 - cos(theta_c)) *
+        return (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) *
                (e_iso * std::exp(-theta * theta / (2 * theta_c * theta_c)) + inj.dEdOmega(theta, t_lab));
     };
 }
@@ -113,7 +113,7 @@ PowerLawJet::PowerLawJet(double theta_c0, double k, double E_iso, double Gamma0,
 
     this->dE0dOmega = [=](double theta) { return (theta < theta_c0 ? e_iso : e_iso * std::pow(theta / theta_c0, -k)); };
 
-    this->Gamma0_profile = [=](double theta) { return E2Gamma0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
+    this->Gamma0_profile = [=](double theta) { return E_isoToGamma_0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
 
     this->sigma_profile = [=](double theta) { return sigma0; };
 
@@ -128,7 +128,7 @@ PowerLawJet::PowerLawJet(double theta_c0, double k, double E_iso, double Gamma0,
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
 
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
-        return (1 - cos(theta_c0)) / (1 - cos(theta_c)) *
+        return (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) *
                ((theta < theta_c ? e_iso : e_iso * std::pow(theta / theta_c, -k)) + inj.dEdOmega(theta, t_lab));
     };
 }
@@ -147,7 +147,7 @@ CosJet::CosJet(double theta_c0, double E_iso, double Gamma0, double Gamma_idx, d
         return e_iso * std::fabs(std::exp(-theta * 30 / con::pi) * std::cos(theta / theta_c0));
     };
 
-    this->Gamma0_profile = [=](double theta) { return E2Gamma0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
+    this->Gamma0_profile = [=](double theta) { return E_isoToGamma_0(Gamma0, e_iso, dE0dOmega(theta), Gamma_idx); };
 
     this->sigma_profile = [=](double theta) { return sigma0; };
 
@@ -162,7 +162,7 @@ CosJet::CosJet(double theta_c0, double E_iso, double Gamma0, double Gamma_idx, d
     this->dEdOmega = [=](double theta, double t_lab) { return dE0dOmega(theta) + inj.dEdOmega(theta, t_lab); };
 
     this->dEdOmega_spread = [=](double theta, double theta_c, double t_lab) {
-        return (1 - cos(theta_c0)) / (1 - cos(theta_c)) *
+        return (1 - std::cos(theta_c0)) / (1 - std::cos(theta_c)) *
                (e_iso * std::fabs(std::cos(theta / theta_c)) + inj.dEdOmega(theta, t_lab));
     };
 }
@@ -188,10 +188,10 @@ Injection create_iso_const_injection(double L0, double t0) {
 Injection create_iso_power_law_injection(double L0, double t0, double q) {
     auto dLdOmega = [=](double theta, double t_lab) { return L0 * std::pow(1 + t_lab / t0, -q) / (4 * con::pi); };
     auto dEdOmega = [=](double theta, double t_lab) {
-        if (fabs(q - 1) > 1e-6) {
+        if (std::fabs(q - 1) > 1e-6) {
             return L0 * t0 / (1 - q) * (std::pow(1 + t_lab / t0, 1 - q) - 1) / (4 * con::pi);
         } else {
-            return L0 * t0 * log(1 + t_lab / t0) / (4 * con::pi);
+            return L0 * t0 * std::log(1 + t_lab / t0) / (4 * con::pi);
         }
     };
     return Injection{dLdOmega, dEdOmega};
