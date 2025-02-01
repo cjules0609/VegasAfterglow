@@ -16,6 +16,8 @@ class LogScaleInterp {
 
     inline void reset() { idx_hi = 0; }
 
+    inline bool isfinite() const { return std::isfinite(log_t_lo) && std::isfinite(log_t_hi); }
+
     inline double interpRadius(double log_t) const {
         return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
     }
@@ -147,13 +149,27 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
             double const dOmega = std::fabs(std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j])) * dphi[i];
 
             interp.reset();
-            for (size_t k = 0, t_idx = 0; k < r_size - 1 && t_idx < t_size; k++) {
+            interp.setBoundary(i, j, 0, log_r, t_obs_grid, doppler, nu_obs, photons...);
+            bool extrapolatable = false;  // interp.isfinite();
+
+            size_t t_idx = 0;
+
+            // extrapolation for EAT outside the grid
+            while (t_idx < t_size - 1 && t_obs[t_idx] < t_obs_grid[i][j][0]) {
+                if (extrapolatable) {
+                    double const log_t = fastLog(t_obs[t_idx]);
+                    double const D = interp.interpDoppler(log_t);
+                    double const r = interp.interpRadius(log_t);
+                    double const I_nu = interp.interpIntensity(log_t);
+                    f_nu[t_idx] += D * D * D * I_nu * r * r * dOmega;
+                }
+
+                ++t_idx;
+            }
+
+            for (size_t k = 0; k < r_size - 1 && t_idx < t_size; k++) {
                 double const t_obs_lo = t_obs_grid[i][j][k];
                 double const t_obs_hi = t_obs_grid[i][j][k + 1];
-
-                if (k == 0) {
-                    while (t_idx < t_size - 1 && t_obs[t_idx] < t_obs_lo) ++t_idx;
-                }
 
                 if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
                     interp.setBoundary(i, j, k, log_r, t_obs_grid, doppler, nu_obs, photons...);
@@ -167,6 +183,15 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
 
                     f_nu[t_idx] += D * D * D * I_nu * r * r * dOmega;
                 }
+            }
+
+            for (; t_idx < t_size; t_idx++) {  // extrapolation for EAT outside the grid
+                double const log_t = fastLog(t_obs[t_idx]);
+                double const D = interp.interpDoppler(log_t);
+                double const r = interp.interpRadius(log_t);
+                double const I_nu = interp.interpIntensity(log_t);
+
+                f_nu[t_idx] += D * D * D * I_nu * r * r * dOmega;
             }
         }
     }

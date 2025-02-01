@@ -3,6 +3,7 @@
 #include <boost/numeric/odeint.hpp>
 
 #include "utilities.h"
+
 double zToLuminosityDistance(double z) {
     using namespace boost::numeric::odeint;
     double atol = 0;
@@ -58,7 +59,6 @@ double shellSpreadingRadius(double Gamma0, double engine_dura) { return Gamma0 *
 double RSTransitionRadius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
     return std::pow(SedovLength(E_iso, n_ism), 1.5) / std::sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
 }
-
 
 /*
 UDownStr::UDownStr(double sigma) : sigma(sigma), gamma_1(logspace(1e-6, 1e4, 100)), u2s(zeros(100)) {

@@ -54,16 +54,16 @@ void lc_gen(std::string folder_name) {
         throw std::runtime_error("Jet type not recognized");
     }
 
-    size_t r_num = 100;
-    size_t theta_num = 100;
-    size_t phi_num = 100;
+    size_t r_num = 128;
+    size_t theta_num = 128;
+    size_t phi_num = 128;
 
     double R_dec = decRadius(E_iso, n_ism, Gamma0, jet->duration);
 
-    auto r = logspace(R_dec / 1000, R_dec * 500, r_num);
-    auto theta = adaptiveThetaSpace(theta_num, jet->Gamma0_profile, theta_w);
+    auto r = logspace(R_dec / 500, R_dec * 500, r_num + 1);
+    auto theta = adaptiveThetaSpace(theta_num + 1, jet->Gamma0_profile, theta_w);
     // auto theta = linspace(0, theta_w, theta_num);
-    auto phi = linspace(0, 2 * con::pi, phi_num);
+    auto phi = linspace(0, 2 * con::pi, phi_num + 1);
 
     Coord coord{r, theta, phi};
 

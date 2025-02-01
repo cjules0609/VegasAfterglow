@@ -134,15 +134,20 @@ void ForwardShockEqn::operator()(State const& y, State& dydr, double r) {
 double ForwardShockEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
     double ad_idx = adiabaticIndex(Gamma);
     double dm = medium.mass(r) / (4 * con::pi);
+    double dm_inj = jet.inj.dEdOmega(theta, t_eng) / con::c2 / jet.Gamma0_profile(theta);
     double Gamma2 = Gamma * Gamma;
     double a1 = r * r * medium.rho(r) / Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1);
     double a2 = -(ad_idx - 1) / Gamma * (ad_idx * Gamma2 - ad_idx + 1) * 3 * u / r * spreading_factor;
+
     double L_inj = jet.inj.dLdOmega(theta, t_eng);
+
     double a3 = 0;
     if (L_inj != 0) {
         a3 = -L_inj * dtdr_Engine(Gamma) * spreading_factor;
     }
-    double b1 = (dM0dOmega * spreading_factor + dm) * con::c2;
+    // double a4 = 1 / Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1) * (-a3) / con::c2 /
+    // jet.Gamma0_profile(theta);
+    double b1 = (dM0dOmega * spreading_factor + dm + dm_inj) * con::c2;
     double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u / Gamma2 * spreading_factor;
     return -(a1 + a2 + a3) / ((b1 + b2));
 }
