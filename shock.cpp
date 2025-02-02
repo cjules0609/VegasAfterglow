@@ -306,11 +306,12 @@ void updateForwardShock(size_t i, size_t j, int k, double r_k, ForwardShockEqn& 
     updateShockState(f_shock, i, j, k, r_k, Gamma, t_com, t_eng, dM1dOmega, n1, eqn.jet_sigma0);
 }
 
-void solveForwardShell(size_t i, size_t j, const Array& r_b, const Array& r, Shock& f_shock, ForwardShockEqn& eqn) {
+void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, ForwardShockEqn& eqn) {
     using namespace boost::numeric::odeint;
 
-    double atol = 0, rtol = 1e-6, r0 = r_b[0];
+    double atol = 0, rtol = 1e-6, r0 = r[0];
     double dr = (r[1] - r[0]) / 100;
+
     ForwardShockEqn::State state;
     setForwardInit(eqn, state, r0);
     if (state[0] <= con::Gamma_cut) {  // initial low Lorentz factor
@@ -319,8 +320,6 @@ void solveForwardShell(size_t i, size_t j, const Array& r_b, const Array& r, Sho
 
     auto stepper = bulirsch_stoer_dense_out<ForwardShockEqn::State>{atol, rtol};
     stepper.initialize(state, r0, dr);
-
-    double t_com_last = state[3];
 
     double r_back = r[r.size() - 1];
 
@@ -335,10 +334,10 @@ void solveForwardShell(size_t i, size_t j, const Array& r_b, const Array& r, Sho
     }
 }
 
-void solveFRShell(size_t i, size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock,
-                  ForwardShockEqn& eqn_f, FRShockEqn& eqn_r) {
+void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_shock, ForwardShockEqn& eqn_f,
+                  FRShockEqn& eqn_r) {
     using namespace boost::numeric::odeint;
-    double atol = 0, rtol = 1e-6, r0 = r_b[0];
+    double atol = 0, rtol = 1e-6, r0 = r[0];
     double dr = (r[1] - r[0]) / 100;
     std::array<double, 5> state;
 
@@ -463,7 +462,7 @@ Shock genForwardShock(Coord const& coord, Ejecta const& jet, Medium const& mediu
 
     for (size_t j = 0; j < theta_size; ++j) {
         auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        solveForwardShell(0, j, coord.r_b, coord.r, f_shock, eqn);
+        solveForwardShell(0, j, coord.r, f_shock, eqn);
     }
 
     return f_shock;
@@ -479,7 +478,7 @@ std::pair<Shock, Shock> genFRShocks(Coord const& coord, Ejecta const& jet, Mediu
     for (size_t j = 0; j < theta_size; ++j) {
         auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j]);
-        solveFRShell(0, j, coord.r_b, coord.r, f_shock, r_shock, eqn_f, eqn_r);
+        solveFRShell(0, j, coord.r, f_shock, r_shock, eqn_f, eqn_r);
     }
 
     return std::make_pair(std::move(f_shock), std::move(r_shock));
@@ -493,7 +492,7 @@ Shock genForwardShock3D(Coord const& coord, Ejecta const& jet, Medium const& med
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            solveForwardShell(i, j, coord.r_b, coord.r, f_shock, eqn);
+            solveForwardShell(i, j, coord.r, f_shock, eqn);
         }
     }
     return f_shock;
@@ -509,7 +508,7 @@ std::pair<Shock, Shock> genFRShocks3D(Coord const& coord, Ejecta const& jet, Med
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
             auto eqn_r = FRShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j]);
-            solveFRShell(i, j, coord.r_b, coord.r, f_shock, r_shock, eqn_f, eqn_r);
+            solveFRShell(i, j, coord.r, f_shock, r_shock, eqn_f, eqn_r);
         }
     }
     return std::make_pair(std::move(f_shock), std::move(r_shock));
