@@ -13,9 +13,8 @@ struct PromptPhotons {
     double I_nu(double nu) const;
 };
 
-using PromptPhotonsArray = std::vector<PromptPhotons>;
-using PromptPhotonsMesh = std::vector<std::vector<PromptPhotons>>;
-
-PromptPhotonsMesh genPromptPhotons(Coord const& coord, Jet const& jet, double R0, double nu_0, double alpha);
+using PromptPhotonsGrid = boost::multi_array<PromptPhotons, 3>;
+PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, size_t r_size);
+PromptPhotonsGrid genPromptPhotons(Coord const& coord, Ejecta const& jet, double R0, double nu_0, double alpha);
 
 #endif

@@ -43,156 +43,40 @@ void output(Coord const& coord, std::string const& filename) {
     file_phi << std::endl;
 }
 
-void output(Shock const& shock, std::string const& filename) {
-    std::ofstream file(filename + "_Gamma.txt");
-    std::ofstream file_B(filename + "_B.txt");
-    std::ofstream file_D_com(filename + "_D_com.txt");
-    std::ofstream file_t_eng(filename + "_t_eng.txt");
-    std::ofstream file_np(filename + "_n_p.txt");
-
-    if (!file || !file_B || !file_D_com || !file_t_eng || !file_np) {
-        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
-        return;
-    }
-
-    file.precision(16);
-    file_B.precision(16);
-    file_D_com.precision(16);
-    file_t_eng.precision(16);
-    file_np.precision(16);
-    // file_u.precision(16);
-
-    for (size_t j = 0; j < shock.Gamma.size(); ++j) {
-        for (size_t k = 0; k < shock.Gamma[j].size(); ++k) {
-            file << shock.Gamma[j][k] << " ";
-            file_B << shock.B[j][k] << " ";  // TODO:add B unit
-            file_D_com << shock.width_eff[j][k] / con::cm << " ";
-            file_t_eng << shock.t_com[j][k] / con::sec << " ";
-            file_np << shock.n_p[j][k] * (con::cm * con::cm * con::cm) << " ";
-            // file_u << shock.u[j][k] / con::erg << " ";
-        }
-        file << '\n';
-        file_B << '\n';
-        file_D_com << '\n';
-        file_t_eng << '\n';
-        file_np << '\n';
-        // file_u << '\n';
-    }
-}
-void output(PromptPhotonsMesh const& prompt_pj, std::string const& filename) {
-    std::ofstream file_E_nu_peak(filename + "_E_nu_peak.txt");
-
-    if (!file_E_nu_peak) {
-        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
-        return;
-    }
-
-    file_E_nu_peak.precision(16);
-
-    for (size_t i = 0; i < prompt_pj.size(); ++i) {
-        for (size_t j = 0; j < prompt_pj[i].size(); ++j) {
-            file_E_nu_peak << prompt_pj[i][j].E_nu_peak / (con::erg / con::sec) << " ";
-        }
-        file_E_nu_peak << '\n';
-    }
-}
-void output(SynPhotonsMesh const& syn_rad, std::string const& filename) {
-    std::ofstream file_I_peak(filename + "_I_nu_peak.txt");
-    std::ofstream file_nu_m(filename + "_nu_m.txt");
-    std::ofstream file_nu_c(filename + "_nu_c.txt");
-    std::ofstream file_nu_a(filename + "_nu_a.txt");
-    std::ofstream file_nu_M(filename + "_nu_Max.txt");
-
-    if (!file_I_peak || !file_nu_m || !file_nu_c || !file_nu_a || !file_nu_M) {
-        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
-        return;
-    }
-
-    file_I_peak.precision(16);
-    file_nu_m.precision(16);
-    file_nu_c.precision(16);
-    file_nu_a.precision(16);
-    file_nu_M.precision(16);
-
-    for (size_t i = 0; i < syn_rad.size(); ++i) {
-        for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_I_peak << syn_rad[i][j].e->I_nu_peak / (con::erg / con::sec) << " ";
-            file_nu_m << syn_rad[i][j].nu_m / con::Hz << " ";
-            file_nu_c << syn_rad[i][j].nu_c / con::Hz << " ";
-            file_nu_a << syn_rad[i][j].nu_a / con::Hz << " ";
-            file_nu_M << syn_rad[i][j].nu_M / con::Hz << " ";
-        }
-        file_I_peak << '\n';
-        file_nu_m << '\n';
-        file_nu_c << '\n';
-        file_nu_a << '\n';
-        file_nu_M << '\n';
-    }
-}
-
-void output(SynElectronsMesh const& syn_rad, std::string const& filename) {
-    std::ofstream file_n_tot(filename + "_n_tot.txt");
-    std::ofstream file_gamma_peak(filename + "_gamma_N_peak.txt");
-    std::ofstream file_gamma_m(filename + "_gamma_m.txt");
-    std::ofstream file_gamma_c(filename + "_gamma_c.txt");
-    std::ofstream file_gamma_a(filename + "_gamma_a.txt");
-    std::ofstream file_gamma_M(filename + "_gamma_Max.txt");
-
-    if (!file_n_tot || !file_gamma_peak || !file_gamma_m || !file_gamma_c || !file_gamma_a || !file_gamma_M) {
-        std::cerr << "Error opening files " << std::endl;
-        return;
-    }
-
-    file_n_tot.precision(16);
-    file_gamma_peak.precision(16);
-    file_gamma_m.precision(16);
-    file_gamma_c.precision(16);
-    file_gamma_a.precision(16);
-    file_gamma_M.precision(16);
-
-    for (size_t i = 0; i < syn_rad.size(); ++i) {
-        for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-            file_n_tot << syn_rad[i][j].n_tot * (con::cm * con::cm * con::cm) << " ";
-            file_gamma_peak << syn_rad[i][j].gamma_N_peak << " ";
-            file_gamma_m << syn_rad[i][j].gamma_m << " ";
-            file_gamma_c << syn_rad[i][j].gamma_c << " ";
-            file_gamma_a << syn_rad[i][j].gamma_a << " ";
-            file_gamma_M << syn_rad[i][j].gamma_M << " ";
-        }
-        file_n_tot << '\n';
-        file_gamma_peak << '\n';
-        file_gamma_m << '\n';
-        file_gamma_c << '\n';
-        file_gamma_a << '\n';
-        file_gamma_M << '\n';
-    }
-
-    for (size_t i = 0; i < syn_rad[0][0].Ys.size(); ++i) {
-        std::ofstream file_Y(filename + "_Yt-" + std::to_string(i) + ".txt");
-        std::ofstream file_gamma_hat_m(filename + "_gamma_hat_m-" + std::to_string(i) + ".txt");
-        std::ofstream file_gamma_hat_c(filename + "_gamma_hat_c-" + std::to_string(i) + ".txt");
-
-        if (!file_Y || !file_gamma_hat_m || !file_gamma_hat_c) {
-            std::cerr << "Error opening files " << std::endl;
+void writeGrid(std::string filename, auto const& names, auto const& data, auto const& units) {
+    for (size_t l = 0; l < names.size(); ++l) {
+        std::ofstream file(filename + "_" + names[l] + ".txt");
+        if (!file) {
+            std::cerr << "Error opening files " << filename + "_" + names[l] + ".txt" << std::endl;
             return;
         }
+        file.precision(16);
 
-        file_Y.precision(16);
-        file_gamma_hat_m.precision(16);
-        file_gamma_hat_c.precision(16);
-
-        for (size_t i = 0; i < syn_rad.size(); ++i) {
-            for (size_t j = 0; j < syn_rad[i].size(); ++j) {
-                file_Y << syn_rad[i][j].Ys[i].Y_T << " ";
-                file_gamma_hat_m << syn_rad[i][j].Ys[i].gamma_hat_m << " ";
-                file_gamma_hat_c << syn_rad[i][j].Ys[i].gamma_hat_c << " ";
+        for (size_t i = 0; i < (*data[l]).size(); ++i) {
+            for (size_t j = 0; j < (*data[l])[i].size(); ++j) {
+                for (size_t k = 0; k < (*data[l])[i][j].size(); ++k) {
+                    file << (*data[l])[i][j][k] / units[l] << " ";
+                }
+                file << '\n';
             }
-            file_Y << '\n';
-            file_gamma_hat_m << '\n';
-            file_gamma_hat_c << '\n';
+            file << '\n';
         }
     }
 }
+void output(Shock const& shock, std::string const& filename) {
+    std::array<std::string, 5> strs = {"Gamma", "B", "t_com", "t_eng", "Sigma"};
+    std::array<MeshGrid3d const*, 5> data = {&(shock.Gamma_rel), &(shock.B), &(shock.t_com), &(shock.t_eng),
+                                             &(shock.column_num_den)};
+    std::array<double, 5> units = {1, 1, con::sec, con::sec, 1 / con::cm2};
+
+    writeGrid(filename, strs, data, units);
+}
+
+void output(PromptPhotonsGrid const& prompt_pj, std::string const& filename) {}
+
+void output(SynPhotonGrid const& ph, std::string const& filename) {}
+
+void output(SynElectronGrid const& syn_rad, std::string const& filename) {}
 
 void output(MeshGrid3d const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");

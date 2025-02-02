@@ -34,13 +34,13 @@ struct SynElectrons {
     double gamma_a{0};
     double gamma_M{0};
     double p{2.3};
-    double n_tot{0};
+    double column_num_den{0};
     double gamma_N_peak;
     double Y_c{0};
     size_t regime{0};
     std::vector<InverseComptonY> Ys;
 
-    double n(double gamma) const;
+    double columnNumDen(double gamma) const;
 
    private:
     inline double gammaSpectrum(double gamma) const;
@@ -75,18 +75,20 @@ using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
 using SynElectronsArray = std::vector<SynElectrons>;
 using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;*/
 
-using SynPhotonsArray = boost::multi_array<SynPhotons, 1>;
-using SynPhotonsMesh = boost::multi_array<SynPhotons, 2>;
-using SynElectronsArray = boost::multi_array<SynElectrons, 1>;
-using SynElectronsMesh = boost::multi_array<SynElectrons, 2>;
+// using SynPhotonsArray = boost::multi_array<SynPhotons, 1>;
+// using SynPhotonsMesh = boost::multi_array<SynPhotons, 2>;
+using SynPhotonGrid = boost::multi_array<SynPhotons, 3>;
+// using SynElectronsArray = boost::multi_array<SynElectrons, 1>;
+// using SynElectronsMesh = boost::multi_array<SynElectrons, 2>;
+using SynElectronGrid = boost::multi_array<SynElectrons, 3>;
 
-SynElectronsMesh createSynElectronsGrid(size_t theta_size, size_t r_size);
-SynElectronsMesh genSynElectrons(Coord const& coord, Shock const& shock);
-SynPhotonsMesh createSynPhotonsGrid(size_t theta_size, size_t r_size);
-SynPhotonsMesh genSynPhotons(SynElectronsMesh const& electrons, Coord const& coord, Shock const& shock);
-SynPhotonsMesh genSynPhotons(Coord const& coord, Shock const& shock);
+SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t r_size);
+SynElectronGrid genSynElectrons(Shock const& shock, double p, double xi = 1);
 
-void updateElectrons4Y(SynElectronsMesh& e, Shock const& shock);
+SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size);
+SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& electrons);
+
+void updateElectrons4Y(SynElectronGrid& e, Shock const& shock);
 double syn_gamma_c(double t_com, double B, std::vector<InverseComptonY> const& Ys, double p);
 double syn_gamma_N_peak(double gamma_a, double gamma_m, double gamma_c);
 double syn_nu(double gamma, double B);

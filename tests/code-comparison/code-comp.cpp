@@ -41,15 +41,14 @@ void lc_gen(std::string folder_name) {
 
     double sigma = 0;
 
-    auto jet_top = TophatJet(theta_c, E_iso, Gamma0);
-
-    auto jet_gauss = GaussianJet(theta_c, E_iso, Gamma0, 1);
-
-    Jet* jet = &jet_top;
+    Ejecta jet;
 
     if (jet_type == "Gaussian") {
-        jet = &jet_gauss;
+        jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
     } else if (jet_type == "tophat") {
+        jet.dEdOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma0 = math::tophat(theta_c, Gamma0);
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
@@ -58,21 +57,20 @@ void lc_gen(std::string folder_name) {
     size_t theta_num = 128;
     size_t phi_num = 128;
 
-    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet->duration);
+    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
 
     auto r = logspace(R_dec / 500, R_dec * 500, r_num + 1);
-    auto theta = adaptiveThetaSpace(theta_num + 1, jet->Gamma0_profile, theta_w);
-    // auto theta = linspace(0, theta_w, theta_num);
+    auto theta = linspace(0, theta_w, theta_num + 1);
     auto phi = linspace(0, 2 * con::pi, phi_num + 1);
 
     Coord coord{r, theta, phi};
 
     // solve dynamics
-    Shock f_shock = genForwardShock(coord, *jet, medium, eps_e, eps_B, p);
+    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
 
-    auto syn_e = genSynElectrons(coord, f_shock);
+    auto syn_e = genSynElectrons(f_shock, p);
 
-    auto syn_ph = genSynPhotons(syn_e, coord, f_shock);
+    auto syn_ph = genSynPhotons(f_shock, syn_e);
 
     Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
 

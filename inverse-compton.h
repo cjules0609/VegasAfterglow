@@ -64,7 +64,7 @@ struct ICPhoton {
     double I_nu(double nu) const;
 
     template <typename Electrons, typename Photons>
-    void gen(Electrons const& e, Photons const& ph, double D_shock_com) {
+    void gen(Electrons const& e, Photons const& ph) {
         double gamma_e_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
         double nu_ph_min = min(ph.nu_m, ph.nu_c, ph.nu_a);
 
@@ -78,7 +78,7 @@ struct ICPhoton {
 
         for (size_t i = 0; i < grid.num; i++) {
             grid.j_syn[i] = ph.I_nu(grid.x[i]);
-            grid.ns[i] = e.n(grid.y[i]);
+            grid.ns[i] = e.columnNumDen(grid.y[i]);
         }
 
         for (size_t i = 0; i < grid.num; ++i) {
@@ -110,10 +110,6 @@ struct ICPhoton {
                 }
             }
         }
-
-        for (size_t k = 0; k < nu_IC_.size(); ++k) {
-            j_nu_[k] *= D_shock_com;
-        }
     };
 
    private:
@@ -121,11 +117,14 @@ struct ICPhoton {
     Array nu_IC_;
 };
 
-using ICPhotonArray = std::vector<ICPhoton>;
-using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
-ICPhotonMesh createICPhotonGrid(size_t theta_size, size_t r_size);
-ICPhotonMesh genICPhotons(SynElectronsMesh const& electron, SynPhotonsMesh const& photon, Shock const& shock);
-void eCoolingThomson(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
-void eCoolingKleinNishina(SynElectronsMesh& electron, SynPhotonsMesh const& photon, Shock const& shock);
+// using ICPhotonArray = std::vector<ICPhoton>;
+// using ICPhotonMesh = std::vector<std::vector<ICPhoton>>;
+
+using ICPhotonGrid = boost::multi_array<ICPhoton, 3>;
+
+ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size);
+ICPhotonGrid genICPhotons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
+void eCoolingThomson(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
+void eCoolingKleinNishina(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
 
 #endif

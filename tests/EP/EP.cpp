@@ -18,7 +18,11 @@ void GCN36236(double theta_c) {
 
     // create model
     auto medium = createISM(n_ism);
-    auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
+
+    Ejecta jet;
+
+    jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
     size_t r_num = 500;
     size_t theta_num = 150;
@@ -27,7 +31,7 @@ void GCN36236(double theta_c) {
     double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
 
     auto r = logspace(R_dec / 100, R_dec * 100, r_num);
-    auto theta = adaptiveThetaSpace(theta_num, jet.Gamma0_profile, 0.6);
+    auto theta = linspace(0, con::pi / 2, theta_num);  // adaptiveThetaSpace(theta_num, jet.Gamma0, 0.6);
     auto phi = linspace(0, 2 * con::pi, phi_num);
 
     ;
@@ -37,9 +41,11 @@ void GCN36236(double theta_c) {
     // Shock f_shock(coord, eps_e, eps_B, p);
 
     // solve_shocks(coord, jet, medium, f_shock);
-    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B, p);
-    auto syn_e = genSynElectrons(coord, f_shock);
-    auto syn_ph = genSynPhotons(syn_e, coord, f_shock);
+    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
+
+    auto syn_e = genSynElectrons(f_shock, p);
+
+    auto syn_ph = genSynPhotons(f_shock, syn_e);
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 

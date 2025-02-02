@@ -162,7 +162,7 @@ double fastPow(double a, double b) {
 #endif
 }
 
-double jetEdge(Profile const& gamma) {
+double jetEdge(UnaryFunc const& gamma) {
     if (gamma(con::pi / 2) > 1) {
         return con::pi / 2;
     }
@@ -180,7 +180,7 @@ double jetEdge(Profile const& gamma) {
     return 0.5 * (low + hi);
 }
 
-Array adaptiveThetaSpace(size_t n, Profile const& gamma) {
+Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma) {
     if (n == 1) {
         return linspace(0, 2 * con::pi, 2);
         ;
@@ -190,7 +190,7 @@ Array adaptiveThetaSpace(size_t n, Profile const& gamma) {
     return adaptiveThetaSpace(n, gamma, edge);
 }
 
-Array adaptiveThetaSpace(size_t n, Profile const& gamma, double edge) {
+Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma, double edge) {
     if (n == 1) {
         return linspace(0, 2 * con::pi, 2);
         ;

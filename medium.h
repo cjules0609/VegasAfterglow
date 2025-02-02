@@ -7,11 +7,11 @@
 #include "mesh.h"
 class Medium {
    public:
-    Medium(Profile rho, Profile mass, double cs = 1e-5 * con::c) : rho(rho), mass(mass), cs(cs) {};
-    
+    Medium(UnaryFunc rho, UnaryFunc mass, double cs = 1e-5 * con::c) : rho(rho), mass(mass), cs(cs) {};
+
     double cs{1e-5 * con::c};  // sound speed
-    Profile rho;
-    Profile mass;
+    UnaryFunc rho;
+    UnaryFunc mass;
 };
 
 Medium createISM(double n_ism, double cs = 1e-5 * con::c);

@@ -17,17 +17,6 @@
 #include "synchrotron.h"
 #include "utilities.h"
 
-
-
-inline void print() {  // Base case
-    std::cout << std::endl;
-}
-
-template <typename First, typename... Rest>
-void print(First first, Rest... rest) {
-    std::cout << first << " ";
-    print(rest...);  // Recursive call
-}
 /*
 template <typename... Photons>
 MeshGrid co_moving_spectrum(size_t spectrum_resol, double nu_min, double nu_max, Photons const&... ph) {

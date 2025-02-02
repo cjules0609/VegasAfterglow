@@ -16,8 +16,8 @@ double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false,
 double interpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 double loglogInterp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 double loglogInterpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-Array adaptiveThetaSpace(size_t n, Profile const& gamma);
-Array adaptiveThetaSpace(size_t n, Profile const& gamma, double edge);
+Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma);
+Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma, double edge);
 
 // Function to find the root of a function using the bisection method
 template <typename Fun>

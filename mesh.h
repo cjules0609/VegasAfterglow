@@ -10,9 +10,9 @@
 using Array = boost::multi_array<double, 1>;
 using MeshGrid = boost::multi_array<double, 2>;
 using MeshGrid3d = boost::multi_array<double, 3>;
-using Profile = std::function<double(double)>;
-using Profile2d = std::function<double(double, double)>;
-using Profile3d = std::function<double(double, double, double)>;
+using UnaryFunc = std::function<double(double)>;
+using BinaryFunc = std::function<double(double, double)>;
+using TernaryFunc = std::function<double(double, double, double)>;
 
 Array boundaryToCenter(Array const& boundary);
 Array boundaryToCenterLog(Array const& boundary);
@@ -41,6 +41,13 @@ class Coord {
     Array r;
     Array theta;
     Array phi;
+
+    auto shape() const { return std::make_tuple(r.size(), theta.size(), phi.size()); }
+
+   private:
+    size_t phi_size;
+    size_t theta_size;
+    size_t r_num;
 };
 
 template <typename... MeshGrid>
