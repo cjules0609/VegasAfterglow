@@ -17,11 +17,9 @@ PromptPhotonsGrid genPromptPhotons(Coord const& coord, Ejecta const& jet, double
             double Gamma = jet.Gamma0(0, theta, 0);
             double beta = gammaTobeta(Gamma);
             double R = R0 / (beta_c) * (beta);
-            for (size_t k = 0; k < r_size; ++k) {
-                if (coord.r_b[k + 1] > R && coord.r_b[k] < R) {
-                    double dOmega =
-                        std::fabs(std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j])) * 2 * con::pi;
-                    ph[i][j][k].E_nu_peak = jet.dEdOmega(0, theta, 0) / Gamma * dOmega;
+            for (size_t k = 0; k < r_size - 1; ++k) {
+                if (coord.r[k + 1] > R && coord.r[k] < R) {
+                    ph[i][j][k].E_nu_peak = jet.dEdOmega(0, theta, 0) / Gamma;
 
                 } else {
                     ph[i][j][k].E_nu_peak = 0;

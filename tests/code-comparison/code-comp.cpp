@@ -36,6 +36,8 @@ void lc_gen(std::string folder_name) {
     std::vector<double> t_obs = data["t_obs"];
 
     std::vector<double> band_pass_ = data["band pass (kev)"];
+
+    Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
     // create model
     auto medium = createISM(n_ism);
 
@@ -57,22 +59,13 @@ void lc_gen(std::string folder_name) {
     size_t theta_num = 128;
     size_t phi_num = 128;
 
-    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
-
-    auto r = logspace(R_dec / 500, R_dec * 500, r_num + 1);
-    auto theta = linspace(0, theta_w, theta_num + 1);
-    auto phi = linspace(0, 2 * con::pi, phi_num + 1);
-
-    Coord coord{r, theta, phi};
-
+    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
     // solve dynamics
     Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
 
     auto syn_e = genSynElectrons(f_shock, p);
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
-
-    Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
 
     Observer obs(coord);
 

@@ -4,14 +4,8 @@
 
 #include "macros.h"
 
-Medium createISM(double n_ism, double cs) {
-    auto rho = [=](double r) { return n_ism * con::mp; };
-    auto m = [=](double r) { return 4 * con::pi / 3 * r * r * r * n_ism * con::mp; };
-    return Medium{rho, m, cs};
-}
+Medium::Medium(double k, double n_c, double r_c) : k(k), n_c(n_c), r_c(r_c) {};
+Medium::Medium(double n_c) : k(0), n_c(n_c), r_c(con::cm) {};
 
-Medium createWind(double n_r, double r_c, double k, double cs) {
-    auto rho = [=](double r) { return n_r * std::pow(r / r_c, -k) * con::mp; };
-    auto m = [=](double r) { return 4 * con::pi / (3 - k) * r * r * r * n_r * std::pow(r / r_c, -k) * con::mp; };
-    return Medium{rho, m, cs};
-}
+
+Medium createISM(double n_ism) { return Medium(n_ism); }

@@ -23,6 +23,14 @@ Array logspace(double start, double end, size_t num) {
     return result;
 }
 
+Array uniform_cos(double start, double end, size_t num) {
+    Array result = linspace(std::cos(start), std::cos(end), num);
+    for (size_t i = 0; i < num; i++) {
+        result[i] = std::acos(result[i]);
+    }
+    return result;
+}
+
 Array zeros(size_t num) { return Array(boost::extents[num]); }
 
 Array ones(size_t num) {
@@ -61,21 +69,31 @@ bool isLogScale(Array const& arr, double tolerance) {
     return true;
 }
 
-Coord::Coord(Array const& r_b, Array const& theta_b, Array const& phi_b)
-    : r_b(r_b),
-      theta_b(theta_b),
-      phi_b(phi_b),
-      r(boundaryToCenterLog(r_b)),
-      theta(boundaryToCenter(theta_b)),
-      phi(boundaryToCenter(phi_b)) {}
+Coord::Coord(Array const& phi, Array const& theta, Array const& r)
+    : phi(phi), theta(theta), r(r), dphi(zeros(phi.size())), dcos(zeros(theta.size())) {
+    size_t phi_size = phi.size();
+    if (phi_size > 1) {
+        dphi[0] = std::fabs(phi[1] - phi[0]) / 2;
+        for (size_t i = 1; i < phi_size - 1; i++) {
+            dphi[i] = std::fabs(phi[i + 1] - phi[i - 1]) / 2;
+        }
+        dphi[phi_size - 1] = std::fabs(phi[phi_size - 1] - phi[phi_size - 2]) / 2;
+    }
 
-Coord::Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num)
-    : r_b(logspace(r_min, r_max, r_num + 1)),
-      theta_b(linspace(0, theta_max, theta_num + 1)),
-      phi_b(linspace(0, 2 * con::pi, phi_num + 1)),
-      r(boundaryToCenterLog(r_b)),
-      theta(boundaryToCenter(theta_b)),
-      phi(boundaryToCenter(phi_b)) {}
+    size_t theta_size = theta.size();
+    if (theta_size > 1) {
+        double theta_hi = (theta[1] + theta[0]) / 2;
+        dcos[0] = std::fabs(std::cos(theta_hi) - std::cos(theta[0]));
+
+        for (size_t j = 1; j < theta_size - 1; j++) {
+            double theta_lo = (theta[j] + theta[j - 1]) / 2;
+            double theta_hi = (theta[j] + theta[j + 1]) / 2;
+            dcos[j] = std::fabs(std::cos(theta_hi) - std::cos(theta_lo));
+        }
+        double theta_lo = (theta[theta_size - 1] + theta[theta_size - 2]) / 2;
+        dcos[theta_size - 1] = std::fabs(std::cos(theta[theta_size - 1]) - std::cos(theta_lo));
+    }
+}
 
 double min(MeshGrid const& grid) {
     double min = grid[0][0];

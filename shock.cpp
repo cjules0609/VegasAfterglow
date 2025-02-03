@@ -30,10 +30,6 @@ double u_DownStr(double gamma_rel, double sigma) {
                    (gamma_rel + 1) * (gamma_rel - 1) * (gamma_rel - 1) * (ad_idx - 1) * (ad_idx - 1);
         double D =
             -(gamma_rel - 1) * (gamma_rel + 1) * (gamma_rel + 1) * (2 - ad_idx) * (2 - ad_idx) * sigma * sigma / 4;
-        /*double x0 = (-B - sqrt(B * B - 3 * A * C)) / 3 / A;
-        double x1 = (-B + sqrt(B * B - 3 * A * C)) / 3 / A;
-        return sqrt(
-            root_bisection([=](double x) -> double { return A * x * x * x + B * x * x + C * x + D; }, x0, x1, 1e-6));*/
         double b = B / A;
         double c = C / A;
         double d = D / A;
@@ -67,16 +63,13 @@ double soundSpeed(double pressure, double ad_idx, double rho_rest) {
     return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
 }
 
-double dtdr_Engine(double Gamma) {
-    double Gb = std::sqrt(Gamma * Gamma - 1);
-    return std::fabs(Gamma - Gb) / (Gb * con::c);
-}
+double dtdr_Engine(double beta) { return std::fabs(1 - beta) / (beta * con::c); }
 
-double dtdr_CoMoving(double Gamma) { return 1 / (std::sqrt(Gamma * Gamma - 1) * con::c); };  // co-moving time
+double dtdr_CoMoving(double Gamma, double beta) { return 1 / (Gamma * beta * con::c); };  // co-moving time
 
-double dDdr_Jet(double Gamma) {  // does not applies to initial non-relativistic jet
-    double cs = con::c / std::sqrt(3);
-    return cs * dtdr_CoMoving(Gamma) / Gamma;
+double dDdr_Jet(double Gamma, double beta) {  // does not applies to initial non-relativistic jet
+    double constexpr cs = 0.5773502691896258 * con::c;
+    return cs * dtdr_CoMoving(Gamma, beta) / Gamma;
 }
 //----------------------------------------reverse shock---------------------------------------
 double fa(double gamma34, double u3s_, double sigma) {
@@ -115,12 +108,13 @@ ForwardShockEqn::ForwardShockEqn(Medium const& medium, Ejecta const& jet, Ejecta
       phi(phi),
       theta(theta),
       eps_e(eps_e),
-      jet_sigma0(jet.sigma0(phi, theta, 0)),
-      inject_sigma0(inject.sigma0(phi, theta, 0)),
+      jet_sigma(jet.sigma0(phi, theta, 0)),
+      inj_sigma(inject.sigma0(phi, theta, 0)),
       spreading_factor(1),
       jet_Gamma0(jet.Gamma0(phi, theta, 0)),
-      inject_Gamma0(inject.Gamma0(phi, theta, 0)),
-      gamma4(jet_Gamma0) {};
+      inj_Gamma0(inject.Gamma0(phi, theta, 0)),
+      gamma4(jet_Gamma0),
+      dM0(jet.dEdOmega(phi, theta, 0) / (jet_Gamma0 * (1 + jet_sigma) * con::c2)) {};
 // dM0dOmega(jet.dE0dOmega(theta) / (jet.Gamma0(theta) * con::c2)) {};
 
 void ForwardShockEqn::operator()(State const& y, State& dydr, double r) {
@@ -130,46 +124,47 @@ void ForwardShockEqn::operator()(State const& y, State& dydr, double r) {
     // double t_com = y[3];  // co-moving time
     // double D_jet = y[4];  // co-moving jet shell width
 
-    dydr[0] = dGammadr(r, Gamma, u, t_eng);
-    dydr[1] = dUdr(r, Gamma, u, t_eng);
-    dydr[2] = dtdr_Engine(Gamma);
-    dydr[3] = dtdr_CoMoving(Gamma);
-    dydr[4] = dDdr_Jet(this->gamma4);
+    double ad_idx = adiabaticIndex(Gamma);
+    double rho = medium.rho(r);
+    double beta = gammaTobeta(Gamma);
+    double beta4 = gammaTobeta(gamma4);
+
+    dydr[2] = dtdr_Engine(beta);
+    dydr[0] = dGammadr(r, Gamma, u, t_eng, ad_idx, rho, dydr[2]);
+    dydr[1] = dUdr(r, Gamma, u, t_eng, ad_idx, rho, dydr[0]);
+    dydr[3] = dtdr_CoMoving(Gamma, beta);
+    dydr[4] = dDdr_Jet(gamma4, beta4);
 }
 
-double ForwardShockEqn::dGammadr(double r, double Gamma, double u, double t_eng) {
-    double ad_idx = adiabaticIndex(Gamma);
-    double dM = jet.dEdOmega(phi, theta, t_eng) / (jet_Gamma0 * (1 + jet_sigma0) * con::c2);
+double ForwardShockEqn::dGammadr(double r, double Gamma, double u, double t_eng, double ad_idx, double rho,
+                                 double dtdr) {
+    double ad_idx_m1 = ad_idx - 1;
+    double Gamma2_m1 = Gamma * Gamma - 1;
+    double term1 = ad_idx * Gamma2_m1 + 1;
+
     double dm = medium.mass(r) / (4 * con::pi);
-    double dm_inj = inject.dEdOmega(phi, theta, t_eng) / (inject_Gamma0 * (1 + inject_sigma0) * con::c2);
-
-    double Gamma2 = Gamma * Gamma;
-
-    double a1 = -Gamma * (Gamma2 - 1) * (ad_idx * Gamma - ad_idx + 1) * r * r * medium.rho(r) * con::c2;
-    double a2 = Gamma * (ad_idx - 1) * (ad_idx * Gamma2 - ad_idx + 1) * 3 * u / r;
-    double L_jet = jet.dLdOmega(phi, theta, t_eng);  // most of case =0;
+    double dm_inj = inject.dEdOmega(phi, theta, t_eng) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);
     double L_inj = inject.dLdOmega(phi, theta, t_eng);
-    double a3 = Gamma2 * dtdr_Engine(Gamma) *
-                (L_jet * (1 - Gamma / (jet_Gamma0 * (1 + jet_sigma0))) +
-                 L_inj * (1 - Gamma / (inject_Gamma0 * (1 + inject_sigma0))));
 
-    double b1 = Gamma2 * (dM + dm + dm_inj) * con::c2;
-    double b2 = (ad_idx * ad_idx * (Gamma2 - 1) + 3 * ad_idx - 2) * u;
+    double a1 = -Gamma2_m1 * (ad_idx * Gamma - ad_idx + 1) * r * r * rho * con::c2;
+    double a2 = ad_idx_m1 * term1 * 3 * u / r;
+    double a3 = Gamma * dtdr * (L_inj * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma))));
+
+    double b1 = Gamma * (dM0 + dm + dm_inj) * con::c2;
+    double b2 = (ad_idx * term1 + 2 * ad_idx_m1) / Gamma * u;
 
     return (a1 + a2 + a3) / (b1 + b2);
 }
 
-double ForwardShockEqn::dUdr(double r, double Gamma, double u, double t_eng) {
-    double ad_idx = adiabaticIndex(Gamma);
-    double E = r * r * medium.rho(r) * con::c2;
-    return (1 - eps_e) * (Gamma - 1) * E -
-           (ad_idx - 1) * (3 / r - dGammadr(r, Gamma, u, t_eng) / Gamma) * u * spreading_factor;
+double ForwardShockEqn::dUdr(double r, double Gamma, double u, double t_eng, double ad_idx, double rho, double dGdr) {
+    double E = r * r * rho * con::c2;
+    return (1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGdr / Gamma) * u * spreading_factor;
 }
 
 bool checkReverseShockGeneration(FRShockEqn const& eqn, double r, double gamma, double t_eng, double D_jet) {
-    double n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t_eng), gamma, r, D_jet, eqn.sigma);
+    double n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t_eng), gamma, r, D_jet, eqn.jet_sigma);
     double n1 = eqn.medium.rho(r) / con::mp;
-    return eqn.sigma < 8. / 3 * gamma * gamma * n1 / n4;
+    return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
 }
 
 double calc_gamma3(double r, double n1, double n4, double gamma4, double sigma) {
@@ -181,7 +176,7 @@ double calc_gamma3(double r, double n1, double n4, double gamma4, double sigma) 
 
 double FRShockEqn::dN3drPerOmega(double r, double n1, double n4, double gamma3) {
     double gamma34 = (gamma4 / gamma3 + gamma3 / gamma4) / 2;
-    double ratio_u = u_UpStr2u_DownStr(gamma34, this->sigma);
+    double ratio_u = u_UpStr2u_DownStr(gamma34, this->jet_sigma);
 
     /*double ad_idx2 = adiabatic_index(Gamma);
     double ad_idx3 = adiabatic_index(Gamma34);
@@ -197,7 +192,7 @@ double FRShockEqn::dN3drPerOmega(double r, double n1, double n4, double gamma3) 
     double f_c = fc(p2, pB3);
     double F = f_a * f_b * f_c;*/
     double n3 = n4 * ratio_u;
-    double dxdr = 1. / (gamma4 * std::sqrt((1 + this->sigma) * n4 / n1) * std::fabs(1 - gamma4 * n4 / gamma3 / n3));
+    double dxdr = 1. / (gamma4 * std::sqrt((1 + this->jet_sigma) * n4 / n1) * std::fabs(1 - gamma4 * n4 / gamma3 / n3));
     return n3 * r * r * gamma3 * dxdr;
 }
 
@@ -207,7 +202,7 @@ FRShockEqn::FRShockEqn(Medium const& medium, Ejecta const& jet, Ejecta const& in
       inject(inject),
       phi(phi),
       theta(theta),
-      sigma(jet.sigma0(phi, theta, 0)),
+      jet_sigma(jet.sigma0(phi, theta, 0)),
       gamma4(jet.Gamma0(phi, theta, 0)) {}
 
 void FRShockEqn::operator()(State const& y, State& dydr, double r) {
@@ -217,15 +212,17 @@ void FRShockEqn::operator()(State const& y, State& dydr, double r) {
     // double t_com = y[3];
     double D_jet_lab = y[4];
 
-    double n4 = calc_n4(jet.dEdOmega(phi, theta, t_eng), gamma4, r, D_jet_lab, this->sigma);
+    double n4 = calc_n4(jet.dEdOmega(phi, theta, t_eng), gamma4, r, D_jet_lab, this->jet_sigma);
     double n1 = medium.rho(r) / con::mp;
 
-    double gamma3 = calc_gamma3(r, n1, n4, this->gamma4, this->sigma);
+    double gamma3 = calc_gamma3(r, n1, n4, this->gamma4, this->jet_sigma);
+    double beta3 = gammaTobeta(gamma3);
+    double beta4 = gammaTobeta(this->gamma4);
     dydr[0] = 0;
     dydr[1] = dN3drPerOmega(r, n1, n4, gamma3);
-    dydr[2] = dtdr_Engine(gamma3);
-    dydr[3] = dtdr_CoMoving(gamma3);
-    dydr[4] = dDdr_Jet(this->gamma4);
+    dydr[2] = dtdr_Engine(beta3);
+    dydr[3] = dtdr_CoMoving(gamma3, beta3);
+    dydr[4] = dDdr_Jet(this->gamma4, beta4);
 }
 
 void updateShockState(Shock& shock, size_t i, size_t j, size_t k, double r, double Gamma_rel, double t_com,
@@ -303,10 +300,28 @@ void updateForwardShock(size_t i, size_t j, int k, double r_k, ForwardShockEqn& 
     double t_com = state[3];
     double dM1dOmega = eqn.medium.mass(r_k) / (4 * con::pi);
 
-    updateShockState(f_shock, i, j, k, r_k, Gamma, t_com, t_eng, dM1dOmega, n1, eqn.jet_sigma0);
+    updateShockState(f_shock, i, j, k, r_k, Gamma, t_com, t_eng, dM1dOmega, n1, eqn.jet_sigma);
 }
 
-void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, ForwardShockEqn& eqn) {
+double find_r_max(ForwardShockEqn& eqn, double r_min, double t_max) {
+    using namespace boost::numeric::odeint;
+    double atol = 0, rtol = 1e-6, r0 = r_min;
+    double dr = r_min / 100;
+
+    ForwardShockEqn::State state;
+    setForwardInit(eqn, state, r0);
+
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<ForwardShockEqn::State>());
+    stepper.initialize(state, r0, dr);
+
+    for (int k = 0; state[2] <= t_max;) {
+        stepper.do_step(eqn);
+        state = stepper.current_state();
+    }
+    return stepper.current_time() + stepper.current_time_step();
+}
+
+void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, ForwardShockEqn& eqn, double t_max) {
     using namespace boost::numeric::odeint;
 
     double atol = 0, rtol = 1e-6, r0 = r[0];
@@ -314,18 +329,19 @@ void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, Forwa
 
     ForwardShockEqn::State state;
     setForwardInit(eqn, state, r0);
+
     if (state[0] <= con::Gamma_cut) {  // initial low Lorentz factor
         return;
     }
 
-    auto stepper = bulirsch_stoer_dense_out<ForwardShockEqn::State>{atol, rtol};
+    // auto stepper = bulirsch_stoer_dense_out<ForwardShockEqn::State>{atol, rtol};
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<ForwardShockEqn::State>());
     stepper.initialize(state, r0, dr);
 
     double r_back = r[r.size() - 1];
 
-    for (int k = 0; stepper.current_time() <= r_back;) {
+    for (int k = 0; stepper.current_time() <= r_back && state[2] <= t_max;) {
         stepper.do_step(eqn);
-
         while (k < r.size() && stepper.current_time() > r[k]) {
             stepper.calc_state(r[k], state);
             updateForwardShock(i, j, k, r[k], eqn, state, f_shock);
@@ -335,7 +351,7 @@ void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, Forwa
 }
 
 void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_shock, ForwardShockEqn& eqn_f,
-                  FRShockEqn& eqn_r) {
+                  FRShockEqn& eqn_r, double t_max) {
     using namespace boost::numeric::odeint;
     double atol = 0, rtol = 1e-6, r0 = r[0];
     double dr = (r[1] - r[0]) / 100;
@@ -364,13 +380,13 @@ void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_s
     double n1 = 0, n4 = 0;
     double dN3dOmega = 0;
     double dN4dOmega =
-        eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t_eng) / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.sigma));
+        eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t_eng) / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.jet_sigma));
 
     CrossState state_c;
     stepper.initialize(state, r0, dr);
     // integrate the shell over r
     double r_back = r[r.size() - 1];
-    for (int k = 0; stepper.current_time() <= r_back;) {
+    for (int k = 0; stepper.current_time() <= r_back && state[2] <= t_max;) {
         RS_crossing ? stepper.do_step(eqn_r) : stepper.do_step(eqn_f);
 
         for (; stepper.current_time() > r[k] && k < r.size(); k++) {
@@ -381,20 +397,21 @@ void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_s
             t_com = state[3];
             D_jet = state[4];
             if (RS_crossing) {
-                n4 = calc_n4(eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t_eng), eqn_r.gamma4, r[k], D_jet, eqn_r.sigma);
-                gamma3 = calc_gamma3(r[k], n1, n4, eqn_r.gamma4, eqn_r.sigma);
+                n4 = calc_n4(eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t_eng), eqn_r.gamma4, r[k], D_jet,
+                             eqn_r.jet_sigma);
+                gamma3 = calc_gamma3(r[k], n1, n4, eqn_r.gamma4, eqn_r.jet_sigma);
             } else {
                 gamma3 = state[0];
             }
 
             double dM2dOmega = eqn_f.medium.mass(r[k]) / (4 * con::pi);
-            updateShockState(f_shock, i, j, k, r[k], gamma3, t_com, t_eng, dM2dOmega, n1, eqn_f.jet_sigma0);
+            updateShockState(f_shock, i, j, k, r[k], gamma3, t_com, t_eng, dM2dOmega, n1, eqn_f.jet_sigma);
 
             if (!crossed && RS_crossing) {
                 dN3dOmega = state[1];
                 double gamma34 = (eqn_r.gamma4 / gamma3 + gamma3 / eqn_r.gamma4) / 2;
                 double dM3dOmega = dN3dOmega * con::mp * con::c2;
-                updateShockState(r_shock, i, j, k, r[k], gamma34, t_com, t_eng, dM3dOmega, n4, eqn_r.sigma);
+                updateShockState(r_shock, i, j, k, r[k], gamma34, t_com, t_eng, dM3dOmega, n4, eqn_r.jet_sigma);
 
                 crossed = dN3dOmega >= dN4dOmega;
                 if (crossed) {
@@ -462,7 +479,7 @@ Shock genForwardShock(Coord const& coord, Ejecta const& jet, Medium const& mediu
 
     for (size_t j = 0; j < theta_size; ++j) {
         auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        solveForwardShell(0, j, coord.r, f_shock, eqn);
+        solveForwardShell(0, j, coord.r, f_shock, eqn, coord.t_max);
     }
 
     return f_shock;
@@ -478,7 +495,7 @@ std::pair<Shock, Shock> genFRShocks(Coord const& coord, Ejecta const& jet, Mediu
     for (size_t j = 0; j < theta_size; ++j) {
         auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j]);
-        solveFRShell(0, j, coord.r, f_shock, r_shock, eqn_f, eqn_r);
+        solveFRShell(0, j, coord.r, f_shock, r_shock, eqn_f, eqn_r, coord.t_max);
     }
 
     return std::make_pair(std::move(f_shock), std::move(r_shock));
@@ -492,7 +509,7 @@ Shock genForwardShock3D(Coord const& coord, Ejecta const& jet, Medium const& med
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            solveForwardShell(i, j, coord.r, f_shock, eqn);
+            solveForwardShell(i, j, coord.r, f_shock, eqn, coord.t_max);
         }
     }
     return f_shock;
@@ -508,7 +525,7 @@ std::pair<Shock, Shock> genFRShocks3D(Coord const& coord, Ejecta const& jet, Med
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
             auto eqn_r = FRShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j]);
-            solveFRShell(i, j, coord.r, f_shock, r_shock, eqn_f, eqn_r);
+            solveFRShell(i, j, coord.r, f_shock, r_shock, eqn_f, eqn_r, coord.t_max);
         }
     }
     return std::make_pair(std::move(f_shock), std::move(r_shock));

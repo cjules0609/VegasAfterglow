@@ -30,12 +30,9 @@ void GCN36236(double theta_c) {
 
     double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
 
-    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
-    auto theta = linspace(0, con::pi / 2, theta_num);  // adaptiveThetaSpace(theta_num, jet.Gamma0, 0.6);
-    auto phi = linspace(0, 2 * con::pi, phi_num);
+    Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
-    ;
-    Coord coord{r, theta, phi};
+    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
 
     // solve dynamics
     // Shock f_shock(coord, eps_e, eps_B, p);
@@ -46,8 +43,6 @@ void GCN36236(double theta_c) {
     auto syn_e = genSynElectrons(f_shock, p);
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
-
-    Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
     Array theta_obs = linspace(5 * con::deg, 60 * con::deg, 56);
 

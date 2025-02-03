@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <numeric>
 
 #include "macros.h"
 
@@ -110,101 +111,3 @@ double loglogInterpEqSpaced(double xi, const Array& x, const Array& y, bool lo_e
     }
 }
 
-double fastLog(double a) {
-#ifdef EXTREME_SPEED
-    /*uint64_t bx = std::bit_cast<uint64_t>(a);
-    uint64_t ex = bx >> 52;
-    int64_t t = static_cast<int64_t>(ex) - 1023;
-    bx = 0x3FF0000000000000ULL | (bx & 0x000FFFFFFFFFFFFFULL);
-    double x = std::bit_cast<double>(bx);*/
-    // if (a <= 0) return std::numeric_limits<double>::quiet_NaN();
-
-    uint64_t bx = *(uint64_t*)&a;
-    uint64_t ex = bx >> 52;
-    int64_t t = static_cast<int64_t>(ex) - 1023;
-    bx = 0x3FF0000000000000ULL | (bx & 0x000FFFFFFFFFFFFFULL);
-    double x = *(double*)&bx;  // C-style cast back to double
-
-    return -1.49278 + (2.11263 + (-0.729104 + 0.10969 * x) * x) * x + 0.6931471806 * t;
-#else
-    return std::log(a);
-#endif
-}
-
-double fastExp(double a) {
-#ifdef EXTREME_SPEED
-    static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Little endian required!");
-    // if (a < -708.39641853226408) return 0;
-    // if (a > 709.782712893384) return std::numeric_limits<double>::infinity();
-    union {
-        double d;
-        long long x;
-    } u;
-    u.x = (long long)(6497320848556798LL * a + 0x3fef127e83d16f12LL);
-    return u.d;
-#else
-    return std::exp(a);
-#endif
-}
-
-double fastPow(double a, double b) {
-#ifdef EXTREME_SPEED
-    static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "Little endian required!");
-    union {
-        double d;
-        int x[2];
-    } u = {a};
-    u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
-    u.x[0] = 0;
-    return u.d;
-#else
-    return std::pow(a, b);
-#endif
-}
-
-double jetEdge(UnaryFunc const& gamma) {
-    if (gamma(con::pi / 2) > 1) {
-        return con::pi / 2;
-    }
-    double low = 0;
-    double hi = con::pi / 2;
-    double eps = 1e-6;
-    for (; hi - low > eps;) {
-        double mid = 0.5 * (low + hi);
-        if (gamma(mid) > 1) {
-            low = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return 0.5 * (low + hi);
-}
-
-Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma) {
-    if (n == 1) {
-        return linspace(0, 2 * con::pi, 2);
-        ;
-    }
-    double edge = jetEdge(gamma);
-
-    return adaptiveThetaSpace(n, gamma, edge);
-}
-
-Array adaptiveThetaSpace(size_t n, UnaryFunc const& gamma, double edge) {
-    if (n == 1) {
-        return linspace(0, 2 * con::pi, 2);
-        ;
-    }
-
-    double dx = con::pi / (n - 1);
-    Array space = zeros(n);
-    for (size_t i = 0; i < n - 1; ++i) {
-        double x = i * dx;
-        space[i + 1] = space[i] + 1 / gamma(x);
-    }
-    double rescale = edge / (space[n - 1]);
-    for (size_t i = 0; i < n; ++i) {
-        space[i] = (space[i]) * rescale;
-    }
-    return space;
-}

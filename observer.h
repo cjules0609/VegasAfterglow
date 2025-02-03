@@ -147,7 +147,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
         f_nu[id] += D * D * D * I_nu * r * r * solid_angle;
     };
 
-    for (size_t i = 0, l = 0; i < eff_phi_size; i++) {
+    for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
             double const solid_angle = dOmega[i][j];
             interp.setBoundary(i, j, 0, log_r, t_obs_grid, doppler, nu_obs, photons...);
@@ -158,9 +158,12 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
 
             size_t t_idx = 0;
             // extrapolation for EAT outside the grid
-            for (; t_idx < t_size - 1 && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
-                update_flux(t_idx, solid_angle);
+            for (; t_idx < t_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
+                if (interp.isfinite()) {
+                    update_flux(t_idx, solid_angle);
+                }
             }
+
             // interpolation for EAT inside the grid
             for (size_t k = 0; k < r_size - 1 && t_idx < t_size; k++) {
                 double const t_obs_lo = t_obs_grid[i][j][k];
@@ -170,7 +173,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
                     interp.setBoundary(i, j, k, log_r, t_obs_grid, doppler, nu_obs, photons...);
                 }
 
-                for (; t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi && t_idx < t_size; t_idx++) {
+                for (; t_idx < t_size && t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi; t_idx++) {
                     update_flux(t_idx, solid_angle);
                 }
             }

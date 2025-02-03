@@ -7,7 +7,6 @@
 #include "medium.h"
 #include "mesh.h"
 #include "physics.h"
-#include "shock.h"
 class Shock {
    public:
     Shock(size_t phi_size, size_t theta_size, size_t r_size, double eps_e, double eps_B);
@@ -39,22 +38,23 @@ class ForwardShockEqn {
     Medium const& medium;
     Ejecta const& jet;
     Ejecta const& inject;
-    double phi{0};
-    double theta{0};
-    double eps_e{0};
-    double jet_sigma0{0};
-    double inject_sigma0{0};
+    double const phi{0};
+    double const theta{0};
+    double const eps_e{0};
+    double const jet_sigma{0};
     double gamma4{1};
     double spreading_factor{1};
 
     void operator()(State const& y, State& dydr, double r);
 
    private:
-    inline double dGammadr(double r, double Gamma, double u, double t_eng);
-    inline double dUdr(double r, double Gamma, double u, double t_eng);
+    inline double dGammadr(double r, double Gamma, double u, double t_eng, double ad_idx, double rho, double dtdr);
+    inline double dUdr(double r, double Gamma, double u, double t_eng, double ad_idx, double rho, double dGdr);
 
-    double jet_Gamma0{0};
-    double inject_Gamma0{0};
+    double const jet_Gamma0{0};
+    double const inj_Gamma0{0};
+    double const inj_sigma{0};
+    double const dM0{0};
 };
 
 class FRShockEqn {
@@ -66,9 +66,9 @@ class FRShockEqn {
     Medium const& medium;
     Ejecta const& jet;
     Ejecta const& inject;
-    double phi{0};
-    double theta{0};
-    double sigma{0};
+    double const phi{0};
+    double const theta{0};
+    double const jet_sigma{0};
     double gamma4{1};
 
     void operator()(State const& y, State& dydr, double r);
@@ -78,14 +78,16 @@ class FRShockEqn {
 };
 
 Shock genForwardShock(Coord const& coord, Ejecta const& jet, Medium const& medium, double eps_e, double eps_B,
-                      Ejecta const& inject = Ejecta());
+                      Ejecta const& inject = inject::none);
 
 Shock genForwardShock3D(Coord const& coord, Ejecta const& jet, Medium const& medium, double eps_e, double eps_B,
-                        Ejecta const& inject = Ejecta());
+                        Ejecta const& inject = inject::none);
 
 std::pair<Shock, Shock> genFRShocks(Coord const& coord, Ejecta const& jet, Medium const& medium, double eps_e,
-                                    double eps_B, Ejecta const& inject = Ejecta());
+                                    double eps_B, Ejecta const& inject = inject::none);
 
 std::pair<Shock, Shock> genFRShocks3D(Coord const& coord, Ejecta const& jet, Medium const& medium, double eps_e,
-                                      double eps_B, Ejecta const& inject = Ejecta());
+                                      double eps_B, Ejecta const& inject = inject::none);
+
+double find_r_max(ForwardShockEqn& eqn, double r_min, double t_max);
 #endif

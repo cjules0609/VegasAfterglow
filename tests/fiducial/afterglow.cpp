@@ -33,21 +33,8 @@ void tests() {
     size_t theta_num = 250;
     size_t phi_num = 37;
 
-    double R_thin = thinShellDecRadius(E_iso, n_ism, Gamma0);
-    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_cross = RShockCrossingRadius(E_iso, n_ism, Gamma0, jet.duration);
-    double R_spread = shellSpreadingRadius(Gamma0, jet.duration);
-    double R_N = RSTransitionRadius(E_iso, n_ism, Gamma0, jet.duration);
-
-    std::cout << R_thin / con::cm << ' ' << R_cross / con::cm << ' ' << R_spread / con::cm << ' ' << R_N / con::cm
-              << '\n';
-
-    auto r = logspace(R_dec / 100, R_dec * 100, r_num);
-    auto theta = linspace(0, theta_c, theta_num);
-    auto phi = linspace(0, 2 * con::pi, phi_num);
-
-    // Coord coord{r_min, r_max, con::pi / 2, r_num, theta_num, phi_num};
-    Coord coord{r, theta, phi};
+    Array t_obs = logspace(1e2 * con::sec, 1e8 * con::sec, 100);
+    Coord coord = adaptiveGrid(medium, jet, inject::none, t_obs, 0.5, phi_num, theta_num, r_num);
 
     output(coord, data_folder + "/coord");
 

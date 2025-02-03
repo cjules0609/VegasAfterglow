@@ -3,10 +3,10 @@
 
 #include "macros.h"
 #include "mesh.h"
+#include "utilities.h"
+inline constexpr auto return_zero = [](double phi, double theta, double t) -> double { return 0; };
 
-inline auto return_zero = [](double phi, double theta, double t) -> double { return 0; };
-
-inline auto return_one = [](double phi, double theta, double t) -> double { return 1; };
+inline constexpr auto return_one = [](double phi, double theta, double t) -> double { return 1; };
 
 class Ejecta {
    public:
@@ -17,6 +17,9 @@ class Ejecta {
     double duration{0};
 };
 
+namespace inject {
+    inline const auto none = Ejecta();
+}
 namespace math {
     inline auto combine(auto f_spatial, auto f_temporal) {
         return [=](double phi, double theta, double t) -> double { return f_spatial(phi, theta) * f_temporal(t); };
@@ -32,13 +35,13 @@ namespace math {
 
     inline auto gaussian(double theta_c, double height) {
         return [=](double phi, double theta, double t = 0) -> double {
-            return height * std::exp(-theta * theta / (2 * theta_c * theta_c));
+            return height * fastExp(-theta * theta / (2 * theta_c * theta_c));
         };
     }
 
     inline auto powerLaw(double theta_c, double height, double k) {
         return [=](double phi, double theta, double t = 0) -> double {
-            return theta < theta_c ? height : height * std::pow(theta / theta_c, -k);
+            return theta < theta_c ? height : height * fastPow(theta / theta_c, -k);
         };
     }
 
@@ -95,5 +98,4 @@ auto LiangGhirlanda2010(auto energy_func, double e_max, double gamma_max, double
 Ejecta tophatJet(double theta_c, double E_iso, double Gamma0);
 Ejecta gaussianJet(double theta_c, double E_iso, double Gamma0, double idx = 1);
 Ejecta powerLawJet(double theta_c, double E_iso, double Gamma0, double k, double idx = 1);
-std::tuple<double, double> findRadiusRange(double t_min, double t_max, double z, Ejecta const& jet);
 #endif

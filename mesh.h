@@ -18,6 +18,7 @@ Array boundaryToCenter(Array const& boundary);
 Array boundaryToCenterLog(Array const& boundary);
 Array linspace(double start, double end, size_t num);
 Array logspace(double start, double end, size_t num);
+Array uniform_cos(double start, double end, size_t num);
 Array zeros(size_t num);
 Array ones(size_t num);
 double min(MeshGrid const& grid);
@@ -31,23 +32,20 @@ MeshGrid3d create3DGridLike(MeshGrid3d const& grid, double val = 0);
 
 class Coord {
    public:
-    Coord(Array const& r_b, Array const& theta_b, Array const& phi_b);
-    Coord(double r_min, double r_max, double theta_max, size_t r_num, size_t theta_num, size_t phi_num);
-    Coord();
+    Coord(Array const& phi, Array const& theta, Array const& r);
+    Coord() = delete;
 
-    Array r_b;
-    Array theta_b;
-    Array phi_b;
-    Array r;
-    Array theta;
     Array phi;
+    Array theta;
+    Array r;
 
-    auto shape() const { return std::make_tuple(r.size(), theta.size(), phi.size()); }
+    Array dphi;
+    Array dcos;
 
-   private:
-    size_t phi_size;
-    size_t theta_size;
-    size_t r_num;
+    double t_min{0};
+    double t_max{std::numeric_limits<double>::infinity()};
+
+    auto shape() const { return std::make_tuple(phi.size(), theta.size(), r.size()); }
 };
 
 template <typename... MeshGrid>

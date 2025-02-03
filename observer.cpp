@@ -9,7 +9,9 @@
 
 void LogScaleInterp::reset() { idx_hi = 0; }
 
-bool LogScaleInterp::isfinite() const { return std::isfinite(log_t_lo) && std::isfinite(log_t_hi); }
+bool LogScaleInterp::isfinite() const {
+    return std::isfinite(log_t_lo) && std::isfinite(log_t_hi) && std::isfinite(log_I_hi) && std::isfinite(log_I_lo);
+}
 
 double LogScaleInterp::interpRadius(double log_t) const {
     return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
@@ -25,12 +27,12 @@ double LogScaleInterp::interpDoppler(double log_t) const {
 
 void Observer::calcSolidAngle() {
     for (size_t i = 0; i < eff_phi_size; ++i) {
-        double dphi = coord.phi_b[i + 1] - coord.phi_b[i];
+        double dphi = coord.dphi[i];
         if (eff_phi_size == 1) {
             dphi = 2 * con::pi;
         }
         for (size_t j = 0; j < coord.theta.size(); ++j) {
-            dOmega[i][j] = std::fabs(std::cos(coord.theta_b[j + 1]) - std::cos(coord.theta_b[j])) * dphi;
+            dOmega[i][j] = coord.dcos[j] * dphi;
         }
     }
 }
