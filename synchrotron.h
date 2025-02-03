@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #ifndef _SYNCHROTRON_
 #define _SYNCHROTRON_
 #include <vector>
@@ -70,16 +77,8 @@ struct SynPhotons {
     inline double spectrum(double nu) const;
 };
 
-/*using SynPhotonsArray = std::vector<SynPhotons>;
-using SynPhotonsMesh = std::vector<std::vector<SynPhotons>>;
-using SynElectronsArray = std::vector<SynElectrons>;
-using SynElectronsMesh = std::vector<std::vector<SynElectrons>>;*/
 
-// using SynPhotonsArray = boost::multi_array<SynPhotons, 1>;
-// using SynPhotonsMesh = boost::multi_array<SynPhotons, 2>;
 using SynPhotonGrid = boost::multi_array<SynPhotons, 3>;
-// using SynElectronsArray = boost::multi_array<SynElectrons, 1>;
-// using SynElectronsMesh = boost::multi_array<SynElectrons, 2>;
 using SynElectronGrid = boost::multi_array<SynElectrons, 3>;
 
 SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t r_size);

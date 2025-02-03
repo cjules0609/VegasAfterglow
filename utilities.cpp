@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #include "utilities.h"
 
 #include <cmath>
@@ -110,4 +117,3 @@ double loglogInterpEqSpaced(double xi, const Array& x, const Array& y, bool lo_e
         return pointLoglogInterp(x[idx - 1], x[idx], y[idx - 1], y[idx], xi);
     }
 }
-

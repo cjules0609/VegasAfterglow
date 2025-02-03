@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #ifndef _MESHES_
 #define _MESHES_
 
@@ -7,9 +14,48 @@
 #include <functional>
 #include <vector>
 
+#ifdef STATIC_ARRAY
+constexpr size_t PHI_SIZE = 32;
+constexpr size_t THETA_SIZE = 32;
+constexpr size_t R_SIZE = 32;
+
+template <typename T, size_t Rows, size_t Cols>
+class Array2D {
+   public:
+    using RowType = std::array<T, Cols>;
+    using StorageType = std::array<RowType, Rows>;
+
+    constexpr RowType& operator[](size_t row) { return data_[row]; }
+    constexpr const RowType& operator[](size_t row) const { return data_[row]; }
+    constexpr std::tuple<size_t, size_t> shape() const { return {Rows, Cols}; }
+
+   private:
+    StorageType data_;
+};
+
+template <typename T, size_t X, size_t Y, size_t Z>
+class Array3D {
+   public:
+    using PlaneType = std::array<T, Z>;
+    using RowType = std::array<PlaneType, Y>;
+    using StorageType = std::array<RowType, X>;
+
+    constexpr RowType& operator[](size_t x) { return data_[x]; }
+    constexpr const RowType& operator[](size_t x) const { return data_[x]; }
+    constexpr std::tuple<size_t, size_t, size_t> shape() const { return {X, Y, Z}; }
+
+   private:
+    StorageType data_;
+};
+using Array = boost::multi_array<double, 1>;
+using MeshGrid = Array2D<double, THETA_SIZE, R_SIZE>;
+using MeshGrid3d = Array3D<double, PHI_SIZE, THETA_SIZE, R_SIZE>;
+#else
 using Array = boost::multi_array<double, 1>;
 using MeshGrid = boost::multi_array<double, 2>;
 using MeshGrid3d = boost::multi_array<double, 3>;
+#endif
+
 using UnaryFunc = std::function<double(double)>;
 using BinaryFunc = std::function<double(double, double)>;
 using TernaryFunc = std::function<double(double, double, double)>;

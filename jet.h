@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #ifndef _JET_
 #define _JET_
 
@@ -135,15 +142,15 @@ namespace math {
     }
 
     inline auto powerLawInjection(double t0, double q) {
-        return [=](double t) -> double { return std::pow(1 + t / t0, -q); };
+        return [=](double t) -> double { return fastPow(1 + t / t0, -q); };
     }
 
     inline auto powerLawIntegral(double t0, double q) {
         return [=](double t) -> double {
             if (std::fabs(q - 1) > 1e-6) {
-                return t0 / (1 - q) * (std::pow(1 + t / t0, 1 - q) - 1);
+                return t0 / (1 - q) * (fastPow(1 + t / t0, 1 - q) - 1);
             } else {
-                return t0 * std::log(1 + t / t0);
+                return t0 * fastLog(1 + t / t0);
             }
         };
     }

@@ -1,3 +1,9 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
 
 #include "shock.h"
 
@@ -8,7 +14,6 @@
 #include "mesh.h"
 #include "physics.h"
 #include "utilities.h"
-
 
 double soundSpeed(double pressure, double ad_idx, double rho_rest) {
     return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
@@ -24,7 +29,6 @@ double fc(double p2, double pB3) {
     double p3 = p2 - pB3;
     return p2 / p3;
 }
-
 
 //--------------------------------------------------------------------------------------------
 Shock::Shock(size_t phi_size, size_t theta_size, size_t r_size, double eps_e, double eps_B)

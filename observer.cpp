@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #include "observer.h"
 
 #include <boost/numeric/odeint.hpp>
@@ -21,12 +28,8 @@ double LogScaleInterp::interpDoppler(double log_t) const {
 
 void Observer::calcSolidAngle() {
     for (size_t i = 0; i < eff_phi_size; ++i) {
-        double dphi = coord.dphi[i];
-        if (eff_phi_size == 1) {
-            dphi = 2 * con::pi;
-        }
         for (size_t j = 0; j < coord.theta.size(); ++j) {
-            dOmega[i][j] = coord.dcos[j] * dphi;
+            dOmega[i][j] = coord.dcos[j] * (eff_phi_size == 1 ? 2 * con::pi : coord.dphi[i]);
         }
     }
 }
@@ -38,7 +41,7 @@ Observer::Observer(Coord const& coord)
       dOmega(createGrid(coord.phi.size(), coord.theta.size())),
       log_r(zeros(coord.r.size())) {
     for (size_t i = 0; i < coord.r.size(); ++i) {
-        log_r[i] = std::log(coord.r[i]);
+        log_r[i] = fastLog(coord.r[i]);
     }
 
     calcSolidAngle();

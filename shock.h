@@ -1,3 +1,10 @@
+//              __     __                            _      __  _                     _
+//              \ \   / /___   __ _   __ _  ___     / \    / _|| |_  ___  _ __  __ _ | |  ___ __      __
+//               \ \ / // _ \ / _` | / _` |/ __|   / _ \  | |_ | __|/ _ \| '__|/ _` || | / _ \\ \ /\ / /
+//                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
+//                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
+//                            |___/                                            |___/
+
 #ifndef _FSDYNAMICS_
 #define _FSDYNAMICS_
 
@@ -8,6 +15,12 @@
 #include "medium.h"
 #include "mesh.h"
 #include "physics.h"
+
+/********************************************************************************************************************
+ * CLASS: Shock                                                                                                     *
+ * DESCRIPTION:                                                                                                     *
+ ********************************************************************************************************************/
+
 class Shock {
    public:
     Shock(size_t phi_size, size_t theta_size, size_t r_size, double eps_e, double eps_B);
@@ -128,26 +141,15 @@ inline double calc_pB4(double n4, double sigma) { return sigma * n4 * con::mp * 
 
 inline double u_DownStr(double gamma_rel, double sigma) {
     double ad_idx = adiabaticIndex(gamma_rel);
+    double gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
+    double ad_idx_m_2 = ad_idx - 2;    // (ad_idx-2)
+    double ad_idx_m_1 = ad_idx - 1;    // (ad_idx - 1)
     if (sigma == 0) {
-        return std::sqrt((gamma_rel - 1) * (ad_idx - 1) * (ad_idx - 1) / (ad_idx * (2 - ad_idx) * (gamma_rel - 1) + 2));
+        return std::sqrt(gamma_m_1 * ad_idx_m_1 * ad_idx_m_1 / (-ad_idx * ad_idx_m_2 * gamma_m_1 + 2));
     } else {
-        /*double A = ad_idx * (2 - ad_idx) * (gamma_rel - 1) + 2;
-        double B = -(gamma_rel + 1) *
-                       ((2 - ad_idx) * (ad_idx * gamma_rel * gamma_rel + 1) + ad_idx * (ad_idx - 1) * gamma_rel) *
-                       sigma -
-                   (gamma_rel - 1) * (ad_idx * (2 - ad_idx) * (gamma_rel * gamma_rel - 2) + 2 * gamma_rel + 3);
-        double C = (gamma_rel + 1) * (ad_idx * (1 - ad_idx / 4) * (gamma_rel * gamma_rel - 1) + 1) * sigma * sigma +
-                   (gamma_rel * gamma_rel - 1) * (2 * gamma_rel - (2 - ad_idx) * (ad_idx * gamma_rel - 1)) * sigma +
-                   (gamma_rel + 1) * (gamma_rel - 1) * (gamma_rel - 1) * (ad_idx - 1) * (ad_idx - 1);
-        double D =
-            -(gamma_rel - 1) * (gamma_rel + 1) * (gamma_rel + 1) * (2 - ad_idx) * (2 - ad_idx) * sigma * sigma / 4;*/
-
         double gamma_sq = gamma_rel * gamma_rel;  // gamma_rel^2
-        double gamma_m_1 = gamma_rel - 1;         // (gamma_rel - 1)
         double gamma_p_1 = gamma_rel + 1;         // (gamma_rel + 1)
-        double ad_idx_m_2 = ad_idx - 2;           // (2 - ad_idx)
         double ad_idx_sq = ad_idx * ad_idx;       // ad_idx^2
-        double ad_idx_m_1 = ad_idx - 1;           // (ad_idx - 1)
 
         // Precompute common terms
         double term1 = -ad_idx * ad_idx_m_2;
@@ -247,8 +249,8 @@ Shock genForwardShock3D(Coord const& coord, Medium const& medium, Jet const& jet
 }
 
 template <typename Jet, typename Injector>
-std::pair<Shock, Shock> genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject,
-                                    double eps_e, double eps_B) {
+ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, double eps_e,
+                      double eps_B) {
     auto [phi_size, theta_size, r_size] = coord.shape();
 
     Shock f_shock(1, theta_size, r_size, eps_e, eps_B);
@@ -264,8 +266,8 @@ std::pair<Shock, Shock> genFRShocks(Coord const& coord, Medium const& medium, Je
 }
 
 template <typename Jet, typename Injector>
-std::pair<Shock, Shock> genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject,
-                                      double eps_e, double eps_B) {
+ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, double eps_e,
+                        double eps_B) {
     auto [phi_size, theta_size, r_size] = coord.shape();
 
     Shock f_shock(phi_size, theta_size, r_size, eps_e, eps_B);
@@ -349,7 +351,7 @@ void setForwardInit(ShockEqn& eqn, typename ShockEqn::State& state, double r0) {
 }
 
 template <typename ShockEqn>
-bool checkReverseShockGeneration(ShockEqn const& eqn, double r, double gamma, double t_eng, double D_jet) {
+bool reverseShockExists(ShockEqn const& eqn, double r, double gamma, double t_eng, double D_jet) {
     double n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t_eng), gamma, r, D_jet, eqn.jet_sigma);
     double n1 = eqn.medium.rho(r) / con::mp;
     return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
@@ -542,7 +544,7 @@ void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_s
     using namespace boost::numeric::odeint;
     double atol = 0, rtol = 1e-6, r0 = r[0];
     double dr = (r[1] - r[0]) / 100;
-    std::array<double, 5> state;
+    typename FShockEqn::State state;
 
     auto stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{atol, rtol};
     // auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<std::vector<double>>());
@@ -556,7 +558,7 @@ void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_s
     double t_com = state[3];
     double D_jet = state[4];
 
-    bool RS_crossing = checkReverseShockGeneration(eqn_r, r0, gamma3, t_eng, D_jet);
+    bool RS_crossing = reverseShockExists(eqn_r, r0, gamma3, t_eng, D_jet);
     bool crossed = false;
 
     if (RS_crossing) {
@@ -610,7 +612,7 @@ void solveFRShell(size_t i, size_t j, Array const& r, Shock& f_shock, Shock& r_s
                     stepper.initialize(state, r[k], dr);
                 }
             } else if (!crossed && !RS_crossing) {
-                RS_crossing = checkReverseShockGeneration(eqn_r, r0, gamma3, t_eng, D_jet);
+                RS_crossing = reverseShockExists(eqn_r, r0, gamma3, t_eng, D_jet);
                 if (RS_crossing) {
                     state = {0., 0., t_eng, t_com, D_jet};
                     stepper.initialize(state, r[k], dr);
