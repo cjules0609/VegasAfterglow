@@ -24,9 +24,7 @@ void tests() {
     // create model
     auto medium = createISM(n_ism);
 
-    Ejecta jet;
-    jet.dEdOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
-    jet.Gamma0 = math::tophat(theta_c, Gamma0);
+    auto jet = TophatJet(theta_c, E_iso, Gamma0);
     // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
 
     size_t r_num = 500;
@@ -40,7 +38,7 @@ void tests() {
 
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
-    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
     // Shock r_shock(coord, eps_e_r, eps_B_r, p);
 
     output(f_shock, data_folder + "/f_shock");

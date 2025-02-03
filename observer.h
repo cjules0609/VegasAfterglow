@@ -15,15 +15,13 @@ class LogScaleInterp {
     double z{0};
     size_t jet_3d{0};
 
-    void reset();
-    bool isfinite() const;
     double interpRadius(double log_t) const;
     double interpIntensity(double log_t) const;
     double interpDoppler(double log_t) const;
 
     template <typename... PhotonGrid>
-    void setBoundary(size_t i, size_t j, size_t k, Array const& log_r, MeshGrid3d const& t_obs,
-                     MeshGrid3d const& doppler, double nu_obs, PhotonGrid const&... photons);
+    bool trySetBoundary(size_t i, size_t j, size_t k, Array const& log_r, MeshGrid3d const& t_obs,
+                        MeshGrid3d const& doppler, double nu_obs, PhotonGrid const&... photons);
 
    private:
     double log_r_lo{0};
@@ -104,8 +102,8 @@ void Observer::observe(Dynamics const& dyn, double theta_obs, double lumi_dist, 
 }
 
 template <typename... PhotonGrid>
-void LogScaleInterp::setBoundary(size_t i, size_t j, size_t k_lo, Array const& log_r, MeshGrid3d const& t_obs,
-                                 MeshGrid3d const& doppler, double nu_obs, PhotonGrid const&... photons) {
+bool LogScaleInterp::trySetBoundary(size_t i, size_t j, size_t k_lo, Array const& log_r, MeshGrid3d const& t_obs,
+                                    MeshGrid3d const& doppler, double nu_obs, PhotonGrid const&... photons) {
     if (idx_hi != 0 && k_lo == idx_hi) {  // just move one grid, lower->higher
         log_r_lo = log_r_hi;
         log_t_lo = log_t_hi;
@@ -131,6 +129,7 @@ void LogScaleInterp::setBoundary(size_t i, size_t j, size_t k_lo, Array const& l
     log_I_hi = fastLog((photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...));
 
     idx_hi = k_lo + 1;
+    return std::isfinite(log_t_lo) && std::isfinite(log_t_hi);
 }
 
 template <typename Iter, typename... PhotonGrid>
@@ -150,18 +149,16 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
     for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
             double const solid_angle = dOmega[i][j];
-            interp.setBoundary(i, j, 0, log_r, t_obs_grid, doppler, nu_obs, photons...);
-
-            if (!interp.isfinite()) {
+            if (!interp.trySetBoundary(i, j, 0, log_r, t_obs_grid, doppler, nu_obs, photons...)) {
                 continue;
             }
 
             size_t t_idx = 0;
             // extrapolation for EAT outside the grid
             for (; t_idx < t_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
-                if (interp.isfinite()) {
-                    update_flux(t_idx, solid_angle);
-                }
+#ifdef EXTRAPOLATE
+                update_flux(t_idx, solid_angle);
+#endif
             }
 
             // interpolation for EAT inside the grid
@@ -170,17 +167,21 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, double nu_obs, co
                 double const t_obs_hi = t_obs_grid[i][j][k + 1];
 
                 if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
-                    interp.setBoundary(i, j, k, log_r, t_obs_grid, doppler, nu_obs, photons...);
+                    if (!interp.trySetBoundary(i, j, k, log_r, t_obs_grid, doppler, nu_obs, photons...)) {
+                        continue;
+                    }
                 }
 
                 for (; t_idx < t_size && t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi; t_idx++) {
                     update_flux(t_idx, solid_angle);
                 }
             }
+#ifdef EXTRAPOLATE
             // extrapolation for EAT outside the grid
             for (; t_idx < t_size; t_idx++) {
                 update_flux(t_idx, solid_angle);
             }
+#endif
         }
     }
 

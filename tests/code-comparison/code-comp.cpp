@@ -59,9 +59,10 @@ void lc_gen(std::string folder_name) {
     size_t theta_num = 128;
     size_t phi_num = 128;
 
-    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
+    // Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w);
     // solve dynamics
-    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
     auto syn_e = genSynElectrons(f_shock, p);
 
@@ -71,7 +72,7 @@ void lc_gen(std::string folder_name) {
 
     obs.observe(f_shock, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 5);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 50);
 
     namespace fs = std::filesystem;
 

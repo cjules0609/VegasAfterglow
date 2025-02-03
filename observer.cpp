@@ -7,12 +7,6 @@
 #include "physics.h"
 #include "utilities.h"
 
-void LogScaleInterp::reset() { idx_hi = 0; }
-
-bool LogScaleInterp::isfinite() const {
-    return std::isfinite(log_t_lo) && std::isfinite(log_t_hi) && std::isfinite(log_I_hi) && std::isfinite(log_I_lo);
-}
-
 double LogScaleInterp::interpRadius(double log_t) const {
     return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
 }

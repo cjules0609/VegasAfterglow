@@ -16,20 +16,27 @@ auto LiangGhirlanda2010(auto energy_func, double e_max, double gamma_max, double
     };
 }
 
-Ejecta tophatJet(double theta_c, double E_iso, double Gamma0) {
-    return Ejecta(math::tophat(theta_c, E_iso / (4 * con::pi)), math::tophat(theta_c, Gamma0));
+double LiangGhirlanda2010_(double e, double e_max, double gamma_max, double idx) {
+    double u = std::pow(e / e_max, idx) * gamma_max;
+    return std::sqrt(1 + u * u);
 }
 
-Ejecta gaussianJet(double theta_c, double E_iso, double Gamma0, double idx) {
-    Ejecta jet;
-    jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-    jet.Gamma0 = LiangGhirlanda2010(jet.dEdOmega, E_iso / (4 * con::pi), Gamma0, idx);
-    return jet;
+double TophatJet::dEdOmega(double phi, double theta, double t) const { return theta < theta_c_ ? dEdOmega_ : 0; }
+
+double TophatJet::Gamma0(double phi, double theta, double t) const { return theta < theta_c_ ? Gamma0_ : 0; }
+
+double GaussianJet::dEdOmega(double phi, double theta, double t) const {
+    return dEdOmega_ * fastExp(-theta * theta / (2 * theta_c_ * theta_c_));
 }
 
-Ejecta powerLawJet(double theta_c, double E_iso, double Gamma0, double k, double idx) {
-    Ejecta jet;
-    jet.dEdOmega = math::powerLaw(theta_c, E_iso / (4 * con::pi), k);
-    jet.Gamma0 = LiangGhirlanda2010(jet.dEdOmega, E_iso / (4 * con::pi), Gamma0, idx);
-    return jet;
+double GaussianJet::Gamma0(double phi, double theta, double t) const {
+    return LiangGhirlanda2010_(dEdOmega(phi, theta, t), dEdOmega_, Gamma0_, idx_);
+}
+
+double PowerLawJet::dEdOmega(double phi, double theta, double t) const {
+    return dEdOmega_ * fastPow(theta / theta_c_, -k_);
+}
+
+double PowerLawJet::Gamma0(double phi, double theta, double t) const {
+    return LiangGhirlanda2010_(dEdOmega(phi, theta, t), dEdOmega_, Gamma0_, idx_);
 }

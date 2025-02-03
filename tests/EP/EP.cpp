@@ -19,16 +19,11 @@ void GCN36236(double theta_c) {
     // create model
     auto medium = createISM(n_ism);
 
-    Ejecta jet;
-
-    jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+    auto jet = GaussianJet(theta_c, E_iso, Gamma0);
 
     size_t r_num = 500;
     size_t theta_num = 150;
     size_t phi_num = 50;
-
-    double R_dec = decRadius(E_iso, n_ism, Gamma0, jet.duration);
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
@@ -38,7 +33,7 @@ void GCN36236(double theta_c) {
     // Shock f_shock(coord, eps_e, eps_B, p);
 
     // solve_shocks(coord, jet, medium, f_shock);
-    Shock f_shock = genForwardShock(coord, jet, medium, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
     auto syn_e = genSynElectrons(f_shock, p);
 

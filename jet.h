@@ -4,22 +4,79 @@
 #include "macros.h"
 #include "mesh.h"
 #include "utilities.h"
-inline constexpr auto return_zero = [](double phi, double theta, double t) -> double { return 0; };
 
-inline constexpr auto return_one = [](double phi, double theta, double t) -> double { return 1; };
-
+namespace func {
+    inline constexpr auto zero = [](double phi, double theta, double t) -> double { return 0; };
+    inline constexpr auto one = [](double phi, double theta, double t) -> double { return 1; };
+}  // namespace func
 class Ejecta {
    public:
-    TernaryFunc dEdOmega{return_zero};
-    TernaryFunc Gamma0{return_one};
-    TernaryFunc dLdOmega{return_zero};
-    TernaryFunc sigma0{return_zero};
+    TernaryFunc dEdOmega{func::zero};
+    TernaryFunc Gamma0{func::one};
+    TernaryFunc dLdOmega{func::zero};
+    TernaryFunc sigma0{func::zero};
     double duration{0};
 };
 
+class TophatJet {
+   public:
+    TophatJet(double theta_c, double E_iso, double Gamma0)
+        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    double dEdOmega(double phi, double theta, double t) const;
+    double Gamma0(double phi, double theta, double t) const;
+    double sigma0(double phi, double theta, double t) const { return 0; };
+
+    double duration{0.02 * con::sec};
+
+   private:
+    double theta_c_{0};
+    double dEdOmega_{0};
+    double Gamma0_{1};
+};
+class GaussianJet {
+   public:
+    GaussianJet(double theta_c, double E_iso, double Gamma0, double idx = 1)
+        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), idx_(idx) {}
+    double dEdOmega(double phi, double theta, double t) const;
+    double Gamma0(double phi, double theta, double t) const;
+    double sigma0(double phi, double theta, double t) const { return 0; };
+
+    double duration{0.02 * con::sec};
+
+   private:
+    double theta_c_{0};
+    double dEdOmega_{0};
+    double Gamma0_{1};
+    double idx_{0};
+};
+
+class PowerLawJet {
+   public:
+    PowerLawJet(double theta_c, double E_iso, double Gamma0, double k, double idx = 1)
+        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k), idx_(idx) {}
+    double dEdOmega(double phi, double theta, double t) const;
+    double Gamma0(double phi, double theta, double t) const;
+    double sigma0(double phi, double theta, double t) const { return 0; };
+
+    double duration{0.02 * con::sec};
+
+   private:
+    double theta_c_{0};
+    double dEdOmega_{0};
+    double Gamma0_{1};
+    double k_{0};
+    double idx_{0};
+};
+
 namespace inject {
-    inline const auto none = Ejecta();
-}
+    inline struct {
+        inline double dEdOmega(double phi, double theta, double t) const { return 0; };
+        inline double Gamma0(double phi, double theta, double t) const { return 1; };
+        inline double dLdOmega(double phi, double theta, double t) const { return 0; };
+        inline double sigma0(double phi, double theta, double t) const { return 0; };
+    } none;
+}  // namespace inject
+
 namespace math {
     inline auto combine(auto f_spatial, auto f_temporal) {
         return [=](double phi, double theta, double t) -> double { return f_spatial(phi, theta) * f_temporal(t); };
@@ -94,8 +151,4 @@ namespace math {
 }  // namespace math
 
 auto LiangGhirlanda2010(auto energy_func, double e_max, double gamma_max, double idx);
-
-Ejecta tophatJet(double theta_c, double E_iso, double Gamma0);
-Ejecta gaussianJet(double theta_c, double E_iso, double Gamma0, double idx = 1);
-Ejecta powerLawJet(double theta_c, double E_iso, double Gamma0, double k, double idx = 1);
 #endif
