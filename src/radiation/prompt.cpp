@@ -11,4 +11,4 @@ PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, si
     return PromptPhotonsGrid(boost::extents[phi_size][theta_size][r_size]);
 }
 
-double PromptPhotons::I_nu(double nu) const { return E_nu_peak * std::pow(nu / nu_0, -alpha); }
+Real PromptPhotons::I_nu(Real nu) const { return E_nu_peak * std::pow(nu / nu_0, -alpha); }

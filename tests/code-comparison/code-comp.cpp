@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "../../afterglow.h"
+#include "afterglow.h"
 #include "json.hpp"
 
 void lc_gen(std::string folder_name) {
@@ -11,37 +11,37 @@ void lc_gen(std::string folder_name) {
     std::ifstream f(folder_name + "/problem-setups.json");
     json data = json::parse(f);
 
-    double E_iso = data["E_iso"];
+    Real E_iso = data["E_iso"];
     E_iso *= con::erg;
 
-    double lumi_dist = data["luminosity distance"];
+    Real lumi_dist = data["luminosity distance"];
     lumi_dist *= con::cm;
-    double z = data["z"];
+    Real z = data["z"];
     std::string jet_type = data["jet type"];
-    double theta_c = data["theta_core"];
-    double theta_w = data["theta_wing"];
-    double Gamma0 = data["Gamma0"];
+    Real theta_c = data["theta_core"];
+    Real theta_w = data["theta_wing"];
+    Real Gamma0 = data["Gamma0"];
 
     bool ic_cool = data["inverse compton cooling"];
 
-    double n_ism = data["n_ism"];
+    Real n_ism = data["n_ism"];
     n_ism /= (con::cm * con::cm * con::cm);
 
-    double eps_e = data["epsilon_e"];
-    double eps_B = data["epsilon_B"];
-    double p = data["p"];
+    Real eps_e = data["epsilon_e"];
+    Real eps_B = data["epsilon_B"];
+    Real p = data["p"];
 
-    double theta_view = data["theta_view"];
+    Real theta_view = data["theta_view"];
 
-    std::vector<double> t_obs = data["t_obs"];
+    std::vector<Real> t_obs = data["t_obs"];
 
-    std::vector<double> band_pass_ = data["band pass (kev)"];
+    std::vector<Real> band_pass_ = data["band pass (kev)"];
 
     Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
     // create model
     auto medium = createISM(n_ism);
 
-    double sigma = 0;
+    Real sigma = 0;
 
     Ejecta jet;
 
@@ -61,8 +61,11 @@ void lc_gen(std::string folder_name) {
 
     // Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
     Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w);
+    output(coord, "coord");
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+
+    output(f_shock, "shock");
 
     auto syn_e = genSynElectrons(f_shock, p);
 

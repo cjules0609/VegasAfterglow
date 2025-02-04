@@ -19,7 +19,7 @@
  * DESCRIPTION: Interpolates the radius at a given logarithmic observation time (log_t) using linear interpolation
  *              in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-double LogScaleInterp::interpRadius(double log_t) const {
+Real LogScaleInterp::interpRadius(Real log_t) const {
     // Linearly interpolate between the lower and upper log radius boundaries, then exponentiate.
     return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
 }
@@ -29,7 +29,7 @@ double LogScaleInterp::interpRadius(double log_t) const {
  * DESCRIPTION: Interpolates the intensity at a given logarithmic observation time (log_t) using linear interpolation
  *              in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-double LogScaleInterp::interpIntensity(double log_t) const {
+Real LogScaleInterp::interpIntensity(Real log_t) const {
     // Linearly interpolate between the lower and upper log intensity boundaries, then exponentiate.
     return fastExp(log_I_lo + (log_I_hi - log_I_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
 }
@@ -39,7 +39,7 @@ double LogScaleInterp::interpIntensity(double log_t) const {
  * DESCRIPTION: Interpolates the Doppler factor at a given logarithmic observation time (log_t) using linear
  *              interpolation in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-double LogScaleInterp::interpDoppler(double log_t) const {
+Real LogScaleInterp::interpDoppler(Real log_t) const {
     // Linearly interpolate between the lower and upper log Doppler boundaries, then exponentiate.
     return fastExp(log_d_lo + (log_d_hi - log_d_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
 }
@@ -58,7 +58,6 @@ void Observer::calcSolidAngle() {
         }
     }
 }
-
 /********************************************************************************************************************
  * CONSTRUCTOR: Observer::Observer
  * DESCRIPTION: Constructs an Observer object with the given coordinate grid.
@@ -67,11 +66,25 @@ void Observer::calcSolidAngle() {
  *calculated.
  ********************************************************************************************************************/
 Observer::Observer(Coord const& coord)
-    : coord(coord),
-      doppler(create3DGrid(coord.phi.size(), coord.theta.size(), coord.r.size())),
-      t_obs_grid(create3DGrid(coord.phi.size(), coord.theta.size(), coord.r.size())),
-      dOmega(createGrid(coord.phi.size(), coord.theta.size())),
-      log_r(zeros(coord.r.size())) {
+    : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.r.size()]),
+      doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.r.size()]),
+      theta_obs(0),
+      lumi_dist(1),
+      z(0),
+      dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
+      log_r(zeros(coord.r.size())),
+      interp(),
+      coord(coord),
+      eff_phi_size(1) {
+    // std::memset(t_obs_grid.data(), 0, t_obs_grid.num_elements() * sizeof(Real));
+    // std::memset(doppler.data(), 0, doppler.num_elements() * sizeof(Real));
+    // std::memset(dOmega.data(), 0, dOmega.num_elements() * sizeof(Real));
+    std::fill(t_obs_grid.data(), t_obs_grid.data() + t_obs_grid.num_elements(), 0);
+    std::fill(doppler.data(), doppler.data() + doppler.num_elements(), 0);
+    std::fill(dOmega.data(), dOmega.data() + dOmega.num_elements(), 0);
+
+    // Initialize the effective phi size to the phi size of the coordinate grid.
+
     // Compute logarithm (using fastLog) for each radius value in the coordinate grid.
     for (size_t i = 0; i < coord.r.size(); ++i) {
         log_r[i] = fastLog(coord.r[i]);
@@ -89,23 +102,23 @@ Observer::Observer(Coord const& coord)
  *              redshift into account.
  ********************************************************************************************************************/
 void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& t_eng) {
-    double cos_obs = std::cos(theta_obs);
-    double sin_obs = std::sin(theta_obs);
+    Real cos_obs = std::cos(theta_obs);
+    Real sin_obs = std::sin(theta_obs);
     for (size_t i = 0; i < eff_phi_size; ++i) {
-        double cos_phi = std::cos(coord.phi[i]);
+        Real cos_phi = std::cos(coord.phi[i]);
         for (size_t j = 0; j < coord.theta.size(); ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
-            double cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
+            Real cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
 
             for (size_t k = 0; k < coord.r.size(); ++k) {
-                double gamma_ = Gamma[i * interp.jet_3d][j][k];  // Get Gamma at the grid point.
-                double t_eng_ = t_eng[i * interp.jet_3d][j][k];  // Get engine time at the grid point.
-                double beta = gammaTobeta(gamma_);               // Convert Gamma to beta.
+                Real gamma_ = Gamma[i * interp.jet_3d][j][k];  // Get Gamma at the grid point.
+                Real t_eng_ = t_eng[i * interp.jet_3d][j][k];  // Get engine time at the grid point.
+                Real beta = gammaTobeta(gamma_);               // Convert Gamma to beta.
                 // Compute the Doppler factor: D = 1 / [Gamma * (1 - beta * cos_v)]
                 doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_v));
                 if (gamma_ == 1) {
                     // For non-relativistic case, set observed time to infinity.
-                    t_obs_grid[i][j][k] = std::numeric_limits<double>::infinity();
+                    t_obs_grid[i][j][k] = std::numeric_limits<Real>::infinity();
                 } else {
                     // Compute the observed time: t_obs = [t_eng + (1 - cos_v) * r / c] * (1 + z)
                     t_obs_grid[i][j][k] = (t_eng_ + (1 - cos_v) * coord.r[k] / con::c) * (1 + z);

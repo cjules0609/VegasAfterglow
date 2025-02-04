@@ -27,21 +27,21 @@ ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t r_siz
  * INLINE FUNCTION: order
  * DESCRIPTION: Returns true if the three arguments are in strictly increasing order.
  ********************************************************************************************************************/
-inline bool order(double a, double b, double c) { return a < b && b < c; }
+inline bool order(Real a, Real b, Real c) { return a < b && b < c; }
 
 /********************************************************************************************************************
  * METHOD: ICPhoton::I_nu
  * DESCRIPTION: Computes the photon intensity at frequency nu using logarithmic-logarithmic interpolation
  *              (specifically, loglogInterpEqSpaced) on the IC photon spectrum data.
  ********************************************************************************************************************/
-double ICPhoton::I_nu(double nu) const { return loglogInterpEqSpaced(nu, this->nu_IC_, this->j_nu_, true, true); }
+Real ICPhoton::I_nu(Real nu) const { return loglogInterpEqSpaced(nu, this->nu_IC_, this->j_nu_, true, true); }
 
 /********************************************************************************************************************
  * INLINE FUNCTION: eta_rad
  * DESCRIPTION: Computes the radiative efficiency parameter (ηₑ) given minimum electron Lorentz factors.
  *              If gamma_c is less than gamma_m, it returns 1; otherwise, it returns (gamma_c/gamma_m)^(2-p).
  ********************************************************************************************************************/
-inline double eta_rad(double gamma_m, double gamma_c, double p) {
+inline Real eta_rad(Real gamma_m, Real gamma_c, Real p) {
     return gamma_c < gamma_m ? 1 : std::pow(gamma_c / gamma_m, (2 - p));
 }
 
@@ -52,14 +52,14 @@ inline double eta_rad(double gamma_m, double gamma_c, double p) {
  *                  Y0 = (sqrt(1+4b) - 1)/2,
  *              where b = (ηₑ * eps_e / eps_B). The electron cooling parameters are updated during each iteration.
  ********************************************************************************************************************/
-double effectiveYThomson(double B, double t_com, double eps_e, double eps_B, SynElectrons const& e) {
-    double eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
-    double b = eta_e * eps_e / eps_B;
-    double Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
-    double Y1 = 2 * Y0;
+Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons const& e) {
+    Real eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
+    Real b = eta_e * eps_e / eps_B;
+    Real Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
+    Real Y1 = 2 * Y0;
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
         Y1 = Y0;
-        double gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
+        Real gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
         b = eta_e * eps_e / eps_B;
         Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
@@ -105,12 +105,10 @@ void eCoolingThomson(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& s
     for (size_t i = 0; i < phi_size; i++) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
-                double Y_T =
+                Real Y_T =
                     effectiveYThomson(shock.B[i][j][k], shock.t_com[i][j][k], shock.eps_e, shock.eps_B, e[i][j][k]);
 
-                // Clear previous inverse Compton Y parameters and store the new value.
-                e[i][j][k].Ys.clear();
-                e[i][j][k].Ys.emplace_back(Y_T);
+                e[i][j][k].Ys = InverseComptonY(Y_T);
             }
         }
     }
@@ -130,11 +128,12 @@ void eCoolingKleinNishina(SynElectronGrid& e, SynPhotonGrid const& ph, Shock con
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
-                double Y_T =
+                Real Y_T =
                     effectiveYThomson(shock.B[i][j][k], shock.t_com[i][j][k], shock.eps_e, shock.eps_B, e[i][j][k]);
                 // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
-                e[i][j][k].Ys.clear();
-                e[i][j][k].Ys.emplace_back(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
+                // e[i][j][k].Ys.clear();
+                // e[i][j][k].Ys.emplace_back(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
+                e[i][j][k].Ys = InverseComptonY(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
             }
         }
     }

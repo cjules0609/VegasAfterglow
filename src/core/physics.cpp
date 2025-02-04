@@ -11,6 +11,7 @@
 
 #include "shock.h"
 #include "utilities.h"
+
 /********************************************************************************************************************
  * FUNCTION: zToLuminosityDistance
  * DESCRIPTION: Computes the luminosity distance corresponding to a given redshift z.
@@ -20,14 +21,14 @@
  *              and the final luminosity distance is given by:
  *                  D_L = (1+z) * L * c / H0
  ********************************************************************************************************************/
-double zToLuminosityDistance(double z) {
+Real zToLuminosityDistance(Real z) {
     using namespace boost::numeric::odeint;
-    double atol = 0;
-    double rtol = 1e-6;
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
+    Real atol = 0;
+    Real rtol = 1e-6;
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<Real>());
 
     // Define the differential equation: dL/dz = 1 / sqrt(Ω_m (1+z)^3 + Ω_Λ)
-    auto eqn = [&](double const& y, double& dydz, double z0) {
+    auto eqn = [&](Real const& y, Real& dydz, Real z0) {
         dydz = 1 / std::sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
     };
     // Initialize the stepper with initial condition L(0)=0 and step size 1e-6
@@ -37,7 +38,7 @@ double zToLuminosityDistance(double z) {
     for (; stepper.current_time() <= z;) {
         stepper.do_step(eqn);
     }
-    double L = 0;
+    Real L = 0;
     // Calculate the state at z
     stepper.calc_state(z, L);
     // Return the luminosity distance using the relation D_L = (1+z) * L * c / H0
@@ -51,22 +52,21 @@ double zToLuminosityDistance(double z) {
  *              solving the same differential equation as zToLuminosityDistance.
  *              The integration continues until (1+z) * L_current * c / H0 exceeds L, at which point z is returned.
  ********************************************************************************************************************/
-double luminosityDistanceToz(double L) {
+Real luminosityDistanceToz(Real L) {
     using namespace boost::numeric::odeint;
-    double atol = 0;
-    double rtol = 1e-6;
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<double>());
+    Real atol = 0;
+    Real rtol = 1e-6;
+    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<Real>());
 
     // Define the same differential equation: dL/dz = 1 / sqrt(Ω_m (1+z)^3 + Ω_Λ)
-    auto eqn = [&](double const& y, double& dydz, double z0) {
+    auto eqn = [&](Real const& y, Real& dydz, Real z0) {
         dydz = 1 / std::sqrt(con::Omega_m * (1 + z0) * (1 + z0) * (1 + z0) + con::Omega_L);
     };
     stepper.initialize(0, 0, 1e-6);
-    double L_current = 0;
     // Integrate indefinitely until the condition is met
     for (;;) {
-        double z = stepper.current_time();
-        double L_current = stepper.current_state();
+        Real z = stepper.current_time();
+        Real L_current = stepper.current_state();
         // If the computed luminosity distance exceeds the given L, return the current redshift z
         if ((1 + z) * L_current * con::c / con::H0 >= L) {
             return z;
@@ -82,7 +82,7 @@ double luminosityDistanceToz(double L) {
  *              and engine duration, the deceleration radius is the maximum of the thin shell and thick shell
  *              deceleration radii.
  ********************************************************************************************************************/
-double decRadius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
+Real decRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
     return std::max(thinShellDecRadius(E_iso, n_ism, Gamma0), thickShellDecRadius(E_iso, n_ism, Gamma0, engine_dura));
 }
 
@@ -91,7 +91,7 @@ double decRadius(double E_iso, double n_ism, double Gamma0, double engine_dura) 
  * DESCRIPTION: Computes the deceleration radius for the thin shell case using the formula:
  *                  R_dec = [3E_iso / (4π n_ism mp c^2 Gamma0^2)]^(1/3)
  ********************************************************************************************************************/
-double thinShellDecRadius(double E_iso, double n_ism, double Gamma0) {
+Real thinShellDecRadius(Real E_iso, Real n_ism, Real Gamma0) {
     return std::pow(3 * E_iso / (4 * con::pi * n_ism * con::mp * con::c2 * Gamma0 * Gamma0), 1.0 / 3);
 }
 
@@ -100,7 +100,7 @@ double thinShellDecRadius(double E_iso, double n_ism, double Gamma0) {
  * DESCRIPTION: Computes the deceleration radius for the thick shell case using the formula:
  *                  R_dec = [3 E_iso engine_dura c / (4π n_ism mp c^2)]^(1/4)
  ********************************************************************************************************************/
-double thickShellDecRadius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
+Real thickShellDecRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
     return std::pow(3 * E_iso * engine_dura * con::c / (4 * con::pi * n_ism * con::mp * con::c2), 0.25);
 }
 
@@ -109,7 +109,7 @@ double thickShellDecRadius(double E_iso, double n_ism, double Gamma0, double eng
  * DESCRIPTION: Computes the radius at which shell spreading becomes significant.
  *              The formula is: R_spread = Gamma0^2 * c * engine_dura.
  ********************************************************************************************************************/
-double shellSpreadingRadius(double Gamma0, double engine_dura) { return Gamma0 * Gamma0 * con::c * engine_dura; }
+Real shellSpreadingRadius(Real Gamma0, Real engine_dura) { return Gamma0 * Gamma0 * con::c * engine_dura; }
 
 /********************************************************************************************************************
  * FUNCTION: RSTransitionRadius
@@ -117,6 +117,6 @@ double shellSpreadingRadius(double Gamma0, double engine_dura) { return Gamma0 *
  *              engine duration, and initial Lorentz factor.
  *              The formula is: R_RS = (SedovLength^(1.5)) / (sqrt(c * engine_dura) * Gamma0^2)
  ********************************************************************************************************************/
-double RSTransitionRadius(double E_iso, double n_ism, double Gamma0, double engine_dura) {
+Real RSTransitionRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
     return std::pow(SedovLength(E_iso, n_ism), 1.5) / std::sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
 }

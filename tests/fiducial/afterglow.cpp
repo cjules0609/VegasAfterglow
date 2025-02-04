@@ -1,4 +1,4 @@
-#include "../../afterglow.h"
+#include "afterglow.h"
 
 #include <boost/numeric/odeint.hpp>
 #include <filesystem>
@@ -13,13 +13,13 @@ void tests() {
         std::cout << "Failed to create directory: " << data_folder << std::endl;
     }
 
-    double n_ism = 1e-3 / con::cm3;
-    double eps_e = 0.15;
-    double eps_B = 0.02;
-    double p = 2.1;
-    double E_iso = 1e53 * con::erg;
-    double Gamma0 = 300;
-    double theta_c = 0.1;
+    Real n_ism = 1e-3 / con::cm3;
+    Real eps_e = 0.15;
+    Real eps_B = 0.02;
+    Real p = 2.1;
+    Real E_iso = 1e53 * con::erg;
+    Real Gamma0 = 300;
+    Real theta_c = 0.1;
 
     // create model
     auto medium = createISM(n_ism);
@@ -52,10 +52,10 @@ void tests() {
     size_t j = 0;
     size_t k = 200;
     size_t resol = 60;
-    double gamma_min = 6e3;
-    double gamma_max = 4e6;
-    double nu_min = 1e12 * con::Hz;
-    double nu_max = 1e20 * con::Hz;
+    Real gamma_min = 6e3;
+    Real gamma_max = 4e6;
+    Real nu_min = 1e12 * con::Hz;
+    Real nu_max = 1e20 * con::Hz;
 
     /*auto syn_e_sptr = co_moving_e_spectrum(resol, gamma_min, gamma_max, syn_e[j][k]);
 

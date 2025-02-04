@@ -72,7 +72,9 @@ void output(Coord const& coord, std::string const& filename) {
  * DESCRIPTION: Writes multiple 3D grid data arrays to files. For each name provided in 'names', a file is created
  *              with that name appended to the base filename. The data are normalized by the corresponding unit.
  ********************************************************************************************************************/
-void writeGrid(std::string filename, auto const& names, auto const& data, auto const& units) {
+
+template <typename T, typename U, typename V>
+void writeGrid(std::string filename, T const& names, U const& data, V const& units) {
     for (size_t l = 0; l < names.size(); ++l) {
         std::ofstream file(filename + "_" + names[l] + ".txt");
         if (!file) {
@@ -103,7 +105,7 @@ void output(Shock const& shock, std::string const& filename) {
     std::array<std::string, 5> strs = {"Gamma", "B", "t_com", "t_eng", "Sigma"};
     std::array<MeshGrid3d const*, 5> data = {&(shock.Gamma_rel), &(shock.B), &(shock.t_com), &(shock.t_eng),
                                              &(shock.column_num_den)};
-    std::array<double, 5> units = {1, 1, con::sec, con::sec, 1 / con::cm2};
+    std::array<Real, 5> units = {1, 1, con::sec, con::sec, 1 / con::cm2};
 
     writeGrid(filename, strs, data, units);
 }
@@ -195,7 +197,7 @@ void output(Array const& array, std::string const& filename) {
  * FUNCTION: output (MeshGrid3d version with unit)
  * DESCRIPTION: Outputs a 3D MeshGrid to a file with each value normalized by the given unit.
  ********************************************************************************************************************/
-void output(MeshGrid3d const& array, std::string const& filename, double unit) {
+void output(MeshGrid3d const& array, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -218,7 +220,7 @@ void output(MeshGrid3d const& array, std::string const& filename, double unit) {
  * FUNCTION: output (MeshGrid version with unit)
  * DESCRIPTION: Outputs a 2D MeshGrid to a file with each value normalized by the given unit.
  ********************************************************************************************************************/
-void output(MeshGrid const& grid, std::string const& filename, double unit) {
+void output(MeshGrid const& grid, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
@@ -239,7 +241,7 @@ void output(MeshGrid const& grid, std::string const& filename, double unit) {
  * FUNCTION: output (Array version with unit)
  * DESCRIPTION: Outputs a 1D Array to a file with each value normalized by the given unit.
  ********************************************************************************************************************/
-void output(Array const& array, std::string const& filename, double unit) {
+void output(Array const& array, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
