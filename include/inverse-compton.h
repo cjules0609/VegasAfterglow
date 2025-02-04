@@ -109,7 +109,7 @@ struct ICPhoton {
         Real nu0_max = ph.nu_M * 10;
         Real nu0_min = nu_ph_min / 1e5;
 
-        Real gamma_min = e.gamma_N_peak;
+        Real gamma_min = std::min(std::min(e.gamma_m, e.gamma_c), e.gamma_a);
         Real gamma_max = e.gamma_M * 10;
 
         // Construct an integration grid in nu0 and gamma.

@@ -311,21 +311,32 @@ void SynPhotons::updateConstant() {
     // Update constants based on spectral parameters
     Real p = e->p;
     if (e->regime == 1) {
-        a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
-        c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
+        // a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
+        // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
+        C1_ = std::cbrt(nu_a / nu_m);
+        C2_ = std::sqrt(nu_c / nu_m);
     } else if (e->regime == 2) {
-        m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
-        a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
-        c_m_1_2 = std::sqrt(nu_c / nu_m);
+        // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
+        // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
+        // c_m_1_2 = std::sqrt(nu_c / nu_m);
+        C1_ = fastPow(nu_m / nu_a, (p + 4) / 2);
+        C2_ = fastPow(nu_a / nu_m, (-p + 1) / 2);
+        C3_ = std::sqrt(nu_c / nu_m);
     } else if (e->regime == 3) {
-        a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
-        c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
+        // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
+        // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
+        C1_ = std::cbrt(nu_a / nu_c);
+        C2_ = std::sqrt(nu_c / nu_m);
     } else if (e->regime == 4) {
-        a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
-        R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
+        // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
+        // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
+        C1_ = std::sqrt(nu_a / nu_m);
+        C2_ = std::sqrt(nu_c / nu_a) / 3;
     } else if (e->regime == 5 || e->regime == 6) {
-        R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
-        R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
+        // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
+        // R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
+        C1_ = std::sqrt(nu_c / nu_a) / 3;
+        C2_ = C1_ * fastPow(nu_m / nu_a, (p - 1) / 2);
     }
     // R5 = (p - 1) * R6;  // R5 scales R6 (commented out)
 }
@@ -340,7 +351,7 @@ Real SynPhotons::spectrum(Real nu) const {
     switch (e->regime) {
         case 1:
             if (nu <= nu_a) {
-                return a_m_1_3 * (nu / nu_a) * (nu / nu_a);
+                return C1_ * (nu / nu_a) * (nu / nu_a);
             }
             if (nu <= nu_m) {
                 return std::cbrt(nu / nu_m);
@@ -348,25 +359,25 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_c) {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
-            return c_m_1_2 * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 2:
             if (nu <= nu_m) {
-                return m_a_pa4_2 * (nu / nu_m) * (nu / nu_m);
+                return C1_ * (nu / nu_m) * (nu / nu_m);
             }
             if (nu <= nu_a) {
-                return a_m_mpa1_2 * pow52(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
+                return C2_ * pow52(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
             }
             if (nu <= nu_c) {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
-            return c_m_1_2 * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C3_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 3:
             if (nu <= nu_a) {
-                return a_c_1_3 * (nu / nu_a) * (nu / nu_a);
+                return C1_ * (nu / nu_a) * (nu / nu_a);
             }
             if (nu <= nu_c) {
                 return std::cbrt(nu / nu_c);
@@ -374,7 +385,7 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_m) {
                 return std::sqrt(nu_c / nu);
             }
-            return c_m_1_2 * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 4:
@@ -382,23 +393,23 @@ Real SynPhotons::spectrum(Real nu) const {
                 return (nu / nu_a) * (nu / nu_a);
             }
             if (nu <= nu_m) {
-                return R4 * std::sqrt(nu_a / nu);
+                return C2_ * std::sqrt(nu_a / nu);
             }
-            return R4 * a_m_1_2 * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * C1_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return (p - 1) * R6 * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
+            return (p - 1) * C2_ * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return R6 * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
 
             break;
 
@@ -515,15 +526,15 @@ Real syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gam
 
     Real kT = (gamma_peak - 1) * (con::me * con::c2) * (ad_idx - 1);
     // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
-    Real nu_a = std::pow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 3. / 5);
+    Real nu_a = fastPow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
 
     // nu_peak is not real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(ad_idx-1), I_syn = I_peak;
     // strong absorption
     if (nu_a > nu_peak) {
-        nu_a =
-            pow(I_syn_peak / (2 * con::me * (ad_idx - 1) * sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)),
-                2.0 / 5);  // works only for gamma_a >> 1
-        Real gamma_a = syn_gamma(nu_a, B);
+        nu_a = fastPow(
+            I_syn_peak / (2 * con::me * (ad_idx - 1) * sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)),
+            0.4);  // works only for gamma_a >> 1
+        /* Real gamma_a = syn_gamma(nu_a, B);
         if (gamma_a > 10) {
             return gamma_a;
         } else {
@@ -532,11 +543,11 @@ Real syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gam
             Real C0 = std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B);
             Real C1 = I_syn_peak / (2 * con::me * (ad_idx - 1));
             nu_a = rootBisection([=](Real x) -> Real { return C0 * x * x * x * x * x - x * x * x * x - C1; },
-                                 std::sqrt(nu_min), std::sqrt(nu_max));
+                                 std::sqrt(nu_min), std::sqrt(nu_max), 1e-3);
             nu_a *= nu_a;
-        }
+        }*/
     }
-    return syn_gamma(nu_a, B);
+    return syn_gamma(nu_a, B) + 1;
 }
 
 /********************************************************************************************************************
@@ -582,7 +593,6 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
                 electron.gamma_c = syn_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
                 electron.gamma_a = syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
                 electron.regime = getRegime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
-                electron.gamma_N_peak = syn_gamma_N_peak(electron.gamma_a, electron.gamma_m, electron.gamma_c);
                 electron.Y_c = InverseComptonY::Y_tilt_gamma(Ys, electron.gamma_c, p);
             }
         }
@@ -616,7 +626,7 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
                 if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
-                    f = std::min(std::pow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
+                    f = std::min(fastPow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
                     e.gamma_m = gamma_syn_limit;
                 }
                 e.column_num_den = Sigma * f;
@@ -624,7 +634,6 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                 e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
                 e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
                 e.regime = getRegime(e.gamma_a, e.gamma_c, e.gamma_m);
-                e.gamma_N_peak = syn_gamma_N_peak(e.gamma_a, e.gamma_m, e.gamma_c);
                 e.p = p;
             }
         }

@@ -37,7 +37,7 @@ Real loglogInterpEqSpaced(Real x0, Array const& x, Array const& y, bool lo_extra
 template <typename Fun>
 auto rootBisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
     using Scalar = decltype(f(0));
-    for (; std::fabs((high - low)) > std::fabs(high) * eps;) {
+    for (; (high - low) > std::abs(high) * eps;) {
         Scalar mid = 0.5 * (high + low);
         if (f(mid) * f(high) > 0)
             high = mid;

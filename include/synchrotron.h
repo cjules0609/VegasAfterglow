@@ -59,7 +59,6 @@ struct SynElectrons {
     Real gamma_M{0};         // Maximum electron Lorentz factor
     Real p{2.3};             // Power-law index for the electron energy distribution
     Real column_num_den{0};  // Normalized column number density
-    Real gamma_N_peak{0};    // Lorentz factor at which the column density peaks
     Real Y_c{0};             // Compton Y parameter for electrons
     size_t regime{0};        // Regime indicator
     InverseComptonY Ys;      // InverseComptonY parameters
@@ -90,14 +89,17 @@ struct SynPhotons {
     void updateConstant();
 
    private:
-    Real a_m_1_3{0};     // (nu_a / nu_m)^(1/3)
+    /*Real a_m_1_3{0};     // (nu_a / nu_m)^(1/3)
     Real c_m_1_2{0};     // (nu_c / nu_m)^(1/2)
     Real m_a_pa4_2{0};   // (nu_m / nu_a)^((p+4)/2)
     Real a_m_mpa1_2{0};  // (nu_a / nu_m)^((-p+1)/2)
     Real a_c_1_3{0};     // (nu_a / nu_c)^(1/3)
     Real a_m_1_2{0};     // (nu_a / nu_m)^(1/2)
     Real R4{0};          // R coefficient for case 4 (Bing Zhang's Book, page 199)
-    Real R6{0};          // R coefficient for case 6 (Bing Zhang's Book, page 200)
+    Real R6{0};          // R coefficient for case 6 (Bing Zhang's Book, page 200)*/
+    Real C1_{0};
+    Real C2_{0};
+    Real C3_{0};
 
     // Computes the photon spectrum at a given frequency nu
     inline Real spectrum(Real nu) const;
