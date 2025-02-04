@@ -11,6 +11,23 @@
 
 #include "macros.h"
 
+/********************************************************************************************************************
+ * CONSTRUCTOR: Medium::Medium(double k, double n_c, double r_c)
+ * DESCRIPTION: Initializes a Medium object with a specified density profile index (k), a characteristic number
+ *              density (n_c), and a characteristic radius (r_c).
+ ********************************************************************************************************************/
 Medium::Medium(double k, double n_c, double r_c) : k(k), n_c(n_c), r_c(r_c) {};
+
+/********************************************************************************************************************
+ * CONSTRUCTOR: Medium::Medium(double n_c)
+ * DESCRIPTION: Initializes a Medium object with constant density (k = 0). The characteristic density is set
+ *              to n_c, and the characteristic radius is set to con::cm (a constant representing 1 cm).
+ ********************************************************************************************************************/
 Medium::Medium(double n_c) : k(0), n_c(n_c), r_c(con::cm) {};
+
+/********************************************************************************************************************
+ * FUNCTION: createISM
+ * DESCRIPTION: Factory function that creates a Medium object representing the interstellar medium (ISM)
+ *              using the provided number density (n_ism). It uses the constructor for constant density.
+ ********************************************************************************************************************/
 Medium createISM(double n_ism) { return Medium(n_ism); }

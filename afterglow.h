@@ -25,6 +25,67 @@
 #include "utilities.h"
 
 /*
+class VegasAfterglow {
+   public:
+    // Constructor: accepts the medium, jet, energy fractions, observation parameters, and observation times.
+    VegasAfterglow(Coord const& coord, Medium const& medium, TophatJet const& jet, double eps_e, double eps_B,
+                   double theta_obs, double lumi_dist, double z, Array const& t_obs)
+        : medium_(medium),
+          jet_(jet),
+          eps_e_(eps_e),
+          eps_B_(eps_B),
+          theta_obs_(theta_obs),
+          lumi_dist_(lumi_dist),
+          z_(z),
+          t_obs_(t_obs),
+          coord_(coord),
+          observer_(Observer(coord_)) {}
+
+    VegasAfterglow() = delete;
+
+    // Runs the simulation: generates shocks, electron and photon grids, applies electron cooling, and updates the
+    // observer.
+    void run() {
+        // Generate the forward shock using a 3D interface.
+        shock_ = genForwardShock3D(coord_, medium_, jet_, inject::none, eps_e_, eps_B_);
+        // Generate synchrotron electron grid; assume xi = 1 for now and that jet_ provides parameter p.
+        electrons_ = genSynElectrons(shock_, jet_.p, 1);
+        // Generate synchrotron photon grid.
+        photons_ = genSynPhotons(shock_, electrons_);
+        // Apply electron cooling in the Thomson regime (could also use eCoolingKleinNishina).
+        eCoolingThomson(electrons_, photons_, shock_);
+        // Update the observer with the current shock parameters.
+        observer_.observe(shock_, theta_obs_, lumi_dist_, z_);
+    }
+
+    // Outputs simulation results to files.
+    void outputResults(std::string const& base_filename) {
+        // Output the shock and coordinate grid using your existing output functions.
+        output(shock_, base_filename + "_shock");
+        output(coord_, base_filename + "_coord");
+        // Example: compute and output specific flux for a chosen observed frequency (nu_obs).
+        double nu_obs = 1e9;  // Example frequency [Hz]
+        Array flux = observer_.specificFlux(t_obs_, nu_obs, photons_);
+        // Use the unified output interface (for 1D arrays) to write the flux.
+        // unifiedOutput(flux, base_filename + "_flux", 1);
+    }
+
+   private:
+    Medium medium_;
+    TophatJet jet_;
+    double eps_e_;
+    double eps_B_;
+    double theta_obs_;
+    double lumi_dist_;
+    double z_;
+    Array t_obs_;
+    Coord coord_;
+    Shock shock_;
+    SynElectronGrid electrons_;
+    SynPhotonGrid photons_;
+    Observer observer_;  // Observer now constructed with the coordinate grid.
+};*/
+/*
 template <typename... Photons>
 MeshGrid co_moving_spectrum(size_t spectrum_resol, double nu_min, double nu_max, Photons const&... ph) {
     Array nu_bin = logspace(nu_min, nu_max, spectrum_resol + 1);

@@ -12,7 +12,10 @@
 #include <numeric>
 
 #include "macros.h"
-
+/********************************************************************************************************************
+ * FUNCTION: Point Interpolation Utility Functions
+ * DESCRIPTION: Provides basic point-wise interpolation functions used by the higher-level interpolation routines.
+ ********************************************************************************************************************/
 double pointInterp(double x0, double x1, double y0, double y1, double xi) {
     if (x0 == x1) return y0;
     double slope = (y1 - y0) / (x1 - x0);
@@ -30,6 +33,10 @@ double pointLoglogInterp(double x0, double x1, double y0, double y1, double xi) 
     return std::exp(log_y0 + slope * (std::log(xi) - log_x0));
 }
 
+/********************************************************************************************************************
+ * FUNCTION: Linear Interpolation Functions
+ * DESCRIPTION: Implements linear interpolation (with and without the assumption of equally spaced x values).
+ ********************************************************************************************************************/
 double interp(double xi, Array const& x, Array const& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
         std::cout << "incorrect array size for interpolation!\n";
@@ -73,6 +80,11 @@ double interpEqSpaced(double xi, Array const& x, Array const& y, bool lo_extrap,
     }
 }
 
+/********************************************************************************************************************
+ * FUNCTION: Log-Log Interpolation Functions
+ * DESCRIPTION: Implements log–log interpolation (with and without the assumption of equally spaced x values in log
+ *space).
+ ********************************************************************************************************************/
 double loglogInterp(double xi, const Array& x, const Array& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
         std::cout << "incorrect array size for interpolation!\n";

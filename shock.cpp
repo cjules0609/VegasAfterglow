@@ -15,33 +15,59 @@
 #include "physics.h"
 #include "utilities.h"
 
+/********************************************************************************************************************
+ * FUNCTION: soundSpeed
+ * DESCRIPTION: Computes the sound speed given the pressure, adiabatic index (ad_idx), and rest mass density (rho_rest).
+ *              The formula takes into account both the rest mass energy density (rho_rest * c^2) and the pressure,
+ *              scaled by the adiabatic index.
+ ********************************************************************************************************************/
 double soundSpeed(double pressure, double ad_idx, double rho_rest) {
+    // Compute sound speed and multiply by the speed of light (con::c)
     return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
 }
 
-//----------------------------------------reverse shock---------------------------------------
+/********************************************************************************************************************
+ * FUNCTION: fa
+ * DESCRIPTION: Computes the factor "fa" used in shock physics.
+ *              This factor depends on gamma34 (a Lorentz factor ratio), u3s_ (a downstream fluid speed measure),
+ *              and the magnetization sigma.
+ ********************************************************************************************************************/
 double fa(double gamma34, double u3s_, double sigma) {
+    // Computes the factor with a correction term proportional to sigma and a denominator involving u3s_ and gamma34.
     return 1 - sigma * (gamma34 + 1) /
                    (u3s_ * u3s_ * gamma34 + u3s_ * std::sqrt((1 + u3s_ * u3s_) * (gamma34 * gamma34 - 1))) / 2;
 }
 
+/********************************************************************************************************************
+ * FUNCTION: fc
+ * DESCRIPTION: Computes the factor "fc" used in shock physics.
+ *              It calculates the ratio between p2 (a pressure parameter) and p3 (p2 reduced by pB3, the magnetic
+ *pressure).
+ ********************************************************************************************************************/
 double fc(double p2, double pB3) {
-    double p3 = p2 - pB3;
-    return p2 / p3;
+    double p3 = p2 - pB3;  // Effective pressure after subtracting magnetic pressure
+    return p2 / p3;        // Ratio of original to effective pressure
 }
 
-//--------------------------------------------------------------------------------------------
+/********************************************************************************************************************
+ * CONSTRUCTOR: Shock::Shock
+ * DESCRIPTION: Constructs a Shock object with the given grid dimensions (phi_size, theta_size, r_size)
+ *              and energy fractions (eps_e and eps_B). The constructor initializes various 3D grids for storing
+ *              comoving time (t_com), engine time (t_eng), relative Lorentz factor (Gamma_rel), magnetic field (B),
+ *              and downstream proton column density (column_num_den). Default initial values are provided via
+ *create3DGrid.
+ ********************************************************************************************************************/
 Shock::Shock(size_t phi_size, size_t theta_size, size_t r_size, double eps_e, double eps_B)
-    : t_com(create3DGrid(phi_size, theta_size, r_size, 0)),
-      t_eng(create3DGrid(phi_size, theta_size, r_size, 0)),
-      Gamma_rel(create3DGrid(phi_size, theta_size, r_size, 1)),
-      B(create3DGrid(phi_size, theta_size, r_size, 0)),
-      column_num_den(create3DGrid(phi_size, theta_size, r_size, 0)),
-      eps_e(eps_e),
-      eps_B(eps_B),
-      phi_size(phi_size),
-      theta_size(theta_size),
-      r_size(r_size) {}
+    : t_com(create3DGrid(phi_size, theta_size, r_size, 0)),           // Initialize comoving time grid with 0
+      t_eng(create3DGrid(phi_size, theta_size, r_size, 0)),           // Initialize engine time grid with 0
+      Gamma_rel(create3DGrid(phi_size, theta_size, r_size, 1)),       // Initialize Gamma_rel grid with 1
+      B(create3DGrid(phi_size, theta_size, r_size, 0)),               // Initialize magnetic field grid with 0
+      column_num_den(create3DGrid(phi_size, theta_size, r_size, 0)),  // Initialize column density grid with 0
+      eps_e(eps_e),                                                   // Set electron energy fraction
+      eps_B(eps_B),                                                   // Set magnetic energy fraction
+      phi_size(phi_size),                                             // Store phi grid size
+      theta_size(theta_size),                                         // Store theta grid size
+      r_size(r_size) {}                                               // Store radial grid size
 
 /*
 void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock,

@@ -8,104 +8,111 @@
 #ifndef _MESHES_
 #define _MESHES_
 
-#define NDEBUG
 #include <boost/multi_array.hpp>
 #include <cmath>
 #include <functional>
 #include <vector>
 
+/********************************************************************************************************************
+ * CONDITIONAL TYPE DEFINITIONS
+ * DESCRIPTION: If STATIC_ARRAY is defined, fixed sizes (PHI_SIZE, THETA_SIZE, R_SIZE) are used and specific
+ *              array types (Array2D, Array3D) are employed. Otherwise, generic boost::multi_array types are used.
+ ********************************************************************************************************************/
+using Real = float;
 #ifdef STATIC_ARRAY
 constexpr size_t PHI_SIZE = 32;
 constexpr size_t THETA_SIZE = 32;
 constexpr size_t R_SIZE = 32;
-
-template <typename T, size_t Rows, size_t Cols>
-class Array2D {
-   public:
-    using RowType = std::array<T, Cols>;
-    using StorageType = std::array<RowType, Rows>;
-
-    constexpr RowType& operator[](size_t row) { return data_[row]; }
-    constexpr const RowType& operator[](size_t row) const { return data_[row]; }
-    constexpr std::tuple<size_t, size_t> shape() const { return {Rows, Cols}; }
-
-   private:
-    StorageType data_;
-};
-
-template <typename T, size_t X, size_t Y, size_t Z>
-class Array3D {
-   public:
-    using PlaneType = std::array<T, Z>;
-    using RowType = std::array<PlaneType, Y>;
-    using StorageType = std::array<RowType, X>;
-
-    constexpr RowType& operator[](size_t x) { return data_[x]; }
-    constexpr const RowType& operator[](size_t x) const { return data_[x]; }
-    constexpr std::tuple<size_t, size_t, size_t> shape() const { return {X, Y, Z}; }
-
-   private:
-    StorageType data_;
-};
-using Array = boost::multi_array<double, 1>;
-using MeshGrid = Array2D<double, THETA_SIZE, R_SIZE>;
-using MeshGrid3d = Array3D<double, PHI_SIZE, THETA_SIZE, R_SIZE>;
+using Array = boost::multi_array<Real, 1>;
+using MeshGrid = Array2D<Real, THETA_SIZE, R_SIZE>;
+using MeshGrid3d = Array3D<Real, PHI_SIZE, THETA_SIZE, R_SIZE>;
 #else
-using Array = boost::multi_array<double, 1>;
-using MeshGrid = boost::multi_array<double, 2>;
-using MeshGrid3d = boost::multi_array<double, 3>;
+using Array = boost::multi_array<Real, 1>;
+using MeshGrid = boost::multi_array<Real, 2>;
+using MeshGrid3d = boost::multi_array<Real, 3>;
 #endif
 
-using UnaryFunc = std::function<double(double)>;
-using BinaryFunc = std::function<double(double, double)>;
-using TernaryFunc = std::function<double(double, double, double)>;
+/********************************************************************************************************************
+ * FUNCTION TYPE DEFINITIONS
+ * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on doubles.
+ ********************************************************************************************************************/
+using UnaryFunc = std::function<Real(Real)>;
+using BinaryFunc = std::function<Real(Real, Real)>;
+using TernaryFunc = std::function<Real(Real, Real, Real)>;
 
+/********************************************************************************************************************
+ * FUNCTION PROTOTYPES: Array and Grid Utilities
+ * DESCRIPTION: Declares a set of functions for generating and processing arrays and grids. These functions include:
+ *              - Converting boundary arrays to center arrays (linear and logarithmic),
+ *              - Creating linearly and logarithmically spaced arrays,
+ *              - Creating arrays with uniform spacing in cosine,
+ *              - Generating arrays of zeros and ones,
+ *              - Finding the minimum and maximum of grids,
+ *              - Checking if an array is linearly or logarithmically scaled,
+ *              - Creating 2D and 3D grids.
+ ********************************************************************************************************************/
 Array boundaryToCenter(Array const& boundary);
 Array boundaryToCenterLog(Array const& boundary);
-Array linspace(double start, double end, size_t num);
-Array logspace(double start, double end, size_t num);
-Array uniform_cos(double start, double end, size_t num);
+Array linspace(Real start, Real end, size_t num);
+Array logspace(Real start, Real end, size_t num);
+Array uniform_cos(Real start, Real end, size_t num);
 Array zeros(size_t num);
 Array ones(size_t num);
-double min(MeshGrid const& grid);
-double max(MeshGrid const& grid);
-bool isLinearScale(Array const& arr, double tolerance = 1e-6);
-bool isLogScale(Array const& arr, double tolerance = 1e-6);
-MeshGrid createGrid(size_t theta_size, size_t r_size, double val = 0);
-MeshGrid createGridLike(MeshGrid const& grid, double val = 0);
-MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t r_size, double val = 0);
-MeshGrid3d create3DGridLike(MeshGrid3d const& grid, double val = 0);
+Real min(MeshGrid const& grid);
+Real max(MeshGrid const& grid);
+bool isLinearScale(Array const& arr, Real tolerance = 1e-6);
+bool isLogScale(Array const& arr, Real tolerance = 1e-6);
+MeshGrid createGrid(size_t theta_size, size_t r_size, Real val = 0);
+MeshGrid createGridLike(MeshGrid const& grid, Real val = 0);
+MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t r_size, Real val = 0);
+MeshGrid3d create3DGridLike(MeshGrid3d const& grid, Real val = 0);
 
+/********************************************************************************************************************
+ * CLASS: Coord
+ * DESCRIPTION: Represents a coordinate system with arrays for phi, theta, and r. Also stores derived quantities
+ *              such as differential phi (dphi) and differential cosine (dcos) for theta. The class also holds
+ *              the minimum and maximum observation times.
+ ********************************************************************************************************************/
 class Coord {
    public:
+    // Constructor taking phi, theta, and r arrays. Default constructor is deleted.
     Coord(Array const& phi, Array const& theta, Array const& r);
     Coord() = delete;
 
-    Array phi;
-    Array theta;
-    Array r;
+    Array phi;    // Array of phi values
+    Array theta;  // Array of theta values
+    Array r;      // Array of radius values
 
-    Array dphi;
-    Array dcos;
+    Array dphi;  // Differential phi values
+    Array dcos;  // Differential cosine of theta values
 
-    double t_min{0};
-    double t_max{std::numeric_limits<double>::infinity()};
+    Real t_min{0};                                        // Minimum observation time
+    Real t_max{std::numeric_limits<double>::infinity()};  // Maximum observation time
 
+    // Returns the dimensions of the coordinate arrays.
     auto shape() const { return std::make_tuple(phi.size(), theta.size(), r.size()); }
 };
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTIONS: min and max for MeshGrid types
+ * DESCRIPTION: Provides variadic template functions to compute the minimum and maximum values across one or more grids.
+ ********************************************************************************************************************/
 template <typename... MeshGrid>
-double min(MeshGrid const&... grids) {
+Real min(MeshGrid const&... grids) {
     return std::min(std::min(grids...));
 }
 
 template <typename... MeshGrid>
-double max(MeshGrid const&... grids) {
+Real max(MeshGrid const&... grids) {
     return std::max(std::max(grids...));
 }
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: linspace
+ * DESCRIPTION: Fills the provided array 'result' with 'num' linearly spaced values between 'start' and 'end'.
+ ********************************************************************************************************************/
 template <typename Arr>
-void linspace(double start, double end, Arr& result) {
+void linspace(Real start, Real end, Arr& result) {
     size_t num = result.size();
     double step = (end - start) / (num - 1);
     for (size_t i = 0; i < num; i++) {
@@ -113,17 +120,25 @@ void linspace(double start, double end, Arr& result) {
     }
 }
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: logspace
+ * DESCRIPTION: Fills the provided array 'result' with 'num' logarithmically spaced values between 'start' and 'end'.
+ ********************************************************************************************************************/
 template <typename Arr>
-void logspace(double start, double end, Arr& result) {
+void logspace(Real start, Real end, Arr& result) {
     size_t num = result.size();
-    double log_start = std::log(start);
-    double log_end = std::log(end);
-    double step = (log_end - log_start) / (num - 1);
+    Real log_start = std::log(start);
+    Real log_end = std::log(end);
+    Real step = (log_end - log_start) / (num - 1);
     for (size_t i = 0; i < num; i++) {
         result[i] = std::exp(log_start + i * step);
     }
 }
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: boundaryToCenter (linear)
+ * DESCRIPTION: Given a boundary array, computes the center values by averaging adjacent boundaries.
+ ********************************************************************************************************************/
 template <typename Arr1, typename Arr2>
 void boundaryToCenter(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {
@@ -131,6 +146,10 @@ void boundaryToCenter(Arr1 const& boundary, Arr2& center) {
     }
 }
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: boundaryToCenterLog
+ * DESCRIPTION: Given a boundary array, computes the center values in logarithmic space using the geometric mean.
+ ********************************************************************************************************************/
 template <typename Arr1, typename Arr2>
 void boundaryToCenterLog(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {

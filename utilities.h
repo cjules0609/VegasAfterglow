@@ -9,19 +9,31 @@
 #define _UTILITIES_H_
 #include "macros.h"
 #include "mesh.h"
+/********************************************************************************************************************
+ * FUNCTION: Basic Math Functions                                                                                   *
+ * DESCRIPTION: Inline functions for specific power calculations, a step function, and unit conversion.             *
+ ********************************************************************************************************************/
 inline double pow52(double a) { return std::sqrt(a * a * a * a * a); }
 inline double pow43(double a) { return std::cbrt(a * a * a * a); }
 inline double pow23(double a) { return std::cbrt(a * a); }
 inline double stepFunc(double x) { return x > 0 ? 1 : 0; }
 inline double eVtoHz(double eV) { return eV / con::h; }
 
+/********************************************************************************************************************
+ * FUNCTION: Fast Math & Interpolation Prototypes                                                                   *
+ * DESCRIPTION: Prototypes for fast power, logarithm, and various interpolation functions.                          *
+ ********************************************************************************************************************/
 double fastPow(double a, double b);
 double fastLog(double x);
 double interp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 double interpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 double loglogInterp(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 double loglogInterpEqSpaced(double x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-// Function to find the root of a function using the bisection method
+
+/********************************************************************************************************************
+ * FUNCTION: Root Finding (Bisection Method)                                                                        *
+ * DESCRIPTION: Template function to find the root of a function using the bisection method.                        *
+ ********************************************************************************************************************/
 template <typename Fun>
 auto rootBisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
     using Scalar = decltype(f(0));
@@ -35,6 +47,10 @@ auto rootBisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)
     return 0.5 * (high + low);
 }
 
+/********************************************************************************************************************
+ * FUNCTION: Utility Templates                                                                                      *
+ * DESCRIPTION: Template functions for computing the minimum and maximum of provided values.                        *
+ ********************************************************************************************************************/
 template <typename T>
 T min(T value) {
     return value;
@@ -55,6 +71,11 @@ T max(T first, Args... args) {
     return std::max(first, std::max(args...));
 }
 
+/********************************************************************************************************************
+ * FUNCTION: Fast Exponential and Logarithm Functions                                                               *
+ * DESCRIPTION: Inline functions that provide fast approximations of exponential and logarithm functions using      *
+ *              alternative methods when EXTREME_SPEED is defined.                                                  *
+ ********************************************************************************************************************/
 inline double fastExp(double x) {
 #ifdef EXTREME_SPEED
     if (std::isnan(x)) return std::numeric_limits<double>::quiet_NaN();
