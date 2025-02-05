@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX         := g++
-CXXFLAGS    := -std=c++20 -Iinclude -O3  -w# -DNDEBUG  #-DEXTREME_SPEED
+CXXFLAGS    := -std=c++20 -Iinclude -O3  -w -DNDEBUG  #-DEXTREME_SPEED
 
 # Directories
 SRC_DIR     := src

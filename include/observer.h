@@ -42,7 +42,7 @@ class LogScaleInterp {
     bool trySetBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& r, MeshGrid3d const& t_obs,
                         MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons);
 
-   public:
+   private:
     Real log_r_lo{0};  // Lower boundary of logarithmic radius
     Real log_r_hi{0};  // Upper boundary of logarithmic radius
 
@@ -122,19 +122,19 @@ class Observer {
  *              It then calculates the solid angle grid and observation time grid based on the provided dynamics.
  ********************************************************************************************************************/
 template <typename Dynamics>
-void Observer::observe(Dynamics const& dyn, Real theta_obs, Real lumi_dist, Real z) {
+void Observer::observe(Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift) {
     // Extract grid dimensions from the dynamics object.
     auto [phi_size, theta_size, t_size] = dyn.shape();
 
-    this->theta_obs = theta_obs;
-    this->z = z;
-    this->lumi_dist = lumi_dist;
-    this->interp.z = z;
+    theta_obs = theta_view;
+    lumi_dist = luminosity_dist;
+    z = redshift;
+    interp.z = redshift;
     // Determine if the jet is 3D (more than one phi value)
-    this->interp.jet_3d = static_cast<size_t>((phi_size > 1));
+    interp.jet_3d = static_cast<size_t>((phi_size > 1));
 
     // Set effective phi grid size based on the observation angle and jet dimensionality.
-    if (theta_obs == 0 && interp.jet_3d == 0) {
+    if (theta_view == 0 && interp.jet_3d == 0) {
         eff_phi_size = 1;
     } else {
         eff_phi_size = coord.phi.size();
@@ -224,7 +224,8 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
             }
 
             size_t t_idx = 0;
-            // Extrapolation for observation times below the grid (if enabled).
+            // Extrapolation for observation times below the grid (if enabled). Otherwise, skip to the next required
+            // cell untill the first observation time is reached.
             for (; t_idx < t_obs_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
 #ifdef EXTRAPOLATE
                 update_flux(t_idx, solid_angle);
@@ -247,8 +248,9 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 }
             }
 #ifdef EXTRAPOLATE
-            //  Extrapolation for observation times above the grid.
+            //   Extrapolation for observation times above the grid.
             for (; t_idx < t_obs_size; t_idx++) {
+                print("extrapolating");
                 update_flux(t_idx, solid_angle);
             }
 #endif
@@ -269,6 +271,9 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
+    if (r_grid == nullptr) {
+        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
+    }
     Array F_nu = zeros(t_obs.size());
     calcSpecificFlux(F_nu.data(), t_obs, nu_obs, photons...);
     return F_nu;
@@ -281,6 +286,9 @@ Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+    if (r_grid == nullptr) {
+        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
+    }
     MeshGrid F_nu = createGrid(nu_obs.size(), t_obs.size(), 0);
     size_t t_num = t_obs.size();
     for (size_t l = 0; l < nu_obs.size(); ++l) {
@@ -297,6 +305,9 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
+    if (r_grid == nullptr) {
+        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
+    }
     Array nu_obs = boundaryToCenterLog(band_freq);
     MeshGrid F_nu = specificFlux(t_obs, nu_obs, photons...);
     Array flux = zeros(t_obs.size());

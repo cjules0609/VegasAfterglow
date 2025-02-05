@@ -86,18 +86,21 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
  *              is generated uniformly in cosine.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Coord adaptiveGrid(Medium const& medium, Jet const& jet, Injector const& inj, Array const& t_obs, Real theta_max,
-                   size_t phi_num = 32, size_t theta_num = 32, size_t t_num = 32) {
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
-    // auto [r_min, r_max] = findRadiusRange(medium, jet, inj, t_min, t_max);  // Determine radial range.
-    Real b_max = gammaTobeta(jet.Gamma0(0, 0, 0));  // Maximum beta value.
-    Array t =
-        logspace(t_min * (1 - b_max) / (1 + b_max), 2 * t_max, t_num);  // Generate logarithmically spaced radial grid.
-    Real jet_edge = jetEdge(jet, con::Gamma_cut);                       // Determine the jet edge angle.
-    Array theta = uniform_cos(0, std::min(jet_edge, theta_max), theta_num);  // Generate theta grid uniformly in cosine.
+Coord adaptiveGrid(Medium const& medium, Jet const& jet, Injector const& inj, Array const& t_obs, Real theta_cut,
+                   size_t phi_num = 32, size_t theta_num = 32, size_t t_num = 32, double theta_view_max = con::pi / 2) {
     Array phi = linspace(0, 2 * con::pi, phi_num);                           // Generate phi grid linearly spaced.
-    Coord coord{phi, theta, t};                                              // Construct coordinate object.
+    Real jet_edge = jetEdge(jet, con::Gamma_cut);                            // Determine the jet edge angle.
+    Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in cosine.
+    Real theta_max = theta[theta_num - 1];                                   // Maximum theta value.
+    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());              // Maximum observation time.
+    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());              // Minimum observation time.
+    Real b_max = gammaTobeta(jet.Gamma0(0, 0, 0));                           // Maximum beta value.
+    Real t_start =
+        t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
+    Real t_end = t_max;
+    Array t = logspace(t_start, t_end, t_num);  // Generate logarithmically spaced radial grid.
+
+    Coord coord{phi, theta, t};  // Construct coordinate object.
     return coord;
 }
 #endif  // _RELATIVITY_H_
