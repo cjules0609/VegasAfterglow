@@ -169,20 +169,20 @@ Real InverseComptonY::Y_tilt_nu(InverseComptonY const& Ys, Real nu, Real p) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size)
+ * FUNCTION: createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size)
  * DESCRIPTION: Creates and returns a SynPhotonGrid with the specified dimensions.
  ********************************************************************************************************************/
-SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size) {
-    SynPhotonGrid grid(boost::extents[phi_size][theta_size][r_size]);
+SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size) {
+    SynPhotonGrid grid(boost::extents[phi_size][theta_size][t_size]);
     return grid;
 }
 
 /********************************************************************************************************************
- * FUNCTION: createSynElectronGrid(size_t phi_size, size_t theta_size, size_t r_size)
+ * FUNCTION: createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size)
  * DESCRIPTION: Creates and returns a SynElectronGrid with the specified dimensions.
  ********************************************************************************************************************/
-SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t r_size) {
-    SynElectronGrid grid(boost::extents[phi_size][theta_size][r_size]);
+SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size) {
+    SynElectronGrid grid(boost::extents[phi_size][theta_size][t_size]);
     return grid;
 }
 
@@ -575,11 +575,11 @@ Real syn_gamma_N_peak(SynElectrons const& e) { return syn_gamma_N_peak(e.gamma_a
  *              and shock parameters.
  ********************************************************************************************************************/
 void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
-    auto [phi_size, theta_size, r_size] = shock.shape();
+    auto [phi_size, theta_size, t_size] = shock.shape();
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
+            for (size_t k = 0; k < t_size; ++k) {
                 Real Gamma_rel = shock.Gamma_rel[i][j][k];
                 Real t_com = shock.t_com[i][j][k];
                 Real B = shock.B[i][j][k];
@@ -604,15 +604,15 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
  *              partition factor xi.
  ********************************************************************************************************************/
 SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
-    auto [phi_size, theta_size, r_size] = shock.shape();
+    auto [phi_size, theta_size, t_size] = shock.shape();
 
-    SynElectronGrid electrons = createSynElectronGrid(phi_size, theta_size, r_size);
+    SynElectronGrid electrons = createSynElectronGrid(phi_size, theta_size, t_size);
 
     constexpr Real gamma_syn_limit = 3;
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
+            for (size_t k = 0; k < t_size; ++k) {
                 Real Gamma_rel = shock.Gamma_rel[i][j][k];
                 Real t_com = shock.t_com[i][j][k];
                 Real B = shock.B[i][j][k];
@@ -646,13 +646,13 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
  *              For each grid cell, synchrotron photon frequencies are computed and internal constants are updated.
  ********************************************************************************************************************/
 SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
-    auto [phi_size, theta_size, r_size] = shock.shape();
+    auto [phi_size, theta_size, t_size] = shock.shape();
 
-    SynPhotonGrid ph = createSynPhotonGrid(phi_size, theta_size, r_size);
+    SynPhotonGrid ph = createSynPhotonGrid(phi_size, theta_size, t_size);
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
+            for (size_t k = 0; k < t_size; ++k) {
                 ph[i][j][k].e = &(e[i][j][k]);
                 Real B = shock.B[i][j][k];
 

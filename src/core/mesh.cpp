@@ -20,9 +20,7 @@ Array linspace(Real start, Real end, size_t num) {
     Array result(boost::extents[num]);
 
     Real step = (end - start) / (num - 1);
-    if (num == 1) {
-        step = 0;
-    }
+    if (num == 1) step = 0;
     for (size_t i = 0; i < num; i++) {
         // Compute each value by linear interpolation between start and end.
         result[i] = start + i * step;
@@ -84,10 +82,10 @@ Array ones(size_t num) {
 
 /********************************************************************************************************************
  * FUNCTION: createGrid
- * DESCRIPTION: Creates and returns a 2D MeshGrid with dimensions (theta_size x r_size) filled with the value 'val'.
+ * DESCRIPTION: Creates and returns a 2D MeshGrid with dimensions (theta_size x t_size) filled with the value 'val'.
  ********************************************************************************************************************/
-MeshGrid createGrid(size_t theta_size, size_t r_size, Real val) {
-    MeshGrid grid(boost::extents[theta_size][r_size]);
+MeshGrid createGrid(size_t theta_size, size_t t_size, Real val) {
+    MeshGrid grid(boost::extents[theta_size][t_size]);
     std::fill(grid.data(), grid.data() + grid.num_elements(), val);
     return grid;
 }
@@ -142,8 +140,8 @@ MeshGrid createGridLike(MeshGrid const& grid_old, Real val) {
  * DESCRIPTION: Creates and returns a 3D MeshGrid (MeshGrid3d) with dimensions (phi_size x theta_size x r_size)
  *              filled with the value 'val'.
  ********************************************************************************************************************/
-MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t r_size, Real val) {
-    MeshGrid3d grid(boost::extents[phi_size][theta_size][r_size]);
+MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t t_size, Real val) {
+    MeshGrid3d grid(boost::extents[phi_size][theta_size][t_size]);
     std::fill(grid.data(), grid.data() + grid.num_elements(), val);
     return grid;
 }
@@ -161,11 +159,11 @@ MeshGrid3d create3DGridLike(MeshGrid3d const& grid_old, Real val) {
 
 /********************************************************************************************************************
  * CONSTRUCTOR: Coord::Coord
- * DESCRIPTION: Constructs a Coord object with the provided phi, theta, and r arrays. It also computes the
+ * DESCRIPTION: Constructs a Coord object with the provided phi, theta, and t arrays. It also computes the
  *              differential arrays dphi and dcos for phi and theta, respectively.
  ********************************************************************************************************************/
-Coord::Coord(Array const& phi, Array const& theta, Array const& r)
-    : phi(phi), theta(theta), r(r), dphi(zeros(phi.size())), dcos(zeros(theta.size())) {
+Coord::Coord(Array const& phi, Array const& theta, Array const& t)
+    : phi(phi), theta(theta), t(t), dphi(zeros(phi.size())), dcos(zeros(theta.size())) {
     size_t phi_size = phi.size();
     if (phi_size > 1) {
         // Compute dphi for the first element.

@@ -32,7 +32,7 @@ void printArray(Array const& arr) {
  ********************************************************************************************************************/
 void output(Coord const& coord, std::string const& filename) {
     // Open files for r, theta, and phi data.
-    std::ofstream file_r(filename + "_r.txt");
+    std::ofstream file_r(filename + "_t.txt");
     std::ofstream file_theta(filename + "_theta.txt");
     std::ofstream file_phi(filename + "_phi.txt");
 
@@ -41,14 +41,9 @@ void output(Coord const& coord, std::string const& filename) {
         return;
     }
 
-    // Set precision for numerical output.
-    file_r.precision(16);
-    file_theta.precision(16);
-    file_phi.precision(16);
-
     // Write radius values normalized by con::cm.
-    for (size_t i = 0; i < coord.r.size(); ++i) {
-        file_r << coord.r[i] / con::cm << " ";
+    for (size_t i = 0; i < coord.t.size(); ++i) {
+        file_r << coord.t[i] / con::sec << " ";
     }
 
     // Write theta values.
@@ -101,10 +96,10 @@ void writeGrid(std::string filename, T const& names, U const& data, V const& uni
  *              The output includes Gamma_rel, B, t_com, t_eng, and column_num_den (labeled as "Sigma").
  ********************************************************************************************************************/
 void output(Shock const& shock, std::string const& filename) {
-    std::array<std::string, 5> strs = {"Gamma", "B", "t_com", "t_eng", "Sigma"};
-    std::array<MeshGrid3d const*, 5> data = {&(shock.Gamma_rel), &(shock.B), &(shock.t_com), &(shock.t_eng),
+    std::array<std::string, 5> strs = {"Gamma", "B", "t_com", "r", "Sigma"};
+    std::array<MeshGrid3d const*, 5> data = {&(shock.Gamma_rel), &(shock.B), &(shock.t_com), &(shock.r),
                                              &(shock.column_num_den)};
-    std::array<Real, 5> units = {1, 1, con::sec, con::sec, 1 / con::cm2};
+    std::array<Real, 5> units = {1, 1, con::sec, con::cm, 1 / con::cm2};
 
     writeGrid(filename, strs, data, units);
 }

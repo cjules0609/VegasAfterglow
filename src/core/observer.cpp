@@ -66,21 +66,16 @@ void Observer::calcSolidAngle() {
  *calculated.
  ********************************************************************************************************************/
 Observer::Observer(Coord const& coord)
-    : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.r.size()]),
-      doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.r.size()]),
+    : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
+      doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
       theta_obs(0),
       lumi_dist(1),
       z(0),
       dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
-      log_r(boost::extents[coord.r.size()]),
+      r_grid(nullptr),
       interp(),
       coord(coord),
       eff_phi_size(1) {
-    // Compute logarithm (using fastLog) for each radius value in the coordinate grid.
-    for (size_t i = 0; i < coord.r.size(); ++i) {
-        log_r[i] = fastLog(coord.r[i]);
-    }
-
     // Calculate the solid angle grid.
     calcSolidAngle();
 }
@@ -88,12 +83,12 @@ Observer::Observer(Coord const& coord)
 /********************************************************************************************************************
  * METHOD: Observer::calcObsTimeGrid
  * DESCRIPTION: Calculates the observation time grid (t_obs_grid) and updates the doppler factor grid based on the
- *              provided Gamma (Lorentz factor) and engine time (t_eng) grids.
+ *              provided Gamma (Lorentz factor) and engine time (t) array.
  *              For each grid point, the Doppler factor is computed and the observed time is calculated taking
  *              redshift into account.
  ********************************************************************************************************************/
-void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& t_eng) {
-    auto [phi_size, theta_size, r_size] = coord.shape();
+void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& r_grid) {
+    auto [phi_size, theta_size, t_size] = coord.shape();
     Real cos_obs = std::cos(theta_obs);
     Real sin_obs = std::sin(theta_obs);
     for (size_t i = 0; i < eff_phi_size; ++i) {
@@ -101,19 +96,15 @@ void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& t_eng)
         for (size_t j = 0; j < theta_size; ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
             Real cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
-            for (size_t k = 0; k < r_size; ++k) {
+            for (size_t k = 0; k < t_size; ++k) {
                 Real gamma_ = Gamma[i * interp.jet_3d][j][k];  // Get Gamma at the grid point.
-                Real t_eng_ = t_eng[i * interp.jet_3d][j][k];  // Get engine time at the grid point.
-                Real beta = gammaTobeta(gamma_);               // Convert Gamma to beta.
+                Real r = r_grid[i * interp.jet_3d][j][k];
+                Real t_eng_ = coord.t[k];         // Get engine time at the grid point.
+                Real beta = gammaTobeta(gamma_);  // Convert Gamma to beta.
                 // Compute the Doppler factor: D = 1 / [Gamma * (1 - beta * cos_v)]
                 doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_v));
-                if (gamma_ == 1) {
-                    // For non-relativistic case, set observed time to infinity.
-                    t_obs_grid[i][j][k] = std::numeric_limits<Real>::infinity();
-                } else {
-                    // Compute the observed time: t_obs = [t_eng + (1 - cos_v) * r / c] * (1 + z)
-                    t_obs_grid[i][j][k] = (t_eng_ + (1 - cos_v) * coord.r[k] / con::c) * (1 + z);
-                }
+                // Compute the observed time: t_obs = [t_eng + (1 - cos_v) * r / c] * (1 + z)
+                t_obs_grid[i][j][k] = (t_eng_ + (1 - cos_v) * r / con::c) * (1 + z);
             }
         }
     }

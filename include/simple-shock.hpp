@@ -12,13 +12,13 @@
  * CLASS: SimpleShockEqn
  * DESCRIPTION: Represents the forward shock equation for a given Jet and Injector. It defines a state vector
  *              (an array of 5 Reals) and overloads operator() to compute the derivatives of the state with
- *              respect to radius r. It also declares helper functions for the derivatives. Simple version from
+ *              respect to radius t. It also declares helper functions for the derivatives. Simple version from
  *              Huang et al. 2000
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 class SimpleShockEqn {
    public:
-    using State = std::array<Real, 5>;  // State vector: typically [Gamma, u, t_eng, t_com, D_jet]
+    using State = std::array<Real, 5>;  // State vector: typically [Gamma, u, r, t_com, D_jet]
 
     SimpleShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -32,28 +32,28 @@ class SimpleShockEqn {
     Real gamma4{1};           // Initial Lorentz factor (or a related parameter)
 
     // Overloaded operator() to compute the derivatives of the state vector with respect to radius r.
-    void operator()(State const& y, State& dydr, Real r);
+    void operator()(State const& y, State& dydt, Real t);
 
    private:
-    // Helper function: computes the derivative of Gamma with respect to r.
-    inline Real dGammadr(Real r, Real Gamma, Real t_eng, Real rho);
+    // Helper function: computes the derivative of Gamma with respect to t.
+    inline Real dGammadt(Real Gamma, Real r, Real drdt, Real rho);
     Real const dM0{0};  // Initial mass per unit solid angle
 };
 
 /********************************************************************************************************************
- * METHOD: SimpleShockEqn::operator()(State const& y, State& dydr, Real r)
+ * METHOD: SimpleShockEqn::operator()(State const& y, State& dydr, Real t)
  * DESCRIPTION: Computes the derivatives of the state variables with respect to radius r.
  *              The state vector components are:
  *                  y[0] - Gamma (Lorentz factor)
  *                  y[1] - u (internal energy-related variable)
- *                  y[2] - t_eng (engine time)
+ *                  y[2] - r (radius)
  *                  y[3] - t_com (co-moving time) [unused here]
  *                  y[4] - D_jet (jet shell width) [unused here]
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydr, Real r) {
+void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) {
     Real Gamma = y[0];
-    Real t_eng = y[2];  // engine time
+    Real r = y[2];  // engine time
     // Real t_com = y[3];  // co-moving time (unused)
     // Real D_jet = y[4];  // co-moving jet shell width (unused)
 
@@ -61,11 +61,11 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydr, Real
     Real beta = gammaTobeta(Gamma);    // Convert Gamma to beta (velocity/c)
     Real beta4 = gammaTobeta(gamma4);  // Convert gamma4 to beta
 
-    dydr[2] = dtdr_Engine(beta);               // Compute derivative of engine time with respect to r
-    dydr[0] = dGammadr(r, Gamma, t_eng, rho);  // d(Gamma)/dr
-    dydr[1] = 0;
-    dydr[3] = dtdr_CoMoving(Gamma, beta);  // d(t_com)/dr
-    dydr[4] = dDdr_Jet(gamma4, beta4);     // d(D_jet)/dr
+    dydt[2] = drdt(beta);                        // Compute derivative of r with respect to t
+    dydt[0] = dGammadt(Gamma, r, dydt[2], rho);  // d(Gamma)/dt
+    dydt[1] = 0;
+    dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
+    dydt[4] = dDdt_Jet(gamma4, beta4);     // d(D_jet)/dt
 }
 
 /********************************************************************************************************************
@@ -89,13 +89,13 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
 }
 
 /********************************************************************************************************************
- * METHOD: SimpleShockEqn::dGammadr
- * DESCRIPTION: Computes the derivative of Gamma with respect to radius r.
+ * METHOD: SimpleShockEqn::dGammadt
+ * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real SimpleShockEqn<Jet, Injector>::dGammadr(Real r, Real Gamma, Real t_eng, Real rho) {
+Real SimpleShockEqn<Jet, Injector>::dGammadt(Real Gamma, Real r, Real drdt, Real rho) {
     Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
-    return -(Gamma * Gamma - 1) / (dM0 + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm) * r * r * rho;
+    return -(Gamma * Gamma - 1) / (dM0 + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm) * r * r * rho * drdt;
 }
 
 #endif

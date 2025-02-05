@@ -62,35 +62,32 @@ Real min(MeshGrid const& grid);
 Real max(MeshGrid const& grid);
 bool isLinearScale(Array const& arr, Real tolerance = 1e-6);
 bool isLogScale(Array const& arr, Real tolerance = 1e-6);
-MeshGrid createGrid(size_t theta_size, size_t r_size, Real val = 0);
+MeshGrid createGrid(size_t theta_size, size_t t_size, Real val = 0);
 MeshGrid createGridLike(MeshGrid const& grid, Real val = 0);
-MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t r_size, Real val = 0);
+MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t t_size, Real val = 0);
 MeshGrid3d create3DGridLike(MeshGrid3d const& grid, Real val = 0);
 
 /********************************************************************************************************************
  * CLASS: Coord
- * DESCRIPTION: Represents a coordinate system with arrays for phi, theta, and r. Also stores derived quantities
+ * DESCRIPTION: Represents a coordinate system with arrays for phi, theta, and t. Also stores derived quantities
  *              such as differential phi (dphi) and differential cosine (dcos) for theta. The class also holds
  *              the minimum and maximum observation times.
  ********************************************************************************************************************/
 class Coord {
    public:
-    // Constructor taking phi, theta, and r arrays. Default constructor is deleted.
-    Coord(Array const& phi, Array const& theta, Array const& r);
+    // Constructor taking phi, theta, and t arrays. Default constructor is deleted.
+    Coord(Array const& phi, Array const& theta, Array const& t);
     Coord() = delete;
 
     Array phi;    // Array of phi values
     Array theta;  // Array of theta values
-    Array r;      // Array of radius values
+    Array t;      // Array of radius values
 
     Array dphi;  // Differential phi values
     Array dcos;  // Differential cosine of theta values
 
-    Real t_min{0};                                      // Minimum observation time
-    Real t_max{std::numeric_limits<Real>::infinity()};  // Maximum observation time
-
     // Returns the dimensions of the coordinate arrays.
-    auto shape() const { return std::make_tuple(phi.size(), theta.size(), r.size()); }
+    auto shape() const { return std::make_tuple(phi.size(), theta.size(), t.size()); }
 };
 
 /********************************************************************************************************************
@@ -114,7 +111,11 @@ Real max(MeshGrid const&... grids) {
 template <typename Arr>
 void linspace(Real start, Real end, Arr& result) {
     size_t num = result.size();
+    // Handle empty array case.
     Real step = (end - start) / (num - 1);
+    if (num == 1) {
+        step = 0;
+    }
     for (size_t i = 0; i < num; i++) {
         result[i] = start + i * step;
     }
@@ -129,7 +130,11 @@ void logspace(Real start, Real end, Arr& result) {
     size_t num = result.size();
     Real log_start = std::log(start);
     Real log_end = std::log(end);
+
     Real step = (log_end - log_start) / (num - 1);
+    if (num == 1) {
+        step = 0;
+    }  // Handle empty array case.
     for (size_t i = 0; i < num; i++) {
         result[i] = std::exp(log_start + i * step);
     }

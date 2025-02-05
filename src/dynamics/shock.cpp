@@ -17,25 +17,25 @@
 
 /********************************************************************************************************************
  * CONSTRUCTOR: Shock::Shock
- * DESCRIPTION: Constructs a Shock object with the given grid dimensions (phi_size, theta_size, r_size)
+ * DESCRIPTION: Constructs a Shock object with the given grid dimensions (phi_size, theta_size, t_size)
  *              and energy fractions (eps_e and eps_B). The constructor initializes various 3D grids for storing
  *              comoving time (t_com), engine time (t_eng), relative Lorentz factor (Gamma_rel), magnetic field (B),
  *              and downstream proton column density (column_num_den). Default initial values are provided via
  *create3DGrid.
  ********************************************************************************************************************/
-Shock::Shock(size_t phi_size, size_t theta_size, size_t r_size, Real eps_e, Real eps_B)
-    : t_com(boost::extents[phi_size][theta_size][r_size]),           // Initialize comoving time grid with 0
-      t_eng(boost::extents[phi_size][theta_size][r_size]),           // Initialize engine time grid with 0
-      Gamma_rel(boost::extents[phi_size][theta_size][r_size]),       // Initialize Gamma_rel grid with 1
-      B(boost::extents[phi_size][theta_size][r_size]),               // Initialize magnetic field grid with 0
-      column_num_den(boost::extents[phi_size][theta_size][r_size]),  // Initialize column density grid with 0
+Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B)
+    : t_com(boost::extents[phi_size][theta_size][t_size]),           // Initialize comoving time grid with 0
+      r(boost::extents[phi_size][theta_size][t_size]),               // Initialize engine time grid with 0
+      Gamma_rel(boost::extents[phi_size][theta_size][t_size]),       // Initialize Gamma_rel grid with 1
+      B(boost::extents[phi_size][theta_size][t_size]),               // Initialize magnetic field grid with 0
+      column_num_den(boost::extents[phi_size][theta_size][t_size]),  // Initialize column density grid with 0
       eps_e(eps_e),                                                  // Set electron energy fraction
       eps_B(eps_B),                                                  // Set magnetic energy fraction
       phi_size(phi_size),                                            // Store phi grid size
       theta_size(theta_size),                                        // Store theta grid size
-      r_size(r_size) {
+      t_size(t_size) {
     std::memset(t_com.data(), 0, t_com.num_elements() * sizeof(Real));
-    std::memset(t_eng.data(), 0, t_eng.num_elements() * sizeof(Real));
+    std::memset(r.data(), 0, r.num_elements() * sizeof(Real));
     std::fill(Gamma_rel.data(), Gamma_rel.data() + Gamma_rel.num_elements(), 1);  // Initialize Gamma_rel to 1
     std::memset(B.data(), 0, B.num_elements() * sizeof(Real));
     std::memset(column_num_den.data(), 0, column_num_den.num_elements() * sizeof(Real));
@@ -95,8 +95,8 @@ Real soundSpeed(Real pressure, Real ad_idx, Real rho_rest) {
     return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
 }
 
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real t_eng,
-                      Real dMdOmega_up, Real n_up_str, Real sigma) {
+void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real dMdOmega_up,
+                      Real n_up_str, Real sigma) {
     if (Gamma_rel > 1) {
         Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma);
         Real pB_up = calc_pB4(n_up_str, sigma);
@@ -106,13 +106,13 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real G
         Real e_th = e_ThermalDownStr(Gamma_rel, n_down_str);
         shock.Gamma_rel[i][j][k] = Gamma_rel;
         shock.t_com[i][j][k] = t_com;
-        shock.t_eng[i][j][k] = t_eng;
+        shock.r[i][j][k] = r;
         shock.column_num_den[i][j][k] = n_down_str * co_moving_width;
         shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down * 8 * con::pi);
     } else {
         shock.Gamma_rel[i][j][k] = 1;
         shock.t_com[i][j][k] = 0;
-        shock.t_eng[i][j][k] = 0;
+        shock.r[i][j][k] = r;
         shock.column_num_den[i][j][k] = 0;
         shock.B[i][j][k] = 0;
     }

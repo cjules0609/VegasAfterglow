@@ -171,7 +171,7 @@ using ICPhotonGrid = boost::multi_array<ICPhoton, 3>;
  * FUNCTION PROTOTYPES: IC Photon and Electron Cooling Functions
  * DESCRIPTION: These functions create and generate IC photon grids, and apply electron cooling mechanisms.
  ********************************************************************************************************************/
-ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size);
+ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size);
 ICPhotonGrid genICPhotons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
 void eCoolingThomson(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
 void eCoolingKleinNishina(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);

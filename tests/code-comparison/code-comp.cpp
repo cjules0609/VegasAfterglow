@@ -61,11 +61,9 @@ void lc_gen(std::string folder_name) {
 
     // Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
     Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w);
-    output(coord, "coord");
+
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
-
-    output(f_shock, "shock");
 
     auto syn_e = genSynElectrons(f_shock, p);
 

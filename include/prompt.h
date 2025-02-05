@@ -39,7 +39,7 @@ PromptPhotonsGrid genPromptPhotons(Coord const& coord, Jet const& jet, Real R0, 
             Real beta = gammaTobeta(Gamma);
             Real R = R0 / (beta_c) * (beta);
             for (size_t k = 0; k < r_size - 1; ++k) {
-                if (coord.r[k + 1] > R && coord.r[k] < R) {
+                if (coord.t[k + 1] > R && coord.t[k] < R) {
                     ph[i][j][k].E_nu_peak = jet.dEdOmega(0, theta, 0) / Gamma;
 
                 } else {

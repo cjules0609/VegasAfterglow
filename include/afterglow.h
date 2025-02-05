@@ -143,48 +143,4 @@ MeshGrid co_moving_e_spectrums(size_t spectrum_resol, Real gamma_min, Real gamma
     return n_gamma;
 }*/
 
-/********************************************************************************************************************
- * FUNCTION: find_r_max
- * DESCRIPTION: Finds the maximum radius (r_max) for the shock evolution by integrating the shock equations until
- *              the engine time exceeds t_max. Uses a dense output stepper.
- ********************************************************************************************************************/
-template <typename ShockEqn>
-Real find_r_max(ShockEqn& eqn, Real r_min, Real t_max) {
-    using namespace boost::numeric::odeint;
-    Real atol = 0, rtol = 1e-6, r0 = r_min;
-    Real dr = r_min / 100;
-
-    typename ShockEqn::State state;
-    setForwardInit(eqn, state, r0);  // Initialize the state at r0
-
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
-    stepper.initialize(state, r0, dr);
-    // Integrate until the engine time in the state exceeds t_max
-    for (; state[2] <= t_max;) {
-        stepper.do_step(eqn);
-        state = stepper.current_state();
-    }
-    return stepper.current_time() + stepper.current_time_step();
-}
-
-/********************************************************************************************************************
- * TEMPLATE HELP FUNCTIONS
- * DESCRIPTION: The following template functions are helper functions for the shock generation and evolution process.
- ********************************************************************************************************************/
-
-// Determines the range of radii (r_min, r_max) for the shock evolution using medium and jet properties.
-// The minimum radius is based on t_min and the maximum is found by solving the forward shock equation on-axis.
-template <typename Jet, typename Injector>
-std::tuple<Real, Real> findRadiusRange(Medium const& medium, Jet const& jet, Injector const& inj, Real t_min,
-                                       Real t_max, Real z = 0) {
-    Real gamma0 = jet.Gamma0(0, 0, 0);  // On-axis Gamma
-    Real gamma_min = (gamma0 - 1) / 100 + 1;
-    Real beta_min = std::sqrt(1 - 1 / (gamma_min * gamma_min));
-    Real r_min = beta_min * con::c * t_min / (1 + beta_min);
-
-    // Find the on-axis r_max by solving for theta = 0, phi = 0
-    auto eqn = ForwardShockEqn<Jet, Injector>(medium, jet, inj, 0, 0, 0);
-    Real r_max = find_r_max(eqn, r_min, t_max);
-    return {r_min, r_max};
-}
 #endif

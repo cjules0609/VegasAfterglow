@@ -116,10 +116,10 @@ using SynElectronGrid = boost::multi_array<SynElectrons, 3>;
  * FUNCTION PROTOTYPES: Synchrotron Grid Creation and Generation
  * DESCRIPTION: Functions to create and generate grids for Synchrotron electrons and photons.
  ********************************************************************************************************************/
-SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t r_size);
+SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size);
 SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi = 1);
 
-SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size);
+SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size);
 SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& electrons);
 
 /********************************************************************************************************************
