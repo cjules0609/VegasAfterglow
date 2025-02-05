@@ -117,7 +117,10 @@ Real ForwardShockEqn<Jet, Injector>::dGammadr(Real r, Real Gamma, Real u, Real t
     Real a1 = -Gamma2_m1 * (ad_idx * Gamma - ad_idx + 1) * r * r * rho * con::c2;
     Real a2 = ad_idx_m1 * term1 * 3 * u / r;
     Real a3 = Gamma * dtdr * L_inj * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
-
+    // if (std::isfinite(a3) == false) {
+    //     a3 = 0;
+    //    dm_inj = 0;
+    // }
     Real b1 = Gamma * (dM0 + dm + dm_inj) * con::c2;
     Real b2 = (ad_idx * term1 + 2 * ad_idx_m1) / Gamma * u;
 
@@ -175,9 +178,9 @@ void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, Shock
     }
 
     // Create a dense output stepper for integrating the shock equations
-    // auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{atol, rtol};
+    auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{atol, rtol};
 
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
+    // auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
     stepper.initialize(state, r0, dr);
 
     Real r_back = r[r.size() - 1];  // Last radius in the array
@@ -187,7 +190,6 @@ void solveForwardShell(size_t i, size_t j, const Array& r, Shock& f_shock, Shock
         stepper.do_step(eqn);
         while (k < r.size() && stepper.current_time() > r[k]) {
             stepper.calc_state(r[k], state);
-            // std::cout << "k: " << k << state[0] << std::endl;
             updateForwardShock(i, j, k, r[k], eqn, state, f_shock);
             ++k;
         }

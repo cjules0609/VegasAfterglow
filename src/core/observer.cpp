@@ -72,19 +72,10 @@ Observer::Observer(Coord const& coord)
       lumi_dist(1),
       z(0),
       dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
-      log_r(zeros(coord.r.size())),
+      log_r(boost::extents[coord.r.size()]),
       interp(),
       coord(coord),
       eff_phi_size(1) {
-    // std::memset(t_obs_grid.data(), 0, t_obs_grid.num_elements() * sizeof(Real));
-    // std::memset(doppler.data(), 0, doppler.num_elements() * sizeof(Real));
-    // std::memset(dOmega.data(), 0, dOmega.num_elements() * sizeof(Real));
-    std::fill(t_obs_grid.data(), t_obs_grid.data() + t_obs_grid.num_elements(), 0);
-    std::fill(doppler.data(), doppler.data() + doppler.num_elements(), 0);
-    std::fill(dOmega.data(), dOmega.data() + dOmega.num_elements(), 0);
-
-    // Initialize the effective phi size to the phi size of the coordinate grid.
-
     // Compute logarithm (using fastLog) for each radius value in the coordinate grid.
     for (size_t i = 0; i < coord.r.size(); ++i) {
         log_r[i] = fastLog(coord.r[i]);
@@ -102,15 +93,15 @@ Observer::Observer(Coord const& coord)
  *              redshift into account.
  ********************************************************************************************************************/
 void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& t_eng) {
+    auto [phi_size, theta_size, r_size] = coord.shape();
     Real cos_obs = std::cos(theta_obs);
     Real sin_obs = std::sin(theta_obs);
     for (size_t i = 0; i < eff_phi_size; ++i) {
         Real cos_phi = std::cos(coord.phi[i]);
-        for (size_t j = 0; j < coord.theta.size(); ++j) {
+        for (size_t j = 0; j < theta_size; ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
             Real cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
-
-            for (size_t k = 0; k < coord.r.size(); ++k) {
+            for (size_t k = 0; k < r_size; ++k) {
                 Real gamma_ = Gamma[i * interp.jet_3d][j][k];  // Get Gamma at the grid point.
                 Real t_eng_ = t_eng[i * interp.jet_3d][j][k];  // Get engine time at the grid point.
                 Real beta = gammaTobeta(gamma_);               // Convert Gamma to beta.

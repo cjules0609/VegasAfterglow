@@ -39,7 +39,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t r_size, Real eps_e, Real
     std::fill(Gamma_rel.data(), Gamma_rel.data() + Gamma_rel.num_elements(), 1);  // Initialize Gamma_rel to 1
     std::memset(B.data(), 0, B.num_elements() * sizeof(Real));
     std::memset(column_num_den.data(), 0, column_num_den.num_elements() * sizeof(Real));
-}  // Store radial grid size
+}
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization (sigma).
 // This function uses the adiabatic index computed from gamma_rel and applies different formulas based on sigma.

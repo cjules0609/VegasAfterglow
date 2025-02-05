@@ -81,7 +81,7 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real G
                       Real dMdOmega_up, Real n_up_str, Real sigma);
 
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return sqrt(8 * con::pi * eps_B * e_thermal); }
-inline Real dtdr_Engine(Real beta) { return std::fabs(1 - beta) / (beta * con::c); }
+inline Real dtdr_Engine(Real beta) { return std::abs(1 - beta) / (beta * con::c); }
 inline Real dtdr_CoMoving(Real Gamma, Real beta) { return 1 / (Gamma * beta * con::c); };
 inline Real calc_pB4(Real n4, Real sigma) { return sigma * n4 * con::mp * con::c2 / 2; }
 inline Real u_UpStr(Real u_down, Real gamma_rel) {
@@ -123,9 +123,9 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
     Shock f_shock(1, theta_size, r_size, eps_e, eps_B);   // Create Shock with 1 phi slice
     for (size_t j = 0; j < theta_size; ++j) {
         // Create a ForwardShockEqn for each theta slice (phi is set to 0)
-        // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        //    Solve the shock shell for this theta slice
+        auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+        // auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+        //     Solve the shock shell for this theta slice
         solveForwardShell(0, j, coord.r, f_shock, eqn, coord.t_max);
     }
 

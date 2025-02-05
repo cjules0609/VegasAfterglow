@@ -8,6 +8,7 @@
 #include "mesh.h"
 
 #include <cmath>
+#include <iostream>
 
 #include "macros.h"
 /********************************************************************************************************************
@@ -17,7 +18,11 @@
 Array linspace(Real start, Real end, size_t num) {
     // Create an Array with the specified size using boost::multi_array extents.
     Array result(boost::extents[num]);
+
     Real step = (end - start) / (num - 1);
+    if (num == 1) {
+        step = 0;
+    }
     for (size_t i = 0; i < num; i++) {
         // Compute each value by linear interpolation between start and end.
         result[i] = start + i * step;
@@ -34,6 +39,7 @@ Array logspace(Real start, Real end, size_t num) {
     Real log_start = std::log(start);
     Real log_end = std::log(end);
     Real step = (log_end - log_start) / (num - 1);
+    if (num == 1) step = 0;
     for (size_t i = 0; i < num; i++) {
         // Exponentiate the linearly spaced logarithmic values to obtain logarithmically spaced values.
         result[i] = std::exp(log_start + i * step);
@@ -60,7 +66,11 @@ Array uniform_cos(Real start, Real end, size_t num) {
  * FUNCTION: zeros
  * DESCRIPTION: Creates and returns an Array of size 'num' initialized to zero.
  ********************************************************************************************************************/
-Array zeros(size_t num) { return Array(boost::extents[num]); }
+Array zeros(size_t num) {
+    Array result(boost::extents[num]);
+    std::fill(result.data(), result.data() + result.num_elements(), 0);
+    return result;
+}
 
 /********************************************************************************************************************
  * FUNCTION: ones
@@ -68,7 +78,6 @@ Array zeros(size_t num) { return Array(boost::extents[num]); }
  ********************************************************************************************************************/
 Array ones(size_t num) {
     Array array(boost::extents[num]);
-    // Fill the entire array with 1.
     std::fill(array.data(), array.data() + array.num_elements(), 1);
     return array;
 }
@@ -79,7 +88,6 @@ Array ones(size_t num) {
  ********************************************************************************************************************/
 MeshGrid createGrid(size_t theta_size, size_t r_size, Real val) {
     MeshGrid grid(boost::extents[theta_size][r_size]);
-    // Initialize every element in the grid with the provided value.
     std::fill(grid.data(), grid.data() + grid.num_elements(), val);
     return grid;
 }
@@ -168,6 +176,8 @@ Coord::Coord(Array const& phi, Array const& theta, Array const& r)
         }
         // Compute dphi for the last element.
         dphi[phi_size - 1] = std::fabs(phi[phi_size - 1] - phi[phi_size - 2]) / 2;
+    } else if (phi_size == 1) {
+        dphi[0] = 2 * con::pi;
     }
 
     size_t theta_size = theta.size();
@@ -185,6 +195,8 @@ Coord::Coord(Array const& phi, Array const& theta, Array const& r)
         // Compute dcos for the last element.
         Real theta_lo = (theta[theta_size - 1] + theta[theta_size - 2]) / 2;
         dcos[theta_size - 1] = std::fabs(std::cos(theta[theta_size - 1]) - std::cos(theta_lo));
+    } else if (theta_size == 1) {
+        dcos[0] = 1;
     }
 }
 

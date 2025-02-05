@@ -81,7 +81,6 @@ void writeGrid(std::string filename, T const& names, U const& data, V const& uni
             std::cerr << "Error opening file " << filename + "_" + names[l] + ".txt" << std::endl;
             return;
         }
-        file.precision(16);
 
         // Loop over the 3D grid dimensions and output the normalized values.
         for (size_t i = 0; i < (*data[l]).size(); ++i) {
@@ -120,13 +119,68 @@ void output(PromptPhotonsGrid const& prompt_pj, std::string const& filename) {}
  * FUNCTION: output (SynPhotonGrid version)
  * DESCRIPTION: (Empty implementation) Intended to output a SynPhotonGrid to a file.
  ********************************************************************************************************************/
-void output(SynPhotonGrid const& ph, std::string const& filename) {}
+void output(SynPhotonGrid const& ph, std::string const& filename) {
+    std::array<std::string, 3> strs = {"nu_a", "nu_m", "nu_c"};
+    std::array<std::ofstream, 3> files;
+    for (size_t i = 0; i < strs.size(); ++i) {
+        files[i].open(filename + "_" + strs[i] + ".txt");
+        if (!files[i]) {
+            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt" << std::endl;
+            return;
+        }
+    }
+
+    for (size_t i = 0; i < ph.size(); ++i) {
+        for (size_t j = 0; j < ph[i].size(); ++j) {
+            for (size_t k = 0; k < ph[i][j].size(); ++k) {
+                files[0] << ph[i][j][k].nu_a / con::Hz << " ";
+                files[1] << ph[i][j][k].nu_m / con::Hz << " ";
+                files[2] << ph[i][j][k].nu_c / con::Hz << " ";
+            }
+            files[0] << '\n';
+            files[1] << '\n';
+            files[2] << '\n';
+        }
+        files[0] << '\n';
+        files[1] << '\n';
+        files[2] << '\n';
+    }
+}
 
 /********************************************************************************************************************
  * FUNCTION: output (SynElectronGrid version)
  * DESCRIPTION: (Empty implementation) Intended to output a SynElectronGrid to a file.
  ********************************************************************************************************************/
-void output(SynElectronGrid const& syn_rad, std::string const& filename) {}
+void output(SynElectronGrid const& e, std::string const& filename) {
+    std::array<std::string, 4> strs = {"gamma_a", "gamma_m", "gamma_c", "I_peak"};
+    std::array<std::ofstream, 4> files;
+    for (size_t i = 0; i < strs.size(); ++i) {
+        files[i].open(filename + "_" + strs[i] + ".txt");
+        if (!files[i]) {
+            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt" << std::endl;
+            return;
+        }
+    }
+
+    for (size_t i = 0; i < e.size(); ++i) {
+        for (size_t j = 0; j < e[i].size(); ++j) {
+            for (size_t k = 0; k < e[i][j].size(); ++k) {
+                files[0] << e[i][j][k].gamma_a << " ";
+                files[1] << e[i][j][k].gamma_m << " ";
+                files[2] << e[i][j][k].gamma_c << " ";
+                files[3] << e[i][j][k].I_nu_peak << " ";
+            }
+            files[0] << '\n';
+            files[1] << '\n';
+            files[2] << '\n';
+            files[3] << '\n';
+        }
+        files[0] << '\n';
+        files[1] << '\n';
+        files[2] << '\n';
+        files[3] << '\n';
+    }
+}
 
 /********************************************************************************************************************
  * FUNCTION: output (MeshGrid3d version without unit)
