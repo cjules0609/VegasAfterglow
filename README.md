@@ -28,7 +28,7 @@
 VegasAfterglow requires **C++17** and **Make**. To compile:
 
 ```sh
-git clone https://github.com/your-repo/VegasAfterglow.git
+git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 cd VegasAfterglow
 make -j$(nproc)  # Use all available cores
 ```
