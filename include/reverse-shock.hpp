@@ -172,15 +172,15 @@ inline void Blandford_McKee(size_t i, size_t j, size_t k, Shock& shock, CrossSta
  ********************************************************************************************************************/
 template <typename FShockEqn, typename RShockEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& f_shock, Shock& r_shock, FShockEqn& eqn_f,
-                  RShockEqn& eqn_r) {
+                  RShockEqn& eqn_r, Real rtol = 1e-9) {
     using namespace boost::numeric::odeint;
-    Real atol = 0, rtol = 1e-6, t0 = t[0];
+    Real t0 = t[0];
     Real dt = (t[1] - t[0]) / 100;
     typename FShockEqn::State state;
 
-    // auto stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{atol, rtol};
+    auto stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{0, rtol};
     //  Alternatively:
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
+    // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
 
     setForwardInit(eqn_f, state, t0);
     if (state[0] <= con::Gamma_cut) {  // If the initial Lorentz factor is too low, exit early

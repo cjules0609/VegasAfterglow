@@ -160,10 +160,10 @@ void setForwardInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
 
 // Solves the forward shock evolution for a given shell (across radius values in array r) and updates the Shock object.
 template <typename ShockEqn>
-void solveForwardShell(size_t i, size_t j, const Array& t, Shock& f_shock, ShockEqn& eqn) {
+void solveForwardShell(size_t i, size_t j, const Array& t, Shock& f_shock, ShockEqn& eqn, double rtol = 1e-9) {
     using namespace boost::numeric::odeint;
 
-    Real atol = 0, rtol = 1e-6, t0 = t[0];
+    Real t0 = t[0];
     Real dt = (t[1] - t[0]) / 100;
 
     typename ShockEqn::State state;
@@ -175,8 +175,8 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& f_shock, Shock
     }
 
     // Create a dense output stepper for integrating the shock equations
-    // auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{atol, rtol};
-    auto stepper = make_dense_output(atol, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
+    auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{0, rtol};
+    // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
     stepper.initialize(state, t0, dt);
 
     Real t_back = t[t.size() - 1];  // Last radius in the array
