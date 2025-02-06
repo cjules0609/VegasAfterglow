@@ -52,9 +52,9 @@ make -j$(nproc)  # Use all available cores
 ### Example Simulation
 
 ```cpp
-size_t r_num = 100, theta_num = 64, phi_num = 32;
-double n_ism = 1e-3, eps_e = 0.1, eps_B = 1e-3, p = 2.2;
-double E_iso = 1e53, Gamma0 = 300, theta_c = 0.1, theta_v = 0.2;
+size_t r_num = 32, theta_num = 32, phi_num = 32;
+double n_ism = 1e-3 / con::cm3, eps_e = 0.1, eps_B = 1e-3, p = 2.2;
+double E_iso = 1e53 * con::erg, Gamma0 = 300, theta_c = 0.1, theta_v = 0.2;
 
 // Define Medium & Jet
 auto medium = createISM(n_ism);
