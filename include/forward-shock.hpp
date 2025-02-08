@@ -129,7 +129,7 @@ Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r
 template <typename Jet, typename Injector>
 Real ForwardShockEqn<Jet, Injector>::dUdt(Real Gamma, Real u, Real r, Real dGdt, Real drdt, Real ad_idx, Real rho) {
     Real E = r * r * rho * con::c2;
-    return ((1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGdt / drdt / Gamma) * u) * drdt;
+    return ((1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGdt / (drdt * Gamma)) * u) * drdt;
 }
 
 // Updates the forward shock state at grid index (i, j, k) using the current state vector and the medium properties.

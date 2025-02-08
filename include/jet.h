@@ -209,7 +209,7 @@ namespace math {
     // Power-law integral: integrates the power-law injection over time, handling the q = 1 case separately.
     inline auto powerLawIntegral(Real t0, Real q) {
         return [=](Real t) -> Real {
-            if (std::fabs(q - 1) > 1e-6) {
+            if (std::abs(q - 1) > 1e-6) {
                 return t0 / (1 - q) * (fastPow(1 + t / t0, 1 - q) - 1);
             } else {
                 return t0 * fastLog(1 + t / t0);

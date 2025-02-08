@@ -90,7 +90,7 @@ Real FRShockEqn<Jet, Injector>::dN3dtPerOmega(Real r, Real n1, Real n4, Real gam
     Real F = f_a * f_b * f_c;
     */
     Real n3 = n4 * ratio_u;
-    Real dxdr = 1. / (gamma4 * std::sqrt((1 + this->jet_sigma) * n4 / n1) * std::fabs(1 - gamma4 * n4 / gamma3 / n3));
+    Real dxdr = 1. / (gamma4 * std::sqrt((1 + this->jet_sigma) * n4 / n1) * std::abs(1 - gamma4 * n4 / gamma3 / n3));
     return n3 * r * r * gamma3 * dxdr;
 }
 

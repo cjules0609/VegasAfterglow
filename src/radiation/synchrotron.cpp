@@ -7,7 +7,6 @@
 
 #include "synchrotron.h"
 
-#include <boost/math/tools/roots.hpp>
 #include <cmath>
 
 #include "afterglow.h"
@@ -458,7 +457,7 @@ Real syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
     Real gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y0)));
     Real Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_M, p);
 
-    for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
+    for (; std::abs((Y1 - Y0) / Y0) > 1e-5;) {
         gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y1)));
         Y0 = Y1;
         Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_M, p);
@@ -504,7 +503,7 @@ Real syn_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
     Real gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
     Real Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_c, p);
 
-    for (; std::fabs((Y1 - Y0) / Y0) > 1e-3;) {
+    for (; std::abs((Y1 - Y0) / Y0) > 1e-3;) {
         gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y1) * t_com);
         gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
         Y0 = Y1;
@@ -532,7 +531,8 @@ Real syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gam
     // strong absorption
     if (nu_a > nu_peak) {
         nu_a = fastPow(
-            I_syn_peak / (2 * con::me * (ad_idx - 1) * sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)), 0.4);
+            I_syn_peak / (2 * con::me * (ad_idx - 1) * std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)),
+            0.4);
         /* Real gamma_a = syn_gamma(nu_a, B);
         if (gamma_a > 10) {
             return gamma_a;
@@ -585,7 +585,6 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
                 Real B = shock.B[i][j][k];
                 Real p = e[i][j][k].p;
                 auto& Ys = e[i][j][k].Ys;
-
                 auto& electron = e[i][j][k];
 
                 electron.gamma_M = syn_gamma_M(B, Ys, p);         // Update maximum electron Lorentz factor

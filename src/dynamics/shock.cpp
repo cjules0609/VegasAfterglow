@@ -7,8 +7,6 @@
 
 #include "shock.h"
 
-#include <boost/numeric/odeint.hpp>
-
 #include "afterglow.h"
 #include "macros.h"
 #include "mesh.h"

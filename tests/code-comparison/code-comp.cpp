@@ -69,9 +69,7 @@ void lc_gen(std::string folder_name) {
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
 
-    Observer obs(coord);
-
-    obs.observe(f_shock, theta_view, lumi_dist, z);
+    Observer obs(coord, f_shock, theta_view, lumi_dist, z);
 
     Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 50);
 

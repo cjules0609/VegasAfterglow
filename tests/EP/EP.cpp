@@ -41,10 +41,10 @@ void GCN36236(Real theta_c) {
 
     Array theta_obs = linspace(5 * con::deg, 60 * con::deg, 56);
 
-    Observer obs(coord);
+    Observer obs(coord, f_shock, 0, lumi_dist, z);
 
     for (auto theta_v : theta_obs) {
-        obs.observe(f_shock, theta_v, lumi_dist, z);
+        obs.changeViewingAngle(theta_v);
 
         Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
 

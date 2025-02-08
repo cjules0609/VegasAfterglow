@@ -8,12 +8,12 @@
 #ifndef _SHOCKDYNAMICS_
 #define _SHOCKDYNAMICS_
 
-#include <boost/numeric/odeint.hpp>
 #include <tuple>
 
 #include "jet.h"
 #include "medium.h"
 #include "mesh.h"
+#include "odeint.hpp"
 #include "physics.h"
 
 /********************************************************************************************************************
@@ -26,7 +26,7 @@
 class Shock {
    public:
     Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
-    Shock();
+    Shock() = delete;
 
     MeshGrid3d t_com;           // comoving time
     MeshGrid3d r;               // radius
@@ -39,9 +39,9 @@ class Shock {
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
 
    private:
-    size_t phi_size{0};    // Number of grid points in phi direction
-    size_t theta_size{0};  // Number of grid points in theta direction
-    size_t t_size{0};      // Number of grid points in time direction
+    size_t const phi_size{0};    // Number of grid points in phi direction
+    size_t const theta_size{0};  // Number of grid points in theta direction
+    size_t const t_size{0};      // Number of grid points in time direction
 };
 
 /********************************************************************************************************************
@@ -80,7 +80,7 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
 void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real dMdOmega_up,
                       Real n_up_str, Real sigma);
 
-inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return sqrt(8 * con::pi * eps_B * e_thermal); }
+inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
 inline Real drdt(Real beta) { return (beta * con::c) / std::abs(1 - beta); }
 inline Real dtdt_CoMoving(Real Gamma, Real beta) { return 1 / (Gamma * std::abs(1 - beta)); };
 inline Real calc_pB4(Real n4, Real sigma) { return sigma * n4 * con::mp * con::c2 / 2; }
@@ -128,7 +128,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
         // Create a ForwardShockEqn for each theta slice (phi is set to 0)
         auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         // auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        //         Solve the shock shell for this theta slice
+        //          Solve the shock shell for this theta slice
         solveForwardShell(0, j, coord.t, f_shock, eqn, rtol);
     }
 

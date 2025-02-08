@@ -36,8 +36,10 @@ class SimpleShockEqn {
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    inline Real dGammadt(Real Gamma, Real r, Real drdt, Real rho);
-    Real const dM0{0};  // Initial mass per unit solid angle
+    inline Real dGammadt(Real t, Real Gamma, Real r, Real drdt, Real rho);
+    Real const dM0{0};         // Initial mass per unit solid angle
+    Real const inj_Gamma0{0};  // Initial Gamma from the injector
+    Real const inj_sigma{0};   // Injector magnetization parameter
 };
 
 /********************************************************************************************************************
@@ -61,8 +63,8 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real
     Real beta = gammaTobeta(Gamma);    // Convert Gamma to beta (velocity/c)
     Real beta4 = gammaTobeta(gamma4);  // Convert gamma4 to beta
 
-    dydt[2] = drdt(beta);                        // Compute derivative of r with respect to t
-    dydt[0] = dGammadt(Gamma, r, dydt[2], rho);  // d(Gamma)/dt
+    dydt[2] = drdt(beta);                           // Compute derivative of r with respect to t
+    dydt[0] = dGammadt(t, Gamma, r, dydt[2], rho);  // d(Gamma)/dt
     dydt[1] = 0;
     dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
     dydt[4] = dDdt_Jet(gamma4, beta4);     // d(D_jet)/dt
@@ -84,7 +86,9 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
       eps_e(eps_e),
       jet_sigma(jet.sigma0(phi, theta, 0)),
       gamma4(jet.Gamma0(phi, theta, 0)),
-      dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)) {
+      dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)),
+      inj_Gamma0(inject.Gamma0(phi, theta, 0)),
+      inj_sigma(inject.sigma0(phi, theta, 0)) {
     // dM0dOmega(jet.dE0dOmega(theta) / (jet.Gamma0(theta) * con::c2)) is commented out.
 }
 
@@ -93,9 +97,13 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
  * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real SimpleShockEqn<Jet, Injector>::dGammadt(Real Gamma, Real r, Real drdt, Real rho) {
+Real SimpleShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real r, Real drdt, Real rho) {
     Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
-    return -(Gamma * Gamma - 1) / (dM0 + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm) * r * r * rho * drdt;
+    Real dm_inj = inject.dEdOmega(phi, theta, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
+    Real L_inj = inject.dLdOmega(phi, theta, t);  // Injected luminosity per unit solid angle
+    double a1 = (1 - Gamma * Gamma) * r * r * rho * drdt;
+    double a2 = L_inj / con::c2 * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
+    return (a1 + a2) / (dM0 + dm_inj + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm);
 }
 
 #endif

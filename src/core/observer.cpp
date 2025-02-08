@@ -7,7 +7,6 @@
 
 #include "observer.h"
 
-#include <boost/numeric/odeint.hpp>
 #include <cmath>
 
 #include "macros.h"
@@ -35,6 +34,21 @@ Real LogScaleInterp::interpIntensity(Real log_t) const {
 }
 
 /********************************************************************************************************************
+ * TEMPLATE METHOD: Observer::changeViewingAngle
+ * DESCRIPTION: Updates the Observer's viewing angle
+ ********************************************************************************************************************/
+void Observer::changeViewingAngle(Real theta_view) {
+    // Set effective phi grid size based on the observation angle and jet dimensionality.
+    if (theta_view == 0 && interp.jet_3d == 0) {
+        eff_phi_size = 1;
+    } else {
+        eff_phi_size = coord.phi.size();
+    }
+    calcSolidAngle();
+    calcObsTimeGrid();
+}
+
+/********************************************************************************************************************
  * METHOD: LogScaleInterp::interpDoppler
  * DESCRIPTION: Interpolates the Doppler factor at a given logarithmic observation time (log_t) using linear
  *              interpolation in log-space. The result is returned in linear space.
@@ -58,36 +72,15 @@ void Observer::calcSolidAngle() {
         }
     }
 }
-/********************************************************************************************************************
- * CONSTRUCTOR: Observer::Observer
- * DESCRIPTION: Constructs an Observer object with the given coordinate grid.
- *              It initializes the doppler and t_obs_grid as 3D grids, dOmega as a 2D grid, and log_r as a 1D array.
- *              The logarithm of each radius value is computed and stored in log_r. Finally, the solid angle is
- *calculated.
- ********************************************************************************************************************/
-Observer::Observer(Coord const& coord)
-    : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
-      doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
-      theta_obs(0),
-      lumi_dist(1),
-      z(0),
-      dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
-      r_grid(nullptr),
-      interp(),
-      coord(coord),
-      eff_phi_size(1) {
-    // Calculate the solid angle grid.
-    calcSolidAngle();
-}
 
 /********************************************************************************************************************
  * METHOD: Observer::calcObsTimeGrid
  * DESCRIPTION: Calculates the observation time grid (t_obs_grid) and updates the doppler factor grid based on the
- *              provided Gamma (Lorentz factor) and engine time (t) array.
+ *              Gamma (Lorentz factor) and engine time (t) array.
  *              For each grid point, the Doppler factor is computed and the observed time is calculated taking
  *              redshift into account.
  ********************************************************************************************************************/
-void Observer::calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& r_grid) {
+void Observer::calcObsTimeGrid() {
     auto [phi_size, theta_size, t_size] = coord.shape();
     Real cos_obs = std::cos(theta_obs);
     Real sin_obs = std::sin(theta_obs);

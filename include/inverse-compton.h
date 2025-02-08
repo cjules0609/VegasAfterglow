@@ -128,7 +128,7 @@ struct ICPhoton {
             for (size_t j = 0; j < grid.num; ++j) {
                 Real gamma_ = grid.y[j];
                 Real dgamma = grid.y_bin[j + 1] - grid.y_bin[j];
-                Real dS = std::fabs(dnu * dgamma);
+                Real dS = std::abs(dnu * dgamma);
                 Real f = 4 * gamma_ * gamma_ * nu0_ * nu0_;
                 grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * comptonSigma(nu0_ / gamma_);
             }

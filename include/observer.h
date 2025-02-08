@@ -68,7 +68,8 @@ class LogScaleInterp {
 class Observer {
    public:
     // Constructor: Requires a coordinate reference to initialize the observer.
-    Observer(Coord const& coord);
+    template <typename Dynamics>
+    Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
     Observer() = delete;  // Default constructor is deleted.
 
     MeshGrid3d t_obs_grid;  // Grid of observation times
@@ -78,8 +79,7 @@ class Observer {
     Real z{0};              // Redshift
 
     // Observes the provided dynamics (dyn) with the given observation parameters.
-    template <typename Dynamics>
-    void observe(Dynamics const& dyn, Real theta_obs, Real lumi_dist, Real z);
+    void changeViewingAngle(Real theta_obs);
 
     // Computes the specific flux at a single observed frequency (nu_obs) for the given observation times,
     // using one or more photon grids.
@@ -99,14 +99,15 @@ class Observer {
     MeshGrid spectrum(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
 
    private:
-    MeshGrid dOmega;                    // Grid of solid angles
-    MeshGrid3d const* r_grid{nullptr};  // Grid of radius in logarithmic scale
-    LogScaleInterp interp;              // Log-scale interpolation helper
-    Coord const& coord;                 // Reference to the coordinate object
-    size_t eff_phi_size{1};             // Effective number of phi grid points
+    LogScaleInterp interp;     // Log-scale interpolation helper
+    MeshGrid dOmega;           // Grid of solid angles
+    MeshGrid3d const& r_grid;  // Grid of radius
+    MeshGrid3d const& Gamma;   // Grid of Lorentz factors
+    Coord const& coord;        // Reference to the coordinate object
+    size_t eff_phi_size{1};    // Effective number of phi grid points
 
     // Calculates the observation time grid based on Gamma and engine time array.
-    void calcObsTimeGrid(MeshGrid3d const& Gamma, MeshGrid3d const& r);
+    void calcObsTimeGrid();
     // Calculates the solid angle grid.
     void calcSolidAngle();
 
@@ -114,36 +115,6 @@ class Observer {
     template <typename Iter, typename... PhotonGrid>
     void calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 };
-
-/********************************************************************************************************************
- * TEMPLATE METHOD: Observer::observe
- * DESCRIPTION: Updates the Observer object using the provided dynamics (dyn). It sets the observer’s theta, redshift,
- *              and luminosity distance, and updates internal parameters such as the effective phi grid size.
- *              It then calculates the solid angle grid and observation time grid based on the provided dynamics.
- ********************************************************************************************************************/
-template <typename Dynamics>
-void Observer::observe(Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift) {
-    // Extract grid dimensions from the dynamics object.
-    auto [phi_size, theta_size, t_size] = dyn.shape();
-
-    theta_obs = theta_view;
-    lumi_dist = luminosity_dist;
-    z = redshift;
-    interp.z = redshift;
-    // Determine if the jet is 3D (more than one phi value)
-    interp.jet_3d = static_cast<size_t>((phi_size > 1));
-
-    // Set effective phi grid size based on the observation angle and jet dimensionality.
-    if (theta_view == 0 && interp.jet_3d == 0) {
-        eff_phi_size = 1;
-    } else {
-        eff_phi_size = coord.phi.size();
-    }
-    // Calculate the solid angle grid and observation time grid.
-    r_grid = &(dyn.r);
-    calcSolidAngle();
-    calcObsTimeGrid(dyn.Gamma_rel, dyn.r);
-}
 
 /********************************************************************************************************************
  * TEMPLATE METHOD: LogScaleInterp::trySetBoundary
@@ -191,6 +162,42 @@ bool LogScaleInterp::trySetBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d 
 }
 
 /********************************************************************************************************************
+ * CONSTRUCTOR: Observer::Observer
+ * DESCRIPTION: Constructs an Observer object with the given coordinate grid, dynamics, observation angle, luminosity
+ *              and redshift. It initializes the observation time and Doppler factor grids, as well as the
+ *              interpolation object.
+ ********************************************************************************************************************/
+template <typename Dynamics>
+Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift)
+    : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
+      doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
+      theta_obs(theta_view),
+      lumi_dist(luminosity_dist),
+      z(redshift),
+      interp(),
+      dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
+      r_grid(dyn.r),
+      Gamma(dyn.Gamma_rel),
+      coord(coord),
+      eff_phi_size(1) {
+    // Calculate the solid angle grid.
+    auto [phi_size, theta_size, t_size] = dyn.shape();
+    interp.z = redshift;
+    // Determine if the jet is 3D (more than one phi value)
+    interp.jet_3d = static_cast<size_t>((phi_size > 1));
+
+    // Set effective phi grid size based on the observation angle and jet dimensionality.
+    if (theta_view == 0 && interp.jet_3d == 0) {
+        eff_phi_size = 1;
+    } else {
+        eff_phi_size = coord.phi.size();
+    }
+    // Calculate the solid angle grid and observation time grid.
+    calcSolidAngle();
+    calcObsTimeGrid();
+}
+
+/********************************************************************************************************************
  * TEMPLATE METHOD: Observer::calcSpecificFlux
  * DESCRIPTION: Calculates the specific flux at each observation time for a given observed frequency nu_obs.
  *              For each effective phi and theta grid point, it:
@@ -219,7 +226,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
         for (size_t j = 0; j < theta_size; j++) {
             Real const solid_angle = dOmega[i][j];
             // Attempt to set the initial boundary values; if unsuccessful, skip this grid cell.
-            if (!interp.trySetBoundary(i, j, 0, *r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+            if (!interp.trySetBoundary(i, j, 0, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                 continue;
             }
 
@@ -238,7 +245,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 Real const t_obs_hi = t_obs_grid[i][j][k + 1];
 
                 if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
-                    if (!interp.trySetBoundary(i, j, k, *r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+                    if (!interp.trySetBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                         continue;
                     }
                 }
@@ -250,7 +257,6 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
 #ifdef EXTRAPOLATE
             //   Extrapolation for observation times above the grid.
             for (; t_idx < t_obs_size; t_idx++) {
-                print("extrapolating");
                 update_flux(t_idx, solid_angle);
             }
 #endif
@@ -271,9 +277,6 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
-    if (r_grid == nullptr) {
-        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
-    }
     Array F_nu = zeros(t_obs.size());
     calcSpecificFlux(F_nu.data(), t_obs, nu_obs, photons...);
     return F_nu;
@@ -286,9 +289,6 @@ Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
-    if (r_grid == nullptr) {
-        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
-    }
     MeshGrid F_nu = createGrid(nu_obs.size(), t_obs.size(), 0);
     size_t t_num = t_obs.size();
     for (size_t l = 0; l < nu_obs.size(); ++l) {
@@ -305,9 +305,6 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
-    if (r_grid == nullptr) {
-        throw std::runtime_error("Observer::specificFlux: r_grid is not set. Call observe() first.");
-    }
     Array nu_obs = boundaryToCenterLog(band_freq);
     MeshGrid F_nu = specificFlux(t_obs, nu_obs, photons...);
     Array flux = zeros(t_obs.size());

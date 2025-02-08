@@ -100,7 +100,7 @@ bool isLinearScale(Array const& arr, Real tolerance) {
 
     Real diff = arr[1] - arr[0];
     for (size_t i = 2; i < arr.size(); ++i) {
-        if (std::fabs((arr[i] - arr[i - 1] - diff) / diff) > tolerance) {
+        if (std::abs((arr[i] - arr[i - 1] - diff) / diff) > tolerance) {
             return false;
         }
     }
@@ -117,7 +117,7 @@ bool isLogScale(Array const& arr, Real tolerance) {
 
     Real ratio = arr[1] / arr[0];
     for (size_t i = 2; i < arr.size(); ++i) {
-        if (std::fabs((arr[i] / arr[i - 1] - ratio) / ratio) > tolerance) {
+        if (std::abs((arr[i] / arr[i - 1] - ratio) / ratio) > tolerance) {
             return false;
         }
     }
@@ -167,13 +167,13 @@ Coord::Coord(Array const& phi, Array const& theta, Array const& t)
     size_t phi_size = phi.size();
     if (phi_size > 1) {
         // Compute dphi for the first element.
-        dphi[0] = std::fabs(phi[1] - phi[0]) / 2;
+        dphi[0] = std::abs(phi[1] - phi[0]) / 2;
         // Compute dphi for intermediate elements.
         for (size_t i = 1; i < phi_size - 1; i++) {
-            dphi[i] = std::fabs(phi[i + 1] - phi[i - 1]) / 2;
+            dphi[i] = std::abs(phi[i + 1] - phi[i - 1]) / 2;
         }
         // Compute dphi for the last element.
-        dphi[phi_size - 1] = std::fabs(phi[phi_size - 1] - phi[phi_size - 2]) / 2;
+        dphi[phi_size - 1] = std::abs(phi[phi_size - 1] - phi[phi_size - 2]) / 2;
     } else if (phi_size == 1) {
         dphi[0] = 2 * con::pi;
     }
@@ -182,17 +182,17 @@ Coord::Coord(Array const& phi, Array const& theta, Array const& t)
     if (theta_size > 1) {
         // Compute dcos for the first element.
         Real theta_hi = (theta[1] + theta[0]) / 2;
-        dcos[0] = std::fabs(std::cos(theta_hi) - std::cos(theta[0]));
+        dcos[0] = std::abs(std::cos(theta_hi) - std::cos(theta[0]));
 
         // Compute dcos for intermediate theta values.
         for (size_t j = 1; j < theta_size - 1; j++) {
             Real theta_lo = (theta[j] + theta[j - 1]) / 2;
             Real theta_hi = (theta[j] + theta[j + 1]) / 2;
-            dcos[j] = std::fabs(std::cos(theta_hi) - std::cos(theta_lo));
+            dcos[j] = std::abs(std::cos(theta_hi) - std::cos(theta_lo));
         }
         // Compute dcos for the last element.
         Real theta_lo = (theta[theta_size - 1] + theta[theta_size - 2]) / 2;
-        dcos[theta_size - 1] = std::fabs(std::cos(theta[theta_size - 1]) - std::cos(theta_lo));
+        dcos[theta_size - 1] = std::abs(std::cos(theta[theta_size - 1]) - std::cos(theta_lo));
     } else if (theta_size == 1) {
         dcos[0] = 1;
     }
