@@ -29,12 +29,8 @@ class LogScaleInterp {
     Real z{0};         // Redshift
     size_t jet_3d{0};  // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
 
-    // Interpolates the radius using the logarithm of the observation time (log_t)
-    Real interpRadius(Real log_t) const;
-    // Interpolates the intensity using the logarithm of the observation time (log_t)
-    Real interpIntensity(Real log_t) const;
-    // Interpolates the Doppler factor using the logarithm of the observation time (log_t)
-    Real interpDoppler(Real log_t) const;
+    // Interpolates the radius, Intensity, and Doppler factor using  the observation time (t)
+    std::tuple<Real, Real, Real> interpRID(Real t_obs) const;
 
     // Tries to set the interpolation boundaries using the provided logarithmic radius array, observation time grid,
     // Doppler grid, observed frequency, and one or more photon grids.
@@ -43,17 +39,17 @@ class LogScaleInterp {
                         MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons);
 
    private:
-    Real log_r_lo{0};  // Lower boundary of logarithmic radius
-    Real log_r_hi{0};  // Upper boundary of logarithmic radius
+    Real log_r_ratio{0};  // Ratio of logarithmic radius
+    Real log_t_ratio{0};  // Ratio of logarithmic observation time
+    Real log_d_ratio{0};  // Ratio of logarithmic Doppler factor
+    Real log_I_ratio{0};  // Ratio of logarithmic intensity
 
-    Real log_t_lo{0};  // Lower boundary of logarithmic observation time
-    Real log_t_hi{0};  // Upper boundary of logarithmic observation time
+    Real I_lo{0};      // Lower boundary of intensity
+    Real t_obs_lo{0};  // Lower boundary of observation time
+    Real r_lo{0};      // Lower boundary of radius
+    Real d_lo{0};      // Lower boundary of Doppler factor
 
-    Real log_d_lo{0};  // Lower boundary of logarithmic Doppler factor
-    Real log_d_hi{0};  // Upper boundary of logarithmic Doppler factor
-
-    Real log_I_lo{0};  // Lower boundary of logarithmic intensity
-    Real log_I_hi{0};  // Upper boundary of logarithmic intensity
+    Real I_hi{0};  // Upper boundary of intensity
 
     size_t idx_hi{0};  // Index for the upper boundary in the grid
 };
@@ -96,7 +92,10 @@ class Observer {
 
     // Computes the spectrum over a frequency band.
     template <typename... PhotonGrid>
-    MeshGrid spectrum(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
+    MeshGrid spectrum(Array const& t_obs, Array const& freqs, PhotonGrid const&... photons);
+
+    template <typename... PhotonGrid>
+    MeshGrid spectrum(Real t_obs, Array const& freqs, PhotonGrid const&... photons);
 
    private:
     LogScaleInterp interp;     // Log-scale interpolation helper
@@ -130,35 +129,38 @@ class Observer {
 template <typename... PhotonGrid>
 bool LogScaleInterp::trySetBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& r, MeshGrid3d const& t_obs,
                                     MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
+    t_obs_lo = t_obs[i][j][k_lo];
+    log_t_ratio = fastLog(t_obs[i][j][k_lo + 1] / t_obs[i][j][k_lo]);
+
+    if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) {
+        return false;
+    }
+
+    r_lo = r[i * jet_3d][j][k_lo];
+    log_r_ratio = fastLog(r[i * jet_3d][j][k_lo + 1] / r_lo);
+
+    d_lo = doppler[i][j][k_lo];
+    log_d_ratio = fastLog(doppler[i][j][k_lo + 1] / d_lo);
+
     // If continuing from previous boundary, shift the high boundary values to lower. Calling .I_nu() is expensive.
     if (idx_hi != 0 && k_lo == idx_hi) {
-        log_r_lo = log_r_hi;
-        log_t_lo = log_t_hi;
-        log_d_lo = log_d_hi;
-        log_I_lo = log_I_hi;
+        I_lo = I_hi;
     } else {
-        // Otherwise, set lower boundary values using the k_lo index.
-        log_r_lo = fastLog(r[i * jet_3d][j][k_lo]);
-        log_t_lo = fastLog(t_obs[i][j][k_lo]);
-        log_d_lo = fastLog(doppler[i][j][k_lo]);
-
         Real D = doppler[i][j][k_lo];
         Real nu = (1 + z) * nu_obs / D;
-
-        log_I_lo = fastLog((photons[i * jet_3d][j][k_lo].I_nu(nu) + ...));
+        I_lo = (photons[i * jet_3d][j][k_lo].I_nu(nu) + ...);
     }
-    // Set upper boundary values at index k_lo + 1.
-    log_r_hi = fastLog(r[i * jet_3d][j][k_lo + 1]);
-    log_t_hi = fastLog(t_obs[i][j][k_lo + 1]);
-    log_d_hi = fastLog(doppler[i][j][k_lo + 1]);
-
     Real D = doppler[i][j][k_lo + 1];
     Real nu = (1 + z) * nu_obs / D;
+    I_hi = (photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...);
+    log_I_ratio = fastLog(I_hi / I_lo);
 
-    log_I_hi = fastLog((photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...));
+    if (!std::isfinite(log_I_ratio)) {
+        return false;
+    }
 
     idx_hi = k_lo + 1;
-    return std::isfinite(log_t_lo) && std::isfinite(log_t_hi);
+    return true;
 }
 
 /********************************************************************************************************************
@@ -211,16 +213,6 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t t_obs_size = t_obs.size();
 
-    // Define a lambda to update the flux for a given observation time index.
-    auto update_flux = [&](size_t id, Real solid_angle) {
-        Real const log_t = fastLog(t_obs[id]);
-        Real const D = interp.interpDoppler(log_t);
-        Real const r = interp.interpRadius(log_t);
-        Real const I_nu = interp.interpIntensity(log_t);
-        // The flux contribution scales as D^3 * I_nu * r^2 * solid_angle.
-        f_nu[id] += D * D * D * I_nu * r * r * solid_angle;
-    };
-
     // Loop over effective phi and theta grid points.
     for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
@@ -235,7 +227,8 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
             // cell untill the first observation time is reached.
             for (; t_idx < t_obs_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
 #ifdef EXTRAPOLATE
-                update_flux(t_idx, solid_angle);
+                auto [r, I_nu, D] = interp.interpRID(t_obs[t_idx]);
+                f_nu[t_idx] += D * D * D * I_nu * r * r * solid_angle;
 #endif
             }
 
@@ -251,13 +244,15 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 }
 
                 for (; t_idx < t_obs_size && t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi; t_idx++) {
-                    update_flux(t_idx, solid_angle);
+                    auto [r, I_nu, D] = interp.interpRID(t_obs[t_idx]);
+                    f_nu[t_idx] += D * D * D * I_nu * r * r * solid_angle;
                 }
             }
 #ifdef EXTRAPOLATE
             //   Extrapolation for observation times above the grid.
             for (; t_idx < t_obs_size; t_idx++) {
-                update_flux(t_idx, solid_angle);
+                auto [r, I_nu, D] = interp.interpRID(t_obs[t_idx]);
+                f_nu[t_idx] += D * D * D * I_nu * r * r * solid_angle;
             }
 #endif
         }

@@ -18,7 +18,7 @@
 template <typename Jet, typename Injector>
 class ForwardShockEqn {
    public:
-    using State = std::array<Real, 5>;  // State vector: typically [Gamma, u, t_eng, t_com, D_jet]
+    using State = std::array<Real, 4>;  // State vector: [Gamma, u, r, t_com]
 
     ForwardShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -67,13 +67,11 @@ void ForwardShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Rea
     Real ad_idx = adiabaticIndex(Gamma);  // Compute adiabatic index based on Gamma
     Real rho = medium.rho(r);             // Get medium density at radius r
     Real beta = gammaTobeta(Gamma);       // Convert Gamma to beta (velocity/c)
-    Real beta4 = gammaTobeta(gamma4);     // Convert gamma4 to beta
 
     dydt[2] = drdt(beta);                                        // Compute derivative of engine time with respect to t
     dydt[0] = dGammadt(t, Gamma, u, r, dydt[2], ad_idx, rho);    // d(Gamma)/dt
     dydt[1] = dUdt(Gamma, u, r, dydt[0], dydt[2], ad_idx, rho);  // d(u)/dt
     dydt[3] = dtdt_CoMoving(Gamma, beta);                        // d(t_com)/dt
-    dydt[4] = dDdt_Jet(gamma4, beta4);                           // d(D_jet)/dt
 }
 
 /********************************************************************************************************************
@@ -140,22 +138,22 @@ void updateForwardShock(size_t i, size_t j, int k, ShockEqn& eqn, const typename
     Real r = state[2];      // radius from state
     Real t_com = state[3];  // Comoving time from state
 
-    Real n1 = eqn.medium.rho(r) / con::mp;                // Compute upstream number density
-    Real dM1dOmega = eqn.medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle
+    Real n1 = eqn.medium.rho(r) / con::mp;                          // Compute upstream number density
+    Real dN1dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);  // number of proton per unit solid angle
 
-    updateShockState(f_shock, i, j, k, r, Gamma, t_com, dM1dOmega, n1, eqn.jet_sigma);
+    updateShockState(f_shock, i, j, k, r, Gamma, t_com, dN1dOmega, n1, eqn.jet_sigma);
 }
 
 // Initializes the forward shock state vector at radius r0.
 template <typename ShockEqn>
 void setForwardInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
-    Real gamma2 = eqn.jet.Gamma0(eqn.phi, eqn.theta, 0);  // Initial Lorentz factor
+    Real gamma2 = eqn.jet.Gamma0(eqn.phi, eqn.theta, t0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(gamma2);
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
     Real t_com0 = r0 / std::sqrt(gamma2 * gamma2 - 1) / con::c;
-    Real D_jet0 = con::c * eqn.jet.duration;
-    state = {gamma2, u0, r0, t_com0, D_jet0};
+    state = {gamma2, u0, r0, t_com0};
+    eqn.gamma4 = gamma2;
 }
 
 // Solves the forward shock evolution for a given shell (across radius values in array r) and updates the Shock object.

@@ -14,23 +14,16 @@
 #include "utilities.h"
 
 /********************************************************************************************************************
- * METHOD: LogScaleInterp::interpRadius
- * DESCRIPTION: Interpolates the radius at a given logarithmic observation time (log_t) using linear interpolation
- *              in log-space. The result is returned in linear space.
+ * METHOD: LogScaleInterp::interpRID
+ * DESCRIPTION: Interpolates the radius, intensity and Doppler factor at a given observation time (t) using linear
+ *              interpolation in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-Real LogScaleInterp::interpRadius(Real log_t) const {
-    // Linearly interpolate between the lower and upper log radius boundaries, then exponentiate.
-    return fastExp(log_r_lo + (log_r_hi - log_r_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
-}
-
-/********************************************************************************************************************
- * METHOD: LogScaleInterp::interpIntensity
- * DESCRIPTION: Interpolates the intensity at a given logarithmic observation time (log_t) using linear interpolation
- *              in log-space. The result is returned in linear space.
- ********************************************************************************************************************/
-Real LogScaleInterp::interpIntensity(Real log_t) const {
-    // Linearly interpolate between the lower and upper log intensity boundaries, then exponentiate.
-    return fastExp(log_I_lo + (log_I_hi - log_I_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
+std::tuple<Real, Real, Real> LogScaleInterp::interpRID(Real t_obs) const {
+    Real log_t = fastLog(t_obs / t_obs_lo);
+    Real r = r_lo * fastExp(log_t * log_r_ratio / log_t_ratio);
+    Real D = d_lo * fastExp(log_t * log_d_ratio / log_t_ratio);
+    Real I = I_lo * fastExp(log_t * log_I_ratio / log_t_ratio);
+    return std::make_tuple(r, I, D);
 }
 
 /********************************************************************************************************************
@@ -44,18 +37,9 @@ void Observer::changeViewingAngle(Real theta_view) {
     } else {
         eff_phi_size = coord.phi.size();
     }
+    theta_obs = theta_view;
     calcSolidAngle();
     calcObsTimeGrid();
-}
-
-/********************************************************************************************************************
- * METHOD: LogScaleInterp::interpDoppler
- * DESCRIPTION: Interpolates the Doppler factor at a given logarithmic observation time (log_t) using linear
- *              interpolation in log-space. The result is returned in linear space.
- ********************************************************************************************************************/
-Real LogScaleInterp::interpDoppler(Real log_t) const {
-    // Linearly interpolate between the lower and upper log Doppler boundaries, then exponentiate.
-    return fastExp(log_d_lo + (log_d_hi - log_d_lo) * (log_t - log_t_lo) / (log_t_hi - log_t_lo));
 }
 
 /********************************************************************************************************************

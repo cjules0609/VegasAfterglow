@@ -7,6 +7,7 @@
 
 #ifndef _REVERSESHOCK_
 #define _REVERSESHOCK_
+
 #include "shock.h"
 /********************************************************************************************************************
  * CLASS: FRShockEqn
@@ -137,32 +138,61 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
 }
 
 /********************************************************************************************************************
- * STRUCT: CrossState
- * DESCRIPTION: Represents the state variables at the crossing between forward and reverse shock phases.
- ********************************************************************************************************************/
-struct CrossState {
-    Real gamma_rel;
-    Real r;
-    Real column_num_den;
-    Real B;
-};
-
-/********************************************************************************************************************
  * INLINE FUNCTION: Blandford_McKee
  * DESCRIPTION: Updates the shock state at a grid cell using the Blandford–McKee self-similar solution.
  ********************************************************************************************************************/
-inline void Blandford_McKee(size_t i, size_t j, size_t k, Shock& shock, CrossState const& state_c, Real r, Real t_com) {
+inline void Blandford_McKee(size_t i, size_t j, size_t k, size_t k0, Shock& shock, Real r, Real t_com) {
     Real const g = 2.;
+    Real r0 = shock.r[i][j][k0];
     shock.t_com[i][j][k] = t_com;
-    shock.r[i][j][k] = r;  // TODO need to mofiy !!
-    // The following lines are alternative formulations (commented out):
-    // shock.Gamma[j][k] = (state_c.gamma - 1) * std::pow(r / state_c.r, -g) + 1;
-    // shock.n_p[j][k] = state_c.n3 * std::pow(r / state_c.r, -6 * (3 + g) / 7);
-    // shock.e_th[j][k] = state_c.e3 * std::pow(r / state_c.r, -8 * (3 + g) / 7);
-    // shock.width_eff[j][k] = state_c.D_eff * std::pow(r / state_c.r, (6. * (3. + g) - 14.) / 7.);
-    shock.Gamma_rel[i][j][k] = (state_c.gamma_rel - 1) * std::pow(r / state_c.r, -g) + 1;
-    shock.column_num_den[i][j][k] = state_c.column_num_den * std::pow(r / state_c.r, -2);
-    shock.B[i][j][k] = state_c.B * std::pow(r / state_c.r, (6. * (3. + g) - 14.) / 7.);
+    shock.r[i][j][k] = r;
+    shock.Gamma_rel[i][j][k] = (shock.Gamma_rel[i][j][k0] - 1) * std::pow(r / r0, -g) + 1;
+    shock.column_num_den[i][j][k] = shock.column_num_den[i][j][k0] * (r0 * r0) / (r * r);
+    shock.B[i][j][k] = shock.B[i][j][k0] * std::pow(r / r0, (6. * (3. + g) - 14.) / 7.);
+}
+
+// Determines whether a reverse shock exists based on current shock parameters.
+template <typename ShockEqn>
+bool reverseShockExists(ShockEqn const& eqn, Real t0) {
+    Real gamma = eqn.jet.Gamma0(eqn.phi, eqn.theta, t0);  // Initial Lorentz factor
+    Real beta0 = gammaTobeta(gamma);
+    Real r0 = beta0 * con::c * t0 / (1 - beta0);
+    Real D_jet0 = con::c * eqn.jet.duration;
+
+    Real n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t0), gamma, r0, D_jet0, eqn.jet_sigma);
+    Real n1 = eqn.medium.rho(r0) / con::mp;
+    return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
+}
+
+template <typename State>
+inline auto unpack_r_state(State const& r_state) {
+    return std::make_tuple(r_state[0], r_state[1], r_state[2], r_state[3], r_state[4]);
+}
+
+template <typename ShockEqn, typename FState, typename RState>
+void set_f_state(ShockEqn& eqn, FState& f_state, RState const& r_state, Real gamma2) {
+    Real r0 = r_state[2];
+    Real u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
+    Real t_com0 = r_state[3];
+    f_state = {gamma2, u0, r0, t_com0};
+    eqn.gamma4 = gamma2;
+}
+
+template <typename ShockEqn, typename State>
+bool updateForwardReverseShock(size_t i, size_t j, int k, ShockEqn& eqn, State const& state, Shock& f_shock,
+                               Shock& r_shock, Real dEdOmega, Real dN4dOmega) {
+    auto [ignore, dN3dOmega, r, t_com, D_jet] = unpack_r_state(state);
+
+    Real n1 = eqn.medium.rho(r) / con::mp;
+    Real n4 = calc_n4(dEdOmega, eqn.gamma4, r, D_jet, eqn.jet_sigma);
+    Real gamma3 = calc_gamma3(n1, n4, eqn.gamma4, eqn.jet_sigma);
+    Real dN1dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);
+
+    updateShockState(f_shock, i, j, k, r, gamma3, t_com, dN1dOmega, n1, eqn.jet_sigma);
+
+    Real gamma34 = relativeLorentz(eqn.gamma4, gamma3);
+    updateShockState(r_shock, i, j, k, r, gamma34, t_com, dN4dOmega, n4, eqn.jet_sigma);
+    return dN3dOmega >= dN4dOmega;
 }
 
 /********************************************************************************************************************
@@ -174,94 +204,57 @@ template <typename FShockEqn, typename RShockEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& f_shock, Shock& r_shock, FShockEqn& eqn_f,
                   RShockEqn& eqn_r, Real rtol = 1e-9) {
     using namespace boost::numeric::odeint;
-    Real t0 = t[0];
-    Real dt = (t[1] - t[0]) / 100;
-    typename FShockEqn::State state;
 
-    auto stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{0, rtol};
-    //  Alternatively:
-    // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
+    if (!reverseShockExists(eqn_r, t[0])) {
+        solveForwardShell(i, j, t, f_shock, eqn_f, rtol);
+    } else {
+        if (eqn_r.gamma4 <= con::Gamma_cut) {  // If the initial Lorentz factor is too low, exit early
+            return;
+        }
 
-    setForwardInit(eqn_f, state, t0);
-    if (state[0] <= con::Gamma_cut) {  // If the initial Lorentz factor is too low, exit early
-        return;
-    }
-    Real gamma3 = eqn_f.gamma4;
-    Real dN3dOmega = state[1];
-    Real r = state[2];
-    Real t_com = state[3];
-    Real D_jet = state[4];
+        Real t0 = t[0];
+        Real dt = (t[1] - t[0]) / 100;
+        typename RShockEqn::State r_state;
+        typename FShockEqn::State f_state;
 
-    bool RS_crossing = reverseShockExists(eqn_r, r, gamma3, t0, D_jet);
-    bool crossed = false;
+        auto r_stepper = bulirsch_stoer_dense_out<typename RShockEqn::State>{0, rtol};
+        // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
+        setReverseInit(eqn_r, r_state, t0);
+        Real dEdOmega = eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t0);
+        Real dN4dOmega = dEdOmega / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.jet_sigma));
 
-    if (RS_crossing) {
-        setReverseInit(eqn_r, state, t0);
-    }
+        bool crossed = false;
+        r_stepper.initialize(r_state, t0, dt);
+        // Integrate the shell over the radius array r
+        Real t_back = t[t.size() - 1];
 
-    Real n1 = 0, n4 = 0;
-
-    Real dN4dOmega =
-        eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t0) / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.jet_sigma));
-
-    CrossState state_c;
-    stepper.initialize(state, t0, dt);
-    // Integrate the shell over the radius array r
-    Real t_back = t[t.size() - 1];
-    for (int k = 0; stepper.current_time() <= t_back;) {
-        RS_crossing ? stepper.do_step(eqn_r) : stepper.do_step(eqn_f);
-
-        for (; stepper.current_time() > t[k] && k < t.size(); k++) {
-            stepper.calc_state(t[k], state);
-            r = state[2];
-            t_com = state[3];
-            D_jet = state[4];
-            n1 = eqn_f.medium.rho(r) / con::mp;
-            Real mass = eqn_f.medium.mass(r);
-            if (RS_crossing) {
-                n4 = calc_n4(eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t[k]), eqn_r.gamma4, r, D_jet, eqn_r.jet_sigma);
-                gamma3 = calc_gamma3(n1, n4, eqn_r.gamma4, eqn_r.jet_sigma);
-            } else {
-                gamma3 = state[0];
-            }
-
-            Real dM2dOmega = mass / (4 * con::pi);
-            updateShockState(f_shock, i, j, k, r, gamma3, t_com, dM2dOmega, n1, eqn_f.jet_sigma);
-
-            if (!crossed && RS_crossing) {
-                dN3dOmega = state[1];
-                Real gamma34 = (eqn_r.gamma4 / gamma3 + gamma3 / eqn_r.gamma4) / 2;
-                Real dM3dOmega = dN3dOmega * con::mp * con::c2;
-                updateShockState(r_shock, i, j, k, r, gamma34, t_com, dM3dOmega, n4, eqn_r.jet_sigma);
-
-                crossed = dN3dOmega >= dN4dOmega;
+        int k = 0, k0 = 0;
+        for (; !crossed && r_stepper.current_time() <= t_back;) {
+            r_stepper.do_step(eqn_r);
+            for (; r_stepper.current_time() > t[k] && k < t.size(); k++) {
+                r_stepper.calc_state(t[k], r_state);
+                crossed = updateForwardReverseShock(i, j, k, eqn_r, r_state, f_shock, r_shock, dEdOmega, dN4dOmega);
                 if (crossed) {
-                    RS_crossing = false;
-                    state_c = {r_shock.Gamma_rel[i][j][k], r_shock.r[i][j][k], r_shock.column_num_den[i][j][k],
-                               r_shock.B[i][j][k]};
-                    Real u0 = (gamma3 - 1) * mass / (4 * con::pi) * con::c2;
-                    state = {gamma3, u0, r, t_com, D_jet};
-                    eqn_f.gamma4 = gamma3;
-                    stepper.initialize(state, t[k], dt);
+                    k0 = k;  // k0 is the index of the first element in the array that the reverse shock crosses
+                    break;
                 }
-            } else if (!crossed && !RS_crossing) {
-                RS_crossing = reverseShockExists(eqn_r, r, gamma3, t[k], D_jet);
-                if (RS_crossing) {
-                    state = {1, 0., r, t_com, D_jet};
-                    stepper.initialize(state, t[k], dt);
-                }
-            } else {
-                Blandford_McKee(i, j, k, r_shock, state_c, r, t_com);
+            }
+        }
+
+        auto f_stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{0, rtol};
+        set_f_state(eqn_f, f_state, r_state, f_shock.Gamma_rel[i][j][k0]);
+        f_stepper.initialize(f_state, r_stepper.current_time(), r_stepper.current_time_step());
+
+        for (; f_stepper.current_time() <= t_back;) {
+            f_stepper.do_step(eqn_f);
+
+            for (; f_stepper.current_time() > t[k] && k < t.size(); k++) {
+                f_stepper.calc_state(t[k], f_state);
+                updateForwardShock(i, j, k, eqn_f, f_state, f_shock);
+                Blandford_McKee(i, j, k, k0, r_shock, f_state[2], f_state[3]);
             }
         }
     }
 }
 
-// Determines whether a reverse shock exists based on current shock parameters.
-template <typename ShockEqn>
-bool reverseShockExists(ShockEqn const& eqn, Real r, Real gamma, Real t, Real D_jet) {
-    Real n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t), gamma, r, D_jet, eqn.jet_sigma);
-    Real n1 = eqn.medium.rho(r) / con::mp;
-    return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
-}
 #endif

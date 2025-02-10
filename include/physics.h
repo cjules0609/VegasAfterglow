@@ -17,8 +17,6 @@
  * FUNCTION PROTOTYPES: Cosmological and Shock Distance Calculations
  * DESCRIPTION: These functions compute various distances used in shock and cosmological calculations.
  ********************************************************************************************************************/
-Real zToLuminosityDistance(Real z);                                     // Converts redshift z to luminosity distance.
-Real luminosityDistanceToz(Real L);                                     // Converts luminosity distance L to redshift.
 Real decRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);  // Deceleration radius.
 Real thinShellDecRadius(Real E_iso, Real n_ism, Real Gamma0);           // Thin shell deceleration radius.
 Real thickShellDecRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
@@ -66,7 +64,7 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
     }
     Real low = 0;
     Real hi = con::pi / 2;
-    Real eps = 1e-6;
+    Real eps = 1e-9;
     for (; hi - low > eps;) {
         Real mid = 0.5 * (low + hi);
         if (jet.Gamma0(0, mid, 0) > gamma_cut) {

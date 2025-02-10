@@ -53,19 +53,19 @@ using ShockPair = std::pair<Shock, Shock>;
 
 template <typename Jet, typename Injector>
 Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol = 1e-9);
+                      Real eps_B, Real rtol = 1e-6);
 
 template <typename Jet, typename Injector>
 Shock genForwardShock3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol = 1e-9);
+                        Real eps_B, Real rtol = 1e-6);
 
 template <typename Jet, typename Injector>
 ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol = 1e-9);
+                      Real eps_B, Real rtol = 1e-6);
 
 template <typename Jet, typename Injector>
 ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol = 1e-9);
+                        Real eps_B, Real rtol = 1e-6);
 
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities
@@ -77,7 +77,7 @@ ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet
 
 Real u_DownStr(Real gamma_rel, Real sigma);
 Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real dMdOmega_up,
+void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real dNdOmega_up,
                       Real n_up_str, Real sigma);
 
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
@@ -89,6 +89,9 @@ inline Real u_UpStr(Real u_down, Real gamma_rel) {
 }
 inline Real n_DownStr(Real n_up_str, Real gamma_rel, Real sigma) {
     return n_up_str * u_UpStr2u_DownStr(gamma_rel, sigma);
+}
+inline Real relativeLorentz(Real gamma1, Real gamma2) {
+    return gamma1 * gamma2 - std::sqrt((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1));
 }
 inline Real e_ThermalDownStr(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
@@ -126,9 +129,9 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
     Shock f_shock(1, theta_size, t_size, eps_e, eps_B);   // Create Shock with 1 phi slice
     for (size_t j = 0; j < theta_size; ++j) {
         // Create a ForwardShockEqn for each theta slice (phi is set to 0)
-        auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        // auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        //          Solve the shock shell for this theta slice
+        // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+        auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+        //           Solve the shock shell for this theta slice
         solveForwardShell(0, j, coord.t, f_shock, eqn, rtol);
     }
 
@@ -150,7 +153,8 @@ Shock genForwardShock3D(Coord const& coord, Medium const& medium, Jet const& jet
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each (phi, theta) pair
             auto eqn = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            // Solve the shock shell for this (phi, theta) slice
+            // auto eqn = SimpleShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
+            //  Solve the shock shell for this (phi, theta) slice
             solveForwardShell(i, j, coord.t, f_shock, eqn, rtol);
         }
     }
@@ -174,6 +178,7 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, 
     for (size_t j = 0; j < theta_size; ++j) {
         // Create equations for forward and reverse shocks for each theta slice (phi is 0)
         auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+        // auto eqn_f = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j]);
         // Solve the forward-reverse shock shell
         solveFRShell(0, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
@@ -199,6 +204,7 @@ ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet
         for (size_t j = 0; j < theta_size; ++j) {
             // Create equations for forward and reverse shocks for each (phi, theta) pair
             auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
+            // auto eqn_f = SimpleShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
             auto eqn_r = FRShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j]);
             // Solve the forward-reverse shock shell for this (phi, theta) pair
             solveFRShell(i, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
