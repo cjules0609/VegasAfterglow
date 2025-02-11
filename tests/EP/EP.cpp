@@ -7,7 +7,7 @@
 
 void GCN36236(Real theta_c) {
     Real E_iso = 1e53 * con::erg * (0.088 / theta_c) * (0.088 / theta_c);
-    Real lumi_dist = 1.23e27 * con::cm;
+    Real lumi_dist = 1.2e27 * con::cm;
     Real z = 0.01;
     Real theta_w = 0.6;
     Real Gamma0 = 300;
@@ -19,7 +19,7 @@ void GCN36236(Real theta_c) {
     // create model
     auto medium = createISM(n_ism);
 
-    auto jet = GaussianJet(theta_c, E_iso, Gamma0);
+    auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
 
     size_t r_num = 64;
     size_t theta_num = 64;
@@ -39,43 +39,37 @@ void GCN36236(Real theta_c) {
 
     Observer obs(coord, f_shock, 0, lumi_dist, z);
 
-    for (auto theta_v : theta_obs) {
-        obs.changeViewingAngle(theta_v);
+    std::array<double, 5> lo = {eVtoHz(0.2 * con::keV)};
 
-        auto to_suffix = [](Real theta) { return std::to_string(int((theta / con::deg))); };
+    std::array<double, 5> hi = {eVtoHz(10 * con::keV)};
 
-        char buff[100] = {0};
+    std::vector<std::string> prefix = {"EP"};
 
-        sprintf(buff, "data/F_nu_syn_%.0lf_%.0lf", (theta_v / con::deg), (theta_c / con::deg));
+    for (size_t i = 0; i < 1; i++) {
+        Array band_pass = logspace(lo[i], hi[i], 5);
+        for (auto theta_v : theta_obs) {
+            obs.changeViewingAngle(theta_v);
 
-        std::string fname = buff;
+            auto to_suffix = [](Real theta) { return std::to_string(int((theta / con::deg))); };
 
-        std::cout << fname << std::endl;
+            char buff[100] = {0};
 
-        Array band_pass = logspace(eVtoHz(0.3 * con::keV), eVtoHz(10 * con::keV), 5);
+            sprintf(buff, "data/F_nu_syn_%.0lf_%.0lf_", (theta_v / con::deg), (theta_c / con::deg));
 
-        Array F_syn = obs.flux(t_bins, band_pass, syn_ph);
+            std::string fname = buff + prefix[i];
 
-        output(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
+            std::cout << fname << std::endl;
 
-        sprintf(buff, "data/O-F_nu_syn_%.0lf_%.0lf", (theta_v / con::deg), (theta_c / con::deg));
+            Array F_syn = obs.flux(t_bins, band_pass, syn_ph);
 
-        Array oband_pass = logspace(eVtoHz(1 * con::eV), eVtoHz(2 * con::eV), 5);
-
-        std::string ofname = buff;
-
-        Array oF_syn = obs.flux(t_bins, oband_pass, syn_ph);
-
-        output(oF_syn, ofname, con::erg / con::sec / con::cm / con::cm);
-
-        std::cout << theta_v / con::deg << std::endl;
+            output(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
+        }
     }
-
     output(t_bins, "data/t_obs", con::sec);
 }
 
 int main() {
-    Real theta_c[] = {5 * con::deg, 10 * con::deg, 20 * con::deg};
+    Real theta_c[] = {5 * con::deg, 7 * con::deg, 10 * con::deg};
 
     for (auto theta : theta_c) {
         GCN36236(theta);

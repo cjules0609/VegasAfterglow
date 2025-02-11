@@ -37,7 +37,7 @@ void output(Coord const& coord, std::string const& filename) {
     std::ofstream file_phi(filename + "_phi.txt");
 
     if (!file_r || !file_theta || !file_phi) {
-        std::cerr << "Error opening files " << filename << "_*.txt" << std::endl;
+        std::cerr << "Error opening files " << filename << "_*.txt\n";
         return;
     }
 
@@ -57,9 +57,9 @@ void output(Coord const& coord, std::string const& filename) {
     }
 
     // End each file with a newline.
-    file_r << std::endl;
-    file_theta << std::endl;
-    file_phi << std::endl;
+    file_r << "\n";
+    file_theta << "\n";
+    file_phi << "\n";
 }
 
 /********************************************************************************************************************
@@ -73,7 +73,7 @@ void writeGrid(std::string filename, T const& names, U const& data, V const& uni
     for (size_t l = 0; l < names.size(); ++l) {
         std::ofstream file(filename + "_" + names[l] + ".txt");
         if (!file) {
-            std::cerr << "Error opening file " << filename + "_" + names[l] + ".txt" << std::endl;
+            std::cerr << "Error opening file " << filename + "_" + names[l] + ".txt\n";
             return;
         }
 
@@ -120,7 +120,7 @@ void output(SynPhotonGrid const& ph, std::string const& filename) {
     for (size_t i = 0; i < strs.size(); ++i) {
         files[i].open(filename + "_" + strs[i] + ".txt");
         if (!files[i]) {
-            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt" << std::endl;
+            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt\n";
             return;
         }
     }
@@ -152,7 +152,7 @@ void output(SynElectronGrid const& e, std::string const& filename) {
     for (size_t i = 0; i < strs.size(); ++i) {
         files[i].open(filename + "_" + strs[i] + ".txt");
         if (!files[i]) {
-            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt" << std::endl;
+            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt\n";
             return;
         }
     }
@@ -185,11 +185,9 @@ void output(MeshGrid3d const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
-
-    file.precision(16);
     // Iterate over each element in the 3D grid and write to file.
     for (size_t i = 0; i < array.size(); ++i) {
         for (size_t j = 0; j < array[i].size(); ++j) {
@@ -209,11 +207,10 @@ void output(MeshGrid const& grid, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
 
-    file.precision(16);
     // Loop through the grid and output each element.
     for (size_t i = 0; i < grid.size(); ++i) {
         for (size_t j = 0; j < grid[i].size(); ++j) {
@@ -231,11 +228,10 @@ void output(Array const& array, std::string const& filename) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
 
-    file.precision(16);
     // Output each element of the array.
     for (size_t i = 0; i < array.size(); ++i) {
         file << array[i] << " ";
@@ -250,10 +246,10 @@ void output(MeshGrid3d const& array, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
-    file.precision(16);
+
     // Normalize each element by 'unit' before output.
     for (size_t i = 0; i < array.size(); ++i) {
         for (size_t j = 0; j < array[i].size(); ++j) {
@@ -273,10 +269,10 @@ void output(MeshGrid const& grid, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
-    file.precision(16);
+
     // Output each normalized element.
     for (size_t i = 0; i < grid.size(); ++i) {
         for (size_t j = 0; j < grid[i].size(); ++j) {
@@ -294,10 +290,10 @@ void output(Array const& array, std::string const& filename, Real unit) {
     std::ofstream file(filename + ".txt");
 
     if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt" << std::endl;
+        std::cerr << "Error opening file " << filename << ".txt\n";
         return;
     }
-    file.precision(16);
+
     // Output each element normalized by 'unit'.
     for (size_t i = 0; i < array.size(); ++i) {
         file << array[i] / unit << " ";

@@ -19,18 +19,10 @@
  * DESCRIPTION: If STATIC_ARRAY is defined, fixed sizes (PHI_SIZE, THETA_SIZE, R_SIZE) are used and specific
  *              array types (Array2D, Array3D) are employed. Otherwise, generic boost::multi_array types are used.
  ********************************************************************************************************************/
-#ifdef STATIC_ARRAY
-constexpr size_t PHI_SIZE = 32;
-constexpr size_t THETA_SIZE = 32;
-constexpr size_t R_SIZE = 32;
-using Array = boost::multi_array<Real, 1>;
-using MeshGrid = Array2D<Real, THETA_SIZE, R_SIZE>;
-using MeshGrid3d = Array3D<Real, PHI_SIZE, THETA_SIZE, R_SIZE>;
-#else
+
 using Array = boost::multi_array<Real, 1>;
 using MeshGrid = boost::multi_array<Real, 2>;
 using MeshGrid3d = boost::multi_array<Real, 3>;
-#endif
 
 /********************************************************************************************************************
  * FUNCTION TYPE DEFINITIONS

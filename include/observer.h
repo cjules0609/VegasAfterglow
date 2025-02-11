@@ -234,16 +234,16 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
 
             // Interpolate for observation times within the grid.
             for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
-                Real const t_obs_lo = t_obs_grid[i][j][k];
-                Real const t_obs_hi = t_obs_grid[i][j][k + 1];
+                Real const t_lo = t_obs_grid[i][j][k];
+                Real const t_hi = t_obs_grid[i][j][k + 1];
 
-                if (t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi) {
+                if (t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi) {
                     if (!interp.trySetBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                         continue;
                     }
                 }
 
-                for (; t_idx < t_obs_size && t_obs_lo <= t_obs[t_idx] && t_obs[t_idx] < t_obs_hi; t_idx++) {
+                for (; t_idx < t_obs_size && t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi; t_idx++) {
                     auto [r, I_nu, D] = interp.interpRID(t_obs[t_idx]);
                     f_nu[t_idx] += D * D * D * I_nu * r * r * solid_angle;
                 }
