@@ -78,6 +78,7 @@ T max(T first, Args... args) {
  ********************************************************************************************************************/
 inline Real fastExp(Real x) {
 #ifdef EXTREME_SPEED
+    return std::exp(x);
     if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
     if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
     if (x == -std::numeric_limits<Real>::infinity()) return 0.0;

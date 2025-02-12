@@ -35,8 +35,8 @@ class LogScaleInterp {
     // Tries to set the interpolation boundaries using the provided logarithmic radius array, observation time grid,
     // Doppler grid, observed frequency, and one or more photon grids.
     template <typename... PhotonGrid>
-    bool trySetBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& r, MeshGrid3d const& t_obs,
-                        MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons);
+    bool validateInterpBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& r, MeshGrid3d const& t_obs,
+                                MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons);
 
    private:
     Real log_r_ratio{0};  // Ratio of logarithmic radius
@@ -116,7 +116,7 @@ class Observer {
 };
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: LogScaleInterp::trySetBoundary
+ * TEMPLATE METHOD: LogScaleInterp::validateInterpBoundary
  * DESCRIPTION: Attempts to set the lower and upper boundary values for logarithmic interpolation.
  *              It updates the internal boundary members for:
  *                - Logarithmic radius (log_r_lo, log_r_hi)
@@ -127,8 +127,9 @@ class Observer {
  *              Returns true if both lower and upper log observation time boundaries are finite.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::trySetBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& r, MeshGrid3d const& t_obs,
-                                    MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
+bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& r,
+                                            MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
+                                            PhotonGrid const&... photons) {
     t_obs_lo = t_obs[i][j][k_lo];
     log_t_ratio = fastLog(t_obs[i][j][k_lo + 1] / t_obs[i][j][k_lo]);
 
@@ -210,7 +211,7 @@ Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Rea
  ********************************************************************************************************************/
 template <typename Iter, typename... PhotonGrid>
 void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, const PhotonGrid&... photons) {
-    auto [phi_size, theta_size, t_size] = coord.shape();
+    auto [ignore, theta_size, t_size] = coord.shape();
     size_t t_obs_size = t_obs.size();
 
     // Loop over effective phi and theta grid points.
@@ -218,7 +219,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
         for (size_t j = 0; j < theta_size; j++) {
             Real const solid_angle = dOmega[i][j];
             // Attempt to set the initial boundary values; if unsuccessful, skip this grid cell.
-            if (!interp.trySetBoundary(i, j, 0, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+            if (!interp.validateInterpBoundary(i, j, 0, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                 continue;
             }
 
@@ -238,7 +239,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 Real const t_hi = t_obs_grid[i][j][k + 1];
 
                 if (t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi) {
-                    if (!interp.trySetBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+                    if (!interp.validateInterpBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                         continue;
                     }
                 }
