@@ -1,12 +1,11 @@
 # Compiler and flags
 CXX         := g++
-CXXFLAGS    := -std=c++20 -Iinclude -Iexternal/boost/numeric -O3  -w -DNDEBUG  #-DEXTREME_SPEED
+CXXFLAGS    := -std=c++20 -Iinclude -Iexternal/boost/numeric -O3  -w -DNDEBUG  -march=native #-DEXTREME_SPEED
 
 # Directories
 SRC_DIR     := src
 TEST_DIR    := tests
 OBJ_DIR     := build
-#TEST_BIN    := tests/bin
 
 # Find all source files in src (recursively)
 SRC_FILES   := $(shell find $(SRC_DIR) -type f -name "*.cpp")

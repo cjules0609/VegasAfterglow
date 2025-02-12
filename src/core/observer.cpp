@@ -14,16 +14,14 @@
 #include "utilities.h"
 
 /********************************************************************************************************************
- * METHOD: LogScaleInterp::interpRID
- * DESCRIPTION: Interpolates the radius, intensity and Doppler factor at a given observation time (t) using linear
+ * METHOD: LogScaleInterp::interpLuminosity
+ * DESCRIPTION: Interpolates the luminosity at a given observation time (t) using linear
  *              interpolation in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-std::tuple<Real, Real, Real> LogScaleInterp::interpRID(Real t_obs) const {
+
+Real LogScaleInterp::interpLuminosity(Real t_obs) const {
     Real log_t = fastLog(t_obs / t_obs_lo);
-    Real r = r_lo * fastExp(log_t * log_r_ratio / log_t_ratio);
-    Real D = d_lo * fastExp(log_t * log_d_ratio / log_t_ratio);
-    Real I = I_lo * fastExp(log_t * log_I_ratio / log_t_ratio);
-    return std::make_tuple(r, I, D);
+    return L_lo * fastExp(log_t * log_L_ratio / log_t_ratio);
 }
 
 /********************************************************************************************************************

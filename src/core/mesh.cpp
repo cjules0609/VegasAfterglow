@@ -61,6 +61,21 @@ Array uniform_cos(Real start, Real end, size_t num) {
 }
 
 /********************************************************************************************************************
+ * FUNCTION: uniform_sin
+ * DESCRIPTION: Creates and returns an Array of 'num' values uniformly spaced in sine between angles 'start' and
+ *'end'.
+ ********************************************************************************************************************/
+Array uniform_sin(Real start, Real end, size_t num) {
+    // First generate a linearly spaced array in cosine space.
+    Array result = linspace(std::sin(start), std::sin(end), num);
+    for (size_t i = 0; i < num; i++) {
+        // Convert back to angle by taking the arccosine.
+        result[i] = std::asin(result[i]);
+    }
+    return result;
+}
+
+/********************************************************************************************************************
  * FUNCTION: zeros
  * DESCRIPTION: Creates and returns an Array of size 'num' initialized to zero.
  ********************************************************************************************************************/

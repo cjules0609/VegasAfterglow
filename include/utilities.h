@@ -78,10 +78,9 @@ T max(T first, Args... args) {
  ********************************************************************************************************************/
 inline Real fastExp(Real x) {
 #ifdef EXTREME_SPEED
-    return std::exp(x);
-    if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
-    if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
-    if (x == -std::numeric_limits<Real>::infinity()) return 0.0;
+    // if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
+    // if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
+    // if (x == -std::numeric_limits<Real>::infinity()) return 0.0;
 
     constexpr Real ln2 = 0.6931471805599453;
     constexpr Real inv_ln2 = 1.4426950408889634;
@@ -100,19 +99,19 @@ inline Real fastExp(Real x) {
 #endif
 }
 
-inline Real fastLog(Real x) {
+inline double fastLog(double x) {
 #ifdef EXTREME_SPEED
-    if (x <= 0.0) return -std::numeric_limits<Real>::infinity();
-    if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
-    if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
+    if (x <= 0.) return -std::numeric_limits<double>::infinity();
+    if (std::isnan(x)) return std::numeric_limits<double>::quiet_NaN();
+    if (x == std::numeric_limits<double>::infinity()) return std::numeric_limits<double>::infinity();
 
     uint64_t bits;
     std::memcpy(&bits, &x, sizeof(x));
     int64_t exponent = ((bits >> 52) & 0x7FF) - 1023;
     bits = (bits & 0x000FFFFFFFFFFFFFULL) | 0x3FF0000000000000ULL;
-    Real f;
+    double f;
     std::memcpy(&f, &bits, sizeof(f));
-    Real p = -1.49278 + (2.11263 + (-0.729104 + 0.10969 * f) * f) * f;
+    double p = -1.49278 + (2.11263 + (-0.729104 + 0.10969 * f) * f) * f;
     return p + 0.6931471806 * exponent;
 #else
     return std::log(x);

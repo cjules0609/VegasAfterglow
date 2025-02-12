@@ -48,6 +48,7 @@ Array boundaryToCenterLog(Array const& boundary);
 Array linspace(Real start, Real end, size_t num);
 Array logspace(Real start, Real end, size_t num);
 Array uniform_cos(Real start, Real end, size_t num);
+Array uniform_sin(Real start, Real end, size_t num);
 Array zeros(size_t num);
 Array ones(size_t num);
 Real min(MeshGrid const& grid);

@@ -90,7 +90,7 @@ Coord adaptiveGrid(Medium const& medium, Jet const& jet, Injector const& inj, Ar
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    Array theta = linspace(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in cosine
+    Array theta = linspace(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
     Real theta_max = theta[theta_num - 1];                                // Maximum theta value.
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());           // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());           // Minimum observation time.
