@@ -64,7 +64,9 @@ Real GaussianJet::Gamma0(Real phi, Real theta, Real t) const {
  * DESCRIPTION: Returns the energy per unit solid angle for a PowerLawJet. For angles beyond the core (theta >=
  *theta_c_), the energy falls off as a power law with index k_.
  ********************************************************************************************************************/
-Real PowerLawJet::dEdOmega(Real phi, Real theta, Real t) const { return dEdOmega_ * fastPow(theta / theta_c_, -k_); }
+Real PowerLawJet::dEdOmega(Real phi, Real theta, Real t) const {
+    return dEdOmega_ * fastPow(1 + theta / theta_c_, -k_);
+}
 
 /********************************************************************************************************************
  * METHOD: PowerLawJet::Gamma0

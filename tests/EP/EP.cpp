@@ -72,11 +72,11 @@ void std_afterglow(Real theta_c) {
     Real E_iso = 1e53 * con::erg * (0.088 / theta_c) * (0.088 / theta_c);
     Real lumi_dist = 3e26 * con::cm;
     Real z = 0.01;
-    Real theta_w = con::pi / 2;
+    Real theta_w = 0.6;
     // 0.6;
     Real Gamma0 = 300;
     Real n_ism = 0.0199526231496888 / con::cm3;
-    Real eps_e = 0.1;
+    Real eps_e = 0.01;
     Real eps_B = 0.00019952623149688788;
     Real p = 2.139;
 
@@ -85,25 +85,41 @@ void std_afterglow(Real theta_c) {
 
     auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
     // auto jet = TophatJet(theta_c, E_iso, Gamma0);
-    size_t r_num = 64;
+
+    Ejecta spin_down;
+    Real L0 = 1e49 * con::erg / con::sec;
+    Real t0 = 2000 * con::sec;
+
+    spin_down.dLdOmega = math::combine(math::isotropic(L0 / (4 * con::pi)), math::powerLawInjection(t0, 2));
+    spin_down.dEdOmega = math::combine(math::isotropic(L0 / (4 * con::pi)), math::powerLawIntegral(t0, 2));
+    spin_down.sigma0 = math::isotropic(con::inf);
+
+    size_t r_num = 256;
     size_t theta_num = 64;
     size_t phi_num = 64;
 
     Array t_bins = logspace(1e-1 * con::day, 3e3 * con::day, 100);
 
-    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = adaptiveGrid(medium, jet, spin_down, t_bins, theta_w, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
+    // output(f_shock, "shock");
+
     auto syn_e = genSynElectrons(f_shock, p);
 
-    auto syn_ph = genSynPhotons(f_shock, syn_e);
+    // output(syn_e, "syn_e");
 
-    Real theta_obs[] = {0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10};
+    auto syn_ph = genSynPhotons(f_shock, syn_e);
+    // output(syn_ph, "syn_ph");
+
+    Real theta_obs[] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60};
 
     Observer obs(coord, f_shock, 0, lumi_dist, z);
+    // output(obs.t_obs_grid, "t_obs", con::sec);
+    // output(obs.doppler, "doppler");
 
-    std::array<double, 5> lo = {eVtoHz(0.2 * con::keV)};
+    std::array<double, 5> lo = {eVtoHz(0.3 * con::keV)};
 
     std::array<double, 5> hi = {eVtoHz(10 * con::keV)};
 
@@ -112,11 +128,11 @@ void std_afterglow(Real theta_c) {
     Array band_pass = logspace(lo[0], hi[0], 10);
 
     for (auto theta_v : theta_obs) {
-        obs.changeViewingAngle(theta_v * theta_c);
+        obs.changeViewingAngle(theta_v * con::deg);
 
         char buff[100] = {0};
 
-        sprintf(buff, "data/F_std_%.1lf_", (theta_v));
+        sprintf(buff, "data/F_std_%.1lf_%.1lf", std::floor(theta_c / con::deg), (theta_v));
 
         std::string fname = buff + prefix[0];
 
@@ -137,6 +153,8 @@ int main() {
     }*/
 
     std_afterglow(5 * con::deg);
+    std_afterglow(10 * con::deg);
+    std_afterglow(15.01 * con::deg);
 
     return 0;
 }
