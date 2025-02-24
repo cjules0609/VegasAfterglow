@@ -12,7 +12,7 @@ void GCN36236(Real theta_c) {
     Real theta_w = 0.6;
     Real Gamma0 = 300;
     Real n_ism = 0.0199526231496888 / con::cm3;
-    Real eps_e = 0.1;
+    Real eps_e = 0.01;
     Real eps_B = 0.00019952623149688788;
     Real p = 2.139;
 
@@ -27,7 +27,7 @@ void GCN36236(Real theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
-    Coord coord = adaptiveGrid(medium, jet, inject::none, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = adaptiveGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
@@ -39,32 +39,28 @@ void GCN36236(Real theta_c) {
 
     Observer obs(coord, f_shock, 0, lumi_dist, z);
 
-    std::array<double, 5> lo = {eVtoHz(0.2 * con::keV)};
+    std::vector<std::string> prefix = {"Optical"};
 
-    std::array<double, 5> hi = {eVtoHz(10 * con::keV)};
+    Array band_pass = logspace(eVtoHz(1.5 * con::eV), eVtoHz(3.5 * con::eV), 5);
+    for (auto theta_v : theta_obs) {
+        obs.changeViewingAngle(theta_v);
 
-    std::vector<std::string> prefix = {"EP"};
+        auto to_suffix = [](Real theta) { return std::to_string(int((theta / con::deg))); };
 
-    for (size_t i = 0; i < 1; i++) {
-        Array band_pass = logspace(lo[i], hi[i], 5);
-        for (auto theta_v : theta_obs) {
-            obs.changeViewingAngle(theta_v);
+        char buff[100] = {0};
 
-            auto to_suffix = [](Real theta) { return std::to_string(int((theta / con::deg))); };
+        sprintf(buff, "data/F_nu_syn_%.0lf_%.0lf_", (theta_v / con::deg), (theta_c / con::deg));
 
-            char buff[100] = {0};
+        std::string fname = buff + prefix[0];
 
-            sprintf(buff, "data/F_nu_syn_%.0lf_%.0lf_", (theta_v / con::deg), (theta_c / con::deg));
+        std::cout << fname << std::endl;
 
-            std::string fname = buff + prefix[i];
+        // Array F_syn = obs.flux(t_bins, band_pass, syn_ph);
+        Array F_syn = obs.specificFlux(t_bins, eVtoHz(2.25 * con::eV), syn_ph);
 
-            std::cout << fname << std::endl;
-
-            Array F_syn = obs.flux(t_bins, band_pass, syn_ph);
-
-            output(F_syn, fname, con::erg / con::sec / con::cm / con::cm);
-        }
+        output(F_syn, fname, con::erg / con::sec / con::cm / con::cm / con::Hz);
     }
+
     output(t_bins, "data/t_obs", con::sec);
 }
 
@@ -100,7 +96,7 @@ void std_afterglow(Real theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 3e3 * con::day, 100);
 
-    Coord coord = adaptiveGrid(medium, jet, spin_down, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = adaptiveGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
@@ -148,13 +144,13 @@ void std_afterglow(Real theta_c) {
 int main() {
     Real theta_c[] = {5 * con::deg, 7 * con::deg, 10 * con::deg};
 
-    /*for (auto theta : theta_c) {
+    for (auto theta : theta_c) {
         GCN36236(theta);
-    }*/
+    }
 
-    std_afterglow(5 * con::deg);
-    std_afterglow(10 * con::deg);
-    std_afterglow(15.01 * con::deg);
+    // std_afterglow(5 * con::deg);
+    // std_afterglow(10 * con::deg);
+    // std_afterglow(15.01 * con::deg);
 
     return 0;
 }

@@ -108,7 +108,22 @@ void output(Shock const& shock, std::string const& filename) {
  * FUNCTION: output (PromptPhotonsGrid version)
  * DESCRIPTION: (Empty implementation) Intended to output a PromptPhotonsGrid to a file.
  ********************************************************************************************************************/
-void output(PromptPhotonsGrid const& prompt_pj, std::string const& filename) {}
+void output(PromptPhotonsGrid const& ph, std::string const& filename) {
+    std::ofstream file(filename + ".txt");
+    if (!file) {
+        std::cerr << "Error opening file " << filename + ".txt\n";
+        return;
+    }
+    for (size_t i = 0; i < ph.size(); ++i) {
+        for (size_t j = 0; j < ph[i].size(); ++j) {
+            for (size_t k = 0; k < ph[i][j].size(); ++k) {
+                file << ph[i][j][k].E_nu_peak << " ";
+            }
+            file << '\n';
+        }
+        file << '\n';
+    }
+}
 
 /********************************************************************************************************************
  * FUNCTION: output (SynPhotonGrid version)

@@ -83,9 +83,9 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
  *              theta, and t. The radial grid is logarithmically spaced between t_min and t_max, and the theta grid
  *              is generated uniformly in cosine.
  ********************************************************************************************************************/
-template <typename Jet, typename Injector>
-Coord adaptiveGrid(Medium const& medium, Jet const& jet, Injector const& inj, Array const& t_obs, Real theta_cut,
-                   size_t phi_num = 32, size_t theta_num = 32, size_t t_num = 32, double theta_view_max = con::pi / 2) {
+template <typename Jet>
+Coord adaptiveGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_num = 32, size_t theta_num = 32,
+                   size_t t_num = 32, double theta_view_max = con::pi / 2) {
     Array phi = linspace(0, 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in

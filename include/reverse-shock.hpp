@@ -74,7 +74,6 @@ template <typename Jet, typename Injector>
 Real FRShockEqn<Jet, Injector>::dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3) {
     Real gamma34 = (gamma4 / gamma3 + gamma3 / gamma4) / 2;
     Real ratio_u = u_UpStr2u_DownStr(gamma34, this->jet_sigma);
-
     /* The following commented-out section shows an alternative computation.
     Real ad_idx2 = adiabatic_index(Gamma);
     Real ad_idx3 = adiabatic_index(Gamma34);

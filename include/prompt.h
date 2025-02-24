@@ -21,36 +21,44 @@ struct PromptPhotons {
 };
 
 using PromptPhotonsGrid = boost::multi_array<PromptPhotons, 3>;
-PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, size_t r_size);
+PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, size_t t_size);
+
+class CoastingShock {
+   public:
+    CoastingShock(size_t phi_size, size_t theta_size, size_t t_size);
+    CoastingShock() = delete;
+
+    MeshGrid3d r;          // radius
+    MeshGrid3d Gamma_rel;  // relative lorentz factor between down stream and up stream
+    MeshGrid3d epsilon;    // relative energy per solid angle
+
+    auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
+
+   private:
+    size_t const phi_size{0};    // Number of grid points in phi direction
+    size_t const theta_size{0};  // Number of grid points in theta direction
+    size_t const t_size{0};      // Number of grid points in time direction
+};
 
 template <typename Jet>
-PromptPhotonsGrid genPromptPhotons(Coord const& coord, Jet const& jet, Real R0, Real nu_0, Real alpha) {
-    auto [phi_size, theta_size, r_size] = coord.shape();
+CoastingShock genCoastingShock(Coord const& coord, Jet const& jet) {
+    auto [phi_size, theta_size, t_size] = coord.shape();
 
-    PromptPhotonsGrid ph = createPromptPhotonsGrid(phi_size, theta_size, r_size);
+    CoastingShock shock(1, theta_size, t_size);
 
-    Real Gamma_c = jet.Gamma0(0, 0, 0);
-    Real beta_c = gammaTobeta(Gamma_c);
-
-    for (size_t i = 0; i < phi_size; ++i) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            Real theta = coord.theta[j];
-            Real Gamma = jet.Gamma0(0, theta, 0);
-            Real beta = gammaTobeta(Gamma);
-            Real R = R0 / (beta_c) * (beta);
-            for (size_t k = 0; k < r_size - 1; ++k) {
-                if (coord.t[k + 1] > R && coord.t[k] < R) {
-                    ph[i][j][k].E_nu_peak = jet.dEdOmega(0, theta, 0) / Gamma;
-
-                } else {
-                    ph[i][j][k].E_nu_peak = 0;
-                }
-                ph[i][j][k].nu_0 = nu_0;
-                ph[i][j][k].alpha = alpha;
-            }
+    for (size_t j = 0; j < theta_size; ++j) {
+        Real Gamma = jet.Gamma0(coord.phi[0], coord.theta[j], 0);
+        Real beta = gammaTobeta(Gamma);
+        Real epsilon = jet.dEdOmega(coord.phi[0], coord.theta[j], 0);
+        for (size_t k = 0; k < t_size; ++k) {
+            shock.Gamma_rel[0][j][k] = Gamma;
+            shock.epsilon[0][j][k] = epsilon;
+            shock.r[0][j][k] = (beta * con::c) / std::abs(1 - beta) * coord.t[k];
         }
     }
-    return ph;
+
+    return shock;
 }
 
+PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha, Real dt);
 #endif

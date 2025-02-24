@@ -154,7 +154,6 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
     if (!std::isfinite(log_L_ratio)) {
         return false;
     }
-
     idx_hi = k_lo + 1;
     return true;
 }
@@ -235,6 +234,8 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
 
                 if (t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi) {
                     if (!interp.validateInterpBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+                        for (; t_idx < t_obs_size && t_obs[t_idx] < t_hi; t_idx++) {
+                        }
                         continue;
                     }
                 }
