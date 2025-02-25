@@ -36,14 +36,13 @@ PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_
             Real Gamma = shock.Gamma_rel[i][j][0];
             Real beta = gammaTobeta(Gamma);
             Real R = R0 * beta / beta_c;
-            Real Rmin = R0 - 0.5 * dt * con::c * beta / (1 - beta);
-            Real Rmax = R0 + 0.5 * dt * con::c * beta / (1 - beta);
+            Real Rmin = R * 0.95;
+            Real Rmax = R * 1.05;
             for (size_t k = 0; k < t_size; ++k) {
                 if (shock.r[i][j][k] >= Rmin && shock.r[i][j][k] <= Rmax) {
                     ph[i][j][k].E_nu_peak = shock.epsilon[i][j][k];
                     ph[i][j][k].nu_0 = nu_0;
                     ph[i][j][k].alpha = alpha;
-                    break;
                 }
             }
         }
