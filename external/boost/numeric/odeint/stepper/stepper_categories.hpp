@@ -18,6 +18,8 @@
 #ifndef BOOST_NUMERIC_ODEINT_STEPPER_STEPPER_CATEGORIES_HPP_INCLUDED
 #define BOOST_NUMERIC_ODEINT_STEPPER_STEPPER_CATEGORIES_HPP_INCLUDED
 
+#include <boost/type_traits/integral_constant.hpp>
+
 namespace boost {
 namespace numeric {
 namespace odeint {

@@ -20,7 +20,6 @@
 
 
 #include <vector>
-#include <type_traits>
 
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/remove_reference.hpp>
@@ -41,7 +40,7 @@ namespace odeint {
  * by default any type is not resizable
  */
 template< typename Container , typename Enabler = void >
-struct is_resizeable_sfinae : std::false_type {};
+struct is_resizeable_sfinae : boost::false_type {};
 
 template< typename Container >
 struct is_resizeable : is_resizeable_sfinae< Container > {};
@@ -52,7 +51,7 @@ struct is_resizeable : is_resizeable_sfinae< Container > {};
  * specialization for std::vector
  */
 template< class V, class A >
-struct is_resizeable< std::vector< V , A  > > : std::true_type {};
+struct is_resizeable< std::vector< V , A  > > : boost::true_type {};
 
 
 /*
@@ -66,7 +65,7 @@ struct is_resizeable_sfinae<
     typedef typename boost::mpl::find_if< FusionSequence , is_resizeable< boost::mpl::_1 > >::type iter;
     typedef typename boost::mpl::end< FusionSequence >::type last;
 
-    typedef typename boost::mpl::if_< boost::is_same< iter , last > , std::false_type , std::true_type >::type type;
+    typedef typename boost::mpl::if_< boost::is_same< iter , last > , boost::false_type , boost::true_type >::type type;
     const static bool value = type::value;
 };
 

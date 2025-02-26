@@ -75,7 +75,8 @@ public:
         deriv_func_type &deriv_func = sys.first;
         jacobi_func_type &jacobi_func = sys.second;
 
-        m_resizer.adjust_size(x, [this](auto&& arg) { return this->resize_impl<StateIn>(std::forward<decltype(arg)>(arg)); });
+        m_resizer.adjust_size( x , detail::bind(
+                                   &stepper_type::template resize_impl< state_type > , detail::ref( *this ) , detail::_1 ) );
 
         m_identity.m_v = 1;
 

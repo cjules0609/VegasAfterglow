@@ -19,7 +19,7 @@
 #ifndef BOOST_NUMERIC_ODEINT_INTEGRATE_INTEGRATE_CONST_HPP_INCLUDED
 #define BOOST_NUMERIC_ODEINT_INTEGRATE_INTEGRATE_CONST_HPP_INCLUDED
 
-#include <type_traits>
+#include <boost/type_traits/is_same.hpp>
 
 #include <boost/numeric/odeint/stepper/stepper_categories.hpp>
 #include <boost/numeric/odeint/iterator/integrate/null_observer.hpp>
@@ -46,7 +46,7 @@ size_t integrate_const(
 {
     typedef typename odeint::unwrap_reference< Stepper >::type::stepper_category stepper_category;
     // we want to get as fast as possible to the end
-    BOOST_IF_CONSTEXPR ( std::is_same< null_observer , Observer >::value )
+    if( boost::is_same< null_observer , Observer >::value )
     {
         return detail::integrate_adaptive(
                 stepper , system , start_state ,
@@ -74,7 +74,7 @@ size_t integrate_const(
 {
     typedef typename odeint::unwrap_reference< Stepper >::type::stepper_category stepper_category;
     // we want to get as fast as possible to the end
-    BOOST_IF_CONSTEXPR ( std::is_same< null_observer , Observer >::value )
+    if( boost::is_same< null_observer , Observer >::value )
     {
         return detail::integrate_adaptive(
                 stepper , system , start_state ,

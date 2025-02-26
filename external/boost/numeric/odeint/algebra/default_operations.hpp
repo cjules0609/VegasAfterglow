@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #include <boost/config.hpp>
-#include <array>
+#include <boost/array.hpp>
 
 #include <boost/numeric/odeint/util/unit_helper.hpp>
 

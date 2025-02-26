@@ -13,7 +13,7 @@
 #include "jet.h"
 #include "medium.h"
 #include "mesh.h"
-#include "odeint.hpp"
+#include "numeric/odeint.hpp"
 #include "physics.h"
 
 /********************************************************************************************************************

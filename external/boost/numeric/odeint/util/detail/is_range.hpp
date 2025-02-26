@@ -26,21 +26,28 @@
 #endif
 
 #include <cstddef>
-#include <type_traits>
 #include <boost/range/config.hpp>
-#include <boost/numeric/odeint/tools/traits.hpp>
+#include <boost/mpl/has_xxx.hpp>
+#include <boost/mpl/bool.hpp>
+#include <boost/mpl/and.hpp>
 
 namespace boost {
 namespace numeric {
 namespace odeint {
 
-namespace detail {
 
-BOOST_NUMERIC_ODEINT_HAS_NAMED_TRAIT(has_iterator, iterator);
-BOOST_NUMERIC_ODEINT_HAS_NAMED_TRAIT(has_const_iterator, const_iterator);
+
+namespace range_detail
+{
+BOOST_MPL_HAS_XXX_TRAIT_DEF(iterator)
+    BOOST_MPL_HAS_XXX_TRAIT_DEF(const_iterator)
+}
+
+namespace detail
+{
 
 template< typename Range >
-struct is_range : std::integral_constant<bool, (has_iterator<Range>::value && has_const_iterator<Range>::value)>
+struct is_range : boost::mpl::and_<range_detail::has_iterator<Range>, range_detail::has_const_iterator<Range> >
 {
 };
 
@@ -49,12 +56,12 @@ struct is_range : std::integral_constant<bool, (has_iterator<Range>::value && ha
 //////////////////////////////////////////////////////////////////////////
 
 template< typename iteratorT >
-struct is_range< std::pair<iteratorT,iteratorT> > : std::integral_constant<bool, true>
+struct is_range< std::pair<iteratorT,iteratorT> > : boost::mpl::true_
 {
 };
 
 template< typename iteratorT >
-struct is_range< const std::pair<iteratorT,iteratorT> > : std::integral_constant<bool, true>
+struct is_range< const std::pair<iteratorT,iteratorT> > : boost::mpl::true_
 {
 };
 
@@ -63,12 +70,12 @@ struct is_range< const std::pair<iteratorT,iteratorT> > : std::integral_constant
 //////////////////////////////////////////////////////////////////////////
 
 template< typename elementT, std::size_t sz >
-struct is_range< elementT[sz] > : std::integral_constant<bool, true>
+struct is_range< elementT[sz] > : boost::mpl::true_
 {
 };
 
 template< typename elementT, std::size_t sz >
-struct is_range< const elementT[sz] > : std::integral_constant<bool, true>
+struct is_range< const elementT[sz] > : boost::mpl::true_
 {
 };
 
@@ -77,42 +84,42 @@ struct is_range< const elementT[sz] > : std::integral_constant<bool, true>
 //////////////////////////////////////////////////////////////////////////
 
 template<>
-struct is_range< char* > : std::integral_constant<bool, true>
+struct is_range< char* > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< wchar_t* > : std::integral_constant<bool, true>
+struct is_range< wchar_t* > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< const char* > : std::integral_constant<bool, true>
+struct is_range< const char* > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< const wchar_t* > : std::integral_constant<bool, true>
+struct is_range< const wchar_t* > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< char* const > : std::integral_constant<bool, true>
+struct is_range< char* const > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< wchar_t* const > : std::integral_constant<bool, true>
+struct is_range< wchar_t* const > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< const char* const > : std::integral_constant<bool, true>
+struct is_range< const char* const > : boost::mpl::true_
 {
 };
 
 template<>
-struct is_range< const wchar_t* const > : std::integral_constant<bool, true>
+struct is_range< const wchar_t* const > : boost::mpl::true_
 {
 };
 

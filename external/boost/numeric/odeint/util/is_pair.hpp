@@ -18,19 +18,22 @@
 #ifndef BOOST_NUMERIC_ODEINT_UTIL_IS_PAIR_HPP_INCLUDED
 #define BOOST_NUMERIC_ODEINT_UTIL_IS_PAIR_HPP_INCLUDED
 
-#include <type_traits>
+
+#include <boost/mpl/bool.hpp>
+#include <utility>
+
 
 namespace boost {
 namespace numeric {
 namespace odeint {
 
 template< class T >
-struct is_pair : public std::integral_constant<bool, false>
+struct is_pair : public boost::mpl::false_
 {
 };
 
 template< class T1 , class T2 >
-struct is_pair< std::pair< T1 , T2 > > : public std::integral_constant<bool, true>
+struct is_pair< std::pair< T1 , T2 > > : public boost::mpl::true_
 {
 };
 
