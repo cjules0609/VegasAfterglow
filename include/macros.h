@@ -7,6 +7,7 @@
 
 #ifndef _CONSTS_
 #define _CONSTS_
+#include <limits>
 #include <numeric>
 /********************************************************************************************************************
  * NAMESPACE: con
