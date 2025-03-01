@@ -61,8 +61,8 @@ int main() {
     Real p = 2.1;
     Real Gamma0 = 300;
 
-    Array E_iso = logspace(1e48 * con::erg, 1e52 * con::erg, 10);
-    Array theta_c = linspace(0.01, 0.1, 10);
+    Array E_iso = logspace(1e48 * con::erg, 1e52 * con::erg, 100);
+    Array theta_c = linspace(0.01, 0.1, 100);
     Array theta_v = linspace(0.01, 0.5, 5);
 
     tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
@@ -76,7 +76,7 @@ int main() {
     // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
 
     // return 0;
-    size_t resolu[] = {128, 64, 32};
+    size_t resolu[] = {32};
 
     for (auto r : resolu) {
         r_num = theta_num = phi_num = r;
