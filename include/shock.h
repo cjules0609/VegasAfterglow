@@ -10,10 +10,10 @@
 
 #include <tuple>
 
+#include "boost/numeric/odeint.hpp"
 #include "jet.h"
 #include "medium.h"
 #include "mesh.h"
-#include "numeric/odeint.hpp"
 #include "physics.h"
 
 /********************************************************************************************************************
