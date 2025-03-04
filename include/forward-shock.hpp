@@ -18,7 +18,7 @@
 template <typename Jet, typename Injector>
 class ForwardShockEqn {
    public:
-    using State = std::array<Real, 4>;  // State vector: [Gamma, u, r, t_com]
+    using State = std::array<Real, 5>;  // State vector: [Gamma, u, r, t_com, theta]
 
     ForwardShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -26,7 +26,7 @@ class ForwardShockEqn {
     Jet const& jet;            // Reference to the jet properties
     Injector const& inject;    // Reference to the injector properties
     Real const phi{0};         // Angular coordinate phi
-    Real const theta{0};       // Angular coordinate theta
+    Real const theta0{0};      // Angular coordinate theta
     Real const eps_e{0};       // Electron energy fraction
     Real const jet_sigma{0};   // Jet magnetization parameter
     Real gamma4{1};            // Initial Lorentz factor (or a related parameter)
@@ -67,11 +67,17 @@ void ForwardShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Rea
     Real ad_idx = adiabaticIndex(Gamma);  // Compute adiabatic index based on Gamma
     Real rho = medium.rho(r);             // Get medium density at radius r
     Real beta = gammaTobeta(Gamma);       // Convert Gamma to beta (velocity/c)
+    Real uv = Gamma * beta;
 
     dydt[2] = drdt(beta);                                        // Compute derivative of engine time with respect to t
     dydt[0] = dGammadt(t, Gamma, u, r, dydt[2], ad_idx, rho);    // d(Gamma)/dt
     dydt[1] = dUdt(Gamma, u, r, dydt[0], dydt[2], ad_idx, rho);  // d(u)/dt
     dydt[3] = dtdt_CoMoving(Gamma, beta);                        // d(t_com)/dt
+    if (jet.spreading) {
+        dydt[4] = dtheta_dt(uv, dydt[2], r, Gamma);  // d(theta_jet)/dt
+    } else {
+        dydt[4] = 0;
+    }
 }
 
 /********************************************************************************************************************
@@ -86,7 +92,7 @@ ForwardShockEqn<Jet, Injector>::ForwardShockEqn(Medium const& medium, Jet const&
       jet(jet),
       inject(inject),
       phi(phi),
-      theta(theta),
+      theta0(theta),
       eps_e(eps_e),
       jet_sigma(jet.sigma0(phi, theta, 0)),
       gamma4(jet.Gamma0(phi, theta, 0)),
@@ -108,8 +114,8 @@ Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r
     Real term1 = ad_idx * Gamma2_m1 + 1;
 
     Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
-    Real dm_inj = inject.dEdOmega(phi, theta, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
-    Real L_inj = inject.dLdOmega(phi, theta, t);  // Injected luminosity per unit solid angle
+    Real dm_inj = inject.dEdOmega(phi, theta0, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
+    Real L_inj = inject.dLdOmega(phi, theta0, t);  // Injected luminosity per unit solid angle
 
     Real a1 = -Gamma2_m1 * (ad_idx * Gamma - ad_idx + 1) * r * r * rho * con::c2 * drdt;
     Real a2 = ad_idx_m1 * term1 * 3 * u / r * drdt;
@@ -137,11 +143,12 @@ void updateForwardShock(size_t i, size_t j, int k, ShockEqn& eqn, const typename
     Real Gamma = state[0];  // Lorentz factor from state
     Real r = state[2];      // radius from state
     Real t_com = state[3];  // Comoving time from state
+    Real theta = state[4];  // coordinate theta from state
 
     Real n1 = eqn.medium.rho(r) / con::mp;                          // Compute upstream number density
     Real dN1dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);  // number of proton per unit solid angle
 
-    updateShockState(f_shock, i, j, k, r, Gamma, t_com, dN1dOmega, n1, eqn.jet_sigma);
+    updateShockState(f_shock, i, j, k, r, theta, Gamma, t_com, dN1dOmega, n1, eqn.jet_sigma);
 }
 
 // Initializes the forward shock state vector at radius r0.
@@ -152,7 +159,7 @@ void setForwardInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
     Real t_com0 = r0 / std::sqrt(gamma2 * gamma2 - 1) / con::c;
-    state = {gamma2, u0, r0, t_com0};
+    state = {gamma2, u0, r0, t_com0, eqn.theta0};
     eqn.gamma4 = gamma2;
 }
 

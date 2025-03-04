@@ -30,6 +30,7 @@ class Shock {
 
     MeshGrid3d t_com;           // comoving time
     MeshGrid3d r;               // radius
+    MeshGrid3d theta;           // theta for jet spreading
     MeshGrid3d Gamma_rel;       // relative lorentz factor between down stream and up stream
     MeshGrid3d B;               // comoving magnetic field
     MeshGrid3d column_num_den;  // down stream proton column number density
@@ -82,6 +83,9 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real G
 
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
 inline Real drdt(Real beta) { return (beta * con::c) / std::abs(1 - beta); }
+inline Real dtheta_dt(Real uv, Real drdt, Real r, Real Gamma) {
+    return 0.5 / Gamma * drdt / r * sqrt((2 * uv * uv + 3) / (4 * uv * uv + 3));
+}
 inline Real dtdt_CoMoving(Real Gamma, Real beta) { return 1 / (Gamma * std::abs(1 - beta)); };
 inline Real calc_pB4(Real n4, Real sigma) { return sigma * n4 * con::mp * con::c2 / 2; }
 inline Real u_UpStr(Real u_down, Real gamma_rel) {

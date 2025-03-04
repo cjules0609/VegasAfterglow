@@ -94,12 +94,13 @@ class Observer {
     MeshGrid spectrum(Real t_obs, Array const& freqs, PhotonGrid const&... photons);
 
    private:
-    LogScaleInterp interp;     // Log-scale interpolation helper
-    MeshGrid dOmega;           // Grid of solid angles
-    MeshGrid3d const& r_grid;  // Grid of radius
-    MeshGrid3d const& Gamma;   // Grid of Lorentz factors
-    Coord const& coord;        // Reference to the coordinate object
-    size_t eff_phi_size{1};    // Effective number of phi grid points
+    LogScaleInterp interp;         // Log-scale interpolation helper
+    MeshGrid dOmega;               // Grid of solid angles
+    MeshGrid3d const& r_grid;      // Grid of radius
+    MeshGrid3d const& theta_grid;  // Grid of theta
+    MeshGrid3d const& Gamma;       // Grid of Lorentz factors
+    Coord const& coord;            // Reference to the coordinate object
+    size_t eff_phi_size{1};        // Effective number of phi grid points
 
     // Calculates the observation time grid based on Gamma and engine time array.
     void calcObsTimeGrid();
@@ -174,6 +175,7 @@ Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Rea
       interp(),
       dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
       r_grid(dyn.r),
+      theta_grid(dyn.theta),
       Gamma(dyn.Gamma_rel),
       coord(coord),
       eff_phi_size(1) {

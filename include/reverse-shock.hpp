@@ -19,7 +19,7 @@
 template <typename Jet, typename Injector>
 class FRShockEqn {
    public:
-    using State = std::array<Real, 5>;  // State vector for reverse shock variables
+    using State = std::array<Real, 6>;  // State vector for reverse shock variables
 
     FRShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta);
 
@@ -27,7 +27,7 @@ class FRShockEqn {
     Jet const& jet;           // Reference to the jet properties
     Injector const& inject;   // Reference to the injector properties
     Real const phi{0};        // Angular coordinate phi
-    Real const theta{0};      // Angular coordinate theta
+    Real const theta0{0};     // Angular coordinate theta
     Real const jet_sigma{0};  // Jet magnetization parameter
     Real gamma4{1};           // Initial Gamma parameter from the jet
 
@@ -63,7 +63,7 @@ void setReverseInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
     Real t_com0 = r0 / std::sqrt(gamma4 * gamma4 - 1) / con::c;
     Real D_jet0 = con::c * eqn.jet.duration;
     Real dN3dOmega = 0;  // Initialize number per unit solid angle to zero
-    state = {0., dN3dOmega, r0, t_com0, D_jet0};
+    state = {0., dN3dOmega, r0, t_com0, D_jet0, eqn.theta0};
 }
 
 /********************************************************************************************************************
@@ -74,21 +74,6 @@ template <typename Jet, typename Injector>
 Real FRShockEqn<Jet, Injector>::dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3) {
     Real gamma34 = (gamma4 / gamma3 + gamma3 / gamma4) / 2;
     Real ratio_u = u_UpStr2u_DownStr(gamma34, this->jet_sigma);
-    /* The following commented-out section shows an alternative computation.
-    Real ad_idx2 = adiabatic_index(Gamma);
-    Real ad_idx3 = adiabatic_index(Gamma34);
-    Real u3s_ = u_down_str(Gamma34, this->sigma);
-    Real u4s_ = u_up_str(u3s_, Gamma34);
-    Real n2 = n_down_str(n1, Gamma, this->sigma);
-    Real e2 = e_thermal_down_str(Gamma, n2);
-    Real p2 = (ad_idx2 - 1) * e2;
-    Real pB4 = calc_pB4(n4, this->sigma);
-    Real pB3 = pB4 * ratio_u * ratio_u;
-    Real f_a = fa(Gamma34, u3s_, this->sigma);
-    Real f_b = ratio_u / ((ad_idx3 * Gamma34 + 1) / (ad_idx3 - 1));
-    Real f_c = fc(p2, pB3);
-    Real F = f_a * f_b * f_c;
-    */
     Real n3 = n4 * ratio_u;
     Real dxdr = 1. / (gamma4 * std::sqrt((1 + this->jet_sigma) * n4 / n1) * std::abs(1 - gamma4 * n4 / gamma3 / n3));
     return n3 * r * r * gamma3 * dxdr;
@@ -106,7 +91,7 @@ FRShockEqn<Jet, Injector>::FRShockEqn(Medium const& medium, Jet const& jet, Inje
       jet(jet),
       inject(inject),
       phi(phi),
-      theta(theta),
+      theta0(theta),
       jet_sigma(jet.sigma0(phi, theta, 0)),
       gamma4(jet.Gamma0(phi, theta, 0)) {}
 
@@ -123,7 +108,7 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
     // Real t_com = y[3];
     Real D_jet_lab = y[4];
 
-    Real n4 = calc_n4(jet.dEdOmega(phi, theta, t), gamma4, r, D_jet_lab, jet_sigma);
+    Real n4 = calc_n4(jet.dEdOmega(phi, theta0, t), gamma4, r, D_jet_lab, jet_sigma);
     Real n1 = medium.rho(r) / con::mp;
 
     Real gamma3 = calc_gamma3(n1, n4, gamma4, jet_sigma);
@@ -134,6 +119,11 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
     dydt[2] = drdt(beta3);
     dydt[3] = dtdt_CoMoving(gamma3, beta3);
     dydt[4] = dDdt_Jet(gamma4, beta4);
+    if (jet.spreading) {
+        dydt[5] = dtheta_dt(gamma3 * beta3, dydt[2], r, gamma3);
+    } else {
+        dydt[5] = 0;
+    }
 }
 
 /********************************************************************************************************************
@@ -165,7 +155,7 @@ bool reverseShockExists(ShockEqn const& eqn, Real t0) {
 
 template <typename State>
 inline auto unpack_r_state(State const& r_state) {
-    return std::make_tuple(r_state[0], r_state[1], r_state[2], r_state[3], r_state[4]);
+    return std::make_tuple(r_state[0], r_state[1], r_state[2], r_state[3], r_state[4], r_state[5]);
 }
 
 template <typename ShockEqn, typename FState, typename RState>
@@ -180,17 +170,17 @@ void set_f_state(ShockEqn& eqn, FState& f_state, RState const& r_state, Real gam
 template <typename ShockEqn, typename State>
 bool updateForwardReverseShock(size_t i, size_t j, int k, ShockEqn& eqn, State const& state, Shock& f_shock,
                                Shock& r_shock, Real dEdOmega, Real dN4dOmega) {
-    auto [ignore, dN3dOmega, r, t_com, D_jet] = unpack_r_state(state);
+    auto [ignore, dN3dOmega, r, t_com, D_jet, theta] = unpack_r_state(state);
 
     Real n1 = eqn.medium.rho(r) / con::mp;
     Real n4 = calc_n4(dEdOmega, eqn.gamma4, r, D_jet, eqn.jet_sigma);
     Real gamma3 = calc_gamma3(n1, n4, eqn.gamma4, eqn.jet_sigma);
     Real dN1dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);
 
-    updateShockState(f_shock, i, j, k, r, gamma3, t_com, dN1dOmega, n1, eqn.jet_sigma);
+    updateShockState(f_shock, i, j, k, r, theta, gamma3, t_com, dN1dOmega, n1, eqn.jet_sigma);
 
     Real gamma34 = relativeLorentz(eqn.gamma4, gamma3);
-    updateShockState(r_shock, i, j, k, r, gamma34, t_com, dN4dOmega, n4, eqn.jet_sigma);
+    updateShockState(r_shock, i, j, k, r, theta, gamma34, t_com, dN4dOmega, n4, eqn.jet_sigma);
     return dN3dOmega >= dN4dOmega;
 }
 

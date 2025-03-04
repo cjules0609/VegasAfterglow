@@ -35,6 +35,7 @@ class Ejecta {
     TernaryFunc dLdOmega{func::zero};  // Differential luminosity per unit solid angle (default: zero)
     TernaryFunc sigma0{func::zero};    // Magnetization parameter (default: zero)
     Real duration{0};                  // Duration of the ejecta
+    bool spreading{false};             // Flag indicating if the ejecta spreads
 
     // (Additional member functions could be defined as needed.)
 };
@@ -58,6 +59,7 @@ class TophatJet {
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
     Real duration{0.02 * con::sec};  // Jet duration
+    bool spreading{false};           // Flag indicating if the jet spreads
 
    private:
     Real theta_c_{0};   // Core opening angle (radians)
@@ -80,6 +82,7 @@ class GaussianJet {
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
     Real duration{0.02 * con::sec};
+    bool spreading{false};
 
    private:
     Real two_theta_c_sq{0};  // Core opening angle
@@ -104,6 +107,7 @@ class PowerLawJet {
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
     Real duration{0.02 * con::sec};
+    bool spreading{false};
 
    private:
     Real theta_c_{0};   // Core opening angle

@@ -18,7 +18,7 @@
 template <typename Jet, typename Injector>
 class SimpleShockEqn {
    public:
-    using State = std::array<Real, 5>;  // State vector: typically [Gamma, u, r, t_com, D_jet]
+    using State = std::array<Real, 6>;  // State vector: typically [Gamma, u, r, t_com, D_jet, theta_jet]
 
     SimpleShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -26,7 +26,7 @@ class SimpleShockEqn {
     Jet const& jet;           // Reference to the jet properties
     Injector const& inject;   // Reference to the injector properties
     Real const phi{0};        // Angular coordinate phi
-    Real const theta{0};      // Angular coordinate theta
+    Real const theta0{0};     // Angular coordinate theta
     Real const eps_e{0};      // Electron energy fraction
     Real const jet_sigma{0};  // Jet magnetization parameter
     Real gamma4{1};           // Initial Lorentz factor (or a related parameter)
@@ -51,6 +51,7 @@ class SimpleShockEqn {
  *                  y[2] - r (radius)
  *                  y[3] - t_com (co-moving time) [unused here]
  *                  y[4] - D_jet (jet shell width) [unused here]
+ *                  y[5] - theta_jet (jet opening angle)
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) {
@@ -59,8 +60,9 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real
     // Real t_com = y[3];  // co-moving time (unused)
     // Real D_jet = y[4];  // co-moving jet shell width (unused)
 
-    Real rho = medium.rho(r);          // Get medium density at radius r
-    Real beta = gammaTobeta(Gamma);    // Convert Gamma to beta (velocity/c)
+    Real rho = medium.rho(r);        // Get medium density at radius r
+    Real beta = gammaTobeta(Gamma);  // Convert Gamma to beta (velocity/c)
+    Real uv = Gamma * beta;
     Real beta4 = gammaTobeta(gamma4);  // Convert gamma4 to beta
 
     dydt[2] = drdt(beta);                           // Compute derivative of r with respect to t
@@ -68,6 +70,11 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real
     dydt[1] = 0;
     dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
     dydt[4] = dDdt_Jet(gamma4, beta4);     // d(D_jet)/dt
+    if (jet.spreading) {
+        dydt[5] = dtheta_dt(uv, dydt[2], r, Gamma);
+    } else {
+        dydt[5] = 0;
+    }
 }
 
 /********************************************************************************************************************
@@ -82,7 +89,7 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
       jet(jet),
       inject(inject),
       phi(phi),
-      theta(theta),
+      theta0(theta),
       eps_e(eps_e),
       jet_sigma(jet.sigma0(phi, theta, 0)),
       gamma4(jet.Gamma0(phi, theta, 0)),
@@ -99,8 +106,8 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
 template <typename Jet, typename Injector>
 Real SimpleShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real r, Real drdt, Real rho) {
     Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
-    Real dm_inj = inject.dEdOmega(phi, theta, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
-    Real L_inj = inject.dLdOmega(phi, theta, t);  // Injected luminosity per unit solid angle
+    Real dm_inj = inject.dEdOmega(phi, theta0, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
+    Real L_inj = inject.dLdOmega(phi, theta0, t);  // Injected luminosity per unit solid angle
     double a1 = (1 - Gamma * Gamma) * r * r * rho * drdt;
     double a2 = L_inj / con::c2 * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
     return (a1 + a2) / (dM0 + dm_inj + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm);

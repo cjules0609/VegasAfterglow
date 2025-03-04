@@ -423,8 +423,10 @@ Real SynPhotons::spectrum(Real nu) const {
  * DESCRIPTION: Computes the peak power per electron in the comoving frame based on magnetic field B and power-law
  *              index p.
  ********************************************************************************************************************/
-constexpr double sqrt3_half = 1.73205080757 / 2;
-Real syn_p_nu_peak(Real B, Real p) { return (p - 1) * B * (sqrt3_half * con::e3 / (con::me * con::c2)); }
+Real syn_p_nu_peak(Real B, Real p) {
+    constexpr double sqrt3_half = 1.73205080757 / 2;
+    return (p - 1) * B * (sqrt3_half * con::e3 / (con::me * con::c2));
+}
 
 /********************************************************************************************************************
  * FUNCTION: syn_nu(Real gamma, Real B)
