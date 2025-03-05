@@ -29,6 +29,7 @@ class CoastingShock {
     CoastingShock() = delete;
 
     MeshGrid3d r;          // radius
+    MeshGrid3d theta;      // theta for jet spreading
     MeshGrid3d Gamma_rel;  // relative lorentz factor between down stream and up stream
     MeshGrid3d epsilon;    // relative energy per solid angle
 

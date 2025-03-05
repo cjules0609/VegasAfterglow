@@ -57,7 +57,7 @@ inline Real calc_gamma3(Real n1, Real n4, Real gamma4, Real sigma) {
  ********************************************************************************************************************/
 template <typename ShockEqn>
 void setReverseInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
-    Real gamma4 = eqn.jet.Gamma0(eqn.phi, eqn.theta, t0);  // Obtain initial Gamma from the jet
+    Real gamma4 = eqn.jet.Gamma0(eqn.phi, eqn.theta0, t0);  // Obtain initial Gamma from the jet
     Real beta0 = gammaTobeta(gamma4);
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real t_com0 = r0 / std::sqrt(gamma4 * gamma4 - 1) / con::c;
@@ -143,12 +143,12 @@ inline void Blandford_McKee(size_t i, size_t j, size_t k, size_t k0, Shock& shoc
 // Determines whether a reverse shock exists based on current shock parameters.
 template <typename ShockEqn>
 bool reverseShockExists(ShockEqn const& eqn, Real t0) {
-    Real gamma = eqn.jet.Gamma0(eqn.phi, eqn.theta, t0);  // Initial Lorentz factor
+    Real gamma = eqn.jet.Gamma0(eqn.phi, eqn.theta0, t0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(gamma);
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real D_jet0 = con::c * eqn.jet.duration;
 
-    Real n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta, t0), gamma, r0, D_jet0, eqn.jet_sigma);
+    Real n4 = calc_n4(eqn.jet.dEdOmega(eqn.phi, eqn.theta0, t0), gamma, r0, D_jet0, eqn.jet_sigma);
     Real n1 = eqn.medium.rho(r0) / con::mp;
     return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
 }
@@ -209,7 +209,7 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& f_shock, Shock& r_s
         auto r_stepper = bulirsch_stoer_dense_out<typename RShockEqn::State>{0, rtol};
         // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
         setReverseInit(eqn_r, r_state, t0);
-        Real dEdOmega = eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta, t0);
+        Real dEdOmega = eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta0, t0);
         Real dN4dOmega = dEdOmega / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.jet_sigma));
 
         bool crossed = false;

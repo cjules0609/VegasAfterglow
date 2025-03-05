@@ -78,8 +78,8 @@ ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet
 
 Real u_DownStr(Real gamma_rel, Real sigma);
 Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real Gamma_rel, Real t_com, Real dNdOmega_up,
-                      Real n_up_str, Real sigma);
+void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma_rel, Real t_com,
+                      Real dNdOmega_up, Real n_up_str, Real sigma);
 
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
 inline Real drdt(Real beta) { return (beta * con::c) / std::abs(1 - beta); }

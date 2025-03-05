@@ -9,6 +9,7 @@
 
 CoastingShock::CoastingShock(size_t phi_size, size_t theta_size, size_t t_size)
     : r(boost::extents[phi_size][theta_size][t_size]),          // Initialize engine time grid with 0
+      theta(boost::extents[phi_size][theta_size][t_size]),      // Initialize theta grid with 0
       Gamma_rel(boost::extents[phi_size][theta_size][t_size]),  // Initialize Gamma_rel grid with 1
       epsilon(boost::extents[phi_size][theta_size][t_size]),    // Initialize column density grid with 0
       phi_size(phi_size),                                       // Store phi grid size

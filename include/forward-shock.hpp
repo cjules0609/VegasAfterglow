@@ -154,7 +154,7 @@ void updateForwardShock(size_t i, size_t j, int k, ShockEqn& eqn, const typename
 // Initializes the forward shock state vector at radius r0.
 template <typename ShockEqn>
 void setForwardInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
-    Real gamma2 = eqn.jet.Gamma0(eqn.phi, eqn.theta, t0);  // Initial Lorentz factor
+    Real gamma2 = eqn.jet.Gamma0(eqn.phi, eqn.theta0, t0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(gamma2);
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
