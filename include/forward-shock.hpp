@@ -175,7 +175,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& f_shock, Shock
     setForwardInit(eqn, state, t0);  // Initialize state at starting radius
 
     if (state[0] <= con::Gamma_cut) {  // If initial Lorentz factor is too low, exit early
-        setStoppingShock(i, j, f_shock, t, state[2]);
+        setStoppingShock(i, j, f_shock, t, state[2], state[4]);
         return;
     }
 

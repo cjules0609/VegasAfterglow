@@ -107,9 +107,10 @@ inline Real dDdt_Jet(Real Gamma, Real beta) {
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet_lab, Real sigma) {
     return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * Gamma0 * D_jet_lab) / (1 + sigma);
 }
-inline void setStoppingShock(size_t i, size_t j, Shock& f_shock, Array const& t, double r0) {
-    f_shock.t_com[i][j] = t;
-    std::fill(f_shock.r[i][j].begin(), f_shock.r[i][j].end(), r0);
+inline void setStoppingShock(size_t i, size_t j, Shock& shock, Array const& t, Real r0, Real theta0) {
+    shock.t_com[i][j] = t;
+    std::fill(shock.r[i][j].begin(), shock.r[i][j].end(), r0);
+    std::fill(shock.theta[i][j].begin(), shock.theta[i][j].end(), theta0);
 }
 //
 

@@ -47,12 +47,50 @@ void Observer::changeViewingAngle(Real theta_view) {
  *              the effective phi size is 1) or the differential phi value.
  ********************************************************************************************************************/
 void Observer::calcSolidAngle() {
-    for (size_t i = 0; i < eff_phi_size; ++i) {
+    for (size_t i = 0; i < coord.phi.size(); ++i) {
+        Real phi_lo = 0;
+        Real phi_hi = 0;
+        if (eff_phi_size == 1) {
+            phi_lo = 0;
+            phi_hi = 2 * con::pi;
+        } else if (i == 0) {  // note this also implys phi.size() > 1
+            phi_lo = coord.phi[0];
+            phi_hi = coord.phi[1];
+        } else if (i == coord.phi.size() - 1) {
+            phi_lo = coord.phi[i - 1];
+            phi_hi = coord.phi[i];
+        } else {
+            phi_lo = coord.phi[i - 1];
+            phi_hi = coord.phi[i + 1];
+        }
+        Real dphi = std::abs(phi_hi - phi_lo) / 2;
+        size_t i_eff = i * interp.jet_3d;
+        for (size_t j = 0; j < coord.theta.size(); ++j) {
+            for (size_t k = 0; k < coord.t.size(); ++k) {
+                Real theta_lo = 0;
+                Real theta_hi = 0;
+                if (j == 0) {
+                    theta_lo = theta_grid[i_eff][0][k];
+                    theta_hi = 0.5 * (theta_grid[i_eff][1][k] + theta_grid[i_eff][0][k]);
+                } else if (j == coord.theta.size() - 1) {
+                    theta_lo = 0.5 * (theta_grid[i_eff][j - 1][k] + theta_grid[i_eff][j][k]);
+                    theta_hi = theta_grid[i_eff][j][k];
+                } else {
+                    theta_lo = 0.5 * (theta_grid[i_eff][j][k] + theta_grid[i_eff][j - 1][k]);
+                    theta_hi = 0.5 * (theta_grid[i_eff][j][k] + theta_grid[i_eff][j + 1][k]);
+                }
+                Real dcos = std::abs(std::cos(theta_hi) - std::cos(theta_lo));
+                dOmega[i][j][k] = dcos * dphi;
+            }
+        }
+    }
+
+    /*for (size_t i = 0; i < eff_phi_size; ++i) {
         for (size_t j = 0; j < coord.theta.size(); ++j) {
             // If there is only one effective phi point, use 2π; otherwise, use the corresponding differential phi.
             dOmega[i][j] = coord.dcos[j] * (eff_phi_size == 1 ? 2 * con::pi : coord.dphi[i]);
         }
-    }
+    }*/
 }
 
 /********************************************************************************************************************

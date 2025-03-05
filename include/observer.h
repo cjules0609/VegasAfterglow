@@ -35,8 +35,9 @@ class LogScaleInterp {
     // Tries to set the interpolation boundaries using the provided logarithmic radius array, observation time grid,
     // Doppler grid, observed frequency, and one or more photon grids.
     template <typename... PhotonGrid>
-    bool validateInterpBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& r_grid, MeshGrid3d const& t_obs,
-                                MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons);
+    bool validateInterpBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& dOmega, MeshGrid3d const& r_grid,
+                                MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
+                                PhotonGrid const&... photons);
 
    private:
     Real log_t_ratio{0};  // Ratio of logarithmic observation time
@@ -95,7 +96,7 @@ class Observer {
 
    private:
     LogScaleInterp interp;         // Log-scale interpolation helper
-    MeshGrid dOmega;               // Grid of solid angles
+    MeshGrid3d dOmega;             // Grid of solid angles
     MeshGrid3d const& r_grid;      // Grid of radius
     MeshGrid3d const& theta_grid;  // Grid of theta
     MeshGrid3d const& Gamma;       // Grid of Lorentz factors
@@ -124,9 +125,9 @@ class Observer {
  *              Returns true if both lower and upper log observation time boundaries are finite.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& r_grid,
-                                            MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                            PhotonGrid const&... photons) {
+bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& dOmega,
+                                            MeshGrid3d const& r_grid, MeshGrid3d const& t_obs,
+                                            MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
     t_obs_lo = t_obs[i][j][k_lo];
     log_t_ratio = fastLog(t_obs[i][j][k_lo + 1] / t_obs[i][j][k_lo]);
 
@@ -142,13 +143,15 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
         Real nu = (1 + z) * nu_obs / D;
         Real I_lo = (photons[i * jet_3d][j][k_lo].I_nu(nu) + ...);
         Real r = r_grid[i * jet_3d][j][k_lo];
-        L_lo = I_lo * r * r * D * D * D;
+        Real solid_angle = dOmega[i][j][k_lo];
+        L_lo = I_lo * r * r * D * D * D * solid_angle;
     }
     Real D = doppler[i][j][k_lo + 1];
     Real nu = (1 + z) * nu_obs / D;
     Real I_hi = (photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...);
     Real r = r_grid[i * jet_3d][j][k_lo + 1];
-    L_hi = I_hi * r * r * D * D * D;
+    Real solid_angle = dOmega[i][j][k_lo + 1];
+    L_hi = I_hi * r * r * D * D * D * solid_angle;
 
     log_L_ratio = fastLog(L_hi / L_lo);
 
@@ -173,7 +176,7 @@ Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Rea
       lumi_dist(luminosity_dist),
       z(redshift),
       interp(),
-      dOmega(boost::extents[coord.phi.size()][coord.theta.size()]),
+      dOmega(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
       r_grid(dyn.r),
       theta_grid(dyn.theta),
       Gamma(dyn.Gamma_rel),
@@ -213,10 +216,9 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
     // Loop over effective phi and theta grid points.
     for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
-            Real const solid_angle = dOmega[i][j];
 // Attempt to set the initial boundary values; if unsuccessful, skip this grid cell.
 #ifdef EXTRAPOLATE
-            if (!interp.validateInterpBoundary(i, j, 0, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+            if (!interp.validateInterpBoundary(i, j, 0, dOmega, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
                 continue;
             }
 #endif
@@ -225,7 +227,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
             // cell until the first observation time is reached.
             for (; t_idx < t_obs_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
 #ifdef EXTRAPOLATE
-                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]) * solid_angle;
+                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
 #endif
             }
 
@@ -235,7 +237,8 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 Real const t_hi = t_obs_grid[i][j][k + 1];
 
                 if (t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi) {
-                    if (!interp.validateInterpBoundary(i, j, k, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
+                    if (!interp.validateInterpBoundary(i, j, k, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
+                                                       photons...)) {
                         for (; t_idx < t_obs_size && t_obs[t_idx] < t_hi; t_idx++) {
                         }
                         continue;
@@ -243,13 +246,13 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                 }
 
                 for (; t_idx < t_obs_size && t_lo <= t_obs[t_idx] && t_obs[t_idx] < t_hi; t_idx++) {
-                    f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]) * solid_angle;
+                    f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
                 }
             }
 #ifdef EXTRAPOLATE
             //   Extrapolation for observation times above the grid.
             for (; t_idx < t_obs_size; t_idx++) {
-                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]) * solid_angle;
+                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
             }
 #endif
         }

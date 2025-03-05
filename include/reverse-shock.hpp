@@ -19,7 +19,7 @@
 template <typename Jet, typename Injector>
 class FRShockEqn {
    public:
-    using State = std::array<Real, 6>;  // State vector for reverse shock variables
+    using State = std::array<Real, 6>;  // State vector for reverse shock variables [ignored, N3, r, t_com, D_jet, theta]
 
     FRShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta);
 
@@ -161,9 +161,10 @@ inline auto unpack_r_state(State const& r_state) {
 template <typename ShockEqn, typename FState, typename RState>
 void set_f_state(ShockEqn& eqn, FState& f_state, RState const& r_state, Real gamma2) {
     Real r0 = r_state[2];
+    Real theta = r_state[5];
     Real u0 = (gamma2 - 1) * eqn.medium.mass(r0) / (4 * con::pi) * con::c2;
     Real t_com0 = r_state[3];
-    f_state = {gamma2, u0, r0, t_com0};
+    f_state = {gamma2, u0, r0, t_com0, theta};
     eqn.gamma4 = gamma2;
 }
 

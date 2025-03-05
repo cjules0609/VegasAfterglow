@@ -18,7 +18,7 @@
 template <typename Jet, typename Injector>
 class SimpleShockEqn {
    public:
-    using State = std::array<Real, 6>;  // State vector: typically [Gamma, u, r, t_com, D_jet, theta_jet]
+    using State = std::array<Real, 5>;  // State vector: typically [Gamma, u, r, t_com, theta_jet]
 
     SimpleShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -69,11 +69,10 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real
     dydt[0] = dGammadt(t, Gamma, r, dydt[2], rho);  // d(Gamma)/dt
     dydt[1] = 0;
     dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
-    dydt[4] = dDdt_Jet(gamma4, beta4);     // d(D_jet)/dt
     if (jet.spreading) {
-        dydt[5] = dtheta_dt(uv, dydt[2], r, Gamma);
+        dydt[4] = dtheta_dt(uv, dydt[2], r, Gamma);
     } else {
-        dydt[5] = 0;
+        dydt[4] = 0;
     }
 }
 
