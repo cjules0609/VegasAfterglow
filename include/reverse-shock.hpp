@@ -19,7 +19,8 @@
 template <typename Jet, typename Injector>
 class FRShockEqn {
    public:
-    using State = std::array<Real, 6>;  // State vector for reverse shock variables [ignored, N3, r, t_com, D_jet, theta]
+    using State =
+        std::array<Real, 6>;  // State vector for reverse shock variables [ignored, N3, r, t_com, D_jet, theta]
 
     FRShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta);
 
@@ -107,20 +108,22 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
     Real r = y[2];
     // Real t_com = y[3];
     Real D_jet_lab = y[4];
+    Real theta = y[5];
 
     Real n4 = calc_n4(jet.dEdOmega(phi, theta0, t), gamma4, r, D_jet_lab, jet_sigma);
     Real n1 = medium.rho(r) / con::mp;
 
     Real gamma3 = calc_gamma3(n1, n4, gamma4, jet_sigma);
     Real beta3 = gammaTobeta(gamma3);
+    Real uv = gamma3 * beta3;
     Real beta4 = gammaTobeta(gamma4);
     dydt[0] = 0;
     dydt[1] = dN3dtPerOmega(r, n1, n4, gamma3);
     dydt[2] = drdt(beta3);
     dydt[3] = dtdt_CoMoving(gamma3, beta3);
     dydt[4] = dDdt_Jet(gamma4, beta4);
-    if (jet.spreading) {
-        dydt[5] = dtheta_dt(gamma3 * beta3, dydt[2], r, gamma3);
+    if (jet.spreading && theta < 0.5 * con::pi && uv * theta < 0.5) {
+        dydt[5] = dtheta_dt(uv, dydt[2], r, gamma3);
     } else {
         dydt[5] = 0;
     }

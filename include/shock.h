@@ -136,7 +136,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
         // Create a ForwardShockEqn for each theta slice (phi is set to 0)
         // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        //           Solve the shock shell for this theta slice
+        //              Solve the shock shell for this theta slice
         solveForwardShell(0, j, coord.t, f_shock, eqn, rtol);
     }
 

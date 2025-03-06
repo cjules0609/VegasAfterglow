@@ -59,7 +59,7 @@ inline Real SedovLength(Real E_iso, Real n_ism) {
  ********************************************************************************************************************/
 template <typename Jet>
 Real jetEdge(Jet const& jet, Real gamma_cut) {
-    if (jet.Gamma0(0, con::pi / 2, 0) > gamma_cut) {
+    if (jet.Gamma0(0, con::pi / 2, 0) >= gamma_cut) {
         return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
     }
     Real low = 0;
@@ -67,13 +67,14 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
     Real eps = 1e-9;
     for (; hi - low > eps;) {
         Real mid = 0.5 * (low + hi);
-        if (jet.Gamma0(0, mid, 0) > gamma_cut) {
+        if (jet.Gamma0(0, mid, 0) >= gamma_cut) {
             low = mid;
         } else {
             hi = mid;
         }
     }
-    return 0.5 * (low + hi);  // Return the midpoint as the jet edge.
+    return low;
+    // 0.5 * (low + hi);  // Return the midpoint as the jet edge.
 }
 
 /********************************************************************************************************************

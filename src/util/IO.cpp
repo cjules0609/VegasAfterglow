@@ -96,10 +96,10 @@ void writeGrid(std::string filename, T const& names, U const& data, V const& uni
  *              The output includes Gamma_rel, B, t_com, t_eng, and column_num_den (labeled as "Sigma").
  ********************************************************************************************************************/
 void output(Shock const& shock, std::string const& filename) {
-    std::array<std::string, 5> strs = {"Gamma", "B", "t_com", "r", "Sigma"};
-    std::array<MeshGrid3d const*, 5> data = {&(shock.Gamma_rel), &(shock.B), &(shock.t_com), &(shock.r),
-                                             &(shock.column_num_den)};
-    std::array<Real, 5> units = {1, 1, con::sec, con::cm, 1 / con::cm2};
+    std::array<std::string, 6> strs = {"Gamma", "B", "t_com", "r", "theta", "Sigma"};
+    std::array<MeshGrid3d const*, 6> data = {&(shock.Gamma_rel), &(shock.B),     &(shock.t_com),
+                                             &(shock.r),         &(shock.theta), &(shock.column_num_den)};
+    std::array<Real, 6> units = {1, 1, con::sec, con::cm, 1, 1 / con::cm2};
 
     writeGrid(filename, strs, data, units);
 }

@@ -37,13 +37,16 @@ class ForwardShockEqn {
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    inline Real dGammadt(Real t, Real Gamma, Real u, Real r, Real drdt, Real ad_idx, Real rho);
+    inline Real dGammadt(Real t, Real Gamma, Real u, Real r, Real theta, Real drdt, Real dthetadt, Real ad_idx,
+                         Real rho);
     // Helper function: computes the derivative of u with respect to t.
-    inline Real dUdt(Real Gamma, Real u, Real r, Real dGdr, Real drdt, Real ad_idx, Real rho);
+    inline Real dUdt(Real Gamma, Real u, Real r, Real theta, Real dGdt, Real drdt, Real dthetadt, Real ad_idx,
+                     Real rho);
 
     Real const inj_Gamma0{0};  // Initial Gamma from the injector
     Real const inj_sigma{0};   // Injector magnetization parameter
     Real const dM0{0};         // Initial mass per unit solid angle
+    Real const dOmega0{0};     // Initial solid angle
 };
 
 /********************************************************************************************************************
@@ -51,7 +54,7 @@ class ForwardShockEqn {
  * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
  *              The state vector components are:
  *                  y[0] - Gamma (Lorentz factor)
- *                  y[1] - u (internal energy-related variable)
+ *                  y[1] - u (internal energy per solid angle)
  *                  y[2] - r (radius)
  *                  y[3] - t_com (co-moving time) [unused here]
  *                  y[4] - D_jet (jet shell width) [unused here]
@@ -60,7 +63,8 @@ template <typename Jet, typename Injector>
 void ForwardShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) {
     Real Gamma = y[0];
     Real u = y[1];
-    Real r = y[2];  // radius
+    Real r = y[2];      // radius
+    Real theta = y[4];  // jet opening angle
     // Real t_com = y[3];  // co-moving time (unused)
     // Real D_jet = y[4];  // co-moving jet shell width (unused)
 
@@ -69,15 +73,17 @@ void ForwardShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Rea
     Real beta = gammaTobeta(Gamma);       // Convert Gamma to beta (velocity/c)
     Real uv = Gamma * beta;
 
-    dydt[2] = drdt(beta);                                        // Compute derivative of engine time with respect to t
-    dydt[0] = dGammadt(t, Gamma, u, r, dydt[2], ad_idx, rho);    // d(Gamma)/dt
-    dydt[1] = dUdt(Gamma, u, r, dydt[0], dydt[2], ad_idx, rho);  // d(u)/dt
-    dydt[3] = dtdt_CoMoving(Gamma, beta);                        // d(t_com)/dt
-    if (jet.spreading) {
+    dydt[2] = drdt(beta);  // Compute derivative of engine time with respect to t
+
+    if (jet.spreading && theta < 0.5 * con::pi && uv * theta < 0.5) {
         dydt[4] = dtheta_dt(uv, dydt[2], r, Gamma);  // d(theta_jet)/dt
     } else {
         dydt[4] = 0;
     }
+
+    dydt[0] = dGammadt(t, Gamma, u, r, theta, dydt[2], dydt[4], ad_idx, rho);    // d(Gamma)/dt
+    dydt[1] = dUdt(Gamma, u, r, theta, dydt[0], dydt[2], dydt[4], ad_idx, rho);  // d(u)/dt
+    dydt[3] = dtdt_CoMoving(Gamma, beta);                                        // d(t_com)/dt
 }
 
 /********************************************************************************************************************
@@ -99,29 +105,40 @@ ForwardShockEqn<Jet, Injector>::ForwardShockEqn(Medium const& medium, Jet const&
       spreading_factor(1),
       inj_Gamma0(inject.Gamma0(phi, theta, 0)),
       inj_sigma(inject.sigma0(phi, theta, 0)),
-      dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)) {
-    // dM0dOmega(jet.dE0dOmega(theta) / (jet.Gamma0(theta) * con::c2)) is commented out.
-}
+      dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)),
+      dOmega0(1 - std::cos(theta)) {}
 
 /********************************************************************************************************************
  * METHOD: ForwardShockEqn::dGammadt
  * DESCRIPTION: Computes the derivative of Gamma with respect to  t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r, Real drdt, Real ad_idx, Real rho) {
-    Real ad_idx_m1 = ad_idx - 1;
-    Real Gamma2_m1 = Gamma * Gamma - 1;
-    Real term1 = ad_idx * Gamma2_m1 + 1;
+Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r, Real theta, Real drdt, Real dthetadt,
+                                              Real ad_idx, Real rho) {
+    Real Gamma2 = Gamma * Gamma;
+    Real Gamma_eff = (ad_idx * (Gamma2 - 1) + 1) / Gamma;
+    Real dGamma_eff = (ad_idx * Gamma2 + ad_idx - 1) / Gamma2;
+    Real dmdt = r * r * rho * drdt;
+    Real dlnVdt = 3 / r * drdt;  // only r term
 
     Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
     Real dm_inj = inject.dEdOmega(phi, theta0, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
     Real L_inj = inject.dLdOmega(phi, theta0, t);  // Injected luminosity per unit solid angle
 
-    Real a1 = -Gamma2_m1 * (ad_idx * Gamma - ad_idx + 1) * r * r * rho * con::c2 * drdt;
-    Real a2 = ad_idx_m1 * term1 * 3 * u / r * drdt;
-    Real a3 = Gamma * L_inj * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
-    Real b1 = Gamma * (dM0 + dm + dm_inj) * con::c2;
-    Real b2 = (ad_idx * term1 + 2 * ad_idx_m1) / Gamma * u;
+    if (jet.spreading) {
+        Real f_spread = (1 - std::cos(theta)) / dOmega0;
+        dmdt = dmdt * f_spread + dm / dOmega0 * std::sin(theta) * dthetadt;
+        dm *= f_spread;
+        dlnVdt += std::sin(theta) / (1 - std::cos(theta)) * dthetadt;
+        u *= f_spread;
+    }
+
+    Real a1 = -(Gamma - 1) * (Gamma_eff + 1) * con::c2 * dmdt;
+    Real a2 = (ad_idx - 1) * Gamma_eff * u * dlnVdt;
+    Real a3 = L_inj * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
+
+    Real b1 = (dM0 + dm + dm_inj) * con::c2;
+    Real b2 = (dGamma_eff + Gamma_eff * (ad_idx - 1) / Gamma) * u;
 
     return (a1 + a2 + a3) / (b1 + b2);
 }
@@ -131,9 +148,19 @@ Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r
  * DESCRIPTION: Computes the derivative of u with respect to time t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real ForwardShockEqn<Jet, Injector>::dUdt(Real Gamma, Real u, Real r, Real dGdt, Real drdt, Real ad_idx, Real rho) {
-    Real E = r * r * rho * con::c2;
-    return ((1 - eps_e) * (Gamma - 1) * E - (ad_idx - 1) * (3 / r - dGdt / (drdt * Gamma)) * u) * drdt;
+Real ForwardShockEqn<Jet, Injector>::dUdt(Real Gamma, Real u, Real r, Real theta, Real dGdt, Real drdt, Real dthetadt,
+                                          Real ad_idx, Real rho) {
+    Real dmdt = r * r * rho * drdt;
+    Real dlnVdt = (3 / r * drdt - dGdt / Gamma);
+    if (jet.spreading) {
+        Real dm = medium.mass(r) / (4 * con::pi);
+        Real factor = std::sin(theta) / (1 - std::cos(theta)) * dthetadt;
+        dmdt = dmdt + dm * factor;
+        dlnVdt += factor;
+        dlnVdt += factor / (ad_idx - 1);
+    }
+
+    return (1 - eps_e) * (Gamma - 1) * con::c2 * dmdt - (ad_idx - 1) * dlnVdt * u;
 }
 
 // Updates the forward shock state at grid index (i, j, k) using the current state vector and the medium properties.
@@ -174,14 +201,14 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& f_shock, Shock
     typename ShockEqn::State state;
     setForwardInit(eqn, state, t0);  // Initialize state at starting radius
 
-    if (state[0] <= con::Gamma_cut) {  // If initial Lorentz factor is too low, exit early
+    if (state[0] < con::Gamma_cut) {  // If initial Lorentz factor is too low, exit early
         setStoppingShock(i, j, f_shock, t, state[2], state[4]);
         return;
     }
 
     // Create a dense output stepper for integrating the shock equations
-    auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{0, rtol};
-    // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
+    // auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::State>{0, rtol};
+    auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename ShockEqn::State>());
 
     stepper.initialize(state, t0, dt);
 

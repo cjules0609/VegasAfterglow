@@ -36,10 +36,11 @@ class SimpleShockEqn {
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    inline Real dGammadt(Real t, Real Gamma, Real r, Real drdt, Real rho);
+    inline Real dGammadt(Real t, Real Gamma, Real r, Real theta, Real drdt, Real dthetadt, Real rho);
     Real const dM0{0};         // Initial mass per unit solid angle
     Real const inj_Gamma0{0};  // Initial Gamma from the injector
     Real const inj_sigma{0};   // Injector magnetization parameter
+    Real const dOmega0{0};     // Initial solid angle
 };
 
 /********************************************************************************************************************
@@ -47,7 +48,7 @@ class SimpleShockEqn {
  * DESCRIPTION: Computes the derivatives of the state variables with respect to radius r.
  *              The state vector components are:
  *                  y[0] - Gamma (Lorentz factor)
- *                  y[1] - u (internal energy-related variable)
+ *                  y[1] - u (internal energy per solid angle)
  *                  y[2] - r (radius)
  *                  y[3] - t_com (co-moving time) [unused here]
  *                  y[4] - D_jet (jet shell width) [unused here]
@@ -56,7 +57,8 @@ class SimpleShockEqn {
 template <typename Jet, typename Injector>
 void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) {
     Real Gamma = y[0];
-    Real r = y[2];  // engine time
+    Real r = y[2];      // engine time
+    Real theta = y[4];  // jet opening angle
     // Real t_com = y[3];  // co-moving time (unused)
     // Real D_jet = y[4];  // co-moving jet shell width (unused)
 
@@ -65,15 +67,17 @@ void SimpleShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real
     Real uv = Gamma * beta;
     Real beta4 = gammaTobeta(gamma4);  // Convert gamma4 to beta
 
-    dydt[2] = drdt(beta);                           // Compute derivative of r with respect to t
-    dydt[0] = dGammadt(t, Gamma, r, dydt[2], rho);  // d(Gamma)/dt
-    dydt[1] = 0;
-    dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
-    if (jet.spreading) {
+    dydt[2] = drdt(beta);  // Compute derivative of r with respect to t
+
+    if (jet.spreading && theta < 0.5 * con::pi && uv * theta < 0.5) {
         dydt[4] = dtheta_dt(uv, dydt[2], r, Gamma);
     } else {
         dydt[4] = 0;
     }
+
+    dydt[0] = dGammadt(t, Gamma, r, theta, dydt[2], dydt[4], rho);  // d(Gamma)/dt
+    dydt[1] = 0;
+    dydt[3] = dtdt_CoMoving(Gamma, beta);  // d(t_com)/dt
 }
 
 /********************************************************************************************************************
@@ -94,7 +98,8 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
       gamma4(jet.Gamma0(phi, theta, 0)),
       dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)),
       inj_Gamma0(inject.Gamma0(phi, theta, 0)),
-      inj_sigma(inject.sigma0(phi, theta, 0)) {
+      inj_sigma(inject.sigma0(phi, theta, 0)),
+      dOmega0(1 - std::cos(theta0)) {
     // dM0dOmega(jet.dE0dOmega(theta) / (jet.Gamma0(theta) * con::c2)) is commented out.
 }
 
@@ -103,11 +108,18 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
  * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real SimpleShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real r, Real drdt, Real rho) {
-    Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
+Real SimpleShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real r, Real theta, Real drdt, Real dthetadt,
+                                             Real rho) {
+    Real f_spread = 1;
+    if (jet.spreading) {
+        f_spread = (1 - std::cos(theta)) / dOmega0;
+    }
+
+    Real dm = medium.mass(r) / (4 * con::pi) * f_spread;  // Mass per unit solid angle from medium
     Real dm_inj = inject.dEdOmega(phi, theta0, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
     Real L_inj = inject.dLdOmega(phi, theta0, t);  // Injected luminosity per unit solid angle
-    double a1 = (1 - Gamma * Gamma) * r * r * rho * drdt;
+    double a1 =
+        (1 - Gamma * Gamma) * (r * r * rho * drdt * f_spread + dm / (f_spread * dOmega0) * std::sin(theta) * dthetadt);
     double a2 = L_inj / con::c2 * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
     return (a1 + a2) / (dM0 + dm_inj + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm);
 }
