@@ -9,6 +9,7 @@
 #define _REVERSESHOCK_
 
 #include "shock.h"
+#include "utilities.h"
 /********************************************************************************************************************
  * CLASS: FRShockEqn
  * DESCRIPTION: Represents the reverse shock (or forward-reverse shock) equation for a given Jet and Injector.
@@ -37,19 +38,33 @@ class FRShockEqn {
 
    private:
     // Helper function: computes the derivative of N3 (number per solid angle) with respect to t.
-    inline Real dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3);
+    inline Real dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3, Real drdt);
 };
 
+inline Real sigmoid(Real x, Real x0, Real w) { return 1.0 / (1.0 + std::exp(-w * (x - x0))); }
+
+inline Real mechanicalModelCorrection(Real gamma34, Real sigma, Real k) {
+    Real S = sigmoid(gamma34, 10, 5);
+    return (1 - S) * ((5 - k) / (3 - k)) + S * ((22 - 6 * k) / (12 - 3 * k));
+}
 /********************************************************************************************************************
  * INLINE FUNCTION: calc_gamma3
  * DESCRIPTION: Computes gamma3 for the reverse shock based on radius, upstream and downstream densities,
  *              the jet Lorentz factor (gamma4), and magnetization (sigma).
  ********************************************************************************************************************/
-inline Real calc_gamma3(Real n1, Real n4, Real gamma4, Real sigma) {
-    Real C = n4 / n1 * (1 + sigma);
-    Real gamma3 =
-        gamma4 * std::sqrt(((C - 2) - 2 * std::sqrt(C * (gamma4 * gamma4 - 1) + 1)) / (C - 4 * gamma4 * gamma4));
-    return gamma3;
+inline Real calc_gamma3(Real n1, Real n4, Real gamma4, Real sigma, Real k) {
+    Real C = (1 + sigma) * n4 / n1;
+
+    auto func = [=](Real g3) -> Real {
+        Real gamma34 = relativeLorentz(gamma4, g3);
+        Real G = mechanicalModelCorrection(gamma34, sigma, k);
+        return G * C * (gamma34 * gamma34 - 1) - (g3 * g3 - 1);
+    };
+
+    return rootBisection(func, 1, gamma4, 1e-3);
+    /* Real gamma3 =
+         gamma4 * std::sqrt(((C - 2) - 2 * std::sqrt(C * (gamma4 * gamma4 - 1) + 1)) / (C - 4 * gamma4 * gamma4));
+     return gamma3;*/
 }
 
 /********************************************************************************************************************
@@ -72,12 +87,12 @@ void setReverseInit(ShockEqn& eqn, typename ShockEqn::State& state, Real t0) {
  * DESCRIPTION: Computes the derivative of N3 (number per unit solid angle) with respect to time.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
-Real FRShockEqn<Jet, Injector>::dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3) {
-    Real gamma34 = (gamma4 / gamma3 + gamma3 / gamma4) / 2;
+Real FRShockEqn<Jet, Injector>::dN3dtPerOmega(Real r, Real n1, Real n4, Real gamma3, Real drdt) {
+    Real gamma34 = relativeLorentz(gamma4, gamma3);
     Real ratio_u = u_UpStr2u_DownStr(gamma34, this->jet_sigma);
     Real n3 = n4 * ratio_u;
     Real dxdr = 1. / (gamma4 * std::sqrt((1 + this->jet_sigma) * n4 / n1) * std::abs(1 - gamma4 * n4 / gamma3 / n3));
-    return n3 * r * r * gamma3 * dxdr;
+    return n3 * r * r * gamma3 * dxdr * drdt;
 }
 
 /********************************************************************************************************************
@@ -113,13 +128,13 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
     Real n4 = calc_n4(jet.dEdOmega(phi, theta0, t), gamma4, r, D_jet_lab, jet_sigma);
     Real n1 = medium.rho(r) / con::mp;
 
-    Real gamma3 = calc_gamma3(n1, n4, gamma4, jet_sigma);
+    Real gamma3 = calc_gamma3(n1, n4, gamma4, jet_sigma, medium.k);
     Real beta3 = gammaTobeta(gamma3);
     Real uv = gamma3 * beta3;
     Real beta4 = gammaTobeta(gamma4);
     dydt[0] = 0;
-    dydt[1] = dN3dtPerOmega(r, n1, n4, gamma3);
     dydt[2] = drdt(beta3);
+    dydt[1] = dN3dtPerOmega(r, n1, n4, gamma3, dydt[2]);
     dydt[3] = dtdt_CoMoving(gamma3, beta3);
     dydt[4] = dDdt_Jet(gamma4, beta4);
     if (jet.spreading && theta < 0.5 * con::pi && uv * theta < 0.5) {
@@ -129,16 +144,30 @@ void FRShockEqn<Jet, Injector>::operator()(State const& y, State& dydt, Real t) 
     }
 }
 
+inline Real calcFromRelativeLF(Real gamma34, Real gamma4) {
+    Real b = 2 * gamma34 * gamma4;
+    Real c = gamma34 * gamma34 + gamma4 * gamma4 - 1;
+    return (b - std::sqrt(b * b - 4 * c)) / 2;
+}
+
 /********************************************************************************************************************
- * INLINE FUNCTION: Blandford_McKee
- * DESCRIPTION: Updates the shock state at a grid cell using the Blandford–McKee self-similar solution.
+ * INLINE FUNCTION: postCrossingProfile
+ * DESCRIPTION: Updates the shock state post shock crossing
  ********************************************************************************************************************/
-inline void Blandford_McKee(size_t i, size_t j, size_t k, size_t k0, Shock& shock, Real r, Real t_com) {
+template <typename State>
+inline void postCrossingProfile(size_t i, size_t j, size_t k, size_t k0, State const& state, Shock& shock, Real ) {
+    Real r = state[2];
+    Real t_com = state[3];
+    Real theta = state[4];
+
     Real const g = 2.;
     Real r0 = shock.r[i][j][k0];
+    // Real Gamma0 = calcFromRelativeLF(shock.Gamma_rel[i][j][k0], gamma4);
+    // Real Gamma3 = (Gamma0 - 1) * std::pow(r / r0, -g) + 1;
     shock.t_com[i][j][k] = t_com;
     shock.r[i][j][k] = r;
-    shock.Gamma_rel[i][j][k] = (shock.Gamma_rel[i][j][k0] - 1) * std::pow(r / r0, -g) + 1;
+    shock.theta[i][j][k] = theta;
+    shock.Gamma_rel[i][j][k] = (shock.Gamma_rel[i][j][k0] - 1) * std::pow(r / r0, -(6 + 2 * g) / 7) + 1;
     shock.column_num_den[i][j][k] = shock.column_num_den[i][j][k0] * (r0 * r0) / (r * r);
     shock.B[i][j][k] = shock.B[i][j][k0] * std::pow(r / r0, (6. * (3. + g) - 14.) / 7.);
 }
@@ -178,13 +207,13 @@ bool updateForwardReverseShock(size_t i, size_t j, int k, ShockEqn& eqn, State c
 
     Real n1 = eqn.medium.rho(r) / con::mp;
     Real n4 = calc_n4(dEdOmega, eqn.gamma4, r, D_jet, eqn.jet_sigma);
-    Real gamma3 = calc_gamma3(n1, n4, eqn.gamma4, eqn.jet_sigma);
-    Real dN1dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);
+    Real gamma3 = calc_gamma3(n1, n4, eqn.gamma4, eqn.jet_sigma, eqn.medium.k);
+    Real dN2dOmega = eqn.medium.mass(r) / (4 * con::pi * con::mp);
 
-    updateShockState(f_shock, i, j, k, r, theta, gamma3, t_com, dN1dOmega, n1, eqn.jet_sigma);
+    updateShockState(f_shock, i, j, k, r, theta, gamma3, t_com, dN2dOmega, n1, eqn.jet_sigma);
 
     Real gamma34 = relativeLorentz(eqn.gamma4, gamma3);
-    updateShockState(r_shock, i, j, k, r, theta, gamma34, t_com, dN4dOmega, n4, eqn.jet_sigma);
+    updateShockState(r_shock, i, j, k, r, theta, gamma34, t_com, dN3dOmega, n4, eqn.jet_sigma);
     return dN3dOmega >= dN4dOmega;
 }
 
@@ -201,30 +230,33 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& f_shock, Shock& r_s
     if (!reverseShockExists(eqn_r, t[0])) {
         solveForwardShell(i, j, t, f_shock, eqn_f, rtol);
     } else {
-        if (eqn_r.gamma4 <= con::Gamma_cut) {  // If the initial Lorentz factor is too low, exit early
-            return;
-        }
-
         Real t0 = t[0];
         Real dt = (t[1] - t[0]) / 100;
         typename RShockEqn::State r_state;
         typename FShockEqn::State f_state;
-
-        auto r_stepper = bulirsch_stoer_dense_out<typename RShockEqn::State>{0, rtol};
-        // auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
         setReverseInit(eqn_r, r_state, t0);
+
+        if (eqn_r.gamma4 < con::Gamma_cut) {
+            setStoppingShock(i, j, f_shock, t, r_state[2], r_state[5]);
+            setStoppingShock(i, j, r_shock, t, r_state[2], r_state[5]);
+            return;
+        }
+
         Real dEdOmega = eqn_r.jet.dEdOmega(eqn_r.phi, eqn_r.theta0, t0);
         Real dN4dOmega = dEdOmega / (eqn_r.gamma4 * con::mp * con::c2 * (1 + eqn_r.jet_sigma));
-
         bool crossed = false;
+
+        // auto r_stepper = bulirsch_stoer_dense_out<typename RShockEqn::State>{0, rtol};
+        auto r_stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename RShockEqn::State>());
+
         r_stepper.initialize(r_state, t0, dt);
-        // Integrate the shell over the radius array r
+
         Real t_back = t[t.size() - 1];
 
         int k = 0, k0 = 0;
         for (; !crossed && r_stepper.current_time() <= t_back;) {
             r_stepper.do_step(eqn_r);
-            for (; r_stepper.current_time() > t[k] && k < t.size(); k++) {
+            for (; k < t.size() && r_stepper.current_time() > t[k]; k++) {
                 r_stepper.calc_state(t[k], r_state);
                 crossed = updateForwardReverseShock(i, j, k, eqn_r, r_state, f_shock, r_shock, dEdOmega, dN4dOmega);
                 if (crossed) {
@@ -234,17 +266,18 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& f_shock, Shock& r_s
             }
         }
 
-        auto f_stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{0, rtol};
+        // auto f_stepper = bulirsch_stoer_dense_out<typename FShockEqn::State>{0, rtol};
+        auto f_stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::State>());
         set_f_state(eqn_f, f_state, r_state, f_shock.Gamma_rel[i][j][k0]);
-        f_stepper.initialize(f_state, r_stepper.current_time(), r_stepper.current_time_step());
+        f_stepper.initialize(f_state, t[k], r_stepper.current_time_step());
 
         for (; f_stepper.current_time() <= t_back;) {
             f_stepper.do_step(eqn_f);
 
-            for (; f_stepper.current_time() > t[k] && k < t.size(); k++) {
+            for (; k < t.size() && f_stepper.current_time() > t[k]; k++) {
                 f_stepper.calc_state(t[k], f_state);
                 updateForwardShock(i, j, k, eqn_f, f_state, f_shock);
-                Blandford_McKee(i, j, k, k0, r_shock, f_state[2], f_state[3]);
+                postCrossingProfile(i, j, k, k0, f_state, r_shock);
             }
         }
     }

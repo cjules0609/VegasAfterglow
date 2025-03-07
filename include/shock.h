@@ -103,6 +103,8 @@ inline Real e_ThermalDownStr(Real gamma_rel, Real n_down_str) {
 inline Real dDdt_Jet(Real Gamma, Real beta) {
     Real constexpr cs = 0.5773502691896258 * con::c;  // sound speed approximation factor
     return cs * dtdt_CoMoving(Gamma, beta) / Gamma;
+
+    // return cs / (Gamma * Gamma);
 }
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet_lab, Real sigma) {
     return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * Gamma0 * D_jet_lab) / (1 + sigma);

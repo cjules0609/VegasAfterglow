@@ -34,7 +34,7 @@ class Ejecta {
     TernaryFunc Gamma0{func::one};     // Initial Lorentz factor (default: one)
     TernaryFunc dLdOmega{func::zero};  // Differential luminosity per unit solid angle (default: zero)
     TernaryFunc sigma0{func::zero};    // Magnetization parameter (default: zero)
-    Real duration{0};                  // Duration of the ejecta
+    Real duration{1 * con::sec};       // Duration of the ejecta
     bool spreading{false};             // Flag indicating if the ejecta spreads
 
     // (Additional member functions could be defined as needed.)
@@ -58,8 +58,8 @@ class TophatJet {
     // Returns the magnetization parameter, which is zero for a tophat jet.
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
-    Real duration{0.02 * con::sec};  // Jet duration
-    bool spreading{false};           // Flag indicating if the jet spreads
+    Real duration{1 * con::sec};  // Jet duration
+    bool spreading{false};        // Flag indicating if the jet spreads
 
    private:
     Real theta_c_{0};   // Core opening angle (radians)
@@ -81,7 +81,7 @@ class GaussianJet {
     Real Gamma0(Real phi, Real theta, Real t) const;
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
-    Real duration{0.02 * con::sec};
+    Real duration{1 * con::sec};
     bool spreading{false};
 
    private:
@@ -106,7 +106,7 @@ class PowerLawJet {
     Real Gamma0(Real phi, Real theta, Real t) const;
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
 
-    Real duration{0.02 * con::sec};
+    Real duration{1 * con::sec};
     bool spreading{false};
 
    private:

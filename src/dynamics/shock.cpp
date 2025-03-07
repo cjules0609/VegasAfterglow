@@ -96,13 +96,13 @@ Real soundSpeed(Real pressure, Real ad_idx, Real rho_rest) {
 }
 
 void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma_rel, Real t_com,
-                      Real dNdOmega_up, Real n_up_str, Real sigma) {
+                      Real dNdOmega_down, Real n_up_str, Real sigma) {
     if (Gamma_rel > 1) {
         Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma);
         Real pB_up = calc_pB4(n_up_str, sigma);
         Real pB_down = pB_up * ratio_u * ratio_u;
         Real n_down_str = n_up_str * ratio_u;
-        Real co_moving_width = dNdOmega_up / (r * r * n_down_str);
+        Real co_moving_width = dNdOmega_down / (r * r * n_down_str);
         Real e_th = e_ThermalDownStr(Gamma_rel, n_down_str);
         shock.Gamma_rel[i][j][k] = Gamma_rel;
         shock.t_com[i][j][k] = t_com;

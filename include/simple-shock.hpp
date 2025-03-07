@@ -110,16 +110,18 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
 template <typename Jet, typename Injector>
 Real SimpleShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real r, Real theta, Real drdt, Real dthetadt,
                                              Real rho) {
-    Real f_spread = 1;
-    if (jet.spreading) {
-        f_spread = (1 - std::cos(theta)) / dOmega0;
-    }
-
-    Real dm = medium.mass(r) / (4 * con::pi) * f_spread;  // Mass per unit solid angle from medium
+    Real dm = medium.mass(r) / (4 * con::pi);  // Mass per unit solid angle from medium
+    Real dmdt = r * r * rho * drdt;
     Real dm_inj = inject.dEdOmega(phi, theta0, t) / (inj_Gamma0 * (1 + inj_sigma) * con::c2);  // Injected mass
     Real L_inj = inject.dLdOmega(phi, theta0, t);  // Injected luminosity per unit solid angle
-    double a1 =
-        (1 - Gamma * Gamma) * (r * r * rho * drdt * f_spread + dm / (f_spread * dOmega0) * std::sin(theta) * dthetadt);
+
+    if (jet.spreading) {
+        Real f_spread = (1 - std::cos(theta)) / dOmega0;
+        dmdt = dmdt * f_spread + dm / dOmega0 * std::sin(theta) * dthetadt;
+        dm *= f_spread;
+    }
+
+    double a1 = (1 - Gamma * Gamma) * dmdt;
     double a2 = L_inj / con::c2 * (1 - Gamma / (inj_Gamma0 * (1 + inj_sigma)));
     return (a1 + a2) / (dM0 + dm_inj + eps_e * dm + 2 * (1 - eps_e) * Gamma * dm);
 }

@@ -35,8 +35,8 @@ class Medium {
     // Returns the total mass enclosed within radius r.
     Real mass(Real r) const;
 
+    Real const k;  // Density profile index (if 0, constant density)
    private:
-    Real const k;    // Density profile index (if 0, constant density)
     Real const n_c;  // Characteristic number density (in cm^-3)
     Real const r_c;  // Characteristic radius (in cm)
 };
