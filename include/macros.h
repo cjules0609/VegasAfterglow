@@ -32,6 +32,8 @@ namespace con {
     constexpr double cm3 = cm * cm * cm;  // Cubic centimeters
     // Mass unit: 1 gram is defined as 1 / 2e33 (arbitrary unit conversion)
     constexpr double g = 1 / 2e33;
+
+    constexpr double Gauss = 8.66e-11 / sec;  // sqrt(g/cm)/sec
     // Frequency unit: 1 Hz is defined as 1 / sec
     constexpr double Hz = 1 / sec;
     // Energy unit: 1 erg, derived from g, cm, and sec (erg = g * cm^2 / sec^2)

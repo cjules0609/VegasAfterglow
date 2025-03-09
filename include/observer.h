@@ -179,7 +179,7 @@ Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Rea
       dOmega(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
       r_grid(dyn.r),
       theta_grid(dyn.theta),
-      Gamma(dyn.Gamma_rel),
+      Gamma(dyn.Gamma),
       coord(coord),
       eff_phi_size(1) {
     // Calculate the solid angle grid.

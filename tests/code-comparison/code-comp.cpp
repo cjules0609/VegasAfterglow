@@ -54,7 +54,7 @@ void lc_gen(std::string folder_name) {
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = false;
+    jet.spreading = true;
 
     size_t r_num = 128;
     size_t theta_num = 128;

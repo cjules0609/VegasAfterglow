@@ -28,10 +28,10 @@ class CoastingShock {
     CoastingShock(size_t phi_size, size_t theta_size, size_t t_size);
     CoastingShock() = delete;
 
-    MeshGrid3d r;          // radius
-    MeshGrid3d theta;      // theta for jet spreading
-    MeshGrid3d Gamma_rel;  // relative lorentz factor between down stream and up stream
-    MeshGrid3d epsilon;    // relative energy per solid angle
+    MeshGrid3d r;        // radius
+    MeshGrid3d theta;    // theta for jet spreading
+    MeshGrid3d Gamma;    // relative lorentz factor between down stream and up stream
+    MeshGrid3d epsilon;  // relative energy per solid angle
 
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
 
@@ -52,7 +52,7 @@ CoastingShock genCoastingShock(Coord const& coord, Jet const& jet) {
         Real beta = gammaTobeta(Gamma);
         Real epsilon = jet.dEdOmega(coord.phi[0], coord.theta[j], 0);
         for (size_t k = 0; k < t_size; ++k) {
-            shock.Gamma_rel[0][j][k] = Gamma;
+            shock.Gamma[0][j][k] = Gamma;
             shock.epsilon[0][j][k] = epsilon;
             shock.r[0][j][k] = (beta * con::c) / std::abs(1 - beta) * coord.t[k];
         }

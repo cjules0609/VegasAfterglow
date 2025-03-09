@@ -29,7 +29,7 @@ Real RSTransitionRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
  *              and to compute the adiabatic index as a function of gamma.
  ********************************************************************************************************************/
 inline Real gammaTobeta(Real gamma) {
-    return std::sqrt(1 - 1 / (gamma * gamma));  // Convert Lorentz factor to velocity fraction (beta).
+    return std::sqrt(gamma * gamma - 1) / gamma;  // Convert Lorentz factor to velocity fraction (beta).
 }
 inline Real adiabaticIndex(Real gamma) {
     return (4 * gamma + 1) / (3 * gamma);  // Compute adiabatic index.

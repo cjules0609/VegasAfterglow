@@ -25,6 +25,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
     : t_com(boost::extents[phi_size][theta_size][t_size]),           // Initialize comoving time grid with 0
       r(boost::extents[phi_size][theta_size][t_size]),               // Initialize engine time grid with 0
       theta(boost::extents[phi_size][theta_size][t_size]),           // Initialize theta grid with 0
+      Gamma(boost::extents[phi_size][theta_size][t_size]),           // Initialize Gamma grid with 0
       Gamma_rel(boost::extents[phi_size][theta_size][t_size]),       // Initialize Gamma_rel grid with 1
       B(boost::extents[phi_size][theta_size][t_size]),               // Initialize magnetic field grid with 0
       column_num_den(boost::extents[phi_size][theta_size][t_size]),  // Initialize column density grid with 0
@@ -36,13 +37,13 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
     std::memset(t_com.data(), 0, t_com.num_elements() * sizeof(Real));
     std::memset(r.data(), 0, r.num_elements() * sizeof(Real));
     std::memset(theta.data(), 0, theta.num_elements() * sizeof(Real));
+    std::fill(Gamma.data(), Gamma.data() + Gamma.num_elements(), 1);              // Initialize Gamma to 0
     std::fill(Gamma_rel.data(), Gamma_rel.data() + Gamma_rel.num_elements(), 1);  // Initialize Gamma_rel to 1
     std::memset(B.data(), 0, B.num_elements() * sizeof(Real));
     std::memset(column_num_den.data(), 0, column_num_den.num_elements() * sizeof(Real));
 }
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization (sigma).
-// This function uses the adiabatic index computed from gamma_rel and applies different formulas based on sigma.
 Real u_DownStr(Real gamma_rel, Real sigma) {
     Real ad_idx = adiabaticIndex(gamma_rel);
     Real gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
@@ -91,26 +92,26 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
 }
 
 Real soundSpeed(Real pressure, Real ad_idx, Real rho_rest) {
-    // Compute sound speed and multiply by the speed of light (con::c)
     return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
 }
 
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma_rel, Real t_com,
-                      Real dNdOmega_down, Real n_up_str, Real sigma) {
+void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma, Real Gamma_rel,
+                      Real t_com, Real N_down_str, Real n_up_str, Real sigma) {
     if (Gamma_rel > 1) {
         Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma);
-        Real pB_up = calc_pB4(n_up_str, sigma);
-        Real pB_down = pB_up * ratio_u * ratio_u;
+        Real pB_up_str = calc_pB4(n_up_str, sigma);
+        Real pB_down_str = pB_up_str * ratio_u * ratio_u;
         Real n_down_str = n_up_str * ratio_u;
-        Real co_moving_width = dNdOmega_down / (r * r * n_down_str);
         Real e_th = e_ThermalDownStr(Gamma_rel, n_down_str);
+        shock.Gamma[i][j][k] = Gamma;
         shock.Gamma_rel[i][j][k] = Gamma_rel;
         shock.t_com[i][j][k] = t_com;
         shock.r[i][j][k] = r;
         shock.theta[i][j][k] = theta;
-        shock.column_num_den[i][j][k] = n_down_str * co_moving_width;
-        shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down * 8 * con::pi);
+        shock.column_num_den[i][j][k] = N_down_str / (r * r);
+        shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
     } else {
+        shock.Gamma[i][j][k] = 1;
         shock.Gamma_rel[i][j][k] = 1;
         shock.t_com[i][j][k] = 0;
         shock.r[i][j][k] = r;

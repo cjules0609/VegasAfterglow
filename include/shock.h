@@ -31,6 +31,7 @@ class Shock {
     MeshGrid3d t_com;           // comoving time
     MeshGrid3d r;               // radius
     MeshGrid3d theta;           // theta for jet spreading
+    MeshGrid3d Gamma;           // bulk lorentz factor
     MeshGrid3d Gamma_rel;       // relative lorentz factor between down stream and up stream
     MeshGrid3d B;               // comoving magnetic field
     MeshGrid3d column_num_den;  // down stream proton column number density
@@ -78,15 +79,19 @@ ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet
 
 Real u_DownStr(Real gamma_rel, Real sigma);
 Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma_rel, Real t_com,
-                      Real dNdOmega_up, Real n_up_str, Real sigma);
+void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma, Real Gamma_rel,
+                      Real t_com, Real dNdOmega_up, Real n_up_str, Real sigma);
 
+inline Real soundSpeed(Real Gamma_rel) {
+    Real ad_idx = adiabaticIndex(Gamma_rel);
+    return sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx));
+}
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
-inline Real drdt(Real beta) { return (beta * con::c) / std::abs(1 - beta); }
+inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
 inline Real dtheta_dt(Real uv, Real drdt, Real r, Real Gamma) {
     return 0.5 / Gamma * drdt / r * sqrt((2 * uv * uv + 3) / (4 * uv * uv + 3));
 }
-inline Real dtdt_CoMoving(Real Gamma, Real beta) { return 1 / (Gamma * std::abs(1 - beta)); };
+inline Real dtdt_CoMoving(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };
 inline Real calc_pB4(Real n4, Real sigma) { return sigma * n4 * con::mp * con::c2 / 2; }
 inline Real u_UpStr(Real u_down, Real gamma_rel) {
     return std::sqrt((1 + u_down * u_down) * (gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
@@ -100,21 +105,29 @@ inline Real relativeLorentz(Real gamma1, Real gamma2) {
 inline Real e_ThermalDownStr(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
 }
-inline Real dDdt_Jet(Real Gamma, Real beta) {
-    Real constexpr cs = 0.5773502691896258 * con::c;  // sound speed approximation factor
-    return cs * dtdt_CoMoving(Gamma, beta) / Gamma;
 
-    // return cs / (Gamma * Gamma);
+inline Real dDdt_Jet(Real Gamma_rel, Real dtdt_com) {
+    Real cs = soundSpeed(Gamma_rel);
+    return cs * dtdt_com;
 }
-inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet_lab, Real sigma) {
-    return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * Gamma0 * D_jet_lab) / (1 + sigma);
+
+inline Real dN3dt(Real r, Real n1, Real n4, Real gamma3, Real drdt, Real gamma0, Real sigma) {
+    Real gamma34 = relativeLorentz(gamma0, gamma3);
+    Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
+    Real n3 = n4 * ratio_u;
+    Real dxdr = 1. / (gamma0 * std::sqrt((1 + sigma) * n4 / n1) * std::abs(1 - gamma0 * n4 / gamma3 / n3));
+    return n3 * r * r * gamma3 * dxdr * drdt;
 }
+
+inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
+    return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * D_jet) / (1 + sigma);
+}
+
 inline void setStoppingShock(size_t i, size_t j, Shock& shock, Array const& t, Real r0, Real theta0) {
     shock.t_com[i][j] = t;
     std::fill(shock.r[i][j].begin(), shock.r[i][j].end(), r0);
     std::fill(shock.theta[i][j].begin(), shock.theta[i][j].end(), theta0);
 }
-//
 
 template <typename Jet, typename Injector>
 class SimpleShockEqn;
@@ -138,7 +151,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
         // Create a ForwardShockEqn for each theta slice (phi is set to 0)
         // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        //              Solve the shock shell for this theta slice
+        // Solve the shock shell for this theta slice
         solveForwardShell(0, j, coord.t, f_shock, eqn, rtol);
     }
 
@@ -186,7 +199,7 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, 
         // Create equations for forward and reverse shocks for each theta slice (phi is 0)
         // auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         auto eqn_f = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j]);
+        auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
         // Solve the forward-reverse shock shell
         solveFRShell(0, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
     }
