@@ -115,10 +115,11 @@ inline Real dN3dt(Real r, Real n1, Real n4, Real gamma3, Real drdt, Real gamma0,
     Real gamma34 = relativeLorentz(gamma0, gamma3);
     Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
     Real n3 = n4 * ratio_u;
-    Real dxdr = 1. / (gamma0 * std::sqrt((1 + sigma) * n4 / n1) * std::abs(1 - gamma0 * n4 / gamma3 / n3));
+    Real dxdr = 1. / (gamma0 * std::sqrt((1 + sigma) * n4 / n1) * (1 - gamma0 * n4 / (gamma3 * n3)));
     return n3 * r * r * gamma3 * dxdr * drdt;
 }
 
+// D_jet co-moving shell width
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
     return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * D_jet) / (1 + sigma);
 }

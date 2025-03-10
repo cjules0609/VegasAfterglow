@@ -22,7 +22,8 @@ Real thinShellDecRadius(Real E_iso, Real n_ism, Real Gamma0);           // Thin 
 Real thickShellDecRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
 Real shellSpreadingRadius(Real Gamma0, Real engine_dura);  // Shell spreading radius.
 Real RSTransitionRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
-
+Real shellRegimeParam(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
+Real calcEngineDuration(Real E_iso, Real n_ism, Real Gamma0, Real xi);
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Gamma Conversion and Adiabatic Index
  * DESCRIPTION: Helper inline functions to convert a Lorentz factor (gamma) to the corresponding beta value
@@ -36,20 +37,22 @@ inline Real adiabaticIndex(Real gamma) {
 }
 
 /********************************************************************************************************************
- * INLINE FUNCTION: RShockCrossingRadius
- * DESCRIPTION: Returns the radius at which the reverse shock crosses, defined as the thick shell deceleration radius.
- ********************************************************************************************************************/
-inline Real RShockCrossingRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
-    return thickShellDecRadius(E_iso, n_ism, Gamma0, engine_dura);
-}
-
-/********************************************************************************************************************
  * INLINE FUNCTION: SedovLength
  * DESCRIPTION: Computes the Sedov length—a characteristic scale for blast wave deceleration—given the
  *              isotropic equivalent energy (E_iso) and the ISM number density (n_ism).
  ********************************************************************************************************************/
 inline Real SedovLength(Real E_iso, Real n_ism) {
-    return std::cbrt(E_iso / (4 * con::pi / 3 * n_ism * con::mp * con::c2));
+    return std::cbrt(E_iso / (n_ism * con::mp * con::c2));
+    // return std::cbrt(E_iso / (4 * con::pi / 3 * n_ism * con::mp * con::c2));
+}
+
+/********************************************************************************************************************
+ * INLINE FUNCTION: RShockCrossingRadius
+ * DESCRIPTION: Returns the radius at which the reverse shock crosses, defined as the thick shell deceleration radius.
+ ********************************************************************************************************************/
+inline Real RShockCrossingRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
+    size_t l = SedovLength(E_iso, n_ism);
+    return std::sqrt(std::sqrt(l * l * l * con::c * engine_dura));
 }
 
 /********************************************************************************************************************

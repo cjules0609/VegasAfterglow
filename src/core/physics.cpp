@@ -55,3 +55,22 @@ Real shellSpreadingRadius(Real Gamma0, Real engine_dura) { return Gamma0 * Gamma
 Real RSTransitionRadius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
     return std::pow(SedovLength(E_iso, n_ism), 1.5) / std::sqrt(con::c * engine_dura) / Gamma0 / Gamma0;
 }
+
+/********************************************************************************************************************
+ * FUNCTION: shellRegimeParam
+ * DESCRIPTION:
+ ********************************************************************************************************************/
+Real shellRegimeParam(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
+    Real Sedov_l = SedovLength(E_iso, n_ism);
+    Real shell_width = con::c * engine_dura;
+    return std::sqrt(Sedov_l / shell_width) * std::pow(Gamma0, -4. / 3);
+}
+
+/********************************************************************************************************************
+ * FUNCTION: calcEngineDuration
+ * DESCRIPTION:
+ ********************************************************************************************************************/
+Real calcEngineDuration(Real E_iso, Real n_ism, Real Gamma0, Real xi) {
+    Real Sedov_l = SedovLength(E_iso, n_ism);
+    return Sedov_l / (xi * xi * std::pow(Gamma0, 8. / 3) * con::c);
+}
