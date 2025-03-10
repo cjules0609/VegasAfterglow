@@ -11,7 +11,11 @@
 #include "shock.h"
 #include "utilities.h"
 
-// reverse shock state with named member access
+/********************************************************************************************************************
+ * CLASS: RState
+ * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
+ *              solver) components.
+ ********************************************************************************************************************/
 struct RState {
     RState() = delete;
 
@@ -24,6 +28,11 @@ struct RState {
     Real& theta;
 };
 
+/********************************************************************************************************************
+ * CLASS: constRState
+ * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
+ *              solver) components.
+ ********************************************************************************************************************/
 struct constRState {
     constRState() = delete;
 
@@ -46,7 +55,13 @@ struct constRState {
 template <typename Jet, typename Injector>
 class FRShockEqn {
    public:
-    using StateArray = std::array<Real, 5>;  // State vector for reverse shock variables [D_jet, N3, r, t_com, theta]
+    // State vector for reverse shock variables [D_jet, N3, r, t_com, theta]
+    // - D_jet: comoving shell width,
+    // - N3: electron number per unit solid angle
+    // - r: radius
+    // - t_com: comoving time
+    // - theta: jet opening angle
+    using StateArray = std::array<Real, 5>;
 
     FRShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -60,37 +75,55 @@ class FRShockEqn {
     Real gamma0{1};           // Initial Gamma parameter from the jet
     Real r0{0};
 
-    // Overloaded operator() to compute the derivatives of the state vector with respect to time t.
+    // Reverse shock ODE equation
     void operator()(StateArray const& y, StateArray& dydt, Real t);
 
+    // Set the shock state when the reverse shock crosses the jet.
     template <typename State>
     void setCrossState(State const& state, Real B, Real t);
 
+    // calculate the Gamma3 during the shock crossing phase.
     template <typename State>
     Real crossingGamma3(State const& state, Real t);
 
+    // calculate the Gamma_43 post shock crossing.
     template <typename State>
     Real crossedGamma_rel(State const& state);
 
+    // calculate the magnetic field post shock crossing.
     template <typename State>
     Real crossedB(State const& state);
 
+    // calculate the Gamma3 post shock crossing.
     Real crossedGamma3(Real gamma_rel, Real r);
 
    private:
-    Real N0{0};
-    Real adabatic_const{1};
-    Real Emag_const{1};
-    Real ad_idx0{4. / 3};
+    Real N0{0};               // normalized total electron (for post crossing scaling calculation).
+    Real adiabatic_const{1};  // normalized adiabatic constant where C = rho^idx/p.
+    Real Emag_const{1};       // normalized magnetic energy constant where C = B^2/p.
+    Real ad_idx0{4. / 3};     // adiabatic index at the shock crossing.
     bool crossed{false};
 };
 
+/********************************************************************************************************************
+ * FUNCTION: sigmoid
+ * DESCRIPTION: Sigmoid function for smooth transition between two states.
+ ********************************************************************************************************************/
 inline Real sigmoid(Real x, Real x0, Real w) { return 1.0 / (1.0 + std::exp(-w * (x - x0))); }
 
+/********************************************************************************************************************
+ * FUNCTION: mechanicalModelCorrection
+ * DESCRIPTION: correction from mechanical model for the reverse shock crossing, where p2/p3 = correction instead of 1.
+ ********************************************************************************************************************/
 inline Real mechanicalModelCorrection(Real gamma34, Real sigma, Real k) {
     Real S = sigmoid(gamma34, 10, 5);
     return (1 - S) * ((5 - k) / (3 - k)) + S * ((22 - 6 * k) / (12 - 3 * k));
 }
+
+/********************************************************************************************************************
+ * FUNCTION: gParameter
+ * DESCRIPTION: post shock crossing power law index for the Gamma3*beta3 \propto r^-g.
+ ********************************************************************************************************************/
 inline Real gParameter(Real gamma_rel, Real k) {
     const Real g_low = (3 - k) / 2.0;  // k is the medium power law index
     constexpr Real g_high = 3.5;       // Blandford-McKee limit// TODO: need to be modified for non ISM medium
@@ -100,8 +133,7 @@ inline Real gParameter(Real gamma_rel, Real k) {
 
 /********************************************************************************************************************
  * INLINE FUNCTION: calc_gamma3
- * DESCRIPTION: Computes gamma3 for the reverse shock based on radius, upstream and downstream densities,
- *              the jet Lorentz factor (gamma4), and magnetization (sigma).
+ * DESCRIPTION: Computes gamma3 for the reverse shock crossing.
  ********************************************************************************************************************/
 inline Real calc_gamma3(Real n1, Real n4, Real gamma4, Real sigma, Real k) {
     Real C = (1 + sigma) * n4 / n1;
@@ -117,7 +149,7 @@ inline Real calc_gamma3(Real n1, Real n4, Real gamma4, Real sigma, Real k) {
 
 /********************************************************************************************************************
  * FUNCTION: setReverseInit
- * DESCRIPTION: Initializes the state vector for reverse shock evolution at the given radius t0.
+ * DESCRIPTION: Set the initial conditions for the reverse shock ODE.
  ********************************************************************************************************************/
 template <typename Eqn>
 void setReverseInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
@@ -133,8 +165,7 @@ void setReverseInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
 
 /********************************************************************************************************************
  * CONSTRUCTOR: FRShockEqn::FRShockEqn
- * DESCRIPTION: Initializes an FRShockEqn object with references to the medium, jet, and injector, and sets the
- *              angular coordinates, jet magnetization, and initial Gamma.
+ * DESCRIPTION: constructor for the FRShockEqn class.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 FRShockEqn<Jet, Injector>::FRShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi,
@@ -150,8 +181,7 @@ FRShockEqn<Jet, Injector>::FRShockEqn(Medium const& medium, Jet const& jet, Inje
 
 /********************************************************************************************************************
  * METHOD: FRShockEqn::operator()(State const& y, State& dydt, Real t)
- * DESCRIPTION: Computes the derivatives for the reverse shock evolution.
- *              The state vector for FRShockEqn is similar to that of ForwardShockEqn.
+ * DESCRIPTION: Reverse shock ODE.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 void FRShockEqn<Jet, Injector>::operator()(StateArray const& y, StateArray& dydt, Real t) {
@@ -188,6 +218,11 @@ void FRShockEqn<Jet, Injector>::operator()(StateArray const& y, StateArray& dydt
     }
 }
 
+/********************************************************************************************************************
+ * METHOD: FRShockEqn::setCrossState(State const& state, Real B, Real t)
+ * DESCRIPTION: Set some constants at the shock crossed point for later scaling calculation and switch the ODE from
+ *              shock crossing state to crossed state.
+ ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 template <typename State>
 void FRShockEqn<Jet, Injector>::setCrossState(State const& state, Real B, Real t) {
@@ -198,18 +233,25 @@ void FRShockEqn<Jet, Injector>::setCrossState(State const& state, Real B, Real t
     Real gamma3 = crossingGamma3(state, t);
     Real gamma_rel = relativeLorentz(gamma0, gamma3);
 
-    Real gamma_electron = (gamma_rel - 1) * con::mp / con::me * eps_e + 1;
+    Real gamma_electron = (gamma_rel - 1) * con::mp / con::me * eps_e + 1;  // electron Lorentz factor
 
     this->gamma0 = gamma3;
+
+    // use electron adiabatic index see section 3.2 https://arxiv.org/pdf/astro-ph/9910241
     this->ad_idx0 = adiabaticIndex(gamma_electron);
 
     Real p_norm = (ad_idx0 - 1) * (gamma_rel - 1) * n3_norm;  // p = (ad-1)(gamma-1)n m_p c^2
 
-    this->adabatic_const = std::pow(n3_norm, ad_idx0) / p_norm;  // p \propto n^ad
+    this->adiabatic_const = std::pow(n3_norm, ad_idx0) / p_norm;  // p \propto n^ad
     this->Emag_const = p_norm / (B * B);
     this->crossed = true;
 }
 
+/********************************************************************************************************************
+ * METHOD: FRShockEqn::crossedGamma3(Real gamma_rel, Real r)
+ * DESCRIPTION: Post crossing gamma3*beta3 profile that is \propto r^-g. Using gamma3*beta3 for Newtonian regime as
+ *              well.
+ ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 Real FRShockEqn<Jet, Injector>::crossedGamma3(Real gamma_rel, Real r) {
     Real g = gParameter(gamma_rel, medium.k);
@@ -218,6 +260,10 @@ Real FRShockEqn<Jet, Injector>::crossedGamma3(Real gamma_rel, Real r) {
     return std::sqrt(u * u + 1);
 }
 
+/********************************************************************************************************************
+ * METHOD: FRShockEqn::crossingGamma3(State const& state, Real t)
+ * DESCRIPTION: Shock crossing gamma3 calculation.
+ ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 template <typename State>
 Real FRShockEqn<Jet, Injector>::crossingGamma3(State const& state, Real t) {
@@ -226,31 +272,38 @@ Real FRShockEqn<Jet, Injector>::crossingGamma3(State const& state, Real t) {
     return calc_gamma3(n1, n4, gamma0, jet_sigma, medium.k);
 }
 
+/********************************************************************************************************************
+ * METHOD: FRShockEqn::crossedGamma_rel(State const& state)
+ * DESCRIPTION: Shock crossing gamma_43 calculation.
+ ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 template <typename State>
 Real FRShockEqn<Jet, Injector>::crossedGamma_rel(State const& state) {
-    Real n3_norm = N0 / (state.width * state.r * state.r);       // proton number conservation
-    Real p3_norm = std::pow(n3_norm, ad_idx0) / adabatic_const;  // adiabatic expansion
+    Real n3_norm = N0 / (state.width * state.r * state.r);        // proton number conservation
+    Real p3_norm = std::pow(n3_norm, ad_idx0) / adiabatic_const;  // adiabatic expansion
     return p3_norm / ((ad_idx0 - 1) * n3_norm) + 1;
 }
 
+/********************************************************************************************************************
+ * METHOD: FRShockEqn::crossedB(State const& state)
+ * DESCRIPTION: Post shock crossing magnetic field calculation.
+ ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 template <typename State>
 Real FRShockEqn<Jet, Injector>::crossedB(State const& state) {
-    Real n3_norm = N0 / (state.width * state.r * state.r);       // proton number conservation
-    Real p3_norm = std::pow(n3_norm, ad_idx0) / adabatic_const;  // adiabatic expansion
+    Real n3_norm = N0 / (state.width * state.r * state.r);        // proton number conservation
+    Real p3_norm = std::pow(n3_norm, ad_idx0) / adiabatic_const;  // adiabatic expansion
 
     return std::sqrt(p3_norm / Emag_const);
 }
 
 /********************************************************************************************************************
  * INLINE FUNCTION: updateCrossedReverseShock
- * DESCRIPTION: Updates the shock state post shock crossing
+ * DESCRIPTION: Updates the post shock crossing state based on current ODE solution at t.
  ********************************************************************************************************************/
 template <typename Eqn>
 inline void updateCrossedReverseShock(size_t i, size_t j, size_t k, size_t k0, Eqn& eqn, RState const& state,
                                       Shock& shock) {
-    Real g = 2;
     Real r0 = shock.r[i][j][k0];
     shock.t_com[i][j][k] = state.t_com;
     shock.r[i][j][k] = state.r;
@@ -261,7 +314,10 @@ inline void updateCrossedReverseShock(size_t i, size_t j, size_t k, size_t k0, E
     shock.B[i][j][k] = eqn.crossedB(state);
 }
 
-// Determines whether a reverse shock exists based on current shock parameters.
+/********************************************************************************************************************
+ * FUNCTION: reverseShockExists
+ * DESCRIPTION: Check if reverse shock can be generated.
+ ********************************************************************************************************************/
 template <typename Eqn>
 bool reverseShockExists(Eqn const& eqn, Real t0) {
     Real gamma = eqn.jet.Gamma0(eqn.phi, eqn.theta0, t0);  // Initial Lorentz factor
@@ -274,6 +330,11 @@ bool reverseShockExists(Eqn const& eqn, Real t0) {
     return eqn.jet_sigma < 8. / 3 * gamma * gamma * n1 / n4;
 }
 
+/********************************************************************************************************************
+ * FUNCTION: set_f_state
+ * DESCRIPTION: Set the initial condition for forward shock ODE solver based on the reverse shock state at crossed
+ *              point.
+ ********************************************************************************************************************/
 template <typename Eqn, typename FStateArray, typename RStateArray>
 void set_f_state(Eqn& eqn, FStateArray& y_fwd, RStateArray const& y_rvs, Real gamma2) {
     FState state_fwd(y_fwd);
@@ -308,8 +369,8 @@ bool updateForwardReverseShock(size_t i, size_t j, int k, Eqn& eqn_rvs, State co
 
 /********************************************************************************************************************
  * FUNCTION: solveFRShell
- * DESCRIPTION: Solves the evolution of the forward–reverse shock shell over the radius array r, updating both
- *              the forward shock (shock_fwd) and reverse shock (shock_rvs) objects accordingly.
+ * DESCRIPTION: Solve the reverse/forward shock ODE at grid (phi[i], theta[j]) as a function of t (on-axis observation
+ *              time).
  ********************************************************************************************************************/
 template <typename FShockEqn, typename RShockEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& shock_rvs, FShockEqn& eqn_fwd,

@@ -18,7 +18,13 @@
 template <typename Jet, typename Injector>
 class ForwardShockEqn {
    public:
-    using StateArray = std::array<Real, 5>;  // State vector: [Gamma, u, r, t_com, theta]
+    // State vector: [Gamma, u, r, t_com, theta]
+    // - Gamma: Bulk Lorentz factor
+    // - u: internal energy per solid angle
+    // - r: radius
+    // - t_com: comoving time
+    // - theta: jet opening angle
+    using StateArray = std::array<Real, 5>;
 
     ForwardShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi, Real theta, Real eps_e);
 
@@ -31,24 +37,28 @@ class ForwardShockEqn {
     Real const jet_sigma{0};  // Jet magnetization parameter
     Real gamma0{1};           // Initial Lorentz factor (or a related parameter)
 
-    // Overloaded operator() to compute the derivatives of the state vector with respect to radius t.
+    // forward shock ODE equation
     void operator()(StateArray const& y, StateArray& dydt, Real t);
 
    private:
-    // Helper function: computes the derivative of Gamma with respect to t.
+    // dGammadt with respect to on-axis observe t.
     inline Real dGammadt(Real t, Real Gamma, Real u, Real r, Real theta, Real drdt, Real dthetadt, Real ad_idx,
                          Real rho);
-    // Helper function: computes the derivative of u with respect to t.
+    // dUdt with respect to on-axis observe t.
     inline Real dUdt(Real Gamma, Real u, Real r, Real theta, Real dGdt, Real drdt, Real dthetadt, Real ad_idx,
                      Real rho);
 
     Real const inj_Gamma0{0};  // Initial Gamma from the injector
     Real const inj_sigma{0};   // Injector magnetization parameter
-    Real const dM0{0};         // Initial mass per unit solid angle
+    Real const dM0{0};         // Initial jet mass per unit solid angle
     Real const dOmega0{0};     // Initial solid angle
 };
 
-// forward shock state with named member access
+/********************************************************************************************************************
+ * CLASS: FState
+ * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
+ *              components.
+ ********************************************************************************************************************/
 struct FState {
     FState() = delete;
 
@@ -61,6 +71,11 @@ struct FState {
     Real& theta;
 };
 
+/********************************************************************************************************************
+ * CLASS: constFState
+ * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
+ *              components.
+ ********************************************************************************************************************/
 struct constFState {
     constFState() = delete;
 
@@ -77,38 +92,37 @@ struct constFState {
  * METHOD: ForwardShockEqn::operator()(State const& y, State& dydr, Real t)
  * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
  *              The state vector components are:
- *                  y[0] - Gamma (Lorentz factor)
+ *                  y[0] - Gamma (Bulk Lorentz factor)
  *                  y[1] - u (internal energy per solid angle)
  *                  y[2] - r (radius)
- *                  y[3] - t_com (co-moving time) [unused here]
+ *                  y[3] - t_com (co-moving time)
  *                  y[4] - theta_j (jet opening angle)
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 void ForwardShockEqn<Jet, Injector>::operator()(StateArray const& y, StateArray& dydt, Real t) {
     constFState state(y);
 
-    Real ad_idx = adiabaticIndex(state.Gamma);  // Compute adiabatic index based on Gamma
-    Real rho = medium.rho(state.r);             // Get medium density at radius r
-    Real beta = gammaTobeta(state.Gamma);       // Convert Gamma to beta (velocity/c)
+    Real ad_idx = adiabaticIndex(state.Gamma);
+    Real rho = medium.rho(state.r);
+    Real beta = gammaTobeta(state.Gamma);
     Real uv = state.Gamma * beta;
 
-    dydt[2] = drdt(beta);  // Compute derivative of engine time with respect to t
+    dydt[2] = drdt(beta);
 
     if (jet.spreading && state.theta < 0.5 * con::pi && uv * state.theta < 0.5) {
-        dydt[4] = dtheta_dt(uv, dydt[2], state.r, state.Gamma);  // d(theta_jet)/dt
+        dydt[4] = dtheta_dt(uv, dydt[2], state.r, state.Gamma);
     } else {
         dydt[4] = 0;
     }
 
-    dydt[0] = dGammadt(t, state.Gamma, state.u, state.r, state.theta, dydt[2], dydt[4], ad_idx, rho);    // d(Gamma)/dt
-    dydt[1] = dUdt(state.Gamma, state.u, state.r, state.theta, dydt[0], dydt[2], dydt[4], ad_idx, rho);  // d(u)/dt
-    dydt[3] = dtdt_CoMoving(state.Gamma);                                                                // d(t_com)/dt
+    dydt[0] = dGammadt(t, state.Gamma, state.u, state.r, state.theta, dydt[2], dydt[4], ad_idx, rho);
+    dydt[1] = dUdt(state.Gamma, state.u, state.r, state.theta, dydt[0], dydt[2], dydt[4], ad_idx, rho);
+    dydt[3] = dtdt_CoMoving(state.Gamma);
 }
 
 /********************************************************************************************************************
  * CONSTRUCTOR: ForwardShockEqn::ForwardShockEqn
- * DESCRIPTION: Initializes a ForwardShockEqn object with references to the medium, jet, and injector,
- *              along with the angular coordinates and energy fraction.
+ * DESCRIPTION: ForwardShockEqn constructor
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 ForwardShockEqn<Jet, Injector>::ForwardShockEqn(Medium const& medium, Jet const& jet, Injector const& inject, Real phi,
@@ -128,7 +142,7 @@ ForwardShockEqn<Jet, Injector>::ForwardShockEqn(Medium const& medium, Jet const&
 
 /********************************************************************************************************************
  * METHOD: ForwardShockEqn::dGammadt
- * DESCRIPTION: Computes the derivative of Gamma with respect to  t.
+ * DESCRIPTION: dGammadt with respect to on-axis observe t.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 Real ForwardShockEqn<Jet, Injector>::dGammadt(Real t, Real Gamma, Real u, Real r, Real theta, Real drdt, Real dthetadt,
@@ -181,7 +195,10 @@ Real ForwardShockEqn<Jet, Injector>::dUdt(Real Gamma, Real u, Real r, Real theta
     return (1 - eps_e) * (Gamma - 1) * con::c2 * dmdt - (ad_idx - 1) * dlnVdt * u;
 }
 
-// Updates the forward shock state at grid index (i, j, k) using the current state vector and the medium properties.
+/********************************************************************************************************************
+ * FUNCTION: updateForwardShock
+ * DESCRIPTION: Updates the forward shock state at grid index (i, j, k) using the current ODE solution at t.
+ ********************************************************************************************************************/
 template <typename Eqn>
 void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn::StateArray& y, Shock& shock) {
     constFState state(y);
@@ -193,7 +210,10 @@ void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn:
                      eqn.jet_sigma);
 }
 
-// Initializes the forward shock state vector at radius r0.
+/********************************************************************************************************************
+ * FUNCTION: setForwardInit
+ * DESCRIPTION: Set the initial conditions for the forward shock ODE solver.
+ ********************************************************************************************************************/
 template <typename Eqn>
 void setForwardInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
     FState state(y);
@@ -206,6 +226,10 @@ void setForwardInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
     eqn.gamma4 = state.Gamma;
 }
 
+/********************************************************************************************************************
+ * FUNCTION: solveForwardShell
+ * DESCRIPTION: Solve the forward shock ODE at grid (phi[i], theta[j]) as a function of t (on-axis observation time).
+ ********************************************************************************************************************/
 // Solves the forward shock evolution for a given shell (across radius values in array r) and updates the Shock object.
 template <typename Eqn>
 void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eqn, double rtol) {
@@ -218,18 +242,18 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eq
     FState state(y);
     setForwardInit(eqn, y, t0);  // Initialize state at starting radius
 
-    if (y[0] < con::Gamma_cut) {  // If initial Lorentz factor is too low, exit early
-        setStoppingShock(i, j, shock, t, state.r, state.theta);
+    if (y[0] < con::Gamma_cut) {                                 // If initial Lorentz factor is too low, exit early
+        setStoppingShock(i, j, shock, t, state.r, state.theta);  // Set the shock state to zero
         return;
     }
 
-    // Create a dense output stepper for integrating the shock equations
+    // ODE solver with adaptive step size, and relative tolerance rtol
     // auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::StateArray>{0, rtol};
     auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename Eqn::StateArray>());
 
     stepper.initialize(y, t0, dt);
 
-    Real t_back = t[t.size() - 1];  // Last radius in the array
+    Real t_back = t[t.size() - 1];  // Last time in the array
 
     // Iterate over the radius array, updating the state and the Shock object as needed
     for (int k = 0; stepper.current_time() <= t_back;) {
