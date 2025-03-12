@@ -32,7 +32,7 @@ void tests() {
     size_t phi_num = 37;
 
     Array t_obs = logspace(1e2 * con::sec, 1e8 * con::sec, 100);
-    Coord coord = adaptiveGrid(jet, t_obs, 0.5, phi_num, theta_num, r_num);
+    Coord coord = autoGrid(jet, t_obs, 0.5, phi_num, theta_num, r_num);
 
     output(coord, data_folder + "/coord");
 

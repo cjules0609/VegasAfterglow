@@ -81,15 +81,15 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
 }
 
 /********************************************************************************************************************
- * TEMPLATE FUNCTION: adaptiveGrid
- * DESCRIPTION: Constructs an adaptive coordinate grid (Coord) for shock evolution. The grid is based on the
+ * TEMPLATE FUNCTION: autoGrid
+ * DESCRIPTION: Constructs a coordinate grid (Coord) for shock evolution. The grid is based on the
  *              observation times (t_obs), a maximum theta value, and specified numbers of grid points in phi,
  *              theta, and t. The radial grid is logarithmically spaced between t_min and t_max, and the theta grid
- *              is generated uniformly in cosine.
+ *              is generated linearly.
  ********************************************************************************************************************/
 template <typename Jet>
-Coord adaptiveGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_num = 32, size_t theta_num = 32,
-                   size_t t_num = 32, double theta_view_max = con::pi / 2) {
+Coord autoGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_num = 32, size_t theta_num = 32,
+               size_t t_num = 32, double theta_view_max = con::pi / 2) {
     Array phi = linspace(0, 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
@@ -101,10 +101,10 @@ Coord adaptiveGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t ph
     Real b_max = gammaTobeta(jet.Gamma0(0, 0, 0));                        // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
+    t_start = std::min(t_start, 1 * con::sec);
     Real t_end = t_max;
     Array t = logspace(t_start, t_end, t_num);  // Generate logarithmically spaced radial grid.
 
-    Coord coord{phi, theta, t};  // Construct coordinate object.
-    return coord;
+    return Coord(phi, theta, t);  // Construct coordinate object.
 }
 #endif  // _RELATIVITY_H_

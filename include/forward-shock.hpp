@@ -223,7 +223,7 @@ void setForwardInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
     state.u = (state.Gamma - 1) * eqn.medium.mass(state.r) / (4 * con::pi) * con::c2;
     state.t_com = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
     state.theta = eqn.theta0;
-    eqn.gamma4 = state.Gamma;
+    eqn.gamma0 = state.Gamma;
 }
 
 /********************************************************************************************************************

@@ -117,12 +117,10 @@ class Observer {
  * TEMPLATE METHOD: LogScaleInterp::validateInterpBoundary
  * DESCRIPTION: Attempts to set the lower and upper boundary values for logarithmic interpolation.
  *              It updates the internal boundary members for:
- *                - Logarithmic radius (log_r_lo, log_r_hi)
- *                - Logarithmic observation time (log_t_lo, log_t_hi)
- *                - Logarithmic Doppler factor (log_d_lo, log_d_hi)
- *                - Logarithmic intensity (log_I_lo, log_I_hi)
+ *                - Logarithmic observation time (t_obs_lo, log_t_ratio)
+ *                - Logarithmic luminosity (L_lo, L_hi)
  *              The boundaries are set using data from the provided grids and the photon grids (via parameter pack).
- *              Returns true if both lower and upper log observation time boundaries are finite.
+ *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& dOmega,
@@ -164,12 +162,12 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
 
 /********************************************************************************************************************
  * CONSTRUCTOR: Observer::Observer
- * DESCRIPTION: Constructs an Observer object with the given coordinate grid, dynamics, observation angle, luminosity
+ * DESCRIPTION: Constructs an Observer object with the given coordinate grid, shocks, observation angle, luminosity
  *              and redshift. It initializes the observation time and Doppler factor grids, as well as the
  *              interpolation object.
  ********************************************************************************************************************/
 template <typename Dynamics>
-Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift)
+Observer::Observer(Coord const& coord, Dynamics const& shock, Real theta_view, Real luminosity_dist, Real redshift)
     : t_obs_grid(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
       doppler(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
       theta_obs(theta_view),
@@ -177,20 +175,19 @@ Observer::Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Rea
       z(redshift),
       interp(),
       dOmega(boost::extents[coord.phi.size()][coord.theta.size()][coord.t.size()]),
-      r_grid(dyn.r),
-      theta_grid(dyn.theta),
-      Gamma(dyn.Gamma),
+      r_grid(shock.r),
+      theta_grid(shock.theta),
+      Gamma(shock.Gamma),
       coord(coord),
       eff_phi_size(1) {
-    // Calculate the solid angle grid.
-    auto [phi_size, theta_size, t_size] = dyn.shape();
+    auto [phi_size, theta_size, t_size] = shock.shape();
     interp.z = redshift;
     // Determine if the jet is 3D (more than one phi value)
     interp.jet_3d = static_cast<size_t>((phi_size > 1));
 
     // Set effective phi grid size based on the observation angle and jet dimensionality.
     if (theta_view == 0 && interp.jet_3d == 0) {
-        eff_phi_size = 1;
+        eff_phi_size = 1;  // optimize for on-axis observer
     } else {
         eff_phi_size = coord.phi.size();
     }

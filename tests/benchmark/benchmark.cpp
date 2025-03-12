@@ -20,7 +20,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     // jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
     // jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
-    Coord coord = adaptiveGrid(jet, t_obs, 0.6, phi_num, theta_num, r_num, theta_v);
+    Coord coord = autoGrid(jet, t_obs, 0.6, phi_num, theta_num, r_num, theta_v);
 
     // output(coord, "coord");
 

@@ -91,10 +91,6 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
     return ratio_u;
 }
 
-Real soundSpeed(Real pressure, Real ad_idx, Real rho_rest) {
-    return std::sqrt(ad_idx * pressure / (rho_rest * con::c2 + ad_idx / (ad_idx - 1) * pressure)) * con::c;
-}
-
 void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma, Real Gamma_rel,
                       Real t_com, Real N_down_str, Real n_up_str, Real sigma) {
     if (Gamma_rel > 1) {
@@ -120,39 +116,3 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real t
         shock.B[i][j][k] = 0;
     }
 }
-/*
-void solve_single_shell(size_t j, Array const& r_b, Array const& r, Shock& f_shock, Shock& r_shock,
-                        ForwardShockEqn& eqn) {
-    // integrate the shell over r
-    for (int k = 0, k1 = 1; stepper.current_time() <= r_b.back();) {
-        stepper.do_step(eqn);
-
-        if (eqn.jet.spreading) {  // check if this works for sigma!=0. should be sound speed in region 3;
-            Real dr = stepper.current_time_step();
-            Real r_last = stepper.current_time() - dr;
-            Real Gamma_axis = loglog_interp(r_last, r, f_shock.Gamma[0]);
-            if (k == 0) {
-                Gamma_axis = eqn.jet.Gamma0_profile(0);
-            }
-
-            Real ad_idx = adiabatic_index(Gamma_axis);
-            Real n1 = eqn.medium.rho(r_last) / con::mp;
-            Real n2 = n_down_str(n1, Gamma_axis, 0);
-            Real p2 = (ad_idx - 1) * e_thermal_down_str(Gamma_axis, n2);
-            Real jet_cs = sound_speed(p2, ad_idx, n2 * con::mp);
-            if (theta_c < con::pi / 2) {
-                theta_c += jet_cs / con::c * dr / (r_last * Gamma_axis * Gamma_axis * theta_c);
-                // theta_c += jet_cs / con::c * dr / (r_last * Gamma_axis);
-            }
-            Real t_eng = state[2];
-            Real dEdOmega_init = eqn.jet.dEdOmega(eqn.theta, t_eng);
-            Real dEdOmega_spread = eqn.jet.dEdOmega_spread(eqn.theta, theta_c, t_eng);
-
-            if (dEdOmega_init == 0) {
-                eqn.spreading_factor = 1;
-            } else {
-                eqn.spreading_factor = dEdOmega_spread / dEdOmega_init;
-            }
-        }
-    }
-}*/

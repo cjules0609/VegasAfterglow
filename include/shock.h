@@ -19,7 +19,8 @@
 /********************************************************************************************************************
  * CLASS: Shock
  * DESCRIPTION: Represents a shock structure that stores grid-based data for the shock evolution, including
- *              comoving time, engine time, relative Lorentz factor, magnetic field, and proton column density.
+ *              comoving time, radius, theta(for jet spreading), bulk Lorentz factor, relative Lorentz factor,
+ *              magnetic field, and proton column density.
  *              It also stores constant energy fractions (eps_e and eps_B) and provides a method to return
  *              the grid dimensions.
  ********************************************************************************************************************/
@@ -55,19 +56,11 @@ using ShockPair = std::pair<Shock, Shock>;
 
 template <typename Jet, typename Injector>
 Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol = 1e-6);
-
-template <typename Jet, typename Injector>
-Shock genForwardShock3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol = 1e-6);
+                      Real eps_B, Real rtol = 1e-6, bool is_axisymmetric = true);
 
 template <typename Jet, typename Injector>
 ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol = 1e-6);
-
-template <typename Jet, typename Injector>
-ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol = 1e-6);
+                      Real eps_B, Real rtol = 1e-6, bool is_axisymmetric = true);
 
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities
@@ -84,7 +77,7 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real t
 
 inline Real soundSpeed(Real Gamma_rel) {
     Real ad_idx = adiabaticIndex(Gamma_rel);
-    return sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx));
+    return std::sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx));
 }
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
 inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
@@ -105,7 +98,7 @@ inline Real relativeLorentz(Real gamma1, Real gamma2) {
 inline Real e_ThermalDownStr(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
 }
-
+// D_jet co-moving shell width
 inline Real dDdt_Jet(Real Gamma_rel, Real dtdt_com) {
     Real cs = soundSpeed(Gamma_rel);
     return cs * dtdt_com;
@@ -119,7 +112,6 @@ inline Real dN3dt(Real r, Real n1, Real n4, Real gamma3, Real drdt, Real gamma0,
     return n3 * r * r * gamma3 * dxdr * drdt;
 }
 
-// D_jet co-moving shell width
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
     return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * D_jet) / (1 + sigma);
 }
@@ -139,98 +131,53 @@ class FRShockEqn;
 
 /********************************************************************************************************************
  * FUNCTION: genForwardShock
- * DESCRIPTION: Generates a forward shock (2D) using the provided coordinates, medium, jet, injector, and energy
+ * DESCRIPTION: Generates a forward shock using the provided coordinates, medium, jet, injector, and energy
  *fractions. It creates a Shock object for a single phi value and iterates over theta values, solving the shock
  *              evolution for each theta slice.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol) {
+                      Real eps_B, Real rtol, bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
-    Shock f_shock(1, theta_size, t_size, eps_e, eps_B);   // Create Shock with 1 phi slice
-    for (size_t j = 0; j < theta_size; ++j) {
-        // Create a ForwardShockEqn for each theta slice (phi is set to 0)
-        // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        // Solve the shock shell for this theta slice
-        solveForwardShell(0, j, coord.t, f_shock, eqn, rtol);
-    }
-
-    return f_shock;
-}
-
-/********************************************************************************************************************
- * FUNCTION: genForwardShock3D
- * DESCRIPTION: Generates a forward shock (3D) using the provided coordinates, medium, jet, injector, and energy
- *fractions. It creates a Shock object covering all phi and theta slices and iterates over both dimensions.
- ********************************************************************************************************************/
-template <typename Jet, typename Injector>
-Shock genForwardShock3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol) {
-    auto [phi_size, theta_size, t_size] = coord.shape();
-
-    Shock f_shock(phi_size, theta_size, t_size, eps_e, eps_B);  // Create Shock with full 3D dimensions
-    for (size_t i = 0; i < phi_size; ++i) {
+    size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Create Shock with 1 phi slice
+    for (size_t i = 0; i < phi_size_needed; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            // Create a ForwardShockEqn for each (phi, theta) pair
-            // auto eqn = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            auto eqn = SimpleShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            //  Solve the shock shell for this (phi, theta) slice
+            // Create a ForwardShockEqn for each theta slice (phi is set to 0)
+            // auto eqn = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+            auto eqn = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+            //  Solve the shock shell for this theta slice
             solveForwardShell(i, j, coord.t, f_shock, eqn, rtol);
         }
     }
+
     return f_shock;
 }
 
 /********************************************************************************************************************
  * FUNCTION: genFRShocks
- * DESCRIPTION: Generates a pair of forward and reverse shocks (2D) using the provided coordinates, medium, jet,
+ * DESCRIPTION: Generates a pair of forward and reverse shocks using the provided coordinates, medium, jet,
  *              injector, and energy fractions. It creates two Shock objects (one forward, one reverse) and solves
  *              the shock shells for each theta slice.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                      Real eps_B, Real rtol) {
+                      Real eps_B, Real rtol, bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();
-
-    Shock f_shock(1, theta_size, t_size, eps_e, eps_B);  // Forward shock for 1 phi slice
-    Shock r_shock(1, theta_size, t_size, eps_e, eps_B);  // Reverse shock for 1 phi slice
-
-    for (size_t j = 0; j < theta_size; ++j) {
-        // Create equations for forward and reverse shocks for each theta slice (phi is 0)
-        // auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        auto eqn_f = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
-        // Solve the forward-reverse shock shell
-        solveFRShell(0, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
-    }
-
-    return std::make_pair(std::move(f_shock), std::move(r_shock));
-}
-
-/********************************************************************************************************************
- * FUNCTION: genFRShocks3D
- * DESCRIPTION: Generates a pair of forward and reverse shocks (3D) using the provided coordinates, medium, jet,
- *              injector, and energy fractions. It creates two Shock objects covering all phi and theta slices and
- *              solves the shock shells for each (phi, theta) pair.
- ********************************************************************************************************************/
-template <typename Jet, typename Injector>
-ShockPair genFRShocks3D(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,
-                        Real eps_B, Real rtol) {
-    auto [phi_size, theta_size, t_size] = coord.shape();
-
-    Shock f_shock(phi_size, theta_size, t_size, eps_e, eps_B);  // Forward shock for full 3D dimensions
-    Shock r_shock(phi_size, theta_size, t_size, eps_e, eps_B);  // Reverse shock for full 3D dimensions
-    for (size_t i = 0; i < phi_size; ++i) {
+    size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Forward shock for 1 phi slice
+    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Reverse shock for 1 phi slice
+    for (size_t i = 0; i < phi_size_needed; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            // Create equations for forward and reverse shocks for each (phi, theta) pair
-            // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            auto eqn_f = SimpleShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
-            auto eqn_r = FRShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j]);
-            // Solve the forward-reverse shock shell for this (phi, theta) pair
+            // Create equations for forward and reverse shocks for each theta slice (phi is 0)
+            // auto eqn_f = ForwardShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+            auto eqn_f = SimpleShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+            auto eqn_r = FRShockEqn(medium, jet, inject, 0, coord.theta[j], eps_e);
+            // Solve the forward-reverse shock shell
             solveFRShell(i, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
         }
     }
+
     return std::make_pair(std::move(f_shock), std::move(r_shock));
 }
 

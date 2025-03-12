@@ -29,7 +29,7 @@ class SimpleShockEqn {
     Real const theta0{0};     // Angular coordinate theta
     Real const eps_e{0};      // Electron energy fraction
     Real const jet_sigma{0};  // Jet magnetization parameter
-    Real gamma4{1};           // Initial Lorentz factor (or a related parameter)
+    Real gamma0{1};           // Initial Lorentz factor (or a related parameter)
 
     // Overloaded operator() to compute the derivatives of the state vector with respect to radius r.
     void operator()(StateArray const& y, StateArray& dydt, Real t);
@@ -60,7 +60,7 @@ void SimpleShockEqn<Jet, Injector>::operator()(StateArray const& y, StateArray& 
     Real rho = medium.rho(state.r);        // Get medium density at radius r
     Real beta = gammaTobeta(state.Gamma);  // Convert Gamma to beta (velocity/c)
     Real uv = state.Gamma * beta;
-    Real beta4 = gammaTobeta(gamma4);  // Convert gamma4 to beta
+    Real beta4 = gammaTobeta(gamma0);  // Convert gamma4 to beta
 
     dydt[2] = drdt(beta);  // Compute derivative of r with respect to t
 
@@ -90,8 +90,8 @@ SimpleShockEqn<Jet, Injector>::SimpleShockEqn(Medium const& medium, Jet const& j
       theta0(theta),
       eps_e(eps_e),
       jet_sigma(jet.sigma0(phi, theta, 0)),
-      gamma4(jet.Gamma0(phi, theta, 0)),
-      dM0(jet.dEdOmega(phi, theta, 0) / (gamma4 * (1 + jet_sigma) * con::c2)),
+      gamma0(jet.Gamma0(phi, theta, 0)),
+      dM0(jet.dEdOmega(phi, theta, 0) / (gamma0 * (1 + jet_sigma) * con::c2)),
       inj_Gamma0(inject.Gamma0(phi, theta, 0)),
       inj_sigma(inject.sigma0(phi, theta, 0)),
       dOmega0(1 - std::cos(theta0)) {}

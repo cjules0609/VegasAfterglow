@@ -27,7 +27,7 @@ void GCN36236(Real theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
 
-    Coord coord = adaptiveGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 
@@ -96,7 +96,7 @@ void std_afterglow(Real theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 3e3 * con::day, 100);
 
-    Coord coord = adaptiveGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
+    Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
 

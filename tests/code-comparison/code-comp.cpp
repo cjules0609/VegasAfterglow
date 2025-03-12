@@ -60,7 +60,7 @@ void lc_gen(std::string folder_name) {
     size_t theta_num = 128;
     size_t phi_num = 128;
 
-    Coord coord = adaptiveGrid(jet, t_bins, theta_w);
+    Coord coord = autoGrid(jet, t_bins, theta_w);
 
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);

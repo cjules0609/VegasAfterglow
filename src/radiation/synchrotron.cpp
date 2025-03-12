@@ -303,8 +303,8 @@ Real SynPhotons::I_nu(Real nu) const {
 
 /********************************************************************************************************************
  * FUNCTION: SynPhotons::updateConstant()
- * DESCRIPTION: Updates internal constants used for computing the synchrotron photon spectrum based on the
- *              current spectral parameters from the associated electrons.
+ * DESCRIPTION: Updates internal constants (to avoid repeat computations) used for computing the synchrotron photon 
+ *              spectrum based on the current spectral parameters from the associated electrons.
  ********************************************************************************************************************/
 void SynPhotons::updateConstant() {
     // Update constants based on spectral parameters

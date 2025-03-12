@@ -7,10 +7,6 @@
 #ifndef _SYNCHROTRON_
 #define _SYNCHROTRON_
 
-/********************************************************************************************************************
- * INCLUDES
- * DESCRIPTION: Standard and project-specific headers required for synchrotron calculations.
- ********************************************************************************************************************/
 #include <vector>
 
 #include "medium.h"
@@ -67,7 +63,7 @@ struct SynElectrons {
     Real columnNumDen(Real gamma) const;
 
    private:
-    // Computes the electron energy spectrum at a given Lorentz factor
+    // the electron energy spectrum at a given Lorentz factor
     inline Real gammaSpectrum(Real gamma) const;
 };
 
