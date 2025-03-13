@@ -101,7 +101,7 @@ Coord autoGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_nu
     Real b_max = gammaTobeta(jet.Gamma0(0, 0, 0));                        // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
-    t_start = std::min(t_start, 1 * con::sec);
+    t_start = std::min(t_start, 10 * con::sec);
     Real t_end = t_max;
     Array t = logspace(t_start, t_end, t_num);  // Generate logarithmically spaced radial grid.
 

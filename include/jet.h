@@ -49,14 +49,14 @@ class TophatJet {
    public:
     // Constructor: Sets the core angle (theta_c), isotropic equivalent energy (E_iso), and initial Lorentz factor
     // (Gamma0).
-    TophatJet(Real theta_c, Real E_iso, Real Gamma0)
-        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    TophatJet(Real theta_c, Real E_iso, Real Gamma0, Real sigma0 = 0)
+        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), sigma0_(sigma0) {}
     // Returns the energy per unit solid angle at (phi, theta, t). (For a tophat jet, this is constant within the core.)
     Real dEdOmega(Real phi, Real theta, Real t) const;
     // Returns the initial Lorentz factor at (phi, theta, t). (Constant for a tophat jet.)
     Real Gamma0(Real phi, Real theta, Real t) const;
     // Returns the magnetization parameter, which is zero for a tophat jet.
-    Real sigma0(Real phi, Real theta, Real t) const { return 0; };
+    Real sigma0(Real phi, Real theta, Real t) const { return sigma0_; };
 
     Real duration{1 * con::sec};  // Jet duration
     bool spreading{false};        // Flag indicating if the jet spreads
@@ -65,6 +65,7 @@ class TophatJet {
     Real theta_c_{0};   // Core opening angle (radians)
     Real dEdOmega_{0};  // Energy per unit solid angle (computed from E_iso)
     Real Gamma0_{1};    // Initial Lorentz factor
+    Real sigma0_{0};    // Magnetization parameter
 };
 
 /********************************************************************************************************************
@@ -75,8 +76,12 @@ class GaussianJet {
    public:
     // Constructor: Sets the core angle (theta_c), isotropic equivalent energy (E_iso), initial Lorentz factor (Gamma0),
     // and the Gaussian index (idx).
-    GaussianJet(Real theta_c, Real E_iso, Real Gamma0, Real idx = 1)
-        : two_theta_c_sq(2 * theta_c * theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), idx_(idx) {}
+    GaussianJet(Real theta_c, Real E_iso, Real Gamma0, Real idx = 1, Real sigma0 = 0)
+        : two_theta_c_sq(2 * theta_c * theta_c),
+          dEdOmega_(E_iso / (4 * con::pi)),
+          Gamma0_(Gamma0),
+          sigma0_(sigma0),
+          idx_(idx) {}
     Real dEdOmega(Real phi, Real theta, Real t) const;
     Real Gamma0(Real phi, Real theta, Real t) const;
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
@@ -88,6 +93,7 @@ class GaussianJet {
     Real two_theta_c_sq{0};  // Core opening angle
     Real dEdOmega_{0};       // Energy per unit solid angle (computed from E_iso)
     Real Gamma0_{1};         // Initial Lorentz factor
+    Real sigma0_{0};         // Magnetization parameter
     Real idx_{0};            // Gaussian index parameter
 };
 
@@ -100,8 +106,8 @@ class PowerLawJet {
    public:
     // Constructor: Sets the core angle (theta_c), isotropic equivalent energy (E_iso), initial Lorentz factor (Gamma0),
     // power-law index (k), and an optional index parameter (idx).
-    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, Real idx = 1)
-        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k), idx_(idx) {}
+    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, Real idx = 1, Real sigma0 = 0)
+        : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), sigma0_(sigma0), k_(k), idx_(idx) {}
     Real dEdOmega(Real phi, Real theta, Real t) const;
     Real Gamma0(Real phi, Real theta, Real t) const;
     Real sigma0(Real phi, Real theta, Real t) const { return 0; };
@@ -113,6 +119,7 @@ class PowerLawJet {
     Real theta_c_{0};   // Core opening angle
     Real dEdOmega_{0};  // Energy per unit solid angle
     Real Gamma0_{1};    // Initial Lorentz factor
+    Real sigma0_{0};    // Magnetization parameter
     Real k_{0};         // Power-law index for the angular profile
     Real idx_{0};       // Additional index parameter
 };

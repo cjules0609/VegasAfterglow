@@ -58,16 +58,14 @@ Real u_DownStr(Real gamma_rel, Real sigma) {
         // Precompute common terms
         Real term1 = -ad_idx * ad_idx_m_2;
         Real term2 = gamma_sq - 1;
-        Real term3 = gamma_sq - 2;
-        Real term4 = gamma_p_1 * gamma_m_1;
 
         // Compute coefficients
         Real A = term1 * gamma_m_1 + 2;
         Real B = -gamma_p_1 * (-ad_idx_m_2 * (ad_idx * gamma_sq + 1) + ad_idx * ad_idx_m_1 * gamma_rel) * sigma -
-                 gamma_m_1 * (term1 * term3 + 2 * gamma_rel + 3);
+                 gamma_m_1 * (term1 * (gamma_sq - 2) + 2 * gamma_rel + 3);
         Real C = gamma_p_1 * (ad_idx * (1 - ad_idx / 4) * term2 + 1) * sigma * sigma +
                  term2 * (2 * gamma_rel + ad_idx_m_2 * (ad_idx * gamma_rel - 1)) * sigma +
-                 term4 * gamma_m_1 * ad_idx_m_1 * ad_idx_m_1;
+                 gamma_p_1 * gamma_m_1 * gamma_m_1 * ad_idx_m_1 * ad_idx_m_1;
         Real D = -gamma_m_1 * gamma_p_1 * gamma_p_1 * ad_idx_m_2 * ad_idx_m_2 * sigma * sigma / 4;
 
         Real b = B / A;
@@ -76,7 +74,8 @@ Real u_DownStr(Real gamma_rel, Real sigma) {
         Real P = c - b * b / 3;
         Real Q = 2 * b * b * b / 27 - b * c / 3 + d;
         Real u = std::sqrt(-P / 3);
-        Real uds = 2 * u * std::cos(std::acos((3 * Q / (2 * P * u)) - 2 * con::pi) / 3) - b / 3;
+        Real v = std::clamp(3 * Q / (2 * P * u), -1.0, 1.0);
+        Real uds = 2 * u * std::cos((std::acos(v) - 2 * con::pi) / 3) - b / 3;
         return std::sqrt(uds);
     }
 }
@@ -86,7 +85,7 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
     Real u_up_s_ = u_UpStr(u_down_s_, gamma_rel);
     Real ratio_u = u_up_s_ / u_down_s_;
     if (u_down_s_ == 0) {
-        ratio_u = (7 * gamma_rel + 1) / (gamma_rel + 1);  // (g_hat+1)/(g_hat-1)
+        ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)
     }
     return ratio_u;
 }
