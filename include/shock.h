@@ -109,10 +109,6 @@ inline Real dN3dt(Real r, Real n1, Real n4, Real gamma3, Real drdt, Real gamma0,
     Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
     Real n3 = n4 * ratio_u;
     Real dxdr = 1. / (gamma0 * std::sqrt((1 + sigma) * n4 / n1) * (1 - gamma0 * n4 / (gamma3 * n3)));
-    if (!std::isfinite(dxdr)) {
-        std::cout << "dxdr is not finite" << std::endl;
-        exit(0);
-    }
     return n3 * r * r * gamma3 * dxdr * drdt;
 }
 
@@ -136,7 +132,7 @@ class FRShockEqn;
 /********************************************************************************************************************
  * FUNCTION: genForwardShock
  * DESCRIPTION: Generates a forward shock using the provided coordinates, medium, jet, injector, and energy
- *fractions. It creates a Shock object for a single phi value and iterates over theta values, solving the shock
+ *              fractions. It creates a Shock object and iterates over phi, theta values, solving the shock
  *              evolution for each theta slice.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
@@ -162,7 +158,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Jet const& jet, 
  * FUNCTION: genFRShocks
  * DESCRIPTION: Generates a pair of forward and reverse shocks using the provided coordinates, medium, jet,
  *              injector, and energy fractions. It creates two Shock objects (one forward, one reverse) and solves
- *              the shock shells for each theta slice.
+ *              the shock shells for each phi, theta slice.
  ********************************************************************************************************************/
 template <typename Jet, typename Injector>
 ShockPair genFRShocks(Coord const& coord, Medium const& medium, Jet const& jet, Injector const& inject, Real eps_e,

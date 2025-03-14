@@ -303,7 +303,7 @@ Real SynPhotons::I_nu(Real nu) const {
 
 /********************************************************************************************************************
  * FUNCTION: SynPhotons::updateConstant()
- * DESCRIPTION: Updates internal constants (to avoid repeat computations) used for computing the synchrotron photon 
+ * DESCRIPTION: Updates internal constants (to avoid repeat computations) used for computing the synchrotron photon
  *              spectrum based on the current spectral parameters from the associated electrons.
  ********************************************************************************************************************/
 void SynPhotons::updateConstant() {
@@ -629,7 +629,7 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                     f = std::min(fastPow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
                     e.gamma_m = gamma_syn_limit;
                 }
-                e.column_num_den = Sigma * f;
+                e.column_num_den = Sigma * f * xi;
                 e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
                 e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
                 e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);

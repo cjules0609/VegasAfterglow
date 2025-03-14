@@ -394,6 +394,8 @@ template <typename FShockEqn, typename RShockEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& shock_rvs, FShockEqn& eqn_fwd,
                   RShockEqn& eqn_rvs, Real rtol = 1e-9) {
     using namespace boost::numeric::odeint;
+    // auto stepper_fwd = bulirsch_stoer_dense_out<typename FShockEqn::StateArray>{0, rtol};
+    auto stepper_fwd = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::StateArray>());
 
     bool crossed = false;
     Real t0 = t[0];
@@ -401,12 +403,16 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
     typename RShockEqn::StateArray y_rvs;
     typename FShockEqn::StateArray y_fwd;
 
+    FState state_fwd(y_fwd);
     RState state_rvs(y_rvs);
+
+    setForwardInit(eqn_fwd, y_fwd, t0);
+
     crossed = setReverseInit(eqn_rvs, y_rvs, t0);
 
     if (eqn_rvs.gamma0 < con::Gamma_cut) {
-        setStoppingShock(i, j, shock_fwd, t, y_rvs[2], y_rvs[5]);
-        setStoppingShock(i, j, shock_rvs, t, y_rvs[2], y_rvs[5]);
+        setStoppingShock(i, j, shock_fwd, t, state_rvs.r, eqn_rvs.theta0);
+        setStoppingShock(i, j, shock_rvs, t, state_rvs.r, eqn_rvs.theta0);
         return;
     }
 
@@ -435,8 +441,7 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
         }
 
         // crossed forward shock evolution
-        // auto stepper_fwd = bulirsch_stoer_dense_out<typename FShockEqn::StateArray>{0, rtol};
-        auto stepper_fwd = make_dense_output(0, rtol, runge_kutta_dopri5<typename FShockEqn::StateArray>());
+
         set_f_state(eqn_fwd, y_fwd, y_rvs, shock_rvs.Gamma[i][j][k0]);
         stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
         for (size_t k = k0 + 1; stepper_fwd.current_time() <= t_back;) {
