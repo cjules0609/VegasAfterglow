@@ -60,9 +60,9 @@ inline Real RShockCrossingRadius(Real E_iso, Real n_ism, Real Gamma0, Real engin
  * DESCRIPTION: Determines the edge of the jet based on a given gamma cut-off (gamma_cut) using binary search.
  *              It returns the angle (in radians) at which the jet's Lorentz factor drops to gamma_cut.
  ********************************************************************************************************************/
-template <typename Jet>
-Real jetEdge(Jet const& jet, Real gamma_cut) {
-    if (jet.Gamma0(0, con::pi / 2, 0) >= gamma_cut) {
+template <typename Ejecta>
+Real jetEdge(Ejecta const& jet, Real gamma_cut) {
+    if (jet.Gamma(0, con::pi / 2, 0) >= gamma_cut) {
         return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
     }
     Real low = 0;
@@ -70,7 +70,7 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
     Real eps = 1e-9;
     for (; hi - low > eps;) {
         Real mid = 0.5 * (low + hi);
-        if (jet.Gamma0(0, mid, 0) >= gamma_cut) {
+        if (jet.Gamma(0, mid, 0) >= gamma_cut) {
             low = mid;
         } else {
             hi = mid;
@@ -87,8 +87,8 @@ Real jetEdge(Jet const& jet, Real gamma_cut) {
  *              theta, and t. The radial grid is logarithmically spaced between t_min and t_max, and the theta grid
  *              is generated linearly.
  ********************************************************************************************************************/
-template <typename Jet>
-Coord autoGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_num = 32, size_t theta_num = 32,
+template <typename Ejecta>
+Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, size_t phi_num = 32, size_t theta_num = 32,
                size_t t_num = 32, double theta_view_max = con::pi / 2) {
     Array phi = linspace(0, 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
@@ -98,7 +98,7 @@ Coord autoGrid(Jet const& jet, Array const& t_obs, Real theta_cut, size_t phi_nu
     Real theta_max = theta[theta_num - 1];                                // Maximum theta value.
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());           // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());           // Minimum observation time.
-    Real b_max = gammaTobeta(jet.Gamma0(0, 0, 0));                        // Maximum beta value.
+    Real b_max = gammaTobeta(jet.Gamma(0, 0, 0));                         // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
     t_start = std::min(t_start, 10 * con::sec);

@@ -23,63 +23,17 @@
  ********************************************************************************************************************/
 class Medium {
    public:
-    // Constructor: Initializes a Medium object with density profile index k, characteristic density n_c, and radius
-    // r_c.
-    Medium(Real k, Real n_c, Real r_c);
-    // Constructor: Initializes a Medium object with only characteristic density n_c. (k and r_c may be set to default
-    // values.)
-    Medium(Real n_c);
-
-    // Returns the mass density  at radius phi, theta r.
-    Real rho(Real r) const;
-    // Returns the total mass enclosed within radius r.
-    Real mass(Real r) const;
-
-    Real const k;  // Density profile index (if 0, constant density)
-   private:
-    Real const n_c;  // Characteristic number density (in cm^-3)
-    Real const r_c;  // Characteristic radius (in cm)
+    Medium(TernaryFunc fun) : rho(fun) {};
+    TernaryFunc rho{func::zero};  // density(phi, theta, r)
 };
-
-/********************************************************************************************************************
- * INLINE METHOD: Medium::rho
- * DESCRIPTION: Computes the mass density at a given radius r.
- *              - For a constant density profile (k == 0), returns n_c * con::mp.
- *              - Otherwise, scales the density as (r / r_c)^(-k) times n_c * con::mp.
- ********************************************************************************************************************/
-inline Real Medium::rho(Real r) const {
-    if (k == 0) {
-        return n_c * con::mp;
-    } else {
-        return n_c * fastPow(r / r_c, -k) * con::mp;
-    }
-}
-
-/********************************************************************************************************************
- * INLINE METHOD: Medium::mass
- * DESCRIPTION: Computes the enclosed mass per solid angle within radius r.
- *              - For a constant density (k == 0): Uses the standard spherical mass formula.
- *              - For k == 3: Returns a mass proportional to the logarithm of r.
- *              - For other k values: Uses the general power-law mass formula.
- ********************************************************************************************************************/
-inline Real Medium::mass(Real r) const {
-    if (k == 0) {
-        // Mass for constant density: (4π/3) * r^3 * n_c * mp.
-        return (4 * con::pi * con::mp / 3) * r * r * r * n_c;
-    } else if (k == 3) {
-        // For k = 3, the enclosed mass grows logarithmically with radius.
-        return (4 * con::pi * con::mp) * n_c * r_c * r_c * r_c * fastLog(r / con::cm);
-    } else {
-        // For other values of k, use the general formula: 4π/(3-k) * r^3 * n_c * (r/r_c)^(-k) * mp.
-        return (4 * con::pi * con::mp) / (3 - k) * r * r * r * n_c * fastPow(r / r_c, -k);
-    }
-}
 
 /********************************************************************************************************************
  * FUNCTION: createISM
  * DESCRIPTION: Factory function to create a Medium object representing the interstellar medium (ISM)
  *              with the given number density n_ism. (Additional parameters may be set to default values internally.)
  ********************************************************************************************************************/
-Medium createISM(Real n_ism);
+inline Medium createISM(Real n_ism) {
+    return Medium([n_ism](Real phi, Real theta, Real r) { return n_ism; });
+}
 
 #endif

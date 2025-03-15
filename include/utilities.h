@@ -10,6 +10,19 @@
 #include "macros.h"
 #include "mesh.h"
 /********************************************************************************************************************
+ * NAMESPACE: func
+ * DESCRIPTION: Contains inline constexpr lambda functions that return constant values.
+ ********************************************************************************************************************/
+namespace func {
+    // Always returns 0 regardless of the input.
+    inline constexpr auto zero = [](Real phi, Real theta, Real t) -> Real { return 0; };
+    inline constexpr auto zero0 = [](Real phi, Real theta) -> Real { return 0; };
+    // Always returns 1 regardless of the input.
+    inline constexpr auto one = [](Real phi, Real theta, Real t) -> Real { return 1; };
+    inline constexpr auto one0 = [](Real phi, Real theta) -> Real { return 1; };
+}  // namespace func
+
+/********************************************************************************************************************
  * FUNCTION: Basic Math Functions                                                                                   *
  * DESCRIPTION: Inline functions for specific power calculations, a step function, and unit conversion.             *
  ********************************************************************************************************************/

@@ -38,7 +38,7 @@ void tests() {
 
     // solve dynamics
     // auto [r_shock, f_shock] = gen_shocks(coord, jet, medium);
-    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
     // Shock r_shock(coord, eps_e_r, eps_B_r, p);
 
     output(f_shock, data_folder + "/f_shock");

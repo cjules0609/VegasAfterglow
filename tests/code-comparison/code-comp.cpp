@@ -46,15 +46,15 @@ void lc_gen(std::string folder_name) {
     Ejecta jet;
 
     if (jet_type == "Gaussian") {
-        jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+        jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma = math::t_indep(math::gaussian(theta_c, Gamma0));
     } else if (jet_type == "tophat") {
-        jet.dEdOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::tophat(theta_c, Gamma0);
+        jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma = math::t_indep(math::tophat(theta_c, Gamma0));
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = true;
+    jet.spreading = false;
 
     size_t r_num = 128;
     size_t theta_num = 128;
@@ -63,7 +63,9 @@ void lc_gen(std::string folder_name) {
     Coord coord = autoGrid(jet, t_bins, theta_w);
 
     // solve dynamics
-    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
+
+    output(f_shock, "shock");
 
     auto syn_e = genSynElectrons(f_shock, p);
 
@@ -101,10 +103,10 @@ int main() {
     std::vector<std::thread> threads;
 
     threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1"));
-    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2"));
-    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3"));
-    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4"));
-    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5"));
+    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2"));
+    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3"));
+    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4"));
+    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5"));
 
     for (auto& t : threads) {
         t.join();

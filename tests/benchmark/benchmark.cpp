@@ -24,7 +24,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     // output(coord, "coord");
 
-    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
     // output(f_shock, "shock");
 

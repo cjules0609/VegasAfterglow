@@ -29,7 +29,7 @@ void GCN36236(Real theta_c) {
 
     Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
-    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
     auto syn_e = genSynElectrons(f_shock, p);
 
@@ -82,14 +82,6 @@ void std_afterglow(Real theta_c) {
     auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
     // auto jet = TophatJet(theta_c, E_iso, Gamma0);
 
-    Ejecta spin_down;
-    Real L0 = 1e49 * con::erg / con::sec;
-    Real t0 = 2000 * con::sec;
-
-    spin_down.dLdOmega = math::combine(math::isotropic(L0 / (4 * con::pi)), math::powerLawInjection(t0, 2));
-    spin_down.dEdOmega = math::combine(math::isotropic(L0 / (4 * con::pi)), math::powerLawIntegral(t0, 2));
-    spin_down.sigma0 = math::isotropic(con::inf);
-
     size_t r_num = 256;
     size_t theta_num = 64;
     size_t phi_num = 64;
@@ -98,7 +90,7 @@ void std_afterglow(Real theta_c) {
 
     Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
-    Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
     // output(f_shock, "shock");
 

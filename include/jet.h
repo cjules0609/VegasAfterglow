@@ -13,30 +13,20 @@
 #include "utilities.h"
 
 /********************************************************************************************************************
- * NAMESPACE: func
- * DESCRIPTION: Contains inline constexpr lambda functions that return constant values.
- ********************************************************************************************************************/
-namespace func {
-    // Always returns 0 regardless of the input.
-    inline constexpr auto zero = [](Real phi, Real theta, Real t) -> Real { return 0; };
-    // Always returns 1 regardless of the input.
-    inline constexpr auto one = [](Real phi, Real theta, Real t) -> Real { return 1; };
-}  // namespace func
-
-/********************************************************************************************************************
  * CLASS: Ejecta
  * DESCRIPTION: Represents ejecta properties for a simulation. It uses ternary functions (TernaryFunc) to
- *              describe various quantities (dEdOmega, Gamma0, dLdOmega, sigma0) as functions of phi, theta, and time.
+ *              describe various quantities as functions of phi, theta, and time.
  ********************************************************************************************************************/
 class Ejecta {
    public:
-    TernaryFunc dEdOmega{func::zero};  // Differential energy per unit solid angle (default: zero)
-    TernaryFunc Gamma0{func::one};     // Initial Lorentz factor (default: one)
-    TernaryFunc dLdOmega{func::zero};  // Differential luminosity per unit solid angle (default: zero)
-    TernaryFunc sigma0{func::zero};    // Magnetization parameter (default: zero)
-    Real duration{1 * con::sec};       // Duration of the ejecta
-    bool spreading{false};             // Flag indicating if the ejecta spreads
+    BinaryFunc dE0dOmega{func::zero0};   // Initial energy per unit solid angle
+    BinaryFunc sigma0{func::zero0};      // Initial magnetization parameter
+    TernaryFunc Gamma{func::one};        // Lorentz factor profile in the ejecta (default: one)
+    TernaryFunc dEdtdOmega{func::zero};  // Energy injection rate per solid angle (default: zero)
+    TernaryFunc dMdtdOmega{func::zero};  // Mass injection rate per unit solid angle (default: zero)
 
+    Real T0{1 * con::sec};  // Duration of the ejecta
+    bool spreading{false};  // Flag indicating if the ejecta spreads
     // (Additional member functions could be defined as needed.)
 };
 
@@ -52,14 +42,17 @@ class TophatJet {
     TophatJet(Real theta_c, Real E_iso, Real Gamma0, Real sigma0 = 0)
         : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), sigma0_(sigma0) {}
     // Returns the energy per unit solid angle at (phi, theta, t). (For a tophat jet, this is constant within the core.)
-    Real dEdOmega(Real phi, Real theta, Real t) const;
+    Real dE0dOmega(Real phi, Real theta) const;
     // Returns the initial Lorentz factor at (phi, theta, t). (Constant for a tophat jet.)
-    Real Gamma0(Real phi, Real theta, Real t) const;
+    Real Gamma(Real phi, Real theta, Real t) const;
     // Returns the magnetization parameter, which is zero for a tophat jet.
-    Real sigma0(Real phi, Real theta, Real t) const { return sigma0_; };
+    Real sigma0(Real phi, Real theta) const { return sigma0_; };
 
-    Real duration{1 * con::sec};  // Jet duration
-    bool spreading{false};        // Flag indicating if the jet spreads
+    Real dEdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+    Real dMdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+
+    Real T0{1 * con::sec};  // Jet duration
+    bool spreading{false};  // Flag indicating if the jet spreads
 
    private:
     Real theta_c_{0};   // Core opening angle (radians)
@@ -82,11 +75,14 @@ class GaussianJet {
           Gamma0_(Gamma0),
           sigma0_(sigma0),
           idx_(idx) {}
-    Real dEdOmega(Real phi, Real theta, Real t) const;
-    Real Gamma0(Real phi, Real theta, Real t) const;
-    Real sigma0(Real phi, Real theta, Real t) const { return 0; };
+    Real dE0dOmega(Real phi, Real theta) const;
+    Real Gamma(Real phi, Real theta, Real t) const;
+    Real sigma0(Real phi, Real theta) const { return 0; };
 
-    Real duration{1 * con::sec};
+    Real dEdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+    Real dMdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+
+    Real T0{1 * con::sec};
     bool spreading{false};
 
    private:
@@ -108,11 +104,14 @@ class PowerLawJet {
     // power-law index (k), and an optional index parameter (idx).
     PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, Real idx = 1, Real sigma0 = 0)
         : theta_c_(theta_c), dEdOmega_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), sigma0_(sigma0), k_(k), idx_(idx) {}
-    Real dEdOmega(Real phi, Real theta, Real t) const;
-    Real Gamma0(Real phi, Real theta, Real t) const;
-    Real sigma0(Real phi, Real theta, Real t) const { return 0; };
+    Real dE0dOmega(Real phi, Real theta) const;
+    Real Gamma(Real phi, Real theta, Real t) const;
+    Real sigma0(Real phi, Real theta) const { return 0; };
 
-    Real duration{1 * con::sec};
+    Real dEdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+    Real dMdtdOmega(Real phi, Real theta, Real t) const { return 0; };
+
+    Real T0{1 * con::sec};
     bool spreading{false};
 
    private:
@@ -123,20 +122,6 @@ class PowerLawJet {
     Real k_{0};         // Power-law index for the angular profile
     Real idx_{0};       // Additional index parameter
 };
-
-/********************************************************************************************************************
- * NAMESPACE: inject
- * DESCRIPTION: Contains injector models for energy and Lorentz factor injection.
- ********************************************************************************************************************/
-namespace inject {
-    // A dummy injector that returns zero for energy and luminosity injection and one for the Lorentz factor.
-    inline struct {
-        inline Real dEdOmega(Real phi, Real theta, Real t) const { return 0; };
-        inline Real Gamma0(Real phi, Real theta, Real t) const { return 1; };
-        inline Real dLdOmega(Real phi, Real theta, Real t) const { return 0; };
-        inline Real sigma0(Real phi, Real theta, Real t) const { return 0; };
-    } none;
-}  // namespace inject
 
 /********************************************************************************************************************
  * NAMESPACE: math
@@ -150,28 +135,29 @@ namespace math {
         return [=](Real phi, Real theta, Real t) -> Real { return f_spatial(phi, theta) * f_temporal(t); };
     }
 
+    template <typename F1>
+    inline auto t_indep(F1 f_spatial) {
+        return [=](Real phi, Real theta, Real t) -> Real { return f_spatial(phi, theta); };
+    }
+
     // Returns a constant (isotropic) function with a fixed height.
     inline auto isotropic(Real height) {
-        return [=](Real phi, Real theta, Real t = 0) -> Real { return height; };
+        return [=](Real phi, Real theta) -> Real { return height; };
     }
 
     // Returns a tophat function: it is constant (height) within the core angle theta_c and zero outside.
     inline auto tophat(Real theta_c, Real hight) {
-        return [=](Real phi, Real theta, Real t = 0) -> Real { return theta < theta_c ? hight : 0; };
+        return [=](Real phi, Real theta) -> Real { return theta < theta_c ? hight : 0; };
     }
 
     // Returns a Gaussian profile function for jet properties.
     inline auto gaussian(Real theta_c, Real height) {
-        return [=](Real phi, Real theta, Real t = 0) -> Real {
-            return height * fastExp(-theta * theta / (2 * theta_c * theta_c));
-        };
+        return [=](Real phi, Real theta) -> Real { return height * fastExp(-theta * theta / (2 * theta_c * theta_c)); };
     }
 
     // Returns a power-law profile function for jet properties.
     inline auto powerLaw(Real theta_c, Real height, Real k) {
-        return [=](Real phi, Real theta, Real t = 0) -> Real {
-            return theta < theta_c ? height : height * fastPow(theta / theta_c, -k);
-        };
+        return [=](Real phi, Real theta) -> Real { return height * fastPow(1 + theta / theta_c, -k); };
     }
 
     // Constant injection: returns 1 regardless of time.
@@ -179,19 +165,9 @@ namespace math {
         return [=](Real t) -> Real { return 1; };
     }
 
-    // Constant integral: returns t (linearly increasing with time).
-    inline auto constIntegral() {
-        return [=](Real t) -> Real { return t; };
-    }
-
     // Step injection: returns 1 if t is greater than t0, else 0.
     inline auto stepInjection(Real t0) {
         return [=](Real t) -> Real { return t > t0 ? 1 : 0; };
-    }
-
-    // Step integral: returns t-t0 if t is greater than t0, else 0.
-    inline auto stepIntegral(Real t0) {
-        return [=](Real t) -> Real { return t > t0 ? t - t0 : 0; };
     }
 
     // Square injection: returns 1 if t is between t0 and t1, else 0.
@@ -199,33 +175,9 @@ namespace math {
         return [=](Real t) -> Real { return t > t0 && t < t1 ? 1 : 0; };
     }
 
-    // Square integral: integrates the square injection function over time.
-    inline auto squareIntegral(Real t0, Real t1) {
-        return [=](Real t) -> Real {
-            if (t < t0) {
-                return 0;
-            } else if (t < t1) {
-                return t - t0;
-            } else {
-                return t1 - t0;
-            }
-        };
-    }
-
     // Power-law injection: returns a decaying function with power-law index q.
     inline auto powerLawInjection(Real t0, Real q) {
         return [=](Real t) -> Real { return fastPow(1 + t / t0, -q); };
-    }
-
-    // Power-law integral: integrates the power-law injection over time, handling the q = 1 case separately.
-    inline auto powerLawIntegral(Real t0, Real q) {
-        return [=](Real t) -> Real {
-            if (std::abs(q - 1) > 1e-6) {
-                return t0 / (1 - q) * (fastPow(1 + t / t0, 1 - q) - 1);
-            } else {
-                return t0 * fastLog(1 + t / t0);
-            }
-        };
     }
 }  // namespace math
 

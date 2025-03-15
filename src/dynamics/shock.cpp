@@ -90,28 +90,3 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
     return ratio_u;
 }
 
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma, Real Gamma_rel,
-                      Real t_com, Real N_down_str, Real n_up_str, Real sigma) {
-    if (Gamma_rel > 1) {
-        Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma);
-        Real pB_up_str = calc_pB4(n_up_str, sigma);
-        Real pB_down_str = pB_up_str * ratio_u * ratio_u;
-        Real n_down_str = n_up_str * ratio_u;
-        Real e_th = e_ThermalDownStr(Gamma_rel, n_down_str);
-        shock.Gamma[i][j][k] = Gamma;
-        shock.Gamma_rel[i][j][k] = Gamma_rel;
-        shock.t_com[i][j][k] = t_com;
-        shock.r[i][j][k] = r;
-        shock.theta[i][j][k] = theta;
-        shock.column_num_den[i][j][k] = N_down_str / (r * r);
-        shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
-    } else {
-        shock.Gamma[i][j][k] = 1;
-        shock.Gamma_rel[i][j][k] = 1;
-        shock.t_com[i][j][k] = 0;
-        shock.r[i][j][k] = r;
-        shock.theta[i][j][k] = theta;
-        shock.column_num_den[i][j][k] = 0;
-        shock.B[i][j][k] = 0;
-    }
-}
