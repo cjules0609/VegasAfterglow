@@ -128,7 +128,7 @@ class PowerLawJet {
  * DESCRIPTION: Provides a collection of mathematical helper functions for combining functions,
  *              constructing various injection profiles (e.g., tophat, Gaussian, power-law), and computing integrals.
  ********************************************************************************************************************/
-namespace math {
+namespace jet {
     // Combines a spatial function and a temporal function into one function of (phi, theta, t).
     template <typename F1, typename F2>
     inline auto combine(F1 f_spatial, F2 f_temporal) {
@@ -179,7 +179,7 @@ namespace math {
     inline auto powerLawInjection(Real t0, Real q) {
         return [=](Real t) -> Real { return fastPow(1 + t / t0, -q); };
     }
-}  // namespace math
+}  // namespace jet
 
 /********************************************************************************************************************
  * FUNCTION: LiangGhirlanda2010

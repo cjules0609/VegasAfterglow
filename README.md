@@ -54,7 +54,7 @@ make -j$(nproc)  # Use all available cores
 ```cpp
 size_t r_num = 32, theta_num = 32, phi_num = 32;
 double n_ism = 1 / con::cm3, eps_e = 0.1, eps_B = 1e-3, p = 2.3;
-double E_iso = 1e53 * con::erg, Gamma0 = 300, theta_c = 0.1, theta_v = 0.2;
+double E_iso = 1e53 * con::erg, Gamma0 = 300, theta_c = 0.1, theta_w =0.6, theta_v = 0.2;
 
 // Define Medium & Jet
 auto medium = createISM(n_ism);
@@ -62,10 +62,10 @@ auto jet = GaussianJet(theta_c, E_iso, Gamma0);
 
 // Create computational grid
 Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 50);
-Coord coord = adaptiveGrid(medium, jet, inject::none, t_obs, 0.6, phi_num, theta_num, r_num);
+Coord coord = autoGrid(jet, t_obs, theta_w, phi_num, theta_num, r_num);
 
 // Generate shocks
-Shock f_shock = genForwardShock(coord, medium, jet, inject::none, eps_e, eps_B);
+Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
 // Compute electron distribution
 auto syn_e = genSynElectrons(f_shock, p);
@@ -74,16 +74,16 @@ auto syn_e = genSynElectrons(f_shock, p);
 auto syn_ph = genSynPhotons(f_shock, syn_e);
 
 // Setup observer
-Observer obs(coord);
-double z = 0.009, lumi_dist = 1.23e26 * con::cm;
-obs.observe(f_shock, theta_v, lumi_dist, z);
+double lumi_dist = 1.23e26 * con::cm;
+double z = 0.009;
+
+Observer obs(coord, f_shock, theta_v, lumi_dist, z);
 
 // Compute flux
 double nu_obs = eVtoHz(1 * con::keV);
 Array F_nu = obs.specificFlux(t_obs, nu_obs, syn_ph);
 
 // Output results
-
 output(t_obs, "t_obs", con::sec);
 output(F_nu, "light_curve", con::erg / con::cm / con::cm / con::sec);
 
