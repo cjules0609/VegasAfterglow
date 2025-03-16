@@ -72,8 +72,6 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& je
 
 Real u_DownStr(Real gamma_rel, Real sigma);
 Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
-void updateShockState(Shock& shock, size_t i, size_t j, size_t k, Real r, Real theta, Real Gamma, Real Gamma_rel,
-                      Real t_com, Real dNdOmega_up, Real n_up_str, Real sigma);
 
 inline Real soundSpeed(Real Gamma_rel) {
     Real ad_idx = adiabaticIndex(Gamma_rel);
@@ -95,6 +93,12 @@ inline Real n_DownStr(Real n_up_str, Real gamma_rel, Real sigma) {
 inline Real relativeLorentz(Real gamma1, Real gamma2) {
     return gamma1 * gamma2 - std::sqrt((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1));
 }
+inline Real GammaFromReltive(Real gamma4, Real gamma_rel) {
+    Real b = -2 * gamma4 * gamma_rel;
+    Real c = gamma4 * gamma4 + gamma_rel * gamma_rel - 1;
+    return (-b - std::sqrt(b * b - 4 * c)) / 2;
+}
+
 inline Real DownStrThermEnergy(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
 }
@@ -104,11 +108,16 @@ inline Real dDdt_Jet(Real Gamma_rel, Real dtdt_com) {
     return cs * dtdt_com;
 }
 
-inline Real dN3dt(Real r, Real n1, Real n4, Real gamma3, Real drdt, Real gamma0, Real sigma) {
+inline Real dN3dt(Real r, Real n4, Real gamma3, Real drdt, Real gamma0, Real sigma) {
+    if (gamma3 == gamma0) {
+        return 0;
+    }
     Real gamma34 = relativeLorentz(gamma0, gamma3);
     Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
     Real n3 = n4 * ratio_u;
-    Real dxdr = 1. / (gamma0 * std::sqrt((1 + sigma) * n4 / n1) * (1 - gamma0 * n4 / (gamma3 * n3)));
+    Real beta3 = gammaTobeta(gamma3);
+    Real beta4 = gammaTobeta(gamma0);
+    Real dxdr = (beta4 - beta3) / (beta3 * (1 - gamma0 * n4 / (gamma3 * n3)));
     return n3 * r * r * gamma3 * dxdr * drdt;
 }
 
@@ -146,7 +155,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
             // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e);
-            //  Solve the shock shell for this theta slice
+            //   Solve the shock shell for this theta slice
             solveForwardShell(i, j, coord.t, f_shock, eqn, rtol);
         }
     }
@@ -185,32 +194,28 @@ template <typename State>
 void updateShockState(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_down_str,
                       Real Gamma_up_str, Real N_down_str, Real n_up_str, Real sigma_up_str) {
     Real Gamma_rel = relativeLorentz(Gamma_up_str, Gamma_down_str);
-    if (Gamma_rel > 1) {
-        Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma_up_str);
-
-        Real pB_up_str = upStrMagPressure(n_up_str, sigma_up_str);
-        Real pB_down_str = pB_up_str * ratio_u * ratio_u;
-        Real n_down_str = n_up_str * ratio_u;
-        Real e_th = DownStrThermEnergy(Gamma_rel, n_down_str);
-        if (i == 0 && j == 0) {
-            std::cout << "ratio_u: " << ratio_u << ' ' << n_down_str << ' ' << n_up_str << ' ' << e_th << std::endl;
-        }
-        shock.Gamma[i][j][k] = Gamma_down_str;
-        shock.Gamma_rel[i][j][k] = Gamma_rel;
-        shock.t_com[i][j][k] = state.t_com;
-        shock.r[i][j][k] = state.r;
-        shock.theta[i][j][k] = state.theta;
-        shock.column_num_den[i][j][k] = N_down_str / (state.r * state.r);
-        shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
-    } else {
+    // if (Gamma_rel > 1) {
+    Real ratio_u = u_UpStr2u_DownStr(Gamma_rel, sigma_up_str);
+    Real pB_up_str = upStrMagPressure(n_up_str, sigma_up_str);
+    Real pB_down_str = pB_up_str * ratio_u * ratio_u;
+    Real n_down_str = n_up_str * ratio_u;
+    Real e_th = DownStrThermEnergy(Gamma_rel, n_down_str);
+    shock.Gamma[i][j][k] = Gamma_down_str;
+    shock.Gamma_rel[i][j][k] = Gamma_rel;
+    shock.t_com[i][j][k] = state.t_com;
+    shock.r[i][j][k] = state.r;
+    shock.theta[i][j][k] = state.theta;
+    shock.column_num_den[i][j][k] = N_down_str / (state.r * state.r);
+    shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
+    /*} else {
         shock.Gamma[i][j][k] = 1;
         shock.Gamma_rel[i][j][k] = 1;
-        shock.t_com[i][j][k] = 0;
+        shock.t_com[i][j][k] = state.t_com;
         shock.r[i][j][k] = state.r;
         shock.theta[i][j][k] = state.theta;
         shock.column_num_den[i][j][k] = 0;
         shock.B[i][j][k] = 0;
-    }
+    }*/
 }
 #include "forward-shock.hpp"
 #include "reverse-shock.hpp"

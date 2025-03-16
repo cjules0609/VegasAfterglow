@@ -190,7 +190,6 @@ void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn:
 
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
     Real N2 = state.M_sw / con::mp;  // number of proton per unit solid angle
-    // Real N2 = n1 * state.r * state.r * state.r * 4 * con::pi / 3;  // number of proton per unit solid angle
 
     updateShockState(shock, i, j, k, state, state.Gamma, 1., N2, n1, 0.);
 }
@@ -205,9 +204,8 @@ void setForwardInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
     state.Gamma = eqn.ejecta.Gamma(eqn.phi, eqn.theta0, 0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(state.Gamma);
     state.r = beta0 * con::c * t0 / (1 - beta0);
-    state.M_sw = 4 * con::pi / 3 * state.r * state.r * state.r *
-                 eqn.medium.rho(eqn.phi, eqn.theta0, state.r);  // swept mass per solid angle
-    state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);     //
+    state.M_sw = 0;                                          // swept mass per solid angle
+    state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);  //
     state.M_ej = state.E_ej / (state.Gamma * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::c2);
     state.u = (state.Gamma - 1) * state.M_sw * con::c2;
     state.t_com = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
@@ -229,10 +227,8 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eq
     typename Eqn::StateArray y;
     FState state(y);
     setForwardInit(eqn, y, t0);  // Initialize state at starting radius
-    if (i == 0 && j == 0)
-        std::cout << state.Gamma << ' ' << state.r << ' ' << state.t_com << ' ' << state.M_sw << ' ' << state.M_ej
-                  << ' ' << state.E_ej / con::erg << ' ' << state.u << ' ' << state.theta << std::endl;
-    if (state.Gamma < con::Gamma_cut) {                          // If initial Lorentz factor is too low, exit early
+
+    if (state.Gamma <= con::Gamma_cut) {                         // If initial Lorentz factor is too low, exit early
         setStoppingShock(i, j, shock, t, state.r, state.theta);  // Set the shock state to zero
         return;
     }

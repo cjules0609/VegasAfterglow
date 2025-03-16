@@ -70,14 +70,13 @@ Real jetEdge(Ejecta const& jet, Real gamma_cut) {
     Real eps = 1e-9;
     for (; hi - low > eps;) {
         Real mid = 0.5 * (low + hi);
-        if (jet.Gamma(0, mid, 0) >= gamma_cut) {
+        if (jet.Gamma(0, mid, 0) > gamma_cut) {
             low = mid;
         } else {
             hi = mid;
         }
     }
     return low;
-    // 0.5 * (low + hi);  // Return the midpoint as the jet edge.
 }
 
 /********************************************************************************************************************
@@ -94,11 +93,11 @@ Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, size_t phi
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    Array theta = linspace(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
-    Real theta_max = theta[theta_num - 1];                                // Maximum theta value.
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());           // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());           // Minimum observation time.
-    Real b_max = gammaTobeta(jet.Gamma(0, 0, 0));                         // Maximum beta value.
+    Array theta = linspace(1e-6, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
+    Real theta_max = theta[theta_num - 1];                                   // Maximum theta value.
+    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());              // Maximum observation time.
+    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());              // Minimum observation time.
+    Real b_max = gammaTobeta(jet.Gamma(0, 0, 0));                            // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
     t_start = std::min(t_start, 10 * con::sec);

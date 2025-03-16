@@ -89,4 +89,3 @@ Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
     }
     return ratio_u;
 }
-

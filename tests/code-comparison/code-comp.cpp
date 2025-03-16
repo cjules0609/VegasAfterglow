@@ -54,7 +54,7 @@ void lc_gen(std::string folder_name) {
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = false;
+    jet.spreading = true;
 
     size_t r_num = 128;
     size_t theta_num = 128;
@@ -103,10 +103,10 @@ int main() {
     std::vector<std::thread> threads;
 
     threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case1"));
-    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2"));
-    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3"));
-    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4"));
-    // threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case2"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case3"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case4"));
+    threads.emplace_back(std::thread(lc_gen, "/Users/yihanwang/Projects/afterglow-code-comparison/tests/case5"));
 
     for (auto& t : threads) {
         t.join();

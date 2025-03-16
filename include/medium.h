@@ -23,7 +23,7 @@
  ********************************************************************************************************************/
 class Medium {
    public:
-    Medium(TernaryFunc fun) : rho(fun) {};
+    Medium(TernaryFunc func) : rho(func) {};
     TernaryFunc rho{func::zero};  // density(phi, theta, r)
 };
 
@@ -33,7 +33,8 @@ class Medium {
  *              with the given number density n_ism. (Additional parameters may be set to default values internally.)
  ********************************************************************************************************************/
 inline Medium createISM(Real n_ism) {
-    return Medium([n_ism](Real phi, Real theta, Real r) { return n_ism; });
+    auto rho = [n_ism](Real phi, Real theta, Real r) { return n_ism * con::mp; };
+    return Medium(rho);
 }
 
 #endif
