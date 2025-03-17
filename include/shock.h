@@ -164,7 +164,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
                       bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
-    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Create Shock with 1 phi slice
+    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
     for (size_t i = 0; i < phi_size_needed; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each theta slice
@@ -189,8 +189,8 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& je
                       bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
-    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Forward shock for 1 phi slice
-    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);  // Reverse shock for 1 phi slice
+    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
+    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
     for (size_t i = 0; i < phi_size_needed; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             // Create equations for forward and reverse shocks for each theta slice

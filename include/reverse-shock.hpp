@@ -15,41 +15,21 @@
  * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
  *              solver) components.
  ********************************************************************************************************************/
+template <typename StateArray>
 struct RState {
+    using T = decltype(std::declval<StateArray>()[0]);
     RState() = delete;
 
-    template <typename StateArray>
     RState(StateArray& y)
         : width(y[0]), N3(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
-    Real& width;
-    Real& N3;
-    Real& r;
-    Real& t_com;
-    Real& theta;
-    Real& M_sw;
-    Real& M_ej;
-    Real& E_ej;
-};
-
-/********************************************************************************************************************
- * CLASS: constRState
- * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
- *              solver) components.
- ********************************************************************************************************************/
-struct constRState {
-    constRState() = delete;
-
-    template <typename StateArray>
-    constRState(StateArray const& y)
-        : width(y[0]), N3(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
-    Real const& width;
-    Real const& N3;
-    Real const& r;
-    Real const& t_com;
-    Real const& theta;
-    Real const& M_sw;
-    Real const& M_ej;
-    Real const& E_ej;
+    T& width;
+    T& N3;
+    T& r;
+    T& t_com;
+    T& theta;
+    T& M_sw;
+    T& M_ej;
+    T& E_ej;
 };
 
 /********************************************************************************************************************
@@ -80,8 +60,8 @@ class FRShockEqn {
     Real const phi{0};     // Angular coordinate phi
     Real const theta0{0};  // Angular coordinate theta
     Real const eps_e{0};   // Electron energy fraction
-    Real u_x{0};
-    Real r_x{0};
+    Real u_x{0};           // reverse shock crossed four velocity
+    Real r_x{0};           // reverse shock crossed radius
 
     // Reverse shock ODE equation
     void operator()(StateArray const& y, StateArray& dydt, Real t);
@@ -118,18 +98,15 @@ class FRShockEqn {
  * DESCRIPTION: post shock crossing power law index for the Gamma3*beta3 \propto r^-g.
  ********************************************************************************************************************/
 inline Real gParameter(Real gamma_rel, Real k = 0) {
-    constexpr Real g_low = 3 / 2.0;  // k is the medium power law index
-    constexpr Real g_high = 3.5;     // Blandford-McKee limit// TODO: need to be modified for non ISM medium
+    constexpr Real g_low = 1.5;   // k is the medium power law index
+    constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
     Real p = std::sqrt(std::sqrt(gamma_rel - 1));
     return g_low + (g_high - g_low) * p / (1 + p);
 }
 
 inline Real Gamma_eff(Real adx, Real Gamma) { return (adx * Gamma * Gamma - adx + 1) / Gamma; }
 
-inline Real calc_gamma3(Real gamma4, Real N2, Real N3, Real N4, Real E40, Real sigma) {
-    Real Einit = E40 + N2;
-    Real E4 = N4 * gamma4 * (1 + sigma);
-
+inline Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma) {
     auto func = [=](Real gamma3) -> Real {
         Real gamma34 = relativeLorentz(gamma4, gamma3);
         Real adx3 = adiabaticIndex(gamma34);
@@ -137,12 +114,12 @@ inline Real calc_gamma3(Real gamma4, Real N2, Real N3, Real N4, Real E40, Real s
         Real g_eff2 = Gamma_eff(adx2, gamma3);
         Real g_eff3 = Gamma_eff(adx3, gamma3);
 
-        Real E2 = N2 * (gamma3 + g_eff2 * (gamma3 - 1));
-        Real E3 = N3 * (gamma3 + g_eff3 * (gamma34 - 1)) * (1 + sigma);
+        Real E2 = N2 * (gamma3 - 1 + g_eff2 * (gamma3 - 1));
+        Real E3 = N3 * (gamma3 - gamma4 + g_eff3 * (gamma34 - 1)) * (1 + sigma);
 
-        return E2 + E3 + E4 - Einit;
+        return E2 + E3;
     };
-    Real r_tol = 1e-3;
+    constexpr Real r_tol = 1e-3;
     return rootBisection(func, 1, gamma4, r_tol);
 }
 
@@ -150,8 +127,8 @@ inline Real calc_gamma3(Real gamma4, Real N2, Real N3, Real N4, Real E40, Real s
  * FUNCTION: calcInitN3
  * DESCRIPTION: calculate the initial N3 at t0 (to ensure the energy conservation)
  ********************************************************************************************************************/
-template <typename Eqn>
-inline auto calcInitN3(Eqn& eqn, RState const& state, Real gamma4, Real t0) {
+template <typename Eqn, typename State>
+inline auto calcInitN3(Eqn& eqn, State const& state, Real gamma4, Real t0) {
     Real Delta0 = eqn.ejecta.T0 * con::c;
     Real E_iso = state.E_ej * 4 * con::pi;
     Real n1 = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
@@ -159,11 +136,11 @@ inline auto calcInitN3(Eqn& eqn, RState const& state, Real gamma4, Real t0) {
     Real sigma0 = eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
     Real r_x = std::sqrt(std::sqrt(Delta0 * l * l * l) / (1 + sigma0));
     Real N40 = state.M_ej / con::mp;
-    if (state.r > r_x) {
+    if (state.r >= r_x) {
         return std::make_tuple(true, N40);
     } else {
         Real N3 = N40 * std::pow(state.r / r_x, 1.5);
-        return std::make_tuple(false, std::min(N3, N40));
+        return std::make_tuple(false, N3);
     }
 }
 
@@ -173,21 +150,20 @@ inline Real initShellWidth(Real gamma, Real T, Real r) { return gamma * T * con:
  * FUNCTION: setReverseInit
  * DESCRIPTION: Set the initial conditions for the reverse shock ODE.
  ********************************************************************************************************************/
-template <typename Eqn>
-bool setReverseInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
-    RState state(y);
-    Real gamma40 = eqn.ejecta.Gamma(eqn.phi, eqn.theta0, 0);  // Obtain initial Gamma from the jet
-    Real beta4 = gammaTobeta(gamma40);
+template <typename Eqn, typename State>
+bool setReverseInit(Eqn& eqn, State& state, Real t0) {
+    Real gamma4 = eqn.ejecta.Gamma(eqn.phi, eqn.theta0, 0);  // Obtain initial Gamma from the jet
+    Real beta4 = gammaTobeta(gamma4);
     state.r = beta4 * con::c * t0 / (1 - beta4);
-    state.t_com = state.r / std::sqrt(gamma40 * gamma40 - 1) / con::c;
+    state.t_com = state.r / std::sqrt(gamma4 * gamma4 - 1) / con::c;
     // initial width + spreading from r=0 to r=r0 (with sound speed of c/sqrt(3))
-    state.width = initShellWidth(gamma40, eqn.ejecta.T0, state.r);
+    state.width = initShellWidth(gamma4, eqn.ejecta.T0, state.r);
     // help with the extremely week reverse shock at the beginning. Setting M_sw = 0 will lead to extremely small step
     // size for high magnetized ejecta.
     state.M_sw = 1 / 3. * state.r * state.r * state.r * con::mp / (con::cm * con::cm * con::cm);
     state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);
-    state.M_ej = state.E_ej / (gamma40 * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::c2);
-    auto [crossed, N3] = calcInitN3(eqn, state, gamma40, t0);
+    state.M_ej = state.E_ej / (gamma4 * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::c2);
+    auto [crossed, N3] = calcInitN3(eqn, state, gamma4, t0);
     state.N3 = N3;
     state.theta = eqn.theta0;
 
@@ -208,24 +184,20 @@ FRShockEqn<Ejecta>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real 
  ********************************************************************************************************************/
 template <typename Ejecta>
 void FRShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real t) {
-    constRState state(y);
+    RState state(y);
     RState diff(dydt);
 
     Real gamma3 = 1;
     Real beta3 = 1;
     Real gamma_rel = 1;
-
-    Real rho = medium.rho(phi, state.theta, state.r);
     if (!crossed) {
-        Real N40 = state.M_ej / con::mp;
-        Real n4 = N40 / (state.r * state.r * state.width);
+        Real n4 = state.M_ej / (state.r * state.r * state.width * con::mp);
         Real N2 = state.M_sw / con::mp;
         Real gamma4 = ejecta.Gamma(phi, theta0, t);
         Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
 
-        gamma3 = calc_gamma3(gamma4, N2, state.N3, N40 - state.N3, state.E_ej / (con::mp * con::c2), sigma4);
+        gamma3 = calc_gamma3(gamma4, N2, state.N3, sigma4);
         beta3 = gammaTobeta(gamma3);
-
         gamma_rel = relativeLorentz(gamma4, gamma3);
         diff.N3 = dN3dt(state.r, n4, gamma3, gamma4, sigma4);
     } else {
@@ -235,7 +207,6 @@ void FRShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real 
         diff.N3 = 0;
     }
     diff.r = drdt(beta3);
-
     diff.t_com = dtdt_CoMoving(gamma3);
     diff.width = dDdt_Jet(gamma_rel, diff.t_com);
     Real u3 = gamma3 * beta3;
@@ -244,6 +215,7 @@ void FRShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real 
     } else {
         diff.theta = 0;
     }
+    Real rho = medium.rho(phi, state.theta, state.r);
     diff.M_sw = state.r * state.r * rho * diff.r;
     diff.M_ej = ejecta.dMdtdOmega(phi, theta0, t);
     diff.E_ej = ejecta.dEdtdOmega(phi, theta0, t);
@@ -296,10 +268,9 @@ template <typename Ejecta>
 template <typename State>
 Real FRShockEqn<Ejecta>::crossingGamma3(State const& state, Real t) {
     Real N2 = state.M_sw / con::mp;
-    Real N40 = state.M_ej / con::mp;
     Real gamma4 = ejecta.Gamma(phi, theta0, t);
     Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
-    return calc_gamma3(gamma4, N2, state.N3, N40 - state.N3, state.E_ej / (con::mp * con::c2), sigma4);
+    return calc_gamma3(gamma4, N2, state.N3, sigma4);
 }
 
 /********************************************************************************************************************
@@ -323,7 +294,6 @@ template <typename State>
 Real FRShockEqn<Ejecta>::crossedB(State const& state) {
     Real n3_norm = N0 / (state.width * state.r * state.r);        // proton number conservation
     Real p3_norm = std::pow(n3_norm, ad_idx0) / adiabatic_const;  // adiabatic expansion
-
     return std::sqrt(p3_norm / Emag_const);
 }
 
@@ -331,8 +301,8 @@ Real FRShockEqn<Ejecta>::crossedB(State const& state) {
  * INLINE FUNCTION: updateCrossedReverseShock
  * DESCRIPTION: Updates the post shock crossing state based on current ODE solution at t.
  ********************************************************************************************************************/
-template <typename Eqn>
-inline void updateCrossedReverseShock(size_t i, size_t j, size_t k, size_t k0, Eqn& eqn, RState const& state,
+template <typename Eqn, typename State>
+inline void updateCrossedReverseShock(size_t i, size_t j, size_t k, size_t k0, Eqn& eqn, State const& state,
                                       Shock& shock) {
     Real r0 = shock.r[i][j][k0];
     shock.t_com[i][j][k] = state.t_com;
@@ -354,7 +324,6 @@ bool reverseShockExists(Eqn const& eqn, Real t0) {           // TODO: for genera
     Real beta0 = gammaTobeta(gamma);
     Real r0 = beta0 * con::c * t0 / (1 - beta0);
     Real D_jet0 = initShellWidth(gamma, eqn.ejecta.duration, r0);
-
     Real n4 = calc_n4(eqn.ejecta.dEdOmega(eqn.phi, eqn.theta0, t0), gamma, r0, D_jet0, eqn.jet_sigma);
     Real n1 = eqn.medium.rho(eqn.phi, eqn.theta0, r0) / con::mp;
     return eqn.jet_sigma < 8. / 3 * (gamma * gamma - 1) * n1 / n4;
@@ -365,10 +334,8 @@ bool reverseShockExists(Eqn const& eqn, Real t0) {           // TODO: for genera
  * DESCRIPTION: Set the initial condition for forward shock ODE solver based on the reverse shock state at crossed
  *              point.
  ********************************************************************************************************************/
-template <typename Eqn, typename FStateArray, typename RStateArray>
-void set_f_state(Eqn& eqn, FStateArray& y_fwd, RStateArray const& y_rvs, Real gamma2) {
-    FState state_fwd(y_fwd);
-    constRState state_rvs(y_rvs);
+template <typename FState, typename RState>
+void set_f_state(FState& state_fwd, RState const& state_rvs, Real gamma2) {
     state_fwd.r = state_rvs.r;
     state_fwd.t_com = state_rvs.t_com;
     state_fwd.theta = state_rvs.theta;
@@ -393,7 +360,7 @@ bool updateForwardReverseShock(size_t i, size_t j, int k, Eqn& eqn_rvs, State co
     constexpr Real gamma1 = 1;
     constexpr Real sigma1 = 0;
 
-    Real gamma3 = calc_gamma3(gamma4, N2, state.N3, N4 - state.N3, state.E_ej / (con::mp * con::c2), sigma4);
+    Real gamma3 = calc_gamma3(gamma4, N2, state.N3, sigma4);
 
     updateShockState(shock_fwd, i, j, k, state, gamma3, gamma1, N2, n1, sigma1);
     updateShockState(shock_rvs, i, j, k, state, gamma3, gamma4, state.N3, n4, sigma4);
@@ -421,8 +388,8 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
     FState state_fwd(y_fwd);
     RState state_rvs(y_rvs);
 
-    setForwardInit(eqn_fwd, y_fwd, t0);
-    crossed = setReverseInit(eqn_rvs, y_rvs, t0);
+    setForwardInit(eqn_fwd, state_fwd, t0);
+    crossed = setReverseInit(eqn_rvs, state_rvs, t0);
 
     if (state_fwd.Gamma < con::Gamma_cut) {
         setStoppingShock(i, j, shock_fwd, t, state_rvs.r, eqn_rvs.theta0);
@@ -455,13 +422,13 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
         }
 
         // crossed forward shock evolution
-        set_f_state(eqn_fwd, y_fwd, y_rvs, shock_rvs.Gamma[i][j][k0]);
+        set_f_state(state_fwd, state_rvs, shock_rvs.Gamma[i][j][k0]);
         stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
         for (size_t k = k0 + 1; stepper_fwd.current_time() <= t_back;) {
             stepper_fwd.do_step(eqn_fwd);
             for (; k < t.size() && stepper_fwd.current_time() > t[k]; k++) {
                 stepper_fwd.calc_state(t[k], y_fwd);
-                updateForwardShock(i, j, k, eqn_fwd, y_fwd, shock_fwd);
+                updateForwardShock(i, j, k, eqn_fwd, state_fwd, shock_fwd);
             }
         }
 
@@ -470,7 +437,7 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
             stepper_rvs.do_step(eqn_rvs);
             for (; k < t.size() && stepper_rvs.current_time() > t[k]; k++) {
                 stepper_rvs.calc_state(t[k], y_rvs);
-                updateCrossedReverseShock(i, j, k, k0, eqn_rvs, y_rvs, shock_rvs);
+                updateCrossedReverseShock(i, j, k, k0, eqn_rvs, state_rvs, shock_rvs);
             }
         }
     }

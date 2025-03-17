@@ -34,7 +34,7 @@ class SimpleShockEqn {
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    inline Real dGammadt(Real t, constFState const& state, FState const& diff);
+    inline Real dGammadt(Real t, FState<const StateArray> const& state, FState<StateArray> const& diff);
     Real const dOmega0{0};  // Initial solid angle
 };
 
@@ -53,7 +53,7 @@ class SimpleShockEqn {
  ********************************************************************************************************************/
 template <typename Ejecta>
 void SimpleShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real t) {
-    constFState state(y);
+    FState state(y);
     FState diff(dydt);
 
     Real rho = medium.rho(phi, state.theta, state.r);  // Get medium density
@@ -90,7 +90,7 @@ SimpleShockEqn<Ejecta>::SimpleShockEqn(Medium const& medium, Ejecta const& eject
  * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
 template <typename Ejecta>
-Real SimpleShockEqn<Ejecta>::dGammadt(Real t, constFState const& state, FState const& diff) {
+Real SimpleShockEqn<Ejecta>::dGammadt(Real t, FState<const StateArray> const& state, FState<StateArray> const& diff) {
     Real M_sw = state.M_sw;
     Real dMdt = diff.M_sw;
 

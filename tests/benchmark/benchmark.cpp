@@ -16,9 +16,6 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     auto medium = createISM(n_ism);
 
     auto jet = GaussianJet(theta_c, E_iso, Gamma0);
-    // Ejecta jet;
-    // jet.dEdOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-    // jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
     Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, phi_num, theta_num, r_num);
 

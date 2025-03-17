@@ -14,41 +14,23 @@
  * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
  *              components.
  ********************************************************************************************************************/
+template <typename StateArray>
 struct FState {
+    using T = decltype(std::declval<StateArray>()[0]);
+
     FState() = delete;
 
-    template <typename StateArray>
     FState(StateArray& y)
         : Gamma(y[0]), u(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
-    Real& Gamma;
-    Real& u;
-    Real& r;
-    Real& t_com;
-    Real& theta;
-    Real& M_sw;
-    Real& M_ej;
-    Real& E_ej;
-};
 
-/********************************************************************************************************************
- * CLASS: constFState
- * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
- *              components.
- ********************************************************************************************************************/
-struct constFState {
-    constFState() = delete;
-
-    template <typename StateArray>
-    constFState(StateArray const& y)
-        : Gamma(y[0]), u(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
-    Real const& Gamma;
-    Real const& u;
-    Real const& r;
-    Real const& t_com;
-    Real const& theta;
-    Real const& M_sw;
-    Real const& M_ej;
-    Real const& E_ej;
+    T& Gamma;
+    T& u;
+    T& r;
+    T& t_com;
+    T& theta;
+    T& M_sw;
+    T& M_ej;
+    T& E_ej;
 };
 
 /********************************************************************************************************************
@@ -70,6 +52,8 @@ class ForwardShockEqn {
     // - M_ej: ejecta mass per solid angle
     // - E_ej: ejecta energy per solid angle
     using StateArray = std::array<Real, 8>;
+    using State = FState<StateArray>;
+    using constState = FState<const StateArray>;
 
     ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e);
 
@@ -84,9 +68,9 @@ class ForwardShockEqn {
 
    private:
     // dGammadt with respect to on-axis observe t.
-    inline Real dGammadt(Real t, constFState const& state, FState const& diff, Real ad_idx);
+    inline Real dGammadt(Real t, constState const& state, State const& diff, Real ad_idx);
     // dUdt with respect to on-axis observe t.
-    inline Real dUdt(constFState const& state, FState const& diff, Real ad_idx);
+    inline Real dUdt(constState const& state, State const& diff, Real ad_idx);
 
     Real const dOmega0{0};  // Initial solid angle
 };
@@ -97,7 +81,7 @@ class ForwardShockEqn {
  ********************************************************************************************************************/
 template <typename Ejecta>
 void ForwardShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real t) {
-    constFState state(y);
+    FState state(y);
     FState diff(dydt);
 
     Real ad_idx = adiabaticIndex(state.Gamma);
@@ -134,7 +118,7 @@ ForwardShockEqn<Ejecta>::ForwardShockEqn(Medium const& medium, Ejecta const& eje
  * DESCRIPTION: dGammadt with respect to on-axis observe t.
  ********************************************************************************************************************/
 template <typename Ejecta>
-Real ForwardShockEqn<Ejecta>::dGammadt(Real t, constFState const& state, FState const& diff, Real ad_idx) {
+Real ForwardShockEqn<Ejecta>::dGammadt(Real t, constState const& state, State const& diff, Real ad_idx) {
     Real Gamma2 = state.Gamma * state.Gamma;
     Real Gamma_eff = (ad_idx * (Gamma2 - 1) + 1) / state.Gamma;
     Real dGamma_eff = (ad_idx * (Gamma2 + 1) - 1) / Gamma2;
@@ -167,7 +151,7 @@ Real ForwardShockEqn<Ejecta>::dGammadt(Real t, constFState const& state, FState 
  * DESCRIPTION: Computes the derivative of u with respect to time t.
  ********************************************************************************************************************/
 template <typename Ejecta>
-Real ForwardShockEqn<Ejecta>::dUdt(constFState const& state, FState const& diff, Real ad_idx) {
+Real ForwardShockEqn<Ejecta>::dUdt(constState const& state, State const& diff, Real ad_idx) {
     Real dmdt = diff.M_sw;
     Real dlnVdt = 3 / state.r * diff.r - diff.Gamma / state.Gamma;
     if (ejecta.spreading) {
@@ -184,10 +168,8 @@ Real ForwardShockEqn<Ejecta>::dUdt(constFState const& state, FState const& diff,
  * FUNCTION: updateForwardShock
  * DESCRIPTION: Updates the forward shock state at grid index (i, j, k) using the current ODE solution at t.
  ********************************************************************************************************************/
-template <typename Eqn>
-void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn::StateArray& y, Shock& shock) {
-    constFState state(y);
-
+template <typename Eqn, typename State>
+void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, State const& state, Shock& shock) {
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
     Real N2 = state.M_sw / con::mp;  // number of proton per unit solid angle
     constexpr Real gamma1 = 1;
@@ -199,9 +181,8 @@ void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn:
  * FUNCTION: setForwardInit
  * DESCRIPTION: Set the initial conditions for the forward shock ODE solver.
  ********************************************************************************************************************/
-template <typename Eqn>
-void setForwardInit(Eqn& eqn, typename Eqn::StateArray& y, Real t0) {
-    FState state(y);
+template <typename Eqn, typename State>
+void setForwardInit(Eqn& eqn, State& state, Real t0) {
     state.Gamma = eqn.ejecta.Gamma(eqn.phi, eqn.theta0, 0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(state.Gamma);
     state.r = beta0 * con::c * t0 / (1 - beta0);
@@ -227,7 +208,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eq
 
     typename Eqn::StateArray y;
     FState state(y);
-    setForwardInit(eqn, y, t0);  // Initialize state at starting radius
+    setForwardInit(eqn, state, t0);  // Initialize state at starting radius
 
     if (state.Gamma <= con::Gamma_cut) {                         // If initial Lorentz factor is too low, exit early
         setStoppingShock(i, j, shock, t, state.r, state.theta);  // Set the shock state to zero
@@ -237,9 +218,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eq
     // ODE solver with adaptive step size, and relative tolerance rtol
     // auto stepper = bulirsch_stoer_dense_out<typename ShockEqn::StateArray>{0, rtol};
     auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename Eqn::StateArray>());
-
     stepper.initialize(y, t0, dt);
-
     Real t_back = t[t.size() - 1];  // Last time in the array
 
     // Iterate over the radius array, updating the state and the Shock object as needed
@@ -247,7 +226,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, Eqn& eq
         stepper.do_step(eqn);
         while (k < t.size() && stepper.current_time() > t[k]) {
             stepper.calc_state(t[k], y);
-            updateForwardShock(i, j, k, eqn, y, shock);
+            updateForwardShock(i, j, k, eqn, state, shock);
             ++k;
         }
     }
