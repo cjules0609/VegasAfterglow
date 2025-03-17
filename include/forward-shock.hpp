@@ -37,7 +37,7 @@ struct FState {
  * CLASS: ForwardShockEqn
  * DESCRIPTION: Represents the forward shock equation for a given jet and medium. It defines a state vector
  *              (an array of 8 Reals) and overloads operator() to compute the derivatives of the state with
- *              respect to radius r. It also declares helper functions for the derivatives. Comprehensive models
+ *              respect to t. It also declares helper functions for the derivatives. Comprehensive models
  ********************************************************************************************************************/
 template <typename Ejecta>
 class ForwardShockEqn {
@@ -124,15 +124,16 @@ Real ForwardShockEqn<Ejecta>::dGammadt(Real t, constState const& state, State co
     Real dGamma_eff = (ad_idx * (Gamma2 + 1) - 1) / Gamma2;
     Real dmdt = diff.M_sw;
     Real dlnVdt = 3 / state.r * diff.r;  // only r term
-
-    Real M_sw = state.M_sw;  // Mass per unit solid angle from medium
-    Real u = state.u;        // Internal energy per unit solid angle
+    Real M_sw = state.M_sw;              // Mass per unit solid angle from medium
+    Real u = state.u;                    // Internal energy per unit solid angle
 
     if (ejecta.spreading) {
-        Real f_spread = (1 - std::cos(state.theta)) / dOmega0;
-        dmdt = dmdt * f_spread + M_sw / dOmega0 * std::sin(state.theta) * diff.theta;
+        Real cos_theta = std::cos(state.theta);
+        Real sin_theta = std::sin(state.theta);
+        Real f_spread = (1 - cos_theta) / dOmega0;
+        dmdt = dmdt * f_spread + M_sw / dOmega0 * sin_theta * diff.theta;
         M_sw *= f_spread;
-        dlnVdt += std::sin(state.theta) / (1 - std::cos(state.theta)) * diff.theta;
+        dlnVdt += sin_theta / (1 - cos_theta) * diff.theta;
         u *= f_spread;
     }
 

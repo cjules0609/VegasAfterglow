@@ -40,7 +40,7 @@ class SimpleShockEqn {
 
 /********************************************************************************************************************
  * METHOD: SimpleShockEqn::operator()(State const& y, State& dydr, Real t)
- * DESCRIPTION: Computes the derivatives of the state variables with respect to radius r.
+ * DESCRIPTION: Computes the derivatives of the state variables with respect to t.
  *              The state vector components are:
  *                  y[0] - Gamma (Lorentz factor)
  *                  y[1] - u (internal energy per solid angle)

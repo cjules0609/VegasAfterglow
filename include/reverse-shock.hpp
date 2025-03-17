@@ -37,7 +37,7 @@ struct RState {
  * DESCRIPTION: Represents the reverse shock (or forward-reverse shock) equation for a given Jet and medium.
  *              It defines a state vector (an array of 8 Reals) and overloads operator() to compute the
  *              derivatives of the state with respect to radius r. It also declares a helper function to compute
- *              the derivative of N3 (number per solid angle) with respect to r.
+ *              the derivative of N3 (number per solid angle) with respect to t.
  ********************************************************************************************************************/
 template <typename Ejecta>
 class FRShockEqn {

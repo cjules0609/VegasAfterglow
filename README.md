@@ -62,7 +62,7 @@ auto jet = GaussianJet(theta_c, E_iso, Gamma0);
 
 // Create computational grid
 Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 50);
-Coord coord = autoGrid(jet, t_obs, theta_w, phi_num, theta_num, r_num);
+Coord coord = autoGrid(jet, t_obs, theta_w, theta_v, phi_num, theta_num, r_num);
 
 // Generate shocks
 Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
@@ -81,8 +81,7 @@ double z = 0.009;
 Observer obs(coord, f_shock, theta_v, lumi_dist, z);
 
 // Compute flux
-double nu_obs = eVtoHz(1 * con::keV);
-Array F_nu = obs.specificFlux(t_obs, nu_obs, syn_ph);
+Array F_nu = obs.specificFlux(t_obs, 1e17*con::Hz, syn_ph);
 
 // Output results
 output(t_obs, "t_obs", con::sec);

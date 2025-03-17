@@ -30,7 +30,7 @@ inline Real pow52(Real a) { return std::sqrt(a * a * a * a * a); }
 inline Real pow43(Real a) { return std::cbrt(a * a * a * a); }
 inline Real pow23(Real a) { return std::cbrt(a * a); }
 inline Real stepFunc(Real x) { return x > 0 ? 1 : 0; }
-inline Real eVtoHz(Real eV) { return eV / con::h; }
+inline constexpr Real eVtoHz(Real eV) { return eV / con::h; }
 
 /********************************************************************************************************************
  * FUNCTION: Fast Math & Interpolation Prototypes                                                                   *
