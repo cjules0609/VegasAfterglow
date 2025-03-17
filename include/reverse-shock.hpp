@@ -8,8 +8,6 @@
 #ifndef _REVERSESHOCK_
 #define _REVERSESHOCK_
 
-#include <boost/math/tools/roots.hpp>
-
 #include "shock.h"
 #include "utilities.h"
 /********************************************************************************************************************
@@ -120,8 +118,8 @@ class FRShockEqn {
  * DESCRIPTION: post shock crossing power law index for the Gamma3*beta3 \propto r^-g.
  ********************************************************************************************************************/
 inline Real gParameter(Real gamma_rel, Real k = 0) {
-    const Real g_low = 3 / 2.0;   // k is the medium power law index
-    constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
+    constexpr Real g_low = 3 / 2.0;  // k is the medium power law index
+    constexpr Real g_high = 3.5;     // Blandford-McKee limit// TODO: need to be modified for non ISM medium
     Real p = std::sqrt(std::sqrt(gamma_rel - 1));
     return g_low + (g_high - g_low) * p / (1 + p);
 }
@@ -144,7 +142,8 @@ inline Real calc_gamma3(Real gamma4, Real N2, Real N3, Real N4, Real E40, Real s
 
         return E2 + E3 + E4 - Einit;
     };
-    return rootBisection(func, 1, gamma4, 1e-3);
+    Real r_tol = 1e-3;
+    return rootBisection(func, 1, gamma4, r_tol);
 }
 
 /********************************************************************************************************************
@@ -158,11 +157,14 @@ inline auto calcInitN3(Eqn& eqn, RState const& state, Real gamma4, Real t0) {
     Real n1 = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
     Real l = SedovLength(E_iso, n1);
     Real sigma0 = eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
-    Real C = 1 / std::sqrt(1 + sigma0);
-    Real r_x = C * std::pow(Delta0 * l * l * l, 0.25);
+    Real r_x = std::sqrt(std::sqrt(Delta0 * l * l * l) / (1 + sigma0));
     Real N40 = state.M_ej / con::mp;
-    Real N3 = N40 * std::pow(state.r / r_x, 1.5);
-    return std::make_tuple(N3 >= N40, std::min(N3, N40));
+    if (state.r > r_x) {
+        return std::make_tuple(true, N40);
+    } else {
+        Real N3 = N40 * std::pow(state.r / r_x, 1.5);
+        return std::make_tuple(false, std::min(N3, N40));
+    }
 }
 
 inline Real initShellWidth(Real gamma, Real T, Real r) { return gamma * T * con::c + r / gamma / std::sqrt(3); }
@@ -225,15 +227,14 @@ void FRShockEqn<Ejecta>::operator()(StateArray const& y, StateArray& dydt, Real 
         beta3 = gammaTobeta(gamma3);
 
         gamma_rel = relativeLorentz(gamma4, gamma3);
-        diff.r = drdt(beta3);
-        diff.N3 = dN3dt(state.r, n4, gamma3, diff.r, gamma4, sigma4);
+        diff.N3 = dN3dt(state.r, n4, gamma3, gamma4, sigma4);
     } else {
         gamma_rel = crossedGamma_rel(state);
         gamma3 = crossedGamma3(gamma_rel, state.r);
         beta3 = gammaTobeta(gamma3);
-        diff.r = drdt(beta3);
         diff.N3 = 0;
     }
+    diff.r = drdt(beta3);
 
     diff.t_com = dtdt_CoMoving(gamma3);
     diff.width = dDdt_Jet(gamma_rel, diff.t_com);
@@ -382,17 +383,19 @@ template <typename Eqn, typename State>
 bool updateForwardReverseShock(size_t i, size_t j, int k, Eqn& eqn_rvs, State const& state, Real t, Shock& shock_fwd,
                                Shock& shock_rvs) {
     Real N4 = state.M_ej / con::mp;
+    Real N2 = state.M_sw / con::mp;
+
     Real n4 = N4 / (state.r * state.r * state.width);
     Real gamma4 = eqn_rvs.ejecta.Gamma(eqn_rvs.phi, eqn_rvs.theta0, t);
     Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
 
-    Real N2 = state.M_sw / con::mp;
     Real n1 = eqn_rvs.medium.rho(eqn_rvs.phi, state.theta, state.r) / con::mp;
+    constexpr Real gamma1 = 1;
+    constexpr Real sigma1 = 0;
 
     Real gamma3 = calc_gamma3(gamma4, N2, state.N3, N4 - state.N3, state.E_ej / (con::mp * con::c2), sigma4);
 
-    updateShockState(shock_fwd, i, j, k, state, gamma3, 1., N2, n1, 0.);
-
+    updateShockState(shock_fwd, i, j, k, state, gamma3, gamma1, N2, n1, sigma1);
     updateShockState(shock_rvs, i, j, k, state, gamma3, gamma4, state.N3, n4, sigma4);
     return state.N3 >= N4;
 }
@@ -419,7 +422,6 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
     RState state_rvs(y_rvs);
 
     setForwardInit(eqn_fwd, y_fwd, t0);
-
     crossed = setReverseInit(eqn_rvs, y_rvs, t0);
 
     if (state_fwd.Gamma < con::Gamma_cut) {
@@ -457,7 +459,6 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
         stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
         for (size_t k = k0 + 1; stepper_fwd.current_time() <= t_back;) {
             stepper_fwd.do_step(eqn_fwd);
-
             for (; k < t.size() && stepper_fwd.current_time() > t[k]; k++) {
                 stepper_fwd.calc_state(t[k], y_fwd);
                 updateForwardShock(i, j, k, eqn_fwd, y_fwd, shock_fwd);

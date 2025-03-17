@@ -169,7 +169,7 @@ Real ForwardShockEqn<Ejecta>::dGammadt(Real t, constFState const& state, FState 
 template <typename Ejecta>
 Real ForwardShockEqn<Ejecta>::dUdt(constFState const& state, FState const& diff, Real ad_idx) {
     Real dmdt = diff.M_sw;
-    Real dlnVdt = (3 / state.r * diff.r - diff.Gamma / state.Gamma);
+    Real dlnVdt = 3 / state.r * diff.r - diff.Gamma / state.Gamma;
     if (ejecta.spreading) {
         Real factor = std::sin(state.theta) / (1 - std::cos(state.theta)) * diff.theta;
         dmdt = dmdt + state.M_sw * factor;
@@ -190,8 +190,9 @@ void updateForwardShock(size_t i, size_t j, int k, Eqn& eqn, const typename Eqn:
 
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
     Real N2 = state.M_sw / con::mp;  // number of proton per unit solid angle
-
-    updateShockState(shock, i, j, k, state, state.Gamma, 1., N2, n1, 0.);
+    constexpr Real gamma1 = 1;
+    constexpr Real sigma1 = 0;
+    updateShockState(shock, i, j, k, state, state.Gamma, gamma1, N2, n1, sigma1);
 }
 
 /********************************************************************************************************************

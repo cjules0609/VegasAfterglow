@@ -46,21 +46,21 @@ void lc_gen(std::string folder_name) {
     Ejecta jet;
 
     if (jet_type == "Gaussian") {
-        jet.dE0dOmega = jet::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma = jet::t_indep(jet::gaussian(theta_c, Gamma0));
+        jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma = math::t_indep(math::gaussian(theta_c, Gamma0));
     } else if (jet_type == "tophat") {
-        jet.dE0dOmega = jet::tophat(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma = jet::t_indep(jet::tophat(theta_c, Gamma0));
+        jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+        jet.Gamma = math::t_indep(math::tophat(theta_c, Gamma0));
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = true;
+    jet.spreading = false;
 
-    size_t r_num = 128;
+    size_t t_num = 128;
     size_t theta_num = 128;
     size_t phi_num = 128;
 
-    Coord coord = autoGrid(jet, t_bins, theta_w);
+    Coord coord = autoGrid(jet, t_bins, theta_w, theta_view);
 
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);

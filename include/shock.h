@@ -71,28 +71,42 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& je
  ********************************************************************************************************************/
 
 Real u_DownStr(Real gamma_rel, Real sigma);
+
 Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma);
 
 inline Real soundSpeed(Real Gamma_rel) {
     Real ad_idx = adiabaticIndex(Gamma_rel);
     return std::sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx));
 }
+
 inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
+
 inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
+
 inline Real dtheta_dt(Real uv, Real drdt, Real r, Real Gamma) {
     return 0.5 / Gamma * drdt / r * sqrt((2 * uv * uv + 3) / (4 * uv * uv + 3));
 }
+
 inline Real dtdt_CoMoving(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };
+
 inline Real upStrMagPressure(Real n_up, Real sigma) { return sigma * n_up * con::mp * con::c2 / 2; }
+
 inline Real u_UpStr(Real u_down, Real gamma_rel) {
     return std::sqrt((1 + u_down * u_down) * (gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
 }
+
 inline Real n_DownStr(Real n_up_str, Real gamma_rel, Real sigma) {
     return n_up_str * u_UpStr2u_DownStr(gamma_rel, sigma);
 }
+
 inline Real relativeLorentz(Real gamma1, Real gamma2) {
     return gamma1 * gamma2 - std::sqrt((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1));
 }
+
+inline Real relativeLorentz(Real gamma1, Real gamma2, Real beta1, Real beta2) {
+    return gamma1 * gamma2 * (1 - beta1 * beta2);
+}
+
 inline Real GammaFromReltive(Real gamma4, Real gamma_rel) {
     Real b = -2 * gamma4 * gamma_rel;
     Real c = gamma4 * gamma4 + gamma_rel * gamma_rel - 1;
@@ -102,27 +116,28 @@ inline Real GammaFromReltive(Real gamma4, Real gamma_rel) {
 inline Real DownStrThermEnergy(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
 }
+
 // D_jet co-moving shell width
 inline Real dDdt_Jet(Real Gamma_rel, Real dtdt_com) {
     Real cs = soundSpeed(Gamma_rel);
     return cs * dtdt_com;
 }
 
-inline Real dN3dt(Real r, Real n4, Real gamma3, Real drdt, Real gamma0, Real sigma) {
-    if (gamma3 == gamma0) {
-        return 0;
+inline Real dN3dt(Real r, Real n4, Real gamma3, Real gamma4, Real sigma) {
+    if (gamma3 == gamma4) {
+        return 0.;
     }
-    Real gamma34 = relativeLorentz(gamma0, gamma3);
+    Real beta3 = gammaTobeta(gamma3);
+    Real beta4 = gammaTobeta(gamma4);
+    Real gamma34 = relativeLorentz(gamma4, gamma3, beta4, beta3);
     Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
     Real n3 = n4 * ratio_u;
-    Real beta3 = gammaTobeta(gamma3);
-    Real beta4 = gammaTobeta(gamma0);
-    Real dxdr = (beta4 - beta3) / (beta3 * (1 - gamma0 * n4 / (gamma3 * n3)));
-    return n3 * r * r * gamma3 * dxdr * drdt;
+    Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
+    return n3 * r * r * gamma3 * dxdt;
 }
 
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
-    return dEdOmega / (Gamma0 * con::mp * con::c2 * r * r * D_jet) / (1 + sigma);
+    return dEdOmega / ((Gamma0 * con::mp * con::c2 * r * r * D_jet) * (1 + sigma));
 }
 
 inline void setStoppingShock(size_t i, size_t j, Shock& shock, Array const& t, Real r0, Real theta0) {

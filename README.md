@@ -75,6 +75,7 @@ auto syn_ph = genSynPhotons(f_shock, syn_e);
 
 // Setup observer
 double lumi_dist = 1.23e26 * con::cm;
+
 double z = 0.009;
 
 Observer obs(coord, f_shock, theta_v, lumi_dist, z);

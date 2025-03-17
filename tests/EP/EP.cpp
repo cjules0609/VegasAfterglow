@@ -69,6 +69,7 @@ void std_afterglow(Real theta_c) {
     Real lumi_dist = 3e26 * con::cm;
     Real z = 0.01;
     Real theta_w = 0.6;
+    std::vector<Real> theta_obs{0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60};
     // 0.6;
     Real Gamma0 = 300;
     Real n_ism = 0.0199526231496888 / con::cm3;
@@ -88,7 +89,9 @@ void std_afterglow(Real theta_c) {
 
     Array t_bins = logspace(1e-1 * con::day, 3e3 * con::day, 100);
 
-    Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
+    Real theta_obs_max = (*std::max_element(theta_obs.begin(), theta_obs.end())) * con::deg;
+
+    Coord coord = autoGrid(jet, t_bins, theta_w, theta_obs_max, phi_num, theta_num, r_num);
 
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
@@ -100,8 +103,6 @@ void std_afterglow(Real theta_c) {
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
     // output(syn_ph, "syn_ph");
-
-    Real theta_obs[] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60};
 
     Observer obs(coord, f_shock, 0, lumi_dist, z);
     // output(obs.t_obs_grid, "t_obs", con::sec);
