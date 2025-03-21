@@ -23,18 +23,18 @@
  ********************************************************************************************************************/
 class Medium {
    public:
-    Medium(TernaryFunc func) : rho(func) {};
     TernaryFunc rho{func::zero};  // density(phi, theta, r)
 };
 
-/********************************************************************************************************************
- * FUNCTION: createISM
- * DESCRIPTION: Factory function to create a Medium object representing the interstellar medium (ISM)
- *              with the given number density n_ism. (Additional parameters may be set to default values internally.)
- ********************************************************************************************************************/
-inline Medium createISM(Real n_ism) {
-    auto rho = [n_ism](Real phi, Real theta, Real r) { return n_ism * con::mp; };
-    return Medium(rho);
-}
+namespace evn {
+    inline auto ISM(Real n_ism) {
+        return [n_ism](Real phi, Real theta, Real r) { return n_ism * con::mp; };
+    }
+
+    inline auto wind(Real A_star) {
+        Real A = A_star * 5e11 * con::g / con::cm;
+        return [A](Real phi, Real theta, Real r) { return A / (r * r); };
+    }
+}  // namespace evn
 
 #endif

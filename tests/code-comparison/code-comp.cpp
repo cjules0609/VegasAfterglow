@@ -39,7 +39,9 @@ void lc_gen(std::string folder_name) {
 
     Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
     // create model
-    auto medium = createISM(n_ism);
+    Medium medium;
+
+    medium.rho = evn::ISM(n_ism);
 
     Real sigma = 0;
 
@@ -47,20 +49,20 @@ void lc_gen(std::string folder_name) {
 
     if (jet_type == "Gaussian") {
         jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma = math::t_indep(math::gaussian(theta_c, Gamma0));
+        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
     } else if (jet_type == "tophat") {
         jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma = math::t_indep(math::tophat(theta_c, Gamma0));
+        jet.Gamma0 = math::tophat(theta_c, Gamma0);
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = false;
+    jet.spreading = true;
 
     size_t t_num = 128;
-    size_t theta_num = 128;
-    size_t phi_num = 128;
+    size_t theta_num = 64;
+    size_t phi_num = 64;
 
-    Coord coord = autoGrid(jet, t_bins, theta_w, theta_view);
+    Coord coord = autoGrid(jet, t_bins, con::pi / 2, theta_view, phi_num, theta_num, t_num);
 
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
@@ -73,7 +75,7 @@ void lc_gen(std::string folder_name) {
 
     Observer obs(coord, f_shock, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 50);
+    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 10);
 
     namespace fs = std::filesystem;
 

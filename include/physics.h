@@ -63,7 +63,7 @@ inline Real RShockCrossingRadius(Real E_iso, Real n_ism, Real Gamma0, Real engin
  ********************************************************************************************************************/
 template <typename Ejecta>
 Real jetEdge(Ejecta const& jet, Real gamma_cut) {
-    if (jet.Gamma(0, con::pi / 2, 0) >= gamma_cut) {
+    if (jet.Gamma0(0, con::pi / 2) >= gamma_cut) {
         return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
     }
     Real low = 0;
@@ -71,7 +71,7 @@ Real jetEdge(Ejecta const& jet, Real gamma_cut) {
     Real eps = 1e-9;
     for (; hi - low > eps;) {
         Real mid = 0.5 * (low + hi);
-        if (jet.Gamma(0, mid, 0) > gamma_cut) {
+        if (jet.Gamma0(0, mid) > gamma_cut) {
             low = mid;
         } else {
             hi = mid;
@@ -80,6 +80,63 @@ Real jetEdge(Ejecta const& jet, Real gamma_cut) {
     return low;
 }
 
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: jetSpreadingEdge
+ * DESCRIPTION: Determines the edge of the jet where the spreading is strongest
+ *              (dp/dtheta \propto d((Gamma-1)Gamma rho)/dtheta is largest).
+ ********************************************************************************************************************/
+template <typename Ejecta>
+Real jetSpreadingEdge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0) {
+    Real step = (theta_max - theta_min) / 256;
+    Real theta_s = theta_min;
+    Real dp_min = 0;
+
+    for (double theta = theta_min; theta <= theta_max; theta += step) {
+        Real G = jet.Gamma0(phi, theta);
+        Real beta0 = gammaTobeta(G);
+        Real r0 = beta0 * con::c * t0 / (1 - beta0);
+        Real rho = medium.rho(phi, theta, 0);
+        Real th_lo = std::max(theta - step, theta_min);
+        Real th_hi = std::min(theta + step, theta_max);
+        Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
+        Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
+        Real dp = (2 * G - 1) * rho * dG + (G - 1) * G * drho;
+
+        if (dp < dp_min) {
+            dp_min = dp;
+            theta_s = theta;
+        }
+    }
+    if (dp_min == 0) {
+        theta_s = theta_max;
+    }
+
+    return theta_s;
+}
+
+template <typename Ejecta>
+Real jetSpreadingEdge(Ejecta const& jet, Real phi, Real theta_min, Real theta_max) {
+    Real step = (theta_max - theta_min) / 256;
+    Real theta_s = theta_min;
+    Real dG_min = 0;
+
+    for (double theta = theta_min; theta <= theta_max; theta += step) {
+        Real th_lo = std::max(theta - step, theta_min);
+        Real th_hi = std::min(theta + step, theta_max);
+        Real dG = (jet.Gamma(phi, th_hi, 0) - jet.Gamma(phi, th_lo, 0)) / (th_hi - th_lo);
+
+        if (dG < dG_min) {
+            dG_min = dG;
+            theta_s = theta;
+        }
+    }
+
+    if (dG_min == 0) {
+        theta_s = theta_max;
+    }
+
+    return theta_s;
+}
 /********************************************************************************************************************
  * TEMPLATE FUNCTION: autoGrid
  * DESCRIPTION: Constructs a coordinate grid (Coord) for shock evolution. The grid is based on the
@@ -94,12 +151,12 @@ Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    Array theta = linspace(1e-6, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
+    Array theta = linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
     Real theta_max = theta[theta_num - 1];                                   // Maximum theta value.
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());              // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());              // Minimum observation time.
     t_min = std::min(t_min, 10 * con::sec);
-    Real b_max = gammaTobeta(jet.Gamma(0, 0, 0));  // Maximum beta value.
+    Real b_max = gammaTobeta(jet.Gamma0(0, 0));  // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
     Real t_end = t_max;

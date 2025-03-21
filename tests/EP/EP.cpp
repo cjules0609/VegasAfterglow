@@ -17,9 +17,13 @@ void GCN36236(Real theta_c) {
     Real p = 2.139;
 
     // create model
-    auto medium = createISM(n_ism);
+    Medium medium;
 
-    auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
+    medium.rho = evn::ISM(n_ism);
+
+    Ejecta jet;
+    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
     size_t r_num = 64;
     size_t theta_num = 64;
@@ -78,10 +82,12 @@ void std_afterglow(Real theta_c) {
     Real p = 2.139;
 
     // create model
-    auto medium = createISM(n_ism);
+    Medium medium;
+    medium.rho = evn::ISM(n_ism);
 
-    auto jet = GaussianJet(theta_c, E_iso, Gamma0, 1);
-    // auto jet = TophatJet(theta_c, E_iso, Gamma0);
+    Ejecta jet;
+    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
     size_t r_num = 256;
     size_t theta_num = 64;

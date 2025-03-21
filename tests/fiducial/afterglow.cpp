@@ -22,10 +22,13 @@ void tests() {
     Real theta_c = 0.1;
 
     // create model
-    auto medium = createISM(n_ism);
+    Medium medium;
 
-    auto jet = TophatJet(theta_c, E_iso, Gamma0);
-    // auto jet = create_gaussian_jet(E_iso, Gamma0, theta_c, 1 * con::sec);
+    medium.rho = evn::ISM(n_ism);
+
+    Ejecta jet;
+    jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+    jet.Gamma0 = math::tophat(theta_c, Gamma0);
 
     size_t r_num = 500;
     size_t theta_num = 250;

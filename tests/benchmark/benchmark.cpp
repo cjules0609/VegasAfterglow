@@ -13,9 +13,15 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 30);
     // create model
-    auto medium = createISM(n_ism);
+    Medium medium;
 
-    auto jet = GaussianJet(theta_c, E_iso, Gamma0);
+    medium.rho = evn::ISM(n_ism);
+
+    Ejecta jet;
+
+    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+
+    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
     Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, phi_num, theta_num, r_num);
 

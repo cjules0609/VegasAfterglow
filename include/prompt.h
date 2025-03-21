@@ -48,7 +48,7 @@ CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
     CoastingShock shock(1, theta_size, t_size);
 
     for (size_t j = 0; j < theta_size; ++j) {
-        Real Gamma = jet.Gamma(coord.phi[0], coord.theta[j], 0);
+        Real Gamma = jet.Gamma0(coord.phi[0], coord.theta[j]);
         Real beta = gammaTobeta(Gamma);
         Real epsilon = jet.dE0dOmega(coord.phi[0], coord.theta[j]);
         for (size_t k = 0; k < t_size; ++k) {

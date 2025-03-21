@@ -57,8 +57,12 @@ double n_ism = 1 / con::cm3, eps_e = 0.1, eps_B = 1e-3, p = 2.3;
 double E_iso = 1e53 * con::erg, Gamma0 = 300, theta_c = 0.1, theta_w =0.6, theta_v = 0.2;
 
 // Define Medium & Jet
-auto medium = createISM(n_ism);
-auto jet = GaussianJet(theta_c, E_iso, Gamma0);
+Medium medium;
+medium.rho = evn::ISM(n_ism);
+
+Ejecta jet;
+jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
 // Create computational grid
 Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 50);
