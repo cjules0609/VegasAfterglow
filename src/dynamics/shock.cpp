@@ -25,6 +25,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
       Gamma_rel(boost::extents[phi_size][theta_size][t_size]),       // Initialize Gamma_rel grid with 1
       B(boost::extents[phi_size][theta_size][t_size]),               // Initialize magnetic field grid with 0
       column_num_den(boost::extents[phi_size][theta_size][t_size]),  // Initialize column density grid with 0
+      injection_idx(boost::extents[phi_size][theta_size]),           // Initialize cross index grid with 0
       eps_e(eps_e),                                                  // Set electron energy fraction
       eps_B(eps_B),                                                  // Set magnetic energy fraction
       phi_size(phi_size),                                            // Store phi grid size
@@ -37,6 +38,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
     std::fill(Gamma_rel.data(), Gamma_rel.data() + Gamma_rel.num_elements(), 1);  // Initialize Gamma_rel to 1
     std::memset(B.data(), 0, B.num_elements() * sizeof(Real));
     std::memset(column_num_den.data(), 0, column_num_den.num_elements() * sizeof(Real));
+    std::memset(injection_idx.data(), t_size, injection_idx.num_elements() * sizeof(Real));
 }
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization (sigma).
@@ -120,12 +122,12 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
  *              and energy fractions. It creates two Shock objects (one forward, one reverse) and solves
  *              the shock shells for each phi, theta slice.
  ********************************************************************************************************************/
-ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B, Real rtol,
-                      bool is_axisymmetric) {
+ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
+                      Real eps_e_r, Real eps_B_r, Real rtol, bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
-    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
-    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
+    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e_f, eps_B_f);
+    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e_r, eps_B_r);
     for (size_t i = 0; i < phi_size_needed; ++i) {
         Real theta_s =
             jetSpreadingEdge(jet, medium, coord.phi[i], coord.theta[0], coord.theta[theta_size - 1], coord.t[0]);
@@ -133,8 +135,8 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& je
             // Create equations for forward and reverse shocks for each theta slice
             // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi[i], coord.theta[j], eps_e);
             auto eqn_f =
-                SimpleShockEqn(medium, jet, coord.phi[i], j ? coord.theta[j - 1] : 0, coord.theta[j], eps_e, theta_s);
-            auto eqn_r = FRShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e);
+                SimpleShockEqn(medium, jet, coord.phi[i], j ? coord.theta[j - 1] : 0, coord.theta[j], eps_e_f, theta_s);
+            auto eqn_r = FRShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e_r);
             // Solve the forward-reverse shock shell
             solveFRShell(i, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
         }

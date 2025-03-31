@@ -43,8 +43,8 @@ inline Real adiabaticIndex(Real gamma) {
  *              isotropic equivalent energy (E_iso) and the ISM number density (n_ism).
  ********************************************************************************************************************/
 inline Real SedovLength(Real E_iso, Real n_ism) {
-    return std::cbrt(E_iso / (n_ism * con::mp * con::c2));
-    // return std::cbrt(E_iso / (4 * con::pi / 3 * n_ism * con::mp * con::c2));
+    // return std::cbrt(E_iso / (n_ism * con::mp * con::c2));
+    return std::cbrt(E_iso / (4 * con::pi / 3 * n_ism * con::mp * con::c2));
 }
 
 /********************************************************************************************************************

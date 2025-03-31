@@ -12,7 +12,7 @@
  * DESCRIPTION: constructor for the FRShockEqn class.
  ********************************************************************************************************************/
 FRShockEqn::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e)
-    : medium(medium), ejecta(ejecta), phi(phi), theta0(theta), eps_e(eps_e) {}
+    : medium(medium), ejecta(ejecta), phi(phi), theta0(theta), eps_e(eps_e), gamma4(ejecta.Gamma0(phi, theta)) {}
 
 /********************************************************************************************************************
  * METHOD: FRShockEqn::operator()(State const& y, State& dydt, Real t)
@@ -28,7 +28,6 @@ void FRShockEqn::operator()(StateArray const& y, StateArray& dydt, Real t) {
     if (!crossed) {
         Real n4 = state.M_ej / (state.r * state.r * state.width * con::mp);
         Real N2 = state.M_sw / con::mp;
-        Real gamma4 = ejecta.Gamma0(phi, theta0);
         Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
         gamma3 = calc_gamma3(gamma4, N2, state.N3, sigma4);
         beta3 = gammaTobeta(gamma3);

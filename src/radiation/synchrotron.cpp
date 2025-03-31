@@ -358,6 +358,7 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_c) {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
+
             return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
@@ -371,6 +372,7 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_c) {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
+
             return C3_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
 
             break;
@@ -581,6 +583,7 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
+            size_t k_inj = shock.injection_idx[i][j];
             for (size_t k = 0; k < t_size; ++k) {
                 Real Gamma_rel = shock.Gamma_rel[i][j][k];
                 Real t_com = shock.t_com[i][j][k];
@@ -589,8 +592,13 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
                 auto& Ys = e[i][j][k].Ys;
                 auto& electron = e[i][j][k];
 
-                electron.gamma_M = syn_gamma_M(B, Ys, p);         // Update maximum electron Lorentz factor
-                electron.gamma_c = syn_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
+                electron.gamma_M = syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
+                if (k <= k_inj) {
+                    electron.gamma_c = syn_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
+                } else {  // no shocked electron injection, just adiabatic cooling
+                    electron.gamma_c = e[i][j][k_inj].gamma_c * electron.gamma_m / e[i][j][k_inj].gamma_m;
+                    electron.gamma_M = electron.gamma_c;
+                }
                 electron.gamma_a = syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
                 electron.regime = getRegime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
                 electron.Y_c = InverseComptonY::Y_tilt_gamma(Ys, electron.gamma_c, p);
@@ -613,6 +621,7 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
+            size_t k_inj = shock.injection_idx[i][j];
             for (size_t k = 0; k < t_size; ++k) {
                 Real Gamma_rel = shock.Gamma_rel[i][j][k];
                 Real t_com = shock.t_com[i][j][k];
@@ -631,7 +640,12 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                 }
                 e.column_num_den = Sigma * f * xi;
                 e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
-                e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
+                if (k <= k_inj) {
+                    e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
+                } else {  // no shocked electron injection, just adiabatic cooling
+                    e.gamma_c = electrons[i][j][k_inj].gamma_c * e.gamma_m / electrons[i][j][k_inj].gamma_m;
+                    e.gamma_M = e.gamma_c;
+                }
                 e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
                 e.regime = getRegime(e.gamma_a, e.gamma_c, e.gamma_m);
                 e.p = p;

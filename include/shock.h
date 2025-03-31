@@ -36,9 +36,9 @@ class Shock {
     MeshGrid3d Gamma_rel;       // relative lorentz factor between down stream and up stream
     MeshGrid3d B;               // comoving magnetic field
     MeshGrid3d column_num_den;  // down stream proton column number density
+    MeshGrid injection_idx;     // beyond which index there is no electron injection
     Real eps_e{0};              // electron energy fraction
     Real eps_B{0};              // magnetic energy fraction
-
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
 
    private:
@@ -57,8 +57,8 @@ using ShockPair = std::pair<Shock, Shock>;
 Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
                       Real rtol = 1e-6, bool is_axisymmetric = true);
 
-ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                      Real rtol = 1e-6, bool is_axisymmetric = true);
+ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
+                      Real eps_e_r, Real eps_B_r, Real rtol = 1e-6, bool is_axisymmetric = true);
 
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities
@@ -85,7 +85,7 @@ inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
 
 inline Real dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
     Real ratio = theta / theta_s;
-    return drdt / (2 * Gamma * theta_s * r * (ratio + 1 / ratio));
+    return drdt / (4 * Gamma * theta_s * r * (ratio + 1 / ratio));
 }
 
 inline Real dtdt_CoMoving(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };

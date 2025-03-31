@@ -146,6 +146,11 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
     }
     Real D = doppler[i][j][k_lo + 1];
     Real nu = (1 + z) * nu_obs / D;
+    /*if (nu > eVtoHz(1 * con::keV)) {
+        std::cout << "y: " << nu << ' ' << eVtoHz(1 * con::keV) << ' ' << t_obs[i][j][k_lo] / con::sec << '\n';
+    } else {
+        std::cout << "n: " << nu << ' ' << eVtoHz(1 * con::keV) << ' ' << t_obs[i][j][k_lo] / con::sec << '\n';
+    }*/
     Real I_hi = (photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...);
     Real r = r_grid[i * jet_3d][j][k_lo + 1];
     Real solid_angle = dOmega[i][j][k_lo + 1];

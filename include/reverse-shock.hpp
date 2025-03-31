@@ -59,6 +59,7 @@ class FRShockEqn {
     Real const phi{0};     // Angular coordinate phi
     Real const theta0{0};  // Angular coordinate theta
     Real const eps_e{0};   // Electron energy fraction
+    Real gamma4{1};        // initial Lorentz factor of the jet
     Real u_x{0};           // reverse shock crossed four velocity
     Real r_x{0};           // reverse shock crossed radius
 
@@ -100,7 +101,7 @@ Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma);
  ********************************************************************************************************************/
 template <typename State>
 inline auto calcInitN3(FRShockEqn const& eqn, State const& state, Real gamma4, Real t0) {
-    Real Delta0 = eqn.ejecta.T0 * con::c;
+    Real Delta0 = state.width / gamma4;  // lab frame shell width
     Real E_iso = state.E_ej * 4 * con::pi;
     Real n1 = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
     Real l = SedovLength(E_iso, n1);
@@ -115,6 +116,7 @@ inline auto calcInitN3(FRShockEqn const& eqn, State const& state, Real gamma4, R
     }
 }
 
+// comoving shell width
 inline Real initShellWidth(Real gamma, Real T, Real r) { return gamma * T * con::c + r / gamma / std::sqrt(3); }
 
 /********************************************************************************************************************
@@ -154,7 +156,6 @@ void FRShockEqn::setCrossState(State const& state, Real B, Real t) {
     Real gamma3 = crossingGamma3(state, t);
     this->u_x = std::sqrt(gamma3 * gamma3 - 1);
 
-    Real gamma4 = ejecta.Gamma0(phi, theta0);
     Real gamma_rel = relativeLorentz(gamma4, gamma3);
     Real gamma_electron = (gamma_rel - 1) * con::mp / con::me * eps_e + 1;  // electron Lorentz factor
 
@@ -173,7 +174,6 @@ void FRShockEqn::setCrossState(State const& state, Real B, Real t) {
 template <typename State>
 Real FRShockEqn::crossingGamma3(State const& state, Real t) const {
     Real N2 = state.M_sw / con::mp;
-    Real gamma4 = ejecta.Gamma0(phi, theta0);
     Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
     return calc_gamma3(gamma4, N2, state.N3, sigma4);
 }
@@ -255,17 +255,16 @@ bool updateForwardReverseShock(size_t i, size_t j, int k, Eqn const& eqn_rvs, St
     Real N2 = state.M_sw / con::mp;
 
     Real n4 = N4 / (state.r * state.r * state.width);
-    Real gamma4 = eqn_rvs.ejecta.Gamma0(eqn_rvs.phi, eqn_rvs.theta0);
-    Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
+    Real sigma4 = state.E_ej / (eqn_rvs.gamma4 * state.M_ej * con::c2) - 1;
 
     Real n1 = eqn_rvs.medium.rho(eqn_rvs.phi, state.theta, state.r) / con::mp;
     constexpr Real gamma1 = 1;
     constexpr Real sigma1 = 0;
 
-    Real gamma3 = calc_gamma3(gamma4, N2, state.N3, sigma4);
+    Real gamma3 = calc_gamma3(eqn_rvs.gamma4, N2, state.N3, sigma4);
 
     updateShockState(shock_fwd, i, j, k, state, gamma3, gamma1, N2, n1, sigma1);
-    updateShockState(shock_rvs, i, j, k, state, gamma3, gamma4, state.N3, n4, sigma4);
+    updateShockState(shock_rvs, i, j, k, state, gamma3, eqn_rvs.gamma4, state.N3, n4, sigma4);
     return state.N3 >= N4;
 }
 
@@ -318,6 +317,7 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
                 crossed = updateForwardReverseShock(i, j, k, eqn_rvs, state_rvs, t[k], shock_fwd, shock_rvs);
                 if (crossed) {
                     k0 = k;  // k0 is the index of the first element in the array that the reverse shock crosses
+                    shock_rvs.injection_idx[i][j] = k0;
                     eqn_rvs.setCrossState(state_rvs, shock_rvs.B[i][j][k], t[k]);
                     stepper_rvs.initialize(y_rvs, t[k0], stepper_rvs.current_time_step());
                     break;
