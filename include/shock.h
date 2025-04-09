@@ -36,7 +36,7 @@ class Shock {
     MeshGrid3d Gamma_rel;       // relative lorentz factor between down stream and up stream
     MeshGrid3d B;               // comoving magnetic field
     MeshGrid3d column_num_den;  // down stream proton column number density
-    MeshGrid injection_idx;     // beyond which index there is no electron injection
+    MeshGrid injection_idx;     // beyond which grid index there is no electron injection
     Real eps_e{0};              // electron energy fraction
     Real eps_B{0};              // magnetic energy fraction
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
@@ -119,7 +119,7 @@ inline Real DownStrThermEnergy(Real gamma_rel, Real n_down_str) {
 }
 
 // D_jet co-moving shell width
-inline Real dDdt_Jet(Real Gamma_rel, Real dtdt_com) {
+inline Real ShellWidthSpredingRate(Real Gamma_rel, Real dtdt_com) {
     Real cs = soundSpeed(Gamma_rel);
     return cs * dtdt_com;
 }

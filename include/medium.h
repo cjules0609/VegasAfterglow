@@ -17,9 +17,7 @@
 /********************************************************************************************************************
  * CLASS: Medium
  * DESCRIPTION: Represents the interstellar medium (ISM) or any surrounding medium.
- *              The medium is characterized by a density profile with index k, a characteristic number density n_c,
- *              and a characteristic radius r_c. The class provides methods to compute the mass density
- *              (rho) and the enclosed mass up to radius r.
+ *               The class provides methods to compute the density (rho).
  ********************************************************************************************************************/
 class Medium {
    public:

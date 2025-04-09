@@ -93,16 +93,22 @@ void updateForwardShock(size_t i, size_t j, int k, Eqn const& eqn, State const& 
  * DESCRIPTION: Set the initial conditions for the forward shock ODE solver.
  ********************************************************************************************************************/
 template <typename Eqn, typename State>
-void setForwardInit(Eqn const& eqn, State& state, Real t0) {
+Real setForwardInit(Eqn const& eqn, State& state, Real t0) {
     state.Gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);  // Initial Lorentz factor
     Real beta0 = gammaTobeta(state.Gamma);
     state.r = beta0 * con::c * t0 / (1 - beta0);
-    state.M_sw = 0;                                          // swept mass per solid angle
-    state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);  //
+    Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
+    state.M_sw = 1. / 3 * rho * state.r * state.r * state.r;  // swept mass per solid angle
+    state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);   //
     state.M_ej = state.E_ej / (state.Gamma * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::c2);
     state.u = (state.Gamma - 1) * state.M_sw * con::c2;
     state.t_com = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
     state.theta = eqn.theta0;
+    Real n_ism = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
+
+    Real r_dec = thinShellDecRadius(state.E_ej * 4 * con::pi, n_ism, state.Gamma);
+    Real t_dec = r_dec / (2 * state.Gamma * state.Gamma * con::c);
+    return t_dec;
 }
 
 /********************************************************************************************************************
@@ -114,12 +120,12 @@ template <typename FwdEqn>
 void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn const& eqn, double rtol) {
     using namespace boost::numeric::odeint;
 
-    Real t0 = t[0];
-    Real dt = (t[1] - t[0]) / 100;
-
     typename FwdEqn::StateArray y;
     FState state(y);
-    setForwardInit(eqn, state, t0);  // Initialize state at starting radius
+
+    Real t0 = t[0];
+    Real t_dec = setForwardInit(eqn, state, t0);  // Initialize state at starting radius
+    Real dt = t_dec / 100;
 
     if (state.Gamma <= con::Gamma_cut) {                         // If initial Lorentz factor is too low, exit early
         setStoppingShock(i, j, shock, t, state.r, state.theta);  // Set the shock state to zero

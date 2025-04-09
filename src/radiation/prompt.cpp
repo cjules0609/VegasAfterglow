@@ -24,7 +24,7 @@ PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, si
     return PromptPhotonsGrid(boost::extents[phi_size][theta_size][t_size]);
 }
 
-PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha, Real dt) {
+PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     PromptPhotonsGrid ph = createPromptPhotonsGrid(phi_size, theta_size, t_size);
@@ -36,9 +36,9 @@ PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_
         for (size_t j = 0; j < theta_size; ++j) {
             Real Gamma = shock.Gamma[i][j][0];
             Real beta = gammaTobeta(Gamma);
-            Real R = R0 * beta / beta_c;
-            Real Rmin = R * 0.95;
-            Real Rmax = R * 1.05;
+            Real R = R0 * beta / (1 - beta) * (1 - beta_c) / beta_c;
+            Real Rmin = R * 0;
+            Real Rmax = R * 1.;
             for (size_t k = 0; k < t_size; ++k) {
                 if (shock.r[i][j][k] >= Rmin && shock.r[i][j][k] <= Rmax) {
                     ph[i][j][k].E_nu_peak = shock.epsilon[i][j][k];

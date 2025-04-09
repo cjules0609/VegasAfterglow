@@ -25,14 +25,31 @@ void FRShockEqn::operator()(StateArray const& y, StateArray& dydt, Real t) {
     Real gamma3 = 1;
     Real beta3 = 1;
     Real gamma_rel = 1;
+
+    diff.M_ej = ejecta.dMdtdOmega(phi, theta0, t);
+    diff.E_ej = ejecta.dEdtdOmega(phi, theta0, t);
+
+    if (t < ejecta.T0) {
+        Real dE0dt = ejecta.dE0dOmega(phi, theta0) / ejecta.T0;
+        diff.E_ej += dE0dt;
+        diff.M_ej += dE0dt / (gamma4 * (1 + ejecta.sigma0(phi, theta0)) * con::c2);
+    }
+    Real dN4 = diff.M_ej / con::mp;
+    Real N4 = state.M_ej / con::mp;
+
     if (!crossed) {
         Real n4 = state.M_ej / (state.r * state.r * state.width * con::mp);
         Real N2 = state.M_sw / con::mp;
         Real sigma4 = state.E_ej / (gamma4 * state.M_ej * con::c2) - 1;
+        if (sigma4 < 0) sigma4 = 0;
+
         gamma3 = calc_gamma3(gamma4, N2, state.N3, sigma4);
         beta3 = gammaTobeta(gamma3);
         gamma_rel = relativeLorentz(gamma4, gamma3);
         diff.N3 = dN3dt(state.r, n4, gamma3, gamma4, sigma4);
+        if (state.N3 >= N4) {
+            diff.N3 = std::min(diff.N3, dN4);
+        }
     } else {
         gamma_rel = crossedGamma_rel(state);
         gamma3 = crossedGamma3(gamma_rel, state.r);
@@ -41,12 +58,18 @@ void FRShockEqn::operator()(StateArray const& y, StateArray& dydt, Real t) {
     }
     diff.r = drdt(beta3);
     diff.t_com = dtdt_CoMoving(gamma3);
-    diff.width = dDdt_Jet(gamma_rel, diff.t_com);
+
     Real rho = medium.rho(phi, state.theta, state.r);
     diff.M_sw = state.r * state.r * rho * diff.r;
-    diff.M_ej = ejecta.dMdtdOmega(phi, theta0, t);
-    diff.E_ej = ejecta.dEdtdOmega(phi, theta0, t);
-    diff.theta = 0;  // no spreading
+
+    if (diff.M_ej != 0 || diff.E_ej != 0) {
+        Real u4 = std::sqrt(gamma4 * gamma4 - 1);
+        diff.width = u4 * con::c;
+    } else {
+        diff.width = ShellWidthSpredingRate(gamma3, diff.t_com);
+    }
+
+    diff.theta = 0;  // no lateral spreading
 }
 
 /********************************************************************************************************************
@@ -88,6 +111,6 @@ Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma) {
 
         return E2 + E3;
     };
-    constexpr Real r_tol = 1e-3;
+    constexpr Real r_tol = 1e-5;
     return rootBisection(func, 1, gamma4, r_tol);
 }
