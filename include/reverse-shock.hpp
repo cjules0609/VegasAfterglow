@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _REVERSESHOCK_
-#define _REVERSESHOCK_
+#pragma once
 
 #include "shock.h"
 #include "utilities.h"
@@ -95,6 +94,12 @@ class FRShockEqn {
 
 Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma);
 
+inline bool isInjecting(FRShockEqn const& eqn, Real t0) {
+    Real dE_dt = eqn.ejecta.dEdtdOmega(eqn.phi, eqn.theta0, t0);
+    Real dM_dt = eqn.ejecta.dMdtdOmega(eqn.phi, eqn.theta0, t0);
+    return t0 < eqn.ejecta.T0 || dE_dt != 0 || dM_dt != 0;
+}
+
 /********************************************************************************************************************
  * FUNCTION: calcInitN3
  * DESCRIPTION: calculate the initial N3 at t0 (to ensure the energy conservation)
@@ -121,25 +126,17 @@ inline auto calcInitN3(FRShockEqn const& eqn, State const& state, Real gamma4, R
         }
     }
 
-    Real N4_tot = E_iso / (4 * con::pi * gamma4 * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::mp * con::c2);
+    Real N4_tot = E_iso / (4 * con::pi * gamma4 * (1 + sigma0) * con::mp * con::c2);
     Real N40 = state.M_ej / con::mp;
-    Real dE_dt = eqn.ejecta.dEdtdOmega(eqn.phi, eqn.theta0, t0);
-    Real dM_dt = eqn.ejecta.dMdtdOmega(eqn.phi, eqn.theta0, t0);
 
-    if (state.r >= r_x) {
-        if (t0 > eqn.ejecta.T0 && dE_dt == 0 && dM_dt == 0) {
-            return std::make_tuple(true, std::min(N4_tot, N40));
-        } else {
-            return std::make_tuple(false, std::min(N4_tot, N40));
-        }
+    if (!isInjecting(eqn, t0)) {
+        Real N3 = N4_tot * std::pow(state.r / r_x, 1.5);
+        std::cout << "\n no injec" << N3 << ' ' << N40 << ' ' << N4_tot;
+        return std::make_tuple(false, std::min(N3, N40));
     } else {
-        if (t0 > eqn.ejecta.T0 && dE_dt == 0 && dM_dt == 0) {
-            Real N3 = N4_tot * std::pow(state.r / r_x, 1.5);
-            return std::make_tuple(false, std::min(N3, N40));
-        } else {
-            Real N3 = N4_tot * state.r / r_x;
-            return std::make_tuple(false, std::min(N3, N40));
-        }
+        Real N3 = N4_tot * state.r / r_x;
+        std::cout << "\n injec" << N3 << ' ' << N40 << ' ' << N4_tot;
+        return std::make_tuple(false, std::min(N3, N40));
     }
 }
 
@@ -166,10 +163,11 @@ bool setReverseInit(FRShockEqn const& eqn, State& state, Real t0) {
     state.width = initShellWidth(gamma4, t0, eqn.ejecta.T0);
     Real e_iso = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);
     Real sigma0 = eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
-    state.E_ej = e_iso * std::min(t0, eqn.ejecta.T0) / eqn.ejecta.T0;
+    state.E_ej = e_iso * std::min(t0 / eqn.ejecta.T0, 1.);
     state.M_ej = state.E_ej / (gamma4 * (1 + sigma0) * con::c2);
 
     state.r = beta4 * con::c * t0 / (1 - beta4);
+    state.t_com = state.r / std::sqrt(gamma4 * gamma4 - 1) / con::c;
     Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
 
     // thick shell deceleration radius where gamma starts to drop propto t^{-1/4}
@@ -180,10 +178,12 @@ bool setReverseInit(FRShockEqn const& eqn, State& state, Real t0) {
     if (state.r > r_dec) {
         Real t_dec = r_dec * (1 - beta4) / (beta4 * con::c);
         state.r = std::sqrt(4 * gamma4 * gamma4 * r_dec * (t0 - t_dec) + r_dec * r_dec);
+        rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
+
+        Real t_dec_com = r_dec / std::sqrt(gamma4 * gamma4 - 1) / con::c;
+        state.t_com = (std::pow(state.r, 1.5) - std::pow(r_dec, 1.5)) / (1.5 * gamma4 * std::sqrt(r_dec)) + t_dec_com;
     }
 
-    state.t_com = state.r / std::sqrt(gamma4 * gamma4 - 1) / con::c;
-    rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
     state.M_sw = 1 / 3. * state.r * state.r * state.r * rho;
     auto [crossed, N3] = calcInitN3(eqn, state, gamma4, t0);
     state.N3 = N3;
@@ -397,4 +397,3 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
         }
     }
 }
-#endif

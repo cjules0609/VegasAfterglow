@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _MEDIUM_
-#define _MEDIUM_
+#pragma once
 
 #include <iostream>
 
@@ -34,5 +33,3 @@ namespace evn {
         return [A](Real phi, Real theta, Real r) { return A / (r * r); };
     }
 }  // namespace evn
-
-#endif

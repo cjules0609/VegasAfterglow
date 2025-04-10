@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _CONSTS_
-#define _CONSTS_
+#pragma once
 #include <limits>
 #include <numeric>
 /********************************************************************************************************************
@@ -94,4 +93,3 @@ namespace con {
     constexpr double Gamma_cut = 1 + 1e-6;
     constexpr Real inf = std::numeric_limits<Real>::infinity();
 }  // namespace con
-#endif

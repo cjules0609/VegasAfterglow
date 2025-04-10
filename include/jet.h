@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _JET_
-#define _JET_
+#pragma once
 
 #include "macros.h"
 #include "mesh.h"
@@ -105,4 +104,3 @@ auto LiangGhirlanda2010(F energy_func, Real e_max, Real gamma_max, Real idx) {
         return std::sqrt(1 + u * u);
     };
 }
-#endif

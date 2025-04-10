@@ -4,8 +4,7 @@
 //                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
-#ifndef _SYNCHROTRON_
-#define _SYNCHROTRON_
+#pragma once
 
 #include <vector>
 
@@ -126,5 +125,3 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock);
 Real syn_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p);
 Real syn_gamma_N_peak(Real gamma_a, Real gamma_m, Real gamma_c);
 Real syn_nu(Real gamma, Real B);
-
-#endif

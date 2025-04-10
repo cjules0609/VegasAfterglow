@@ -5,10 +5,33 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _UTILITIES_H_
-#define _UTILITIES_H_
+#pragma once
+#include <vector>
+
 #include "macros.h"
 #include "mesh.h"
+
+struct BandData {
+    Real nu{0};
+    std::vector<Real> t;
+    std::vector<Real> F_nu_obs;
+    std::vector<Real> F_nu_err;
+    std::vector<Real> F_nu_model;
+
+    Real calcChiSquare() const;
+    void readcsv(std::string const& filename, Real nu, Real t_unit, Real f_unit);
+};
+
+struct MultiBandData {
+    std::vector<BandData> band_data;
+    std::vector<Real> t_grid;
+    std::vector<Real> band_freq;
+
+    Real calcChiSquare() const;
+    void genModelingParameters();
+    void fillModelData(MeshGrid const& specific_flux);
+};
+
 /********************************************************************************************************************
  * NAMESPACE: func
  * DESCRIPTION: Contains inline constexpr lambda functions that return constant values.
@@ -132,5 +155,3 @@ inline double fastLog(double x) {
 }
 
 inline Real fastPow(Real a, Real b) { return fastExp(b * fastLog(a)); }
-
-#endif  // _UTILITIES_H_

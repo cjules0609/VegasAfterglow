@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _MESHES_
-#define _MESHES_
+#pragma once
 
 #include <cmath>
 #include <functional>
@@ -154,4 +153,3 @@ void boundaryToCenterLog(Arr1 const& boundary, Arr2& center) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }
 }
-#endif

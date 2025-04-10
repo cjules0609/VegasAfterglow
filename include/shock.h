@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _SHOCKDYNAMICS_
-#define _SHOCKDYNAMICS_
+#pragma once
 
 #include <tuple>
 
@@ -166,4 +165,3 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, State const& s
 }
 #include "forward-shock.hpp"
 #include "reverse-shock.hpp"
-#endif

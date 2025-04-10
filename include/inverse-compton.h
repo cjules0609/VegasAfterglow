@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _INVERSECOMPTON_
-#define _INVERSECOMPTON_
+#pragma once
 #include <array>
 #include <cmath>
 #include <vector>
@@ -175,4 +174,3 @@ ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t t_siz
 ICPhotonGrid genICPhotons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
 void eCoolingThomson(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
 void eCoolingKleinNishina(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
-#endif

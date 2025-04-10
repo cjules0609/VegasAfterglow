@@ -89,7 +89,7 @@ Array F_nu = obs.specificFlux(t_obs, 1e17*con::Hz, syn_ph);
 
 // Output results
 output(t_obs, "t_obs", con::sec);
-output(F_nu, "light_curve", con::erg / con::cm / con::cm / con::sec);
+output(F_nu, "light_curve", con::erg / con::cm / con::cm / con::sec / con::Hz);
 
 ```
 

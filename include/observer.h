@@ -4,9 +4,7 @@
 //                \ V /|  __/| (_| || (_| |\__ \  / ___ \ |  _|| |_|  __/| |  | (_| || || (_) |\ V  V /
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
-
-#ifndef _OBSERVER_
-#define _OBSERVER_
+#pragma once
 
 #include <iostream>
 #include <stdexcept>
@@ -76,22 +74,22 @@ class Observer {
 
     // Computes the specific flux at a single observed frequency (nu_obs) for the given observation times,
     // using one or more photon grids.
-    template <typename... PhotonGrid>
+    template <typename Array, typename... PhotonGrid>
     Array specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 
     // Computes the specific flux at multiple observed frequencies (nu_obs) for the given observation times.
-    template <typename... PhotonGrid>
+    template <typename Array, typename... PhotonGrid>
     MeshGrid specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
 
     // Computes the integrated flux over a frequency band defined by band_freq.
-    template <typename... PhotonGrid>
+    template <typename Array, typename... PhotonGrid>
     Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
 
     // Computes the spectrum over a frequency band.
-    template <typename... PhotonGrid>
+    template <typename Array, typename... PhotonGrid>
     MeshGrid spectrum(Array const& t_obs, Array const& freqs, PhotonGrid const&... photons);
 
-    template <typename... PhotonGrid>
+    template <typename Array, typename... PhotonGrid>
     MeshGrid spectrum(Real t_obs, Array const& freqs, PhotonGrid const&... photons);
 
    private:
@@ -109,7 +107,7 @@ class Observer {
     void calcSolidAngle();
 
     // Template helper method to compute specific flux and store the result in a provided iterator (f_nu).
-    template <typename Iter, typename... PhotonGrid>
+    template <typename Array, typename Iter, typename... PhotonGrid>
     void calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 };
 
@@ -146,11 +144,6 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
     }
     Real D = doppler[i][j][k_lo + 1];
     Real nu = (1 + z) * nu_obs / D;
-    /*if (nu > eVtoHz(1 * con::keV)) {
-        std::cout << "y: " << nu << ' ' << eVtoHz(1 * con::keV) << ' ' << t_obs[i][j][k_lo] / con::sec << '\n';
-    } else {
-        std::cout << "n: " << nu << ' ' << eVtoHz(1 * con::keV) << ' ' << t_obs[i][j][k_lo] / con::sec << '\n';
-    }*/
     Real I_hi = (photons[i * jet_3d][j][k_lo + 1].I_nu(nu) + ...);
     Real r = r_grid[i * jet_3d][j][k_lo + 1];
     Real solid_angle = dOmega[i][j][k_lo + 1];
@@ -210,7 +203,7 @@ Observer::Observer(Coord const& coord, Dynamics const& shock, Real theta_view, R
  *                  solid angle.
  *              Finally, the flux is normalized by the factor (1+z)/(lumi_dist^2).
  ********************************************************************************************************************/
-template <typename Iter, typename... PhotonGrid>
+template <typename Array, typename Iter, typename... PhotonGrid>
 void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, const PhotonGrid&... photons) {
     auto [ignore, theta_size, t_size] = coord.shape();
     size_t t_obs_size = t_obs.size();
@@ -272,7 +265,7 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
  * DESCRIPTION: Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the
  *              specific flux over the observation times.
  ********************************************************************************************************************/
-template <typename... PhotonGrid>
+template <typename Array, typename... PhotonGrid>
 Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
     Array F_nu = zeros(t_obs.size());
     calcSpecificFlux(F_nu.data(), t_obs, nu_obs, photons...);
@@ -284,7 +277,7 @@ Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&.
  * DESCRIPTION: Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
  *              the specific flux for each frequency and assembling the results into a grid.
  ********************************************************************************************************************/
-template <typename... PhotonGrid>
+template <typename Array, typename... PhotonGrid>
 MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
     MeshGrid F_nu = createGrid(nu_obs.size(), t_obs.size(), 0);
     size_t t_num = t_obs.size();
@@ -300,7 +293,7 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
  *              It converts band boundaries to center frequencies, computes the specific flux at each frequency,
  *              and integrates (sums) the flux contributions weighted by the frequency bin widths.
  ********************************************************************************************************************/
-template <typename... PhotonGrid>
+template <typename Array, typename... PhotonGrid>
 Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
     Array nu_obs = boundaryToCenterLog(band_freq);
     MeshGrid F_nu = specificFlux(t_obs, nu_obs, photons...);
@@ -313,4 +306,3 @@ Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid cons
     }
     return flux;
 }
-#endif

@@ -111,6 +111,6 @@ Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma) {
 
         return E2 + E3;
     };
-    constexpr Real r_tol = 1e-5;
+    constexpr Real r_tol = 1e-4;
     return rootBisection(func, 1, gamma4, r_tol);
 }

@@ -5,8 +5,8 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _FORWARDSHOCK_
-#define _FORWARDSHOCK_
+#pragma once
+
 #include "jet.h"
 #include "shock.h"
 /********************************************************************************************************************
@@ -148,4 +148,3 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn 
         }
     }
 }
-#endif

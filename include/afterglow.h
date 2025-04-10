@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _AFTERGLOW_
-#define _AFTERGLOW_
+#pragma once
 
 #include "IO.h"
 #include "inverse-compton.h"
@@ -142,5 +141,3 @@ MeshGrid co_moving_e_spectrums(size_t spectrum_resol, Real gamma_min, Real gamma
     }
     return n_gamma;
 }*/
-
-#endif

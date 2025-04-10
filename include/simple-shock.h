@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _SIMPLESHOCK_
-#define _SIMPLESHOCK_
+#pragma once
 #include "shock.h"
 /********************************************************************************************************************
  * CLASS: SimpleShockEqn
@@ -39,6 +38,3 @@ class SimpleShockEqn {
     Real const theta_s{0};  // Critical angle for jet spreading
     Real const theta_lo{0};
 };
-
-
-#endif

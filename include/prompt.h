@@ -5,8 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#ifndef _PROMPT_
-#define _PROMPT_
+#pragma once
 
 #include "jet.h"
 #include "mesh.h"
@@ -62,4 +61,3 @@ CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
 }
 
 PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha);
-#endif
