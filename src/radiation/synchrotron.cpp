@@ -311,16 +311,16 @@ void SynPhotons::updateConstant() {
     Real p = e->p;
     if (e->regime == 1) {
         // a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
-        // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
+        // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
         C1_ = std::cbrt(nu_a / nu_m);
-        C2_ = std::sqrt(nu_c / nu_m);
+        C2_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
     } else if (e->regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
-        // c_m_1_2 = std::sqrt(nu_c / nu_m);
+        // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
         C1_ = fastPow(nu_m / nu_a, (p + 4) / 2);
         C2_ = fastPow(nu_a / nu_m, (-p + 1) / 2);
-        C3_ = std::sqrt(nu_c / nu_m);
+        C3_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
     } else if (e->regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
@@ -359,7 +359,7 @@ Real SynPhotons::spectrum(Real nu) const {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_c, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 2:
@@ -373,7 +373,7 @@ Real SynPhotons::spectrum(Real nu) const {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C3_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C3_ * fastPow(nu / nu_c, -p / 2) * fastExp(-nu / nu_M);
 
             break;
         case 3:
@@ -481,7 +481,6 @@ Real syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
     if (p > 2) {
         gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_bar_minus_1;
     } else if (p < 2) {
-        // Handle non-relativistic limit when p < 2
         gamma_m_minus_1 = std::pow((2 - p) / (p - 1) * gamma_bar_minus_1 * std::pow(gamma_M, p - 2), 1 / (p - 1));
     } else {
         gamma_m_minus_1 = rootBisection(

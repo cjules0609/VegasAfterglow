@@ -138,8 +138,8 @@ void output(PromptPhotonsGrid const& ph, std::string const& filename, size_t pre
  * DESCRIPTION: (Empty implementation) Intended to output a SynPhotonGrid to a file.
  ********************************************************************************************************************/
 void output(SynPhotonGrid const& ph, std::string const& filename, size_t precision) {
-    std::array<std::string, 3> strs = {"nu_a", "nu_m", "nu_c"};
-    std::array<std::ofstream, 3> files;
+    std::array<std::string, 4> strs = {"nu_a", "nu_m", "nu_c", "nu_Max"};
+    std::array<std::ofstream, 4> files;
     for (size_t i = 0; i < strs.size(); ++i) {
         files[i].open(filename + "_" + strs[i] + ".txt");
         if (!files[i]) {
@@ -155,14 +155,17 @@ void output(SynPhotonGrid const& ph, std::string const& filename, size_t precisi
                 files[0] << ph[i][j][k].nu_a / con::Hz << " ";
                 files[1] << ph[i][j][k].nu_m / con::Hz << " ";
                 files[2] << ph[i][j][k].nu_c / con::Hz << " ";
+                files[3] << ph[i][j][k].nu_M / con::Hz << " ";
             }
             files[0] << '\n';
             files[1] << '\n';
             files[2] << '\n';
+            files[3] << '\n';
         }
         files[0] << '\n';
         files[1] << '\n';
         files[2] << '\n';
+        files[3] << '\n';
     }
 }
 

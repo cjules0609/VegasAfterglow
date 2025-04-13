@@ -38,7 +38,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
     std::fill(Gamma_rel.data(), Gamma_rel.data() + Gamma_rel.num_elements(), 1);  // Initialize Gamma_rel to 1
     std::memset(B.data(), 0, B.num_elements() * sizeof(Real));
     std::memset(column_num_den.data(), 0, column_num_den.num_elements() * sizeof(Real));
-    std::fill(injection_idx.data(), injection_idx.data() + injection_idx.num_elements(), t_size);  
+    std::fill(injection_idx.data(), injection_idx.data() + injection_idx.num_elements(), t_size);
 }
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization (sigma).

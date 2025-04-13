@@ -87,10 +87,10 @@ class Observer {
 
     // Computes the spectrum over a frequency band.
     template <typename Array, typename... PhotonGrid>
-    MeshGrid spectrum(Array const& t_obs, Array const& freqs, PhotonGrid const&... photons);
+    MeshGrid spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
 
     template <typename Array, typename... PhotonGrid>
-    MeshGrid spectrum(Real t_obs, Array const& freqs, PhotonGrid const&... photons);
+    Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
    private:
     LogScaleInterp interp;         // Log-scale interpolation helper
@@ -109,6 +109,9 @@ class Observer {
     // Template helper method to compute specific flux and store the result in a provided iterator (f_nu).
     template <typename Array, typename Iter, typename... PhotonGrid>
     void calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
+
+    template <typename Array, typename Iter, typename... PhotonGrid>
+    void calcSpectrum(Iter f_nu, Array const& nu_obs, Real t_obs, PhotonGrid const&... photons);
 };
 
 /********************************************************************************************************************
@@ -261,6 +264,47 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
 }
 
 /********************************************************************************************************************
+ * TEMPLATE METHOD: Observer::calcSpectrum
+ * DESCRIPTION: Calculates the specific flux at each observation frequency for a given time t_obs.
+ *              For each effective phi and theta grid point, it:
+ *                - Interpolates the Doppler factor, radius, and intensity using the LogScaleInterp object.
+ *                - Updates the flux array by accumulating contributions from each grid cell multiplied by its
+ *                  solid angle.
+ *              Finally, the flux is normalized by the factor (1+z)/(lumi_dist^2).
+ ********************************************************************************************************************/
+template <typename Array, typename Iter, typename... PhotonGrid>
+void Observer::calcSpectrum(Iter f_nu, Array const& nu_obs, Real t_obs, const PhotonGrid&... photons) {
+    auto [ignore, theta_size, t_size] = coord.shape();
+    size_t nu_size = nu_obs.size();
+
+    // Loop over effective phi and theta grid points.
+    for (size_t i = 0; i < eff_phi_size; i++) {
+        for (size_t j = 0; j < theta_size; j++) {
+            for (size_t k = 0; k < t_size - 1; k++) {
+                Real const t_lo = t_obs_grid[i][j][k];
+                Real const t_hi = t_obs_grid[i][j][k + 1];
+
+                if (t_lo <= t_obs && t_obs < t_hi) {
+                    for (size_t nu_idx = 0; nu_idx < nu_size; ++nu_idx) {
+                        if (interp.validateInterpBoundary(i, j, k, dOmega, r_grid, t_obs_grid, doppler, nu_obs[nu_idx],
+                                                          photons...)) {
+                            f_nu[nu_idx] += interp.interpLuminosity(t_obs);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // Normalize the flux by the factor (1+z)/(lumi_dist^2).
+    Real const coef = (1 + z) / (lumi_dist * lumi_dist);
+    for (size_t i = 0; i < nu_size; ++i) {
+        f_nu[i] *= coef;
+    }
+}
+
+/********************************************************************************************************************
  * TEMPLATE METHOD: Observer::specificFlux (single-frequency overload)
  * DESCRIPTION: Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the
  *              specific flux over the observation times.
@@ -283,6 +327,23 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
     size_t t_num = t_obs.size();
     for (size_t l = 0; l < nu_obs.size(); ++l) {
         calcSpecificFlux(F_nu.data() + l * t_num, t_obs, nu_obs[l], photons...);
+    }
+    return F_nu;
+}
+
+template <typename Array, typename... PhotonGrid>
+Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons) {
+    Array F_nu = zeros(freqs.size());
+    calcSpectrum(F_nu.data(), freqs, t_obs, photons...);
+    return F_nu;
+}
+
+template <typename Array, typename... PhotonGrid>
+MeshGrid Observer::spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
+    MeshGrid F_nu = createGrid(t_obs.size(), freqs.size(), 0);
+    size_t nu_num = freqs.size();
+    for (size_t l = 0; l < t_obs.size(); ++l) {
+        calcSpectrum(F_nu.data() + l * nu_num, freqs, t_obs[l], photons...);
     }
     return F_nu;
 }

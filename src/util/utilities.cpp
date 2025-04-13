@@ -13,47 +13,6 @@
 
 #include "macros.h"
 
-Real BandData::calcChiSquare() const {
-    Real chi_square = 0;
-    for (size_t i = 0; i < t.size(); ++i) {
-        Real diff = F_nu_obs[i] - F_nu_model[i];
-        chi_square += (diff * diff) / (F_nu_err[i] * F_nu_err[i]);
-    }
-    return chi_square;
-}
-
-void MultiBandData::genModelingParameters() {
-    t_grid.clear();
-    band_freq.clear();
-    for (auto& data : band_data) {
-        t_grid.insert(t_grid.end(), data.t.begin(), data.t.end());
-        band_freq.push_back(data.nu);
-        data.F_nu_model.resize(data.t.size());
-    }
-    std::sort(t_grid.begin(), t_grid.end());
-    t_grid.erase(std::unique(t_grid.begin(), t_grid.end()), t_grid.end());
-}
-
-Real MultiBandData::calcChiSquare() const {
-    Real chi_square = 0;
-    for (auto const& data : band_data) {
-        chi_square += data.calcChiSquare();
-    }
-    return chi_square;
-}
-
-void MultiBandData::fillModelData(MeshGrid const& specific_flux) {
-    for (size_t i = 0; i < band_data.size(); ++i) {
-        auto& data = band_data[i];
-        for (size_t j = 0, k = 0; j < t_grid.size() && k < data.t.size(); ++j) {
-            if (t_grid[j] == data.t[k]) {
-                data.F_nu_model[k] = specific_flux[i][j];
-                ++k;
-            }
-        }
-    }
-}
-
 /********************************************************************************************************************
  * FUNCTION: Point Interpolation Utility Functions
  * DESCRIPTION: Provides basic point-wise interpolation functions used by the higher-level interpolation routines.

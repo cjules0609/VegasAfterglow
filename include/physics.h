@@ -143,8 +143,8 @@ Real jetSpreadingEdge(Ejecta const& jet, Real phi, Real theta_min, Real theta_ma
  *              theta, and t. The radial grid is logarithmically spaced between t_min and t_max, and the theta grid
  *              is generated linearly.
  ********************************************************************************************************************/
-template <typename Array, typename Ejecta>
-Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view_max, size_t phi_num = 32,
+template <typename List, typename Ejecta>
+Coord autoGrid(Ejecta const& jet, List const& t_obs, Real theta_cut, Real theta_view_max, size_t phi_num = 32,
                size_t theta_num = 32, size_t t_num = 32) {
     Array phi = linspace(0, 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.

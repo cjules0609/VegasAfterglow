@@ -6,31 +6,9 @@
 //                            |___/                                            |___/
 
 #pragma once
-#include <vector>
 
 #include "macros.h"
 #include "mesh.h"
-
-struct BandData {
-    Real nu{0};
-    std::vector<Real> t;
-    std::vector<Real> F_nu_obs;
-    std::vector<Real> F_nu_err;
-    std::vector<Real> F_nu_model;
-
-    Real calcChiSquare() const;
-    void readcsv(std::string const& filename, Real nu, Real t_unit, Real f_unit);
-};
-
-struct MultiBandData {
-    std::vector<BandData> band_data;
-    std::vector<Real> t_grid;
-    std::vector<Real> band_freq;
-
-    Real calcChiSquare() const;
-    void genModelingParameters();
-    void fillModelData(MeshGrid const& specific_flux);
-};
 
 /********************************************************************************************************************
  * NAMESPACE: func
