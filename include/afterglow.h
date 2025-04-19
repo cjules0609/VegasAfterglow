@@ -19,5 +19,3 @@
 #include "shock.h"
 #include "synchrotron.h"
 #include "utilities.h"
-
-

@@ -44,6 +44,7 @@ namespace con {
     constexpr double mp = 1.67e-24 * g;
     // Electron mass (set relative to the proton mass)
     constexpr double me = mp / 1836;
+    constexpr double M_sun = 2e33 * g;
     // Planck's constant (in erg*sec)
     constexpr double h = 6.63e-27 * erg * sec;
     // Boltzmann constant is commented out (could be defined if needed)

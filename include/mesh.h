@@ -69,7 +69,8 @@ class Coord {
    public:
     // Constructor taking phi, theta, and t arrays. Default constructor is deleted.
     Coord(Array const& phi, Array const& theta, Array const& t);
-    Coord() = delete;
+    Coord() {};
+    // Coord() = delete;
 
     Array phi;    // Array of phi values
     Array theta;  // Array of theta values

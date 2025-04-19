@@ -113,9 +113,11 @@ using SynElectronGrid = boost::multi_array<SynElectrons, 3>;
  ********************************************************************************************************************/
 SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size);
 SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi = 1);
+void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi = 1);
 
 SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size);
 SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& electrons);
+void genSynPhotons(SynPhotonGrid& photons, Shock const& shock, SynElectronGrid const& electrons);
 
 /********************************************************************************************************************
  * FUNCTION PROTOTYPES: Synchrotron Update and Parameter Calculation

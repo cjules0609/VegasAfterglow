@@ -97,7 +97,7 @@ Real calc_gamma3(Real gamma4, Real N2, Real N3, Real sigma);
 inline bool isInjecting(FRShockEqn const& eqn, Real t0) {
     Real dE_dt = eqn.ejecta.dEdtdOmega(eqn.phi, eqn.theta0, t0);
     Real dM_dt = eqn.ejecta.dMdtdOmega(eqn.phi, eqn.theta0, t0);
-    return t0 < eqn.ejecta.T0 || dE_dt != 0 || dM_dt != 0;
+    return t0 < eqn.ejecta.T0 || dM_dt != 0;
 }
 
 /********************************************************************************************************************
@@ -131,11 +131,13 @@ inline auto calcInitN3(FRShockEqn const& eqn, State const& state, Real gamma4, R
 
     if (!isInjecting(eqn, t0)) {
         Real N3 = N4_tot * std::pow(state.r / r_x, 1.5);
-        std::cout << "\n no injec" << N3 << ' ' << N40 << ' ' << N4_tot;
-        return std::make_tuple(false, std::min(N3, N40));
+        if (N3 >= N40) {
+            return std::make_tuple(true, N40);
+        } else {
+            return std::make_tuple(false, N3);
+        }
     } else {
         Real N3 = N4_tot * state.r / r_x;
-        std::cout << "\n injec" << N3 << ' ' << N40 << ' ' << N4_tot;
         return std::make_tuple(false, std::min(N3, N40));
     }
 }
@@ -170,18 +172,21 @@ bool setReverseInit(FRShockEqn const& eqn, State& state, Real t0) {
     state.t_com = state.r / std::sqrt(gamma4 * gamma4 - 1) / con::c;
     Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
 
-    // thick shell deceleration radius where gamma starts to drop propto t^{-1/4}
-    Real r_dec = 0.35 * std::sqrt(3 * e_iso * (1 - beta4) /
-                                  (beta4 * con::c * eqn.ejecta.T0 * (1 + sigma0) * rho * con::c2 * gamma4 * gamma4));
+    if (t0 < eqn.ejecta.T0) {
+        // thick shell deceleration radius where gamma starts to drop propto t^{-1/4}
+        Real r_dec =
+            0.35 * std::sqrt(3 * e_iso * (1 - beta4) /
+                             (beta4 * con::c * eqn.ejecta.T0 * (1 + sigma0) * rho * con::c2 * gamma4 * gamma4));
+        // r0 is larger than the decelertation radius, so r=beta4 * con::c * t0 / (1 - beta4) is not appropriate
+        if (state.r > r_dec) {
+            Real t_dec = r_dec * (1 - beta4) / (beta4 * con::c);
+            state.r = std::sqrt(4 * gamma4 * gamma4 * r_dec * (t0 - t_dec) + r_dec * r_dec);
+            rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
 
-    // r0 is larger than the decelertation radius, so r=beta4 * con::c * t0 / (1 - beta4) is not appropriate
-    if (state.r > r_dec) {
-        Real t_dec = r_dec * (1 - beta4) / (beta4 * con::c);
-        state.r = std::sqrt(4 * gamma4 * gamma4 * r_dec * (t0 - t_dec) + r_dec * r_dec);
-        rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
-
-        Real t_dec_com = r_dec / std::sqrt(gamma4 * gamma4 - 1) / con::c;
-        state.t_com = (std::pow(state.r, 1.5) - std::pow(r_dec, 1.5)) / (1.5 * gamma4 * std::sqrt(r_dec)) + t_dec_com;
+            Real t_dec_com = r_dec / std::sqrt(gamma4 * gamma4 - 1) / con::c;
+            state.t_com =
+                (std::pow(state.r, 1.5) - std::pow(r_dec, 1.5)) / (1.5 * gamma4 * std::sqrt(r_dec)) + t_dec_com;
+        }
     }
 
     state.M_sw = 1 / 3. * state.r * state.r * state.r * rho;
@@ -318,6 +323,79 @@ bool updateForwardReverseShock(size_t i, size_t j, int k, Eqn const& eqn_rvs, St
     return state.N3 >= N4 && t > eqn_rvs.ejecta.T0;
 }
 
+bool initializeShocks(size_t i, size_t j, Real t0, auto& state_fwd, auto& state_rvs, auto const& eqn_fwd, auto& eqn_rvs,
+                      Real& dt) {}
+
+// Handle low Gamma scenario
+bool handleLowGamma(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, Array const& t, auto const& state_fwd,
+                    auto const& state_rvs, auto const& eqn_rvs) {
+    if (state_fwd.Gamma < con::Gamma_cut) {
+        setStoppingShock(i, j, shock_fwd, t, state_rvs.r, eqn_rvs.theta0);
+        setStoppingShock(i, j, shock_rvs, t, state_rvs.r, eqn_rvs.theta0);
+        return true;
+    }
+    return false;
+}
+
+// Solve reverse shock until it crosses
+size_t solveReverseShockUntilCross(size_t i, size_t j, const Array& t, auto& stepper_rvs, auto& eqn_rvs, auto& y_rvs,
+                                   auto& state_rvs, Shock& shock_fwd, Shock& shock_rvs) {
+    size_t k0 = 0;
+    Real t_back = t[t.size() - 1];
+    bool crossed = false;
+    size_t k = 0;
+
+    while (!crossed && stepper_rvs.current_time() <= t_back) {
+        stepper_rvs.do_step(eqn_rvs);
+        while (k < t.size() && stepper_rvs.current_time() > t[k]) {
+            stepper_rvs.calc_state(t[k], y_rvs);
+            crossed = updateForwardReverseShock(i, j, k, eqn_rvs, state_rvs, t[k], shock_fwd, shock_rvs);
+            if (crossed) {
+                k0 = k;
+                shock_rvs.injection_idx[i][j] = k0;
+                eqn_rvs.setCrossState(state_rvs, shock_rvs.B[i][j][k], t[k]);
+                stepper_rvs.initialize(y_rvs, t[k0], stepper_rvs.current_time_step());
+                break;
+            }
+            k++;
+        }
+    }
+
+    return k0;
+}
+
+// Solve forward shock after crossing
+void solveForwardShockAfterCross(size_t i, size_t j, const Array& t, size_t k0, auto& stepper_fwd, const auto& eqn_fwd,
+                                 auto& y_fwd, auto& state_fwd, Shock& shock_fwd) {
+    size_t k = k0 + 1;
+    Real t_back = t[t.size() - 1];
+
+    while (stepper_fwd.current_time() <= t_back) {
+        stepper_fwd.do_step(eqn_fwd);
+        while (k < t.size() && stepper_fwd.current_time() > t[k]) {
+            stepper_fwd.calc_state(t[k], y_fwd);
+            updateForwardShock(i, j, k, eqn_fwd, state_fwd, shock_fwd);
+            k++;
+        }
+    }
+}
+
+// Solve reverse shock after crossing
+void solveReverseShockAfterCross(size_t i, size_t j, const Array& t, size_t k0, auto& stepper_rvs, auto& eqn_rvs,
+                                 auto& y_rvs, auto& state_rvs, Shock& shock_rvs) {
+    size_t k = k0 + 1;
+    Real t_back = t[t.size() - 1];
+
+    while (stepper_rvs.current_time() <= t_back) {
+        stepper_rvs.do_step(eqn_rvs);
+        while (k < t.size() && stepper_rvs.current_time() > t[k]) {
+            stepper_rvs.calc_state(t[k], y_rvs);
+            updateCrossedReverseShock(i, j, k, k0, eqn_rvs, state_rvs, shock_rvs);
+            k++;
+        }
+    }
+}
+
 template <typename StateArray>
 struct FState;
 /********************************************************************************************************************
@@ -329,71 +407,33 @@ template <typename FwdEqn, typename RvsEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& shock_rvs, FwdEqn const& eqn_fwd,
                   RvsEqn& eqn_rvs, Real rtol = 1e-9) {
     using namespace boost::numeric::odeint;
-    // auto stepper_fwd = bulirsch_stoer_dense_out<typename FwdEqn::StateArray>{0, rtol};
     auto stepper_fwd = make_dense_output(0, rtol, runge_kutta_dopri5<typename FwdEqn::StateArray>());
-
-    bool crossed = false;
 
     typename RvsEqn::StateArray y_rvs;
     typename FwdEqn::StateArray y_fwd;
-
     FState state_fwd(y_fwd);
     RState state_rvs(y_rvs);
     Real t0 = t[0];
 
     Real t_dec = setForwardInit(eqn_fwd, state_fwd, t0);
     Real dt = t_dec / 100;
-    crossed = setReverseInit(eqn_rvs, state_rvs, t0);
+    bool crossed = setReverseInit(eqn_rvs, state_rvs, t0);
 
-    if (state_fwd.Gamma < con::Gamma_cut) {
-        setStoppingShock(i, j, shock_fwd, t, state_rvs.r, eqn_rvs.theta0);
-        setStoppingShock(i, j, shock_rvs, t, state_rvs.r, eqn_rvs.theta0);
-        return;
-    }
+    if (handleLowGamma(i, j, shock_fwd, shock_rvs, t, state_fwd, state_rvs, eqn_rvs)) return;
 
     if (crossed) {
         solveForwardShell(i, j, t, shock_fwd, eqn_fwd, rtol);
-    } else {
-        // auto stepper_rvs = bulirsch_stoer_dense_out<typename RvsEqn::StateArray>{0, rtol};
-        auto stepper_rvs = make_dense_output(0, rtol, runge_kutta_dopri5<typename RvsEqn::StateArray>());
-        stepper_rvs.initialize(y_rvs, t0, dt);
-        Real t_back = t[t.size() - 1];
-
-        // shock crossing
-        size_t k0 = 0;
-        for (size_t k = 0; !crossed && stepper_rvs.current_time() <= t_back;) {
-            stepper_rvs.do_step(eqn_rvs);
-            for (; k < t.size() && stepper_rvs.current_time() > t[k]; k++) {
-                stepper_rvs.calc_state(t[k], y_rvs);
-                crossed = updateForwardReverseShock(i, j, k, eqn_rvs, state_rvs, t[k], shock_fwd, shock_rvs);
-                if (crossed) {
-                    k0 = k;  // k0 is the index of the first element in the array that the reverse shock crosses
-                    shock_rvs.injection_idx[i][j] = k0;
-                    eqn_rvs.setCrossState(state_rvs, shock_rvs.B[i][j][k], t[k]);
-                    stepper_rvs.initialize(y_rvs, t[k0], stepper_rvs.current_time_step());
-                    break;
-                }
-            }
-        }
-
-        // crossed forward shock evolution
-        set_f_state(state_fwd, state_rvs, shock_rvs.Gamma[i][j][k0]);
-        stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
-        for (size_t k = k0 + 1; stepper_fwd.current_time() <= t_back;) {
-            stepper_fwd.do_step(eqn_fwd);
-            for (; k < t.size() && stepper_fwd.current_time() > t[k]; k++) {
-                stepper_fwd.calc_state(t[k], y_fwd);
-                updateForwardShock(i, j, k, eqn_fwd, state_fwd, shock_fwd);
-            }
-        }
-
-        // crossed reverse shock evolution
-        for (size_t k = k0 + 1; stepper_rvs.current_time() <= t_back;) {
-            stepper_rvs.do_step(eqn_rvs);
-            for (; k < t.size() && stepper_rvs.current_time() > t[k]; k++) {
-                stepper_rvs.calc_state(t[k], y_rvs);
-                updateCrossedReverseShock(i, j, k, k0, eqn_rvs, state_rvs, shock_rvs);
-            }
-        }
+        return;
     }
+
+    auto stepper_rvs = make_dense_output(0, rtol, runge_kutta_dopri5<typename RvsEqn::StateArray>());
+    stepper_rvs.initialize(y_rvs, t0, dt);
+
+    size_t k0 = solveReverseShockUntilCross(i, j, t, stepper_rvs, eqn_rvs, y_rvs, state_rvs, shock_fwd, shock_rvs);
+
+    set_f_state(state_fwd, state_rvs, shock_rvs.Gamma[i][j][k0]);
+    stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
+
+    solveForwardShockAfterCross(i, j, t, k0, stepper_fwd, eqn_fwd, y_fwd, state_fwd, shock_fwd);
+    solveReverseShockAfterCross(i, j, t, k0, stepper_rvs, eqn_rvs, y_rvs, state_rvs, shock_rvs);
 }

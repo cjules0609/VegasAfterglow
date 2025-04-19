@@ -40,6 +40,11 @@ void Observer::changeViewingAngle(Real theta_view) {
     calcObsTimeGrid();
 }
 
+void Observer::resize(size_t phi_size, size_t theta_size, size_t t_size) {
+    t_obs_grid.resize(boost::extents[phi_size][theta_size][t_size]);
+    doppler.resize(boost::extents[phi_size][theta_size][t_size]);
+    dOmega.resize(boost::extents[phi_size][theta_size][t_size]);
+}
 /********************************************************************************************************************
  * METHOD: Observer::calcSolidAngle
  * DESCRIPTION: Calculates the solid angle (dOmega) for each effective phi and theta grid point.

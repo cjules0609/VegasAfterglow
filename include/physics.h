@@ -169,3 +169,31 @@ Coord autoGrid(Ejecta const& jet, List const& t_obs, Real theta_cut, Real theta_
 
     return Coord(phi, theta, t);  // Construct coordinate object.
 }
+
+template <typename List, typename Ejecta>
+void autoGrid(Coord& coord, Ejecta const& jet, List const& t_obs, Real theta_cut, Real theta_view_max,
+              size_t phi_num = 32, size_t theta_num = 32, size_t t_num = 32) {
+    coord.phi = linspace(0, 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
+    Real jet_edge = jetEdge(jet, con::Gamma_cut);   // Determine the jet edge angle.
+    // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
+    // cosine.
+    coord.phi.resize(boost::extents[phi_num]);
+    coord.theta.resize(boost::extents[theta_num]);
+    coord.t.resize(boost::extents[t_num]);
+    coord.theta = linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
+    Real theta_max = coord.theta[theta_num - 1];                             // Maximum theta value.
+    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());              // Maximum observation time.
+    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());              // Minimum observation time.
+    t_min = std::min(t_min, 10 * con::sec);
+    Real b_max = gammaTobeta(jet.Gamma0(0, 0));  // Maximum beta value.
+    Real t_start =
+        t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
+
+    /*Real R0 = 1e10 * con::cm;
+    Real Rc = std::max(R0, jet.T0 * con::c);
+    Real gamma_max = jet.Gamma0(0, 0);
+    Real b_max = gammaTobeta(gamma_max);
+    Real t_start = Rc * gamma_max * (1 - b_max) / (b_max * con::c);*/
+    Real t_end = t_max;
+    coord.t = logspace(t_start, t_end, t_num);  // Generate logarithmically spaced radial grid.
+}

@@ -14,8 +14,8 @@
 #include <iostream>
 #include <numeric>
 
-#include "afterglow.h"
-void sort_synchronized(std::vector<double>& a, std::vector<double>& b, std::vector<double>& c) {
+template <typename T>
+void sort_synchronized(T& a, T& b, T& c) {
     std::vector<size_t> idx(a.size());
     for (size_t i = 0; i < idx.size(); ++i) idx[i] = i;
 
@@ -46,6 +46,12 @@ double LightCurveData::calcChiSquare() const {
     }
     return chi_square;
 }
+void LightCurveData::resize(size_t size) {
+    t.resize(boost::extents[size]);
+    Fv_obs.resize(boost::extents[size]);
+    Fv_err.resize(boost::extents[size]);
+    Fv_model.resize(boost::extents[size]);
+}
 
 double SpectrumData::calcChiSquare() const {
     double chi_square = 0;
@@ -57,35 +63,11 @@ double SpectrumData::calcChiSquare() const {
     return chi_square;
 }
 
-void MultiBandData::genEstimatePoints() {
-    t_grid.clear();
-    lc_band.clear();
-    t_grid.reserve(light_curve.size() * 10);
-    lc_band.reserve(light_curve.size());
-    for (auto& data : light_curve) {
-        t_grid.insert(t_grid.end(), data.t.begin(), data.t.end());
-        lc_band.push_back(data.nu);
-        data.Fv_model.resize(data.t.size());
-    }
-    std::sort(t_grid.begin(), t_grid.end());
-    t_grid.erase(std::unique(t_grid.begin(), t_grid.end()), t_grid.end());
-
-    nu_grid.clear();
-    spectrum_t.clear();
-    nu_grid.reserve(spectrum.size() * 10);
-    spectrum_t.reserve(spectrum.size());
-    for (auto& data : spectrum) {
-        nu_grid.insert(nu_grid.end(), data.nu.begin(), data.nu.end());
-        spectrum_t.push_back(data.t);
-        data.Fv_model.resize(data.nu.size());
-    }
-    std::sort(nu_grid.begin(), nu_grid.end());
-    nu_grid.erase(std::unique(nu_grid.begin(), nu_grid.end()), nu_grid.end());
-
-    if (t_grid.empty()) {
-        std::cerr << "Error: No light curve data loaded!\n" << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
+void SpectrumData::resize(size_t size) {
+    nu.resize(boost::extents[size]);
+    Fv_obs.resize(boost::extents[size]);
+    Fv_err.resize(boost::extents[size]);
+    Fv_model.resize(boost::extents[size]);
 }
 
 double MultiBandData::calcChiSquare() const {
@@ -99,75 +81,82 @@ double MultiBandData::calcChiSquare() const {
     return chi_square;
 }
 
-void MultiBandData::addModelLightCurve(MeshGrid const& specific_flux) {
-    for (size_t i = 0; i < light_curve.size(); ++i) {
-        auto& data = light_curve[i];
-        for (size_t j = 0, k = 0; j < t_grid.size() && k < data.t.size(); ++j) {
-            if (t_grid[j] == data.t[k]) {
-                data.Fv_model[k] = specific_flux[i][j];
-                ++k;
-            }
-        }
-    }
-}
-
-void MultiBandData::addModelSpectrum(MeshGrid const& specific_flux) {
-    for (size_t i = 0; i < spectrum.size(); ++i) {
-        auto& data = spectrum[i];
-        for (size_t j = 0, k = 0; j < nu_grid.size() && k < data.nu.size(); ++j) {
-            if (nu_grid[j] == data.nu[k]) {
-                data.Fv_model[k] = specific_flux[i][j];
-                ++k;
-            }
-        }
-    }
-}
-
-void MultiBandData::addObsLightCurve(double nu, List const& t, List const& Fv_obs, List const& Fv_err) {
+void MultiBandData::addObsLightCurve(double nu, List& t, List& Fv_obs, List& Fv_err) {
     assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
     LightCurveData data;
+    sort_synchronized(t, Fv_obs, Fv_err);
+    size_t size = t.size();
+    data.resize(size);
     data.nu = nu * con::Hz;
-    data.t = t;
-    data.Fv_obs = Fv_obs;
-    data.Fv_err = Fv_err;
-    sort_synchronized(data.t, data.Fv_obs, data.Fv_err);
 
-    for (auto& tt : data.t) {
-        tt *= con::sec;
+    for (size_t i = 0; i < size; ++i) {
+        data.t[i] = t[i] * con::sec;
     }
-    for (auto& f : data.Fv_obs) {
-        f *= con::erg / con::sec / con::cm2 / con::Hz;
+    for (size_t i = 0; i < size; ++i) {
+        data.Fv_obs[i] = Fv_obs[i] * con::erg / con::sec / con::cm2 / con::Hz;
     }
-    for (auto& f : data.Fv_err) {
-        f *= con::erg / con::sec / con::cm2 / con::Hz;
+    for (size_t i = 0; i < size; ++i) {
+        data.Fv_err[i] = Fv_err[i] * con::erg / con::sec / con::cm2 / con::Hz;
     }
-    data.Fv_model.resize(t.size());
     light_curve.push_back(std::move(data));
 }
-void MultiBandData::addObsSpectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err) {
+
+void MultiBandData::addObsSpectrum(double t, List& nu, List& Fv_obs, List& Fv_err) {
     assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
     SpectrumData data;
+    sort_synchronized(nu, Fv_obs, Fv_err);
+    size_t size = nu.size();
+    data.resize(size);
     data.t = t * con::sec;
-    data.nu = nu;
-    data.Fv_obs = Fv_obs;
-    data.Fv_err = Fv_err;
-    sort_synchronized(data.nu, data.Fv_obs, data.Fv_err);
 
-    for (auto& v : data.nu) {
-        v *= con::Hz;
+    for (size_t i = 0; i < size; ++i) {
+        data.nu[i] = nu[i] * con::Hz;
     }
-    for (auto& f : data.Fv_obs) {
-        f *= con::erg / con::sec / con::cm2 / con::Hz;
+    for (size_t i = 0; i < size; ++i) {
+        data.Fv_obs[i] = Fv_obs[i] * con::erg / con::sec / con::cm2 / con::Hz;
     }
-    for (auto& f : data.Fv_err) {
-        f *= con::erg / con::sec / con::cm2 / con::Hz;
+    for (size_t i = 0; i < size; ++i) {
+        data.Fv_err[i] = Fv_err[i] * con::erg / con::sec / con::cm2 / con::Hz;
     }
-    data.Fv_model.resize(nu.size());
     spectrum.push_back(std::move(data));
 }
 
-void MultiBandModel::configure(ConfigParams const& param) { this->config = param; }
+MultiBandModel::MultiBandModel(MultiBandData const& obs_data)
+    : obs_data(obs_data),
+      coord(zeros(32), zeros(32), zeros(32)),
+      shock(Shock(1, 32, 32, 0, 0)),
+      electrons(createSynElectronGrid(1, 32, 32)),
+      photons(createSynPhotonGrid(1, 32, 32)),
+      obs(coord, shock, 0, 1, 0) {
+    for (auto const& data : obs_data.light_curve) {
+        for (auto t : data.t) {
+            if (t_min == 0) {
+                t_min = t / 2;
+                t_max = t * 2;
+            }
+            if (t < t_min) t_min = t;
+            if (t > t_max) t_max = t;
+        }
+    }
 
+    if (t_min == 0 && t_max == 0) {
+        std::cerr << "Error: No observation time data provided!" << std::endl;
+    }
+}
+
+void MultiBandModel::configure(ConfigParams const& param) {
+    this->config = param;
+    this->coord.phi.resize(boost::extents[config.phi_grid]);
+    this->coord.theta.resize(boost::extents[config.theta_grid]);
+    this->coord.t.resize(boost::extents[config.t_grid]);
+    this->shock.resize(1, config.theta_grid, config.t_grid);
+    this->electrons.resize(boost::extents[1][config.theta_grid][config.t_grid]);
+    this->photons.resize(boost::extents[1][config.theta_grid][config.t_grid]);
+    this->obs.resize(config.phi_grid, config.theta_grid, config.t_grid);
+    this->obs.lumi_dist = config.lumi_dist * con::cm;
+    this->obs.z = config.z;
+}
+/*
 std::vector<double> MultiBandModel::chiSquareBatch(std::vector<Params> const& param_batch) {
     const size_t N = param_batch.size();
     std::vector<double> results(N);
@@ -175,6 +164,23 @@ std::vector<double> MultiBandModel::chiSquareBatch(std::vector<Params> const& pa
 #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         results[i] = chiSquare(param_batch[i]);
+    }
+
+    return results;
+}
+*/
+std::vector<double> MultiBandModel::chiSquareBatch(std::vector<Params> const& param_batch) {
+    const size_t N = param_batch.size();
+    std::vector<double> results(N);
+
+#pragma omp parallel
+    {
+        MultiBandModel model_local = *this;
+
+#pragma omp for schedule(dynamic)
+        for (int i = 0; i < N; ++i) {
+            results[i] = model_local.chiSquare(param_batch[i]);
+        }
     }
 
     return results;
@@ -225,23 +231,42 @@ double MultiBandModel::chiSquare(Params const& param) {
     size_t theta_num = config.theta_grid;
     size_t phi_num = config.phi_grid;
 
-    Coord coord = autoGrid(jet, obs_data.t_grid, theta_w, theta_v, phi_num, theta_num, t_num);
+    Array t_bins = logspace(t_min, t_max, t_num);
 
-    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
+    autoGrid(this->coord, jet, t_bins, theta_w, theta_v, phi_num, theta_num, t_num);
 
-    auto syn_e = genSynElectrons(f_shock, p, xi);
+    genForwardShock(this->shock, this->coord, medium, jet, eps_e, eps_B, config.rtol);
 
-    auto syn_ph = genSynPhotons(f_shock, syn_e);
+    genSynElectrons(this->electrons, this->shock, p, xi);
 
-    Observer obs(coord, f_shock, theta_v, lumi_dist, z);
+    genSynPhotons(this->photons, this->shock, this->electrons);
 
-    auto F_syn = obs.specificFlux(obs_data.t_grid, obs_data.lc_band, syn_ph);
+    this->obs.changeViewingAngle(theta_v);
 
-    auto F_spec = obs.spectrum(obs_data.nu_grid, obs_data.spectrum_t, syn_ph);
+    for (auto& data : obs_data.light_curve) {
+        data.Fv_model = obs.specificFlux(data.t, data.nu, this->photons);
+    }
 
-    obs_data.addModelLightCurve(F_syn);
+    for (auto& data : obs_data.spectrum) {
+        data.Fv_model = obs.spectrum(data.nu, data.t, this->photons);
+    }
+    /*auto coord = autoGrid(jet, t_bins, theta_w, theta_v, phi_num, theta_num, t_num);
 
-    obs_data.addModelSpectrum(F_spec);
+    auto shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
+
+    auto electrons = genSynElectrons(shock, p, xi);
+
+    auto photons = genSynPhotons(shock, electrons);
+
+    Observer obs(coord, shock, theta_v, lumi_dist, z);
+
+    for (auto& data : obs_data.light_curve) {
+        data.Fv_model = obs.specificFlux(data.t, data.nu, photons);
+    }
+
+    for (auto& data : obs_data.spectrum) {
+        data.Fv_model = obs.spectrum(data.nu, data.t, photons);
+    }*/
 
     return obs_data.calcChiSquare();
 }

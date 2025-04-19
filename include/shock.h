@@ -26,7 +26,7 @@
 class Shock {
    public:
     Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
-    Shock() = delete;
+    Shock() {};
 
     MeshGrid3d t_com;           // comoving time
     MeshGrid3d r;               // radius
@@ -39,11 +39,12 @@ class Shock {
     Real eps_e{0};              // electron energy fraction
     Real eps_B{0};              // magnetic energy fraction
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
+    void resize(size_t phi_size, size_t theta_size, size_t t_size);
 
    private:
-    size_t const phi_size{0};    // Number of grid points in phi direction
-    size_t const theta_size{0};  // Number of grid points in theta direction
-    size_t const t_size{0};      // Number of grid points in time direction
+    size_t phi_size{0};    // Number of grid points in phi direction
+    size_t theta_size{0};  // Number of grid points in theta direction
+    size_t t_size{0};      // Number of grid points in time direction
 };
 
 /********************************************************************************************************************
@@ -58,6 +59,12 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
 
 ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
                       Real eps_e_r, Real eps_B_r, Real rtol = 1e-6, bool is_axisymmetric = true);
+
+void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
+                     Real rtol = 1e-6, bool is_axisymmetric = true);
+
+void genFRShocks(Shock& shock_f, Shock& shock_r, Coord const& coord, Medium const& medium, Ejecta const& jet,
+                 Real eps_e_f, Real eps_B_f, Real eps_e_r, Real eps_B_r, Real rtol = 1e-6, bool is_axisymmetric = true);
 
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities

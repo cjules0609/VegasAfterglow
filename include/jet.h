@@ -63,7 +63,8 @@ namespace math {
 
     // Returns a power-law profile function for jet properties.
     inline auto powerLaw(Real theta_c, Real height, Real k) {
-        return [=](Real phi, Real theta) -> Real { return height * fastPow(1 + theta / theta_c, -k); };
+        // return [=](Real phi, Real theta) -> Real { return height * fastPow(1 + theta / theta_c, -k); };
+        return [=](Real phi, Real theta) -> Real { return height / (1 + fastPow(theta / theta_c, k)); };
     }
 
     // Constant injection: returns 1 regardless of time.

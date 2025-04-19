@@ -654,6 +654,46 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
     return electrons;
 }
 
+void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi) {
+    auto [phi_size, theta_size, t_size] = shock.shape();
+
+    constexpr Real gamma_syn_limit = 3;
+
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            size_t k_inj = shock.injection_idx[i][j];
+            for (size_t k = 0; k < t_size; ++k) {
+                Real Gamma_rel = shock.Gamma_rel[i][j][k];
+                Real t_com = shock.t_com[i][j][k];
+                Real B = shock.B[i][j][k];
+                Real Sigma = shock.column_num_den[i][j][k];
+
+                auto& e = electrons[i][j][k];
+
+                e.gamma_M = syn_gamma_M(B, electrons[i][j][k].Ys, p);
+                e.gamma_m = syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
+                // Fraction of synchrotron electrons; the rest are cyclotron
+                Real f = 1.;
+                if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
+                    f = std::min(fastPow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
+                    e.gamma_m = gamma_syn_limit;
+                }
+                e.column_num_den = Sigma * f * xi;
+                e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
+                if (k <= k_inj) {
+                    e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
+                } else {  // no shocked electron injection, just adiabatic cooling
+                    e.gamma_c = electrons[i][j][k_inj].gamma_c * e.gamma_m / electrons[i][j][k_inj].gamma_m;
+                    e.gamma_M = e.gamma_c;
+                }
+                e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
+                e.regime = getRegime(e.gamma_a, e.gamma_c, e.gamma_m);
+                e.p = p;
+            }
+        }
+    }
+}
+
 /********************************************************************************************************************
  * FUNCTION: genSynPhotons(Shock const& shock, SynElectronGrid const& e)
  * DESCRIPTION: Generates a SynPhotonGrid based on the shock parameters and the precomputed SynElectronGrid.
@@ -680,4 +720,24 @@ SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
         }
     }
     return ph;
+}
+
+void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e) {
+    auto [phi_size, theta_size, t_size] = shock.shape();
+
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < t_size; ++k) {
+                ph[i][j][k].e = &(e[i][j][k]);
+                Real B = shock.B[i][j][k];
+
+                ph[i][j][k].nu_M = syn_nu(e[i][j][k].gamma_M, B);
+                ph[i][j][k].nu_m = syn_nu(e[i][j][k].gamma_m, B);
+                ph[i][j][k].nu_c = syn_nu(e[i][j][k].gamma_c, B);
+                ph[i][j][k].nu_a = syn_nu(e[i][j][k].gamma_a, B);
+
+                ph[i][j][k].updateConstant();
+            }
+        }
+    }
 }

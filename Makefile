@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX         := clang++
+CXX         := g++
 CXXFLAGS    := -std=c++20 -Iinclude -Iexternal -O3 -w -march=native -DNDEBUG  #-DEXTREME_SPEED -flto
 
 # Directories
@@ -44,7 +44,7 @@ PYTHON_LIBS := $(shell python3-config --ldflags)
 
 # Fixed rule (use TAB for indentation, not spaces)
 $(MODULE_OUT): $(MODULE_SRC) $(SRC_FILES)
-	$(CXX) -arch x86_64 -O3 -w -shared -std=c++20  -fPIC \
+	$(CXX) -arch x86_64 -O3 -w -shared -std=c++20 -DNDEBUG -fPIC \
 		$(PYBIND11_FLAGS) $(MODULE_SRC) $(SRC_FILES) -o $(MODULE_OUT) \
 		$(PYTHON_LIBS) -Iinclude -Iexternal -undefined dynamic_lookup
 

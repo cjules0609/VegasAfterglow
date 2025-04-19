@@ -61,8 +61,7 @@ class Observer {
     // Constructor: Requires a coordinate reference to initialize the observer.
     template <typename Dynamics>
     Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
-    Observer() = delete;  // Default constructor is deleted.
-
+    Observer() = delete;    // Default constructor is deleted.
     MeshGrid3d t_obs_grid;  // Grid of observation times
     MeshGrid3d doppler;     // Grid of Doppler factors
     Real theta_obs{0};      // Observer's theta angle
@@ -92,6 +91,7 @@ class Observer {
     template <typename Array, typename... PhotonGrid>
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
+    void resize(size_t phi_size, size_t theta_size, size_t t_size);
    private:
     LogScaleInterp interp;         // Log-scale interpolation helper
     MeshGrid3d dOmega;             // Grid of solid angles
@@ -185,7 +185,6 @@ Observer::Observer(Coord const& coord, Dynamics const& shock, Real theta_view, R
     interp.z = redshift;
     // Determine if the jet is 3D (more than one phi value)
     interp.jet_3d = static_cast<size_t>((phi_size > 1));
-
     // Set effective phi grid size based on the observation angle and jet dimensionality.
     if (theta_view == 0 && interp.jet_3d == 0) {
         eff_phi_size = 1;  // optimize for on-axis observer
@@ -214,19 +213,10 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
     // Loop over effective phi and theta grid points.
     for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
-// Attempt to set the initial boundary values; if unsuccessful, skip this grid cell.
-#ifdef EXTRAPOLATE
-            if (!interp.validateInterpBoundary(i, j, 0, dOmega, r_grid, t_obs_grid, doppler, nu_obs, photons...)) {
-                continue;
-            }
-#endif
+            // Skip observation times that are below the grid's start time
             size_t t_idx = 0;
-            // Extrapolation for observation times below the grid (if enabled). Otherwise, skip to the next required
-            // cell until the first observation time is reached.
-            for (; t_idx < t_obs_size && t_obs[t_idx] < t_obs_grid[i][j][0]; t_idx++) {
-#ifdef EXTRAPOLATE
-                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
-#endif
+            while (t_idx < t_obs_size && t_obs[t_idx] < t_obs_grid[i][j][0]) {
+                t_idx++;
             }
 
             // Interpolate for observation times within the grid.
@@ -247,12 +237,6 @@ void Observer::calcSpecificFlux(Iter f_nu, Array const& t_obs, Real nu_obs, cons
                     f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
                 }
             }
-#ifdef EXTRAPOLATE
-            //   Extrapolation for observation times above the grid.
-            for (; t_idx < t_obs_size; t_idx++) {
-                f_nu[t_idx] += interp.interpLuminosity(t_obs[t_idx]);
-            }
-#endif
         }
     }
 

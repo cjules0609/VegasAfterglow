@@ -70,6 +70,11 @@ PYBIND11_MODULE(vegasglow, m) {
     py::class_<MultiBandModel>(m, "mcmcModel")
         .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
         .def("configure", &MultiBandModel::configure, py::arg("param"))
-        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"))
-        .def("chiSquareBatch", &MultiBandModel::chiSquareBatch, py::arg("param_batch"));
+        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>())
+        .def("chiSquareBatch", &MultiBandModel::chiSquareBatch, py::arg("param_batch"),
+             py::call_guard<py::gil_scoped_release>());
+
+    py::class_<EvaluatorPool>(m, "EvaluatorPool")
+        .def(py::init<const MultiBandData &, const ConfigParams &>())
+        .def("evaluate_batch", &EvaluatorPool::evaluate_batch, py::call_guard<py::gil_scoped_release>());
 }
