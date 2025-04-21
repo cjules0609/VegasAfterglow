@@ -32,6 +32,20 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
       theta_size(theta_size),                             // Store theta grid size
       t_size(t_size) {}
 
+void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
+    this->phi_size = phi_size;
+    this->theta_size = theta_size;
+    this->t_size = t_size;
+    t_com.resize({phi_size, theta_size, t_size});
+    r.resize({phi_size, theta_size, t_size});
+    theta.resize({phi_size, theta_size, t_size});
+    Gamma.resize({phi_size, theta_size, t_size});
+    Gamma_rel.resize({phi_size, theta_size, t_size});
+    B.resize({phi_size, theta_size, t_size});
+    column_num_den.resize({phi_size, theta_size, t_size});
+    injection_idx.resize({phi_size, theta_size});
+}
+
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization
 // (sigma).
 Real u_DownStr(Real gamma_rel, Real sigma) {
@@ -112,6 +126,7 @@ void genForwardShock(Shock& f_shock, Coord const& coord, Medium const& medium, E
                      Real eps_B, Real rtol, bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    f_shock.resize(phi_size_needed, theta_size, t_size);
     f_shock.eps_B = eps_B;
     f_shock.eps_e = eps_e;
     for (size_t i = 0; i < phi_size_needed; ++i) {
@@ -161,6 +176,8 @@ void genFRShocks(Shock& f_shock, Shock& r_shock, Coord const& coord, Medium cons
                  Real eps_e_f, Real eps_B_f, Real eps_e_r, Real eps_B_r, Real rtol, bool is_axisymmetric) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    f_shock.resize(phi_size_needed, theta_size, t_size);
+    r_shock.resize(phi_size_needed, theta_size, t_size);
     f_shock.eps_B = eps_B_f;
     f_shock.eps_e = eps_e_f;
     r_shock.eps_B = eps_B_r;

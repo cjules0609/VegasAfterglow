@@ -167,7 +167,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn 
     
     // Early exit if initial Lorentz factor is below cutoff
     if (state.Gamma <= con::Gamma_cut) {
-        setStoppingShock(i, j, shock, t, state.r, state.theta);
+        setStoppingShock(i, j, shock, state);
         return;
     }
 

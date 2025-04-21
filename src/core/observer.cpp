@@ -25,33 +25,18 @@ Real LogScaleInterp::interpLuminosity(Real t_obs) const {
 }
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: Observer::changeViewingAngle
- * DESCRIPTION: Updates the Observer's viewing angle
- ********************************************************************************************************************/
-void Observer::changeViewingAngle(Real theta_view) {
-    // Set effective phi grid size based on the observation angle and jet dimensionality.
-    if (theta_view == 0 && interp.jet_3d == 0) {
-        eff_phi_size = 1;
-    } else {
-        eff_phi_size = coord.phi.size();
-    }
-    theta_obs = theta_view;
-    calcSolidAngle();
-    calcObsTimeGrid();
-}
-/********************************************************************************************************************
  * METHOD: Observer::calcSolidAngle
  * DESCRIPTION: Calculates the solid angle (dOmega) for each effective phi and theta grid point.
  *              The solid angle is computed as the product of the differential cosine of theta and either 2π (if
  *              the effective phi size is 1) or the differential phi value.
  ********************************************************************************************************************/
-void Observer::calcSolidAngle() {
-    for (size_t i = 0; i < coord.phi.size(); ++i) {
+void Observer::calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid) {
+    for (size_t i = 0; i < eff_phi_size; ++i) {
         Real phi_lo = 0;
         Real phi_hi = 0;
         if (eff_phi_size == 1) {
             phi_lo = 0;
-            phi_hi = 2 * con::pi;
+            phi_hi = 4 * con::pi;
         } else if (i == 0) {  // note this also implys phi.size() > 1
             phi_lo = coord.phi(0);
             phi_hi = coord.phi(1);
@@ -64,8 +49,8 @@ void Observer::calcSolidAngle() {
         }
         Real dphi = std::abs(phi_hi - phi_lo) / 2;
         size_t i_eff = i * interp.jet_3d;
-        for (size_t j = 0; j < coord.theta.size(); ++j) {
-            for (size_t k = 0; k < coord.t.size(); ++k) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < t_size; ++k) {
                 Real theta_lo = 0;
                 Real theta_hi = 0;
                 if (j == 0) {
@@ -83,13 +68,6 @@ void Observer::calcSolidAngle() {
             }
         }
     }
-
-    /*for (size_t i = 0; i < eff_phi_size; ++i) {
-        for (size_t j = 0; j < coord.theta.size(); ++j) {
-            // If there is only one effective phi point, use 2π; otherwise, use the corresponding differential phi.
-            dOmega[i][j] = coord.dcos[j] * (eff_phi_size == 1 ? 2 * con::pi : coord.dphi[i]);
-        }
-    }*/
 }
 
 /********************************************************************************************************************
@@ -99,8 +77,7 @@ void Observer::calcSolidAngle() {
  *              For each grid point, the Doppler factor is computed and the observed time is calculated taking
  *              redshift into account.
  ********************************************************************************************************************/
-void Observer::calcObsTimeGrid() {
-    auto [phi_size, theta_size, t_size] = coord.shape();
+void Observer::calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, Real theta_obs) {
     Real cos_obs = std::cos(theta_obs);
     Real sin_obs = std::sin(theta_obs);
     for (size_t i = 0; i < eff_phi_size; ++i) {

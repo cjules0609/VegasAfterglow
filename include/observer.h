@@ -24,7 +24,6 @@
  ********************************************************************************************************************/
 class LogScaleInterp {
    public:
-    Real z{0};         // Redshift
     size_t jet_3d{0};  // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
 
     // Interpolates the radius, Intensity, and Doppler factor using  the observation time (t)
@@ -33,9 +32,9 @@ class LogScaleInterp {
     // Tries to set the interpolation boundaries using the provided logarithmic radius array, observation time grid,
     // Doppler grid, observed frequency, and one or more photon grids.
     template <typename... PhotonGrid>
-    bool validateInterpBoundary(size_t i, size_t j, size_t k, MeshGrid3d const& dOmega, MeshGrid3d const& r_grid,
-                                MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                PhotonGrid const&... photons);
+    bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& dOmega,
+                                MeshGrid3d const& r_grid, MeshGrid3d const& t_obs, MeshGrid3d const& doppler,
+                                Real nu_obs, PhotonGrid const&... photons);
 
    private:
     Real log_t_ratio{0};  // Ratio of logarithmic observation time
@@ -60,18 +59,16 @@ class LogScaleInterp {
  ********************************************************************************************************************/
 class Observer {
    public:
-    // Constructor: Requires a coordinate reference to initialize the observer.
-    template <typename Dynamics>
-    Observer(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
-    Observer() = delete;    // Default constructor is deleted.
+    // Constructor: .
+    Observer() = default;
     MeshGrid3d t_obs_grid;  // Grid of observation times
     MeshGrid3d doppler;     // Grid of Doppler factors
-    Real theta_obs{0};      // Observer's theta angle
+    MeshGrid3d dOmega;      // Grid of solid angles
     Real lumi_dist{1};      // Luminosity distance
     Real z{0};              // Redshift
 
-    // Observes the provided dynamics (dyn) with the given observation parameters.
-    void changeViewingAngle(Real theta_obs);
+    template <typename Dynamics>
+    void observe(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
 
     // Computes the specific flux at a single observed frequency (nu_obs) for the given observation times,
     // using one or more photon grids.
@@ -94,18 +91,16 @@ class Observer {
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
    private:
-    LogScaleInterp interp;         // Log-scale interpolation helper
-    MeshGrid3d dOmega;             // Grid of solid angles
-    MeshGrid3d const& r_grid;      // Grid of radius
-    MeshGrid3d const& theta_grid;  // Grid of theta
-    MeshGrid3d const& Gamma;       // Grid of Lorentz factors
-    Coord const& coord;            // Reference to the coordinate object
-    size_t eff_phi_size{1};        // Effective number of phi grid points
+    LogScaleInterp interp;   // Log-scale interpolation helper
+    MeshGrid3d r_grid;       // Grid of radius
+    size_t eff_phi_size{1};  // Effective number of phi grid points
+    size_t theta_size{0};
+    size_t t_size{0};
 
     // Calculates the observation time grid based on Gamma and engine time array.
-    void calcObsTimeGrid();
+    void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, Real theta_obs);
     // Calculates the solid angle grid.
-    void calcSolidAngle();
+    void calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid);
 
     // Template helper method to compute specific flux and store the result in a provided iterator (f_nu).
     template <typename View, typename... PhotonGrid>
@@ -125,7 +120,7 @@ class Observer {
  *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, MeshGrid3d const& dOmega,
+bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& dOmega,
                                             MeshGrid3d const& r_grid, MeshGrid3d const& t_obs,
                                             MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
     t_obs_lo = t_obs(i, j, k_lo);
@@ -171,32 +166,31 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Mes
  *              interpolation object.
  ********************************************************************************************************************/
 template <typename Dynamics>
-Observer::Observer(Coord const& coord, Dynamics const& shock, Real theta_view, Real luminosity_dist, Real redshift)
-    : t_obs_grid({coord.phi.size(), coord.theta.size(), coord.t.size()}, 0),
-      doppler({coord.phi.size(), coord.theta.size(), coord.t.size()}, 1),
-      theta_obs(theta_view),
-      lumi_dist(luminosity_dist),
-      z(redshift),
-      interp(),
-      dOmega({coord.phi.size(), coord.theta.size(), coord.t.size()}, 0),
-      r_grid(shock.r),
-      theta_grid(shock.theta),
-      Gamma(shock.Gamma),
-      coord(coord),
-      eff_phi_size(1) {
+void Observer::observe(Coord const& coord, Dynamics const& shock, Real theta_view, Real luminosity_dist,
+                       Real redshift) {
     auto [phi_size, theta_size, t_size] = shock.shape();
-    interp.z = redshift;
+
     // Determine if the jet is 3D (more than one phi value)
     interp.jet_3d = static_cast<size_t>((phi_size > 1));
     // Set effective phi grid size based on the observation angle and jet dimensionality.
     if (theta_view == 0 && interp.jet_3d == 0) {
-        eff_phi_size = 1;  // optimize for on-axis observer
+        this->eff_phi_size = 1;  // optimize for on-axis observer
     } else {
-        eff_phi_size = coord.phi.size();
+        this->eff_phi_size = coord.phi.size();
     }
+    this->theta_size = theta_size;
+    this->t_size = t_size;
+    this->lumi_dist = luminosity_dist;
+    this->z = redshift;
+
+    t_obs_grid.resize({eff_phi_size, theta_size, t_size});
+    doppler.resize({eff_phi_size, theta_size, t_size});
+    dOmega.resize({eff_phi_size, theta_size, t_size});
+    r_grid = shock.r;
+
     // Calculate the solid angle grid and observation time grid.
-    calcSolidAngle();
-    calcObsTimeGrid();
+    calcSolidAngle(coord, shock.theta);
+    calcObsTimeGrid(coord, shock.Gamma, theta_view);
 }
 
 /********************************************************************************************************************
@@ -210,7 +204,6 @@ Observer::Observer(Coord const& coord, Dynamics const& shock, Real theta_view, R
  ********************************************************************************************************************/
 template <typename View, typename... PhotonGrid>
 void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, const PhotonGrid&... photons) {
-    auto [ignore, theta_size, t_size] = coord.shape();
     size_t t_obs_size = t_obs.size();
 
     // Loop over effective phi and theta grid points.
@@ -228,7 +221,7 @@ void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, con
                 Real const t_hi = t_obs_grid(i, j, k + 1);
 
                 if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
-                    if (!interp.validateInterpBoundary(i, j, k, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
+                    if (!interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
                                                        photons...)) {
                         for (; t_idx < t_obs_size && t_obs(t_idx) < t_hi; t_idx++) {
                         }
@@ -261,7 +254,6 @@ void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, con
  ********************************************************************************************************************/
 template <typename View, typename... PhotonGrid>
 void Observer::calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, const PhotonGrid&... photons) {
-    auto [ignore, theta_size, t_size] = coord.shape();
     size_t nu_size = nu_obs.size();
 
     // Loop over effective phi and theta grid points.
@@ -273,8 +265,8 @@ void Observer::calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, const P
 
                 if (t_lo <= t_obs && t_obs < t_hi) {
                     for (size_t nu_idx = 0; nu_idx < nu_size; ++nu_idx) {
-                        if (interp.validateInterpBoundary(i, j, k, dOmega, r_grid, t_obs_grid, doppler, nu_obs[nu_idx],
-                                                          photons...)) {
+                        if (interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler,
+                                                          nu_obs[nu_idx], photons...)) {
                             f_nu(nu_idx) += interp.interpLuminosity(t_obs);
                         }
                     }

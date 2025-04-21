@@ -330,8 +330,8 @@ bool initializeShocks(size_t i, size_t j, Real t0, auto& state_fwd, auto& state_
 bool handleLowGamma(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, Array const& t, auto const& state_fwd,
                     auto const& state_rvs, auto const& eqn_rvs) {
     if (state_fwd.Gamma < con::Gamma_cut) {
-        setStoppingShock(i, j, shock_fwd, t, state_rvs.r, eqn_rvs.theta0);
-        setStoppingShock(i, j, shock_rvs, t, state_rvs.r, eqn_rvs.theta0);
+        setStoppingShock(i, j, shock_fwd, state_fwd);
+        setStoppingShock(i, j, shock_rvs, state_rvs);
         return true;
     }
     return false;

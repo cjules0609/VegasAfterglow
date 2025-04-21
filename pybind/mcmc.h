@@ -84,6 +84,11 @@ struct MultiBandModel {
    private:
     MultiBandData obs_data;
     ConfigParams config;
+    Coord coord;
+    Shock shock;
+    SynElectronGrid electrons;
+    SynPhotonGrid photons;
+    Observer obs;
     double t_min{0};
     double t_max{0};
 };

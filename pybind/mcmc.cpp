@@ -194,7 +194,7 @@ double MultiBandModel::chiSquare(Params const& param) {
 
     Array t_bins = xt::logspace(std::log10(t_min), std::log10(t_max), t_num);
 
-    auto coord = autoGrid(jet, t_bins, theta_w, theta_v, phi_num, theta_num, t_num);
+    /*auto coord = autoGrid(jet, t_bins, theta_w, theta_v, phi_num, theta_num, t_num);
 
     auto shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
@@ -202,7 +202,9 @@ double MultiBandModel::chiSquare(Params const& param) {
 
     auto photons = genSynPhotons(shock, electrons);
 
-    Observer obs(coord, shock, theta_v, lumi_dist, z);
+    Observer obs;
+
+    obs.observe(coord, shock, theta_v, lumi_dist, z);
 
     for (auto& data : obs_data.light_curve) {
         data.Fv_model = obs.specificFlux(data.t, data.nu, photons);
@@ -210,6 +212,24 @@ double MultiBandModel::chiSquare(Params const& param) {
 
     for (auto& data : obs_data.spectrum) {
         data.Fv_model = obs.spectrum(data.nu, data.t, photons);
+    }*/
+
+    autoGrid(this->coord, jet, t_bins, theta_w, theta_v, phi_num, theta_num, t_num);
+
+    genForwardShock(this->shock, this->coord, medium, jet, eps_e, eps_B, config.rtol);
+
+    genSynElectrons(this->electrons, this->shock, p, xi);
+
+    genSynPhotons(this->photons, this->shock, this->electrons);
+
+    this->obs.observe(this->coord, this->shock, theta_v, lumi_dist, z);
+
+    for (auto& data : obs_data.light_curve) {
+        data.Fv_model = obs.specificFlux(data.t, data.nu, this->photons);
+    }
+
+    for (auto& data : obs_data.spectrum) {
+        data.Fv_model = obs.spectrum(data.nu, data.t, this->photons);
     }
 
     return obs_data.calcChiSquare();

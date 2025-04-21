@@ -35,7 +35,9 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
 
-    Observer obs(coord, f_shock, theta_v, lumi_dist, z);
+    Observer obs;
+
+    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
 
     // output(obs.t_obs_grid, "t_obs", con::sec);
 

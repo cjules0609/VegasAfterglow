@@ -1,7 +1,8 @@
 # Compiler and flags
 CXX         := g++
-CXXFLAGS    := -std=c++20 -flto -Iinclude -Iexternal -O3 -w -march=native -DNDEBUG -DXTENSOR_DISABLE_ASSERT -DXTENSOR_DISABLE_CHECK_DIMENSION -DXTENSOR_DISABLE_CHECK_SHAPE #-DEXTREME_SPEED -flto
 
+CXXFLAG     := -std=c++20 -flto -Iinclude -Iexternal -O3 -w -DNDEBUG -DXTENSOR_DISABLE_ASSERT -DXTENSOR_DISABLE_CHECK_DIMENSION -DXTENSOR_DISABLE_CHECK_SHAPE #-DEXTREME_SPEED 
+CXXFLAGS    := $(CXXFLAG) -march=native
 # Directories
 SRC_DIR     := src
 TEST_DIR    := tests
@@ -18,7 +19,7 @@ TEST_SRCS   := $(shell find $(TEST_DIR) -type f -name "*.cpp")
 TEST_EXES   := $(TEST_SRCS:%.cpp=%)
 
 # Default target builds the static library and all test executables
-all: libtests.a $(TEST_EXES)
+all: libvegasglow.a $(TEST_EXES)
 
 # Build object files from src files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
@@ -26,13 +27,13 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Build static library from object files
-libtests.a: $(OBJ_FILES)
+libvegasglow.a: $(OBJ_FILES)
 	@echo "Archiving static library: $@"
 	ar rcs $@ $^
 
 # Compile each test source file into an executable, linking with the static library.
-$(TEST_DIR)/%: $(TEST_DIR)/%.cpp libtests.a
-	$(CXX) $(CXXFLAGS) $< -L. -ltests -o $@
+$(TEST_DIR)/%: $(TEST_DIR)/%.cpp libvegasglow.a
+	$(CXX) $(CXXFLAGS) $< -L. -lvegasglow -o $@
 
 MODULE_NAME := vegasglow
 MODULE_SRC := pybind/pybind.cpp pybind/mcmc.cpp
@@ -45,15 +46,15 @@ NUMPY_INCLUDE := $(shell python3 -c "import numpy; print(numpy.get_include())")
 
 # Fixed rule (use TAB for indentation, not spaces)
 $(MODULE_OUT): $(MODULE_SRC) $(SRC_FILES)
-	$(CXX) -arch x86_64 -O3 -w -shared -std=c++20 -DNDEBUG -fPIC \
+	$(CXX) -arch x86_64 -shared -fPIC \
 		$(PYBIND11_FLAGS) $(MODULE_SRC) -I$(NUMPY_INCLUDE)  $(SRC_FILES) -o $(MODULE_OUT) \
-		$(PYTHON_LIBS) -Iinclude -Iexternal -undefined dynamic_lookup
+		$(PYTHON_LIBS) $(CXXFLAG) -undefined dynamic_lookup
 
 pymodule: $(MODULE_OUT)
 	@echo "Python module built at: $(MODULE_OUT)"
 
 # Clean up the build and test binary directories and static library.
 clean:
-	rm -rf $(OBJ_DIR) libtests.a $(MODULE_OUT)
+	rm -rf $(OBJ_DIR) libvegasafterglow.a $(MODULE_OUT)
 
 .PHONY: all clean pymodule
