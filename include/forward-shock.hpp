@@ -162,9 +162,6 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn 
     Real t_dec = setForwardInit(eqn, state, t0);
     Real dt = t_dec / 100;  // Initial time step based on deceleration time
     
-    // Set default injection index (will be updated if shock propagates)
-    shock.injection_idx(i, j) = t.size();
-    
     // Early exit if initial Lorentz factor is below cutoff
     if (state.Gamma <= con::Gamma_cut) {
         setStoppingShock(i, j, shock, state);

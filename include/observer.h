@@ -90,6 +90,8 @@ class Observer {
     template <typename... PhotonGrid>
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
+    void updateRequired(MaskGrid& required, Array const& t_obs);
+
    private:
     LogScaleInterp interp;   // Log-scale interpolation helper
     MeshGrid3d r_grid;       // Grid of radius

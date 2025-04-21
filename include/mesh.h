@@ -20,7 +20,7 @@
 using Array = xt::xtensor<Real, 1>;
 using MeshGrid = xt::xtensor<Real, 2>;
 using MeshGrid3d = xt::xtensor<Real, 3>;
-
+using MaskGrid = xt::xtensor<bool, 3>;
 /********************************************************************************************************************
  * FUNCTION TYPE DEFINITIONS
  * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.

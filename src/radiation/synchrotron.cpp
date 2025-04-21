@@ -566,6 +566,9 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
+                if (!shock.required(i, j, k)) {
+                    continue;
+                }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_com(i, j, k);
                 Real B = shock.B(i, j, k);
@@ -604,6 +607,9 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
+                if (!shock.required(i, j, k)) {
+                    continue;
+                }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_com(i, j, k);
                 Real B = shock.B(i, j, k);
@@ -646,6 +652,9 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
+                if (!shock.required(i, j, k)) {
+                    continue;
+                }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_com(i, j, k);
                 Real B = shock.B(i, j, k);
@@ -691,6 +700,9 @@ SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
                 ph(i, j, k).e = &(e(i, j, k));
+                if (!shock.required(i, j, k)) {
+                    continue;
+                }
                 Real B = shock.B(i, j, k);
 
                 ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);
@@ -713,6 +725,9 @@ void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const&
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
                 ph(i, j, k).e = &(e(i, j, k));
+                if (!shock.required(i, j, k)) {
+                    continue;
+                }
                 Real B = shock.B(i, j, k);
 
                 ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);

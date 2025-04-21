@@ -73,22 +73,22 @@ struct ConfigParams {
 
 struct MultiBandModel {
     using List = std::vector<double>;
+    using Grid = std::vector<std::vector<double>>;
     MultiBandModel() = delete;
     MultiBandModel(MultiBandData const& data);
 
     void configure(ConfigParams const& param);
     double chiSquare(Params const& param);
-    MeshGrid lightCurve(Params const& param, List const& t, List const& nu);
-    MeshGrid spectrum(Params const& param, List const& nu, List const& t);
+    Grid lightCurve(Params const& param, List const& t, List const& nu);
+    Grid spectrum(Params const& param, List const& nu, List const& t);
 
    private:
+    void buildSystem(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
+                     SynPhotonGrid& photons);
     MultiBandData obs_data;
     ConfigParams config;
-    Coord coord;
-    Shock shock;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
     Observer obs;
-    double t_min{0};
-    double t_max{0};
+    Array t_eval;
 };

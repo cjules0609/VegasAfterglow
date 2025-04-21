@@ -36,6 +36,7 @@ class Shock {
     MeshGrid3d B;               // comoving magnetic field
     MeshGrid3d column_num_den;  // down stream proton column number density
     MeshGrid injection_idx;     // beyond which grid index there is no electron injection
+    MaskGrid required;          // Grid that actually required for final flux calculation
     Real eps_e{0};              // electron energy fraction
     Real eps_B{0};              // magnetic energy fraction
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions

@@ -65,5 +65,7 @@ PYBIND11_MODULE(vegasglow, m) {
     py::class_<MultiBandModel>(m, "mcmcModel")
         .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
         .def("configure", &MultiBandModel::configure, py::arg("param"))
-        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>());
+        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>())
+        .def("lightCurve", &MultiBandModel::lightCurve, py::arg("param"), py::arg("t"), py::arg("nu"))
+        .def("spectrum", &MultiBandModel::spectrum, py::arg("param"), py::arg("nu"), py::arg("t"));
 }

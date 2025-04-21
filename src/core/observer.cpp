@@ -98,3 +98,33 @@ void Observer::calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, Real
         }
     }
 }
+
+void Observer::updateRequired(MaskGrid& required, Array const& t_obs) {
+    size_t t_obs_size = t_obs.size();
+
+    // Loop over effective phi and theta grid points.
+    for (size_t i = 0; i < eff_phi_size; i++) {
+        size_t i_eff = i * interp.jet_3d;
+        for (size_t j = 0; j < theta_size; j++) {
+            // Skip observation times that are below the grid's start time
+            size_t t_idx = 0;
+            while (t_idx < t_obs_size && t_obs(t_idx) < t_obs_grid(i, j, 0)) {
+                t_idx++;
+            }
+
+            // find the grid points that are required for the interpolation.
+            for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
+                Real const t_lo = t_obs_grid(i, j, k);
+                Real const t_hi = t_obs_grid(i, j, k + 1);
+
+                if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
+                    required(i_eff, j, k) = true;
+                    required(i_eff, j, k + 1) = true;
+                }
+
+                for (; t_idx < t_obs_size && t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi; t_idx++) {
+                }
+            }
+        }
+    }
+}

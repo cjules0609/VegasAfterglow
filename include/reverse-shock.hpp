@@ -415,9 +415,6 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
     RState state_rvs(y_rvs);
     Real t0 = t.front();
 
-    shock_fwd.injection_idx(i, j) = t.size();
-    shock_rvs.injection_idx(i, j) = t.size();
-
     Real t_dec = setForwardInit(eqn_fwd, state_fwd, t0);
     Real dt = t_dec / 100;
     bool crossed = setReverseInit(eqn_rvs, state_rvs, t0);
