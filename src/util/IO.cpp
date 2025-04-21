@@ -83,11 +83,13 @@ void writeGrid(std::string filename, T const& names, U const& data, V const& uni
 
         file.precision(precision);
 
+        auto shape = (*data[l]).shape();
+
         // Loop over the 3D grid dimensions and output the normalized values.
-        for (size_t i = 0; i < (*data[l]).size(); ++i) {
-            for (size_t j = 0; j < (*data[l])[i].size(); ++j) {
-                for (size_t k = 0; k < (*data[l])[i][j].size(); ++k) {
-                    file << (*data[l])[i][j][k] / units[l] << " ";
+        for (size_t i = 0; i < shape[0]; ++i) {
+            for (size_t j = 0; j < shape[1]; ++j) {
+                for (size_t k = 0; k < shape[2]; ++k) {
+                    file << (*data[l])(i, j, k) / units[l] << " ";
                 }
                 file << '\n';
             }
@@ -122,10 +124,11 @@ void output(PromptPhotonsGrid const& ph, std::string const& filename, size_t pre
         return;
     }
     file.precision(precision);
-    for (size_t i = 0; i < ph.size(); ++i) {
-        for (size_t j = 0; j < ph[i].size(); ++j) {
-            for (size_t k = 0; k < ph[i][j].size(); ++k) {
-                file << ph[i][j][k].E_nu_peak << " ";
+    auto shape = ph.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                file << ph(i, j, k).E_nu_peak << " ";
             }
             file << '\n';
         }
@@ -149,13 +152,14 @@ void output(SynPhotonGrid const& ph, std::string const& filename, size_t precisi
         files[i].precision(precision);
     }
 
-    for (size_t i = 0; i < ph.size(); ++i) {
-        for (size_t j = 0; j < ph[i].size(); ++j) {
-            for (size_t k = 0; k < ph[i][j].size(); ++k) {
-                files[0] << ph[i][j][k].nu_a / con::Hz << " ";
-                files[1] << ph[i][j][k].nu_m / con::Hz << " ";
-                files[2] << ph[i][j][k].nu_c / con::Hz << " ";
-                files[3] << ph[i][j][k].nu_M / con::Hz << " ";
+    auto shape = ph.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                files[0] << ph(i, j, k).nu_a / con::Hz << " ";
+                files[1] << ph(i, j, k).nu_m / con::Hz << " ";
+                files[2] << ph(i, j, k).nu_c / con::Hz << " ";
+                files[3] << ph(i, j, k).nu_M / con::Hz << " ";
             }
             files[0] << '\n';
             files[1] << '\n';
@@ -185,13 +189,14 @@ void output(SynElectronGrid const& e, std::string const& filename, size_t precis
         files[i].precision(precision);
     }
 
-    for (size_t i = 0; i < e.size(); ++i) {
-        for (size_t j = 0; j < e[i].size(); ++j) {
-            for (size_t k = 0; k < e[i][j].size(); ++k) {
-                files[0] << e[i][j][k].gamma_a << " ";
-                files[1] << e[i][j][k].gamma_m << " ";
-                files[2] << e[i][j][k].gamma_c << " ";
-                files[3] << e[i][j][k].I_nu_peak << " ";
+    auto shape = e.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                files[0] << e(i, j, k).gamma_a << " ";
+                files[1] << e(i, j, k).gamma_m << " ";
+                files[2] << e(i, j, k).gamma_c << " ";
+                files[3] << e(i, j, k).I_nu_peak << " ";
             }
             files[0] << '\n';
             files[1] << '\n';
@@ -218,10 +223,11 @@ void output(MeshGrid3d const& array, std::string const& filename, size_t precisi
     }
     file.precision(precision);
     // Iterate over each element in the 3D grid and write to file.
-    for (size_t i = 0; i < array.size(); ++i) {
-        for (size_t j = 0; j < array[i].size(); ++j) {
-            for (size_t k = 0; k < array[i][j].size(); ++k) {
-                file << array[i][j][k] << " ";
+    auto shape = array.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                file << array(i, j, k) << " ";
             }
             file << '\n';
         }
@@ -241,9 +247,10 @@ void output(MeshGrid const& grid, std::string const& filename, size_t precision)
     }
     file.precision(precision);
     // Loop through the grid and output each element.
-    for (size_t i = 0; i < grid.size(); ++i) {
-        for (size_t j = 0; j < grid[i].size(); ++j) {
-            file << grid[i][j] << " ";
+    auto shape = grid.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            file << grid(i, j) << " ";
         }
         file << '\n';
     }
@@ -263,7 +270,7 @@ void output(Array const& array, std::string const& filename, size_t precision) {
     file.precision(precision);
     // Output each element of the array.
     for (size_t i = 0; i < array.size(); ++i) {
-        file << array[i] << " ";
+        file << array(i) << " ";
     }
 }
 
@@ -279,11 +286,12 @@ void output(MeshGrid3d const& array, std::string const& filename, Real unit, siz
         return;
     }
     file.precision(precision);
+    auto shape = array.shape();
     // Normalize each element by 'unit' before output.
-    for (size_t i = 0; i < array.size(); ++i) {
-        for (size_t j = 0; j < array[i].size(); ++j) {
-            for (size_t k = 0; k < array[i][j].size(); ++k) {
-                file << array[i][j][k] / unit << " ";
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                file << array(i, j, k) / unit << " ";
             }
             file << '\n';
         }
@@ -303,9 +311,10 @@ void output(MeshGrid const& grid, std::string const& filename, Real unit, size_t
     }
     file.precision(precision);
     // Output each normalized element.
-    for (size_t i = 0; i < grid.size(); ++i) {
-        for (size_t j = 0; j < grid[i].size(); ++j) {
-            file << grid[i][j] / unit << " ";
+    auto shape = grid.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            file << grid(i, j) / unit << " ";
         }
         file << '\n';
     }
@@ -325,6 +334,6 @@ void output(Array const& array, std::string const& filename, Real unit, size_t p
     file.precision(precision);
     // Output each element normalized by 'unit'.
     for (size_t i = 0; i < array.size(); ++i) {
-        file << array[i] / unit << " ";
+        file << array(i) / unit << " ";
     }
 }

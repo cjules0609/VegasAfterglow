@@ -39,12 +39,6 @@ void Observer::changeViewingAngle(Real theta_view) {
     calcSolidAngle();
     calcObsTimeGrid();
 }
-
-void Observer::resize(size_t phi_size, size_t theta_size, size_t t_size) {
-    t_obs_grid.resize(boost::extents[phi_size][theta_size][t_size]);
-    doppler.resize(boost::extents[phi_size][theta_size][t_size]);
-    dOmega.resize(boost::extents[phi_size][theta_size][t_size]);
-}
 /********************************************************************************************************************
  * METHOD: Observer::calcSolidAngle
  * DESCRIPTION: Calculates the solid angle (dOmega) for each effective phi and theta grid point.
@@ -59,14 +53,14 @@ void Observer::calcSolidAngle() {
             phi_lo = 0;
             phi_hi = 2 * con::pi;
         } else if (i == 0) {  // note this also implys phi.size() > 1
-            phi_lo = coord.phi[0];
-            phi_hi = coord.phi[1];
+            phi_lo = coord.phi(0);
+            phi_hi = coord.phi(1);
         } else if (i == coord.phi.size() - 1) {
-            phi_lo = coord.phi[i - 1];
-            phi_hi = coord.phi[i];
+            phi_lo = coord.phi(i - 1);
+            phi_hi = coord.phi(i);
         } else {
-            phi_lo = coord.phi[i - 1];
-            phi_hi = coord.phi[i + 1];
+            phi_lo = coord.phi(i - 1);
+            phi_hi = coord.phi(i + 1);
         }
         Real dphi = std::abs(phi_hi - phi_lo) / 2;
         size_t i_eff = i * interp.jet_3d;
@@ -75,17 +69,17 @@ void Observer::calcSolidAngle() {
                 Real theta_lo = 0;
                 Real theta_hi = 0;
                 if (j == 0) {
-                    theta_lo = theta_grid[i_eff][0][k];
-                    theta_hi = 0.5 * (theta_grid[i_eff][1][k] + theta_grid[i_eff][0][k]);
+                    theta_lo = theta_grid(i_eff, 0, k);
+                    theta_hi = 0.5 * (theta_grid(i_eff, 1, k) + theta_grid(i_eff, 0, k));
                 } else if (j == coord.theta.size() - 1) {
-                    theta_lo = 0.5 * (theta_grid[i_eff][j - 1][k] + theta_grid[i_eff][j][k]);
-                    theta_hi = theta_grid[i_eff][j][k];
+                    theta_lo = 0.5 * (theta_grid(i_eff, j - 1, k) + theta_grid(i_eff, j, k));
+                    theta_hi = theta_grid(i_eff, j, k);
                 } else {
-                    theta_lo = 0.5 * (theta_grid[i_eff][j][k] + theta_grid[i_eff][j - 1][k]);
-                    theta_hi = 0.5 * (theta_grid[i_eff][j][k] + theta_grid[i_eff][j + 1][k]);
+                    theta_lo = 0.5 * (theta_grid(i_eff, j, k) + theta_grid(i_eff, j - 1, k));
+                    theta_hi = 0.5 * (theta_grid(i_eff, j, k) + theta_grid(i_eff, j + 1, k));
                 }
                 Real dcos = std::abs(std::cos(theta_hi) - std::cos(theta_lo));
-                dOmega[i][j][k] = dcos * dphi;
+                dOmega(i, j, k) = dcos * dphi;
             }
         }
     }
@@ -115,14 +109,14 @@ void Observer::calcObsTimeGrid() {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
             Real cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
             for (size_t k = 0; k < t_size; ++k) {
-                Real gamma_ = Gamma[i * interp.jet_3d][j][k];  // Get Gamma at the grid point.
-                Real r = r_grid[i * interp.jet_3d][j][k];
+                Real gamma_ = Gamma(i * interp.jet_3d, j, k);  // Get Gamma at the grid point.
+                Real r = r_grid(i * interp.jet_3d, j, k);
                 Real t_eng_ = coord.t[k];         // Get engine time at the grid point.
                 Real beta = gammaTobeta(gamma_);  // Convert Gamma to beta.
                 // Compute the Doppler factor: D = 1 / [Gamma * (1 - beta * cos_v)]
-                doppler[i][j][k] = 1 / (gamma_ * (1 - beta * cos_v));
+                doppler(i, j, k) = 1 / (gamma_ * (1 - beta * cos_v));
                 // Compute the observed time: t_obs = [t_eng + (1 - cos_v) * r / c] * (1 + z)
-                t_obs_grid[i][j][k] = (t_eng_ + (1 - cos_v) * r / con::c) * (1 + z);
+                t_obs_grid(i, j, k) = (t_eng_ + (1 - cos_v) * r / con::c) * (1 + z);
             }
         }
     }

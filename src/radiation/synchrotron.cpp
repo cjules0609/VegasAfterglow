@@ -168,24 +168,6 @@ Real InverseComptonY::Y_tilt_nu(InverseComptonY const& Ys, Real nu, Real p) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size)
- * DESCRIPTION: Creates and returns a SynPhotonGrid with the specified dimensions.
- ********************************************************************************************************************/
-SynPhotonGrid createSynPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size) {
-    SynPhotonGrid grid(boost::extents[phi_size][theta_size][t_size]);
-    return grid;
-}
-
-/********************************************************************************************************************
- * FUNCTION: createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size)
- * DESCRIPTION: Creates and returns a SynElectronGrid with the specified dimensions.
- ********************************************************************************************************************/
-SynElectronGrid createSynElectronGrid(size_t phi_size, size_t theta_size, size_t t_size) {
-    SynElectronGrid grid(boost::extents[phi_size][theta_size][t_size]);
-    return grid;
-}
-
-/********************************************************************************************************************
  * FUNCTION: SynElectrons::columnNumDen(Real gamma) const
  * DESCRIPTION: Computes the column number density for electrons at a given Lorentz factor (gamma) by scaling
  *              the base column density with the electron spectrum. It accounts for inverse Compton effects.
@@ -582,20 +564,20 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            size_t k_inj = shock.injection_idx[i][j];
+            size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                Real Gamma_rel = shock.Gamma_rel[i][j][k];
-                Real t_com = shock.t_com[i][j][k];
-                Real B = shock.B[i][j][k];
-                Real p = e[i][j][k].p;
-                auto& Ys = e[i][j][k].Ys;
-                auto& electron = e[i][j][k];
+                Real Gamma_rel = shock.Gamma_rel(i, j, k);
+                Real t_com = shock.t_com(i, j, k);
+                Real B = shock.B(i, j, k);
+                Real p = e(i, j, k).p;
+                auto& Ys = e(i, j, k).Ys;
+                auto& electron = e(i, j, k);
 
                 electron.gamma_M = syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
                 if (k <= k_inj) {
                     electron.gamma_c = syn_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    electron.gamma_c = e[i][j][k_inj].gamma_c * electron.gamma_m / e[i][j][k_inj].gamma_m;
+                    electron.gamma_c = e(i, j, k_inj).gamma_c * electron.gamma_m / e(i, j, k_inj).gamma_m;
                     electron.gamma_M = electron.gamma_c;
                 }
                 electron.gamma_a = syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
@@ -614,22 +596,22 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
 SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    SynElectronGrid electrons = createSynElectronGrid(phi_size, theta_size, t_size);
+    SynElectronGrid electrons({phi_size, theta_size, t_size});
 
     constexpr Real gamma_syn_limit = 3;
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            size_t k_inj = shock.injection_idx[i][j];
+            size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                Real Gamma_rel = shock.Gamma_rel[i][j][k];
-                Real t_com = shock.t_com[i][j][k];
-                Real B = shock.B[i][j][k];
-                Real Sigma = shock.column_num_den[i][j][k];
+                Real Gamma_rel = shock.Gamma_rel(i, j, k);
+                Real t_com = shock.t_com(i, j, k);
+                Real B = shock.B(i, j, k);
+                Real Sigma = shock.column_num_den(i, j, k);
 
-                auto& e = electrons[i][j][k];
+                auto& e = electrons(i, j, k);
 
-                e.gamma_M = syn_gamma_M(B, electrons[i][j][k].Ys, p);
+                e.gamma_M = syn_gamma_M(B, electrons(i, j, k).Ys, p);
                 e.gamma_m = syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
@@ -640,9 +622,9 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                 e.column_num_den = Sigma * f * xi;
                 e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
+                    e.gamma_c = syn_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    e.gamma_c = electrons[i][j][k_inj].gamma_c * e.gamma_m / electrons[i][j][k_inj].gamma_m;
+                    e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
                 e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
@@ -661,16 +643,16 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
-            size_t k_inj = shock.injection_idx[i][j];
+            size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                Real Gamma_rel = shock.Gamma_rel[i][j][k];
-                Real t_com = shock.t_com[i][j][k];
-                Real B = shock.B[i][j][k];
-                Real Sigma = shock.column_num_den[i][j][k];
+                Real Gamma_rel = shock.Gamma_rel(i, j, k);
+                Real t_com = shock.t_com(i, j, k);
+                Real B = shock.B(i, j, k);
+                Real Sigma = shock.column_num_den(i, j, k);
 
-                auto& e = electrons[i][j][k];
+                auto& e = electrons(i, j, k);
 
-                e.gamma_M = syn_gamma_M(B, electrons[i][j][k].Ys, p);
+                e.gamma_M = syn_gamma_M(B, electrons(i, j, k).Ys, p);
                 e.gamma_m = syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
@@ -681,9 +663,9 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
                 e.column_num_den = Sigma * f * xi;
                 e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = syn_gamma_c(t_com, B, electrons[i][j][k].Ys, p);
+                    e.gamma_c = syn_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    e.gamma_c = electrons[i][j][k_inj].gamma_c * e.gamma_m / electrons[i][j][k_inj].gamma_m;
+                    e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
                 e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
@@ -702,20 +684,20 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
 SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    SynPhotonGrid ph = createSynPhotonGrid(phi_size, theta_size, t_size);
+    SynPhotonGrid ph({phi_size, theta_size, t_size});
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                ph[i][j][k].e = &(e[i][j][k]);
-                Real B = shock.B[i][j][k];
+                ph(i, j, k).e = &(e(i, j, k));
+                Real B = shock.B(i, j, k);
 
-                ph[i][j][k].nu_M = syn_nu(e[i][j][k].gamma_M, B);
-                ph[i][j][k].nu_m = syn_nu(e[i][j][k].gamma_m, B);
-                ph[i][j][k].nu_c = syn_nu(e[i][j][k].gamma_c, B);
-                ph[i][j][k].nu_a = syn_nu(e[i][j][k].gamma_a, B);
+                ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);
+                ph(i, j, k).nu_m = syn_nu(e(i, j, k).gamma_m, B);
+                ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
+                ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
 
-                ph[i][j][k].updateConstant();
+                ph(i, j, k).updateConstant();
             }
         }
     }
@@ -728,15 +710,15 @@ void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const&
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                ph[i][j][k].e = &(e[i][j][k]);
-                Real B = shock.B[i][j][k];
+                ph(i, j, k).e = &(e(i, j, k));
+                Real B = shock.B(i, j, k);
 
-                ph[i][j][k].nu_M = syn_nu(e[i][j][k].gamma_M, B);
-                ph[i][j][k].nu_m = syn_nu(e[i][j][k].gamma_m, B);
-                ph[i][j][k].nu_c = syn_nu(e[i][j][k].gamma_c, B);
-                ph[i][j][k].nu_a = syn_nu(e[i][j][k].gamma_a, B);
+                ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);
+                ph(i, j, k).nu_m = syn_nu(e(i, j, k).gamma_m, B);
+                ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
+                ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
 
-                ph[i][j][k].updateConstant();
+                ph(i, j, k).updateConstant();
             }
         }
     }

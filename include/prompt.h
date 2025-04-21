@@ -19,8 +19,7 @@ struct PromptPhotons {
     Real I_nu(Real nu) const;
 };
 
-using PromptPhotonsGrid = boost::multi_array<PromptPhotons, 3>;
-PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, size_t t_size);
+using PromptPhotonsGrid = xt::xtensor<PromptPhotons, 3>;
 
 class CoastingShock {
    public:
@@ -46,14 +45,14 @@ CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
     CoastingShock shock(1, theta_size, t_size);
 
     for (size_t j = 0; j < theta_size; ++j) {
-        Real Gamma = jet.Gamma0(coord.phi[0], coord.theta[j]);
+        Real Gamma = jet.Gamma0(coord.phi(0), coord.theta(j));
         Real beta = gammaTobeta(Gamma);
-        Real epsilon = jet.dE0dOmega(coord.phi[0], coord.theta[j]);
+        Real epsilon = jet.dE0dOmega(coord.phi(0), coord.theta(j));
         for (size_t k = 0; k < t_size; ++k) {
-            shock.Gamma[0][j][k] = Gamma;
-            shock.epsilon[0][j][k] = epsilon;
-            shock.r[0][j][k] = (beta * con::c) / std::abs(1 - beta) * coord.t[k];
-            shock.theta[0][j][k] = coord.theta[j];
+            shock.Gamma(0, j, k) = Gamma;
+            shock.epsilon(0, j, k) = epsilon;
+            shock.r(0, j, k) = (beta * con::c) / std::abs(1 - beta) * coord.t(k);
+            shock.theta(0, j, k) = coord.theta(j);
         }
     }
 

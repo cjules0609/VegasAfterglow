@@ -37,7 +37,7 @@ void lc_gen(std::string folder_name) {
 
     std::vector<Real> band_pass_ = data["band pass (kev)"];
 
-    Array t_bins = logspace(t_obs[0] * con::sec / 10, t_obs[1] * con::sec, 100);
+    Array t_bins = xt::logspace(std::log10(t_obs[0] * con::sec / 10), std::log10(t_obs[1] * con::sec), 100);
     // create model
     Medium medium;
 
@@ -75,7 +75,8 @@ void lc_gen(std::string folder_name) {
 
     Observer obs(coord, f_shock, theta_view, lumi_dist, z);
 
-    Array band_pass = logspace(eVtoHz(band_pass_[0] * con::keV), eVtoHz(band_pass_[1] * con::keV), 10);
+    Array band_pass =
+        xt::logspace(std::log10(eVtoHz(band_pass_[0] * con::keV)), std::log10(eVtoHz(band_pass_[1] * con::keV)), 10);
 
     namespace fs = std::filesystem;
 

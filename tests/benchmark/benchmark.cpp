@@ -11,7 +11,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Real lumi_dist = 1.23e26 * con::cm;
 
-    Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 30);
+    Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 50);
     // create model
     Medium medium;
 
@@ -64,9 +64,9 @@ int main() {
     Real p = 2.1;
     Real Gamma0 = 300;
 
-    Array E_iso = logspace(1e48 * con::erg, 1e52 * con::erg, 100);
-    Array theta_c = linspace(0.01, 0.1, 100);
-    Array theta_v = linspace(0.01, 0.5, 5);
+    Array E_iso = xt::logspace(std::log10(1e48 * con::erg), std::log10(1e52 * con::erg), 100);
+    Array theta_c = xt::linspace(0.01, 0.1, 100);
+    Array theta_v = xt::linspace(0.01, 0.5, 5);
 
     tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(128, 128, 128, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);

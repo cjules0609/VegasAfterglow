@@ -26,7 +26,7 @@
 class Shock {
    public:
     Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
-    Shock() {};
+    Shock() = delete;
 
     MeshGrid3d t_com;           // comoving time
     MeshGrid3d r;               // radius
@@ -39,7 +39,6 @@ class Shock {
     Real eps_e{0};              // electron energy fraction
     Real eps_B{0};              // magnetic energy fraction
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
-    void resize(size_t phi_size, size_t theta_size, size_t t_size);
 
    private:
     size_t phi_size{0};    // Number of grid points in phi direction
@@ -148,9 +147,9 @@ inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) 
 }
 
 inline void setStoppingShock(size_t i, size_t j, Shock& shock, Array const& t, Real r0, Real theta0) {
-    shock.t_com[i][j] = t;
-    std::fill(shock.r[i][j].begin(), shock.r[i][j].end(), r0);
-    std::fill(shock.theta[i][j].begin(), shock.theta[i][j].end(), theta0);
+    xt::view(shock.t_com, i, j, xt::all()) = t;
+    xt::view(shock.r, i, j, xt::all()) = r0;
+    xt::view(shock.theta, i, j, xt::all()) = theta0;
 }
 
 template <typename State>
@@ -162,13 +161,13 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, State const& s
     Real pB_down_str = pB_up_str * ratio_u * ratio_u;
     Real n_down_str = n_up_str * ratio_u;
     Real e_th = DownStrThermEnergy(Gamma_rel, n_down_str);
-    shock.Gamma[i][j][k] = Gamma_down_str;
-    shock.Gamma_rel[i][j][k] = Gamma_rel;
-    shock.t_com[i][j][k] = state.t_com;
-    shock.r[i][j][k] = state.r;
-    shock.theta[i][j][k] = state.theta;
-    shock.column_num_den[i][j][k] = N_down_str / (state.r * state.r);
-    shock.B[i][j][k] = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
+    shock.Gamma(i, j, k) = Gamma_down_str;
+    shock.Gamma_rel(i, j, k) = Gamma_rel;
+    shock.t_com(i, j, k) = state.t_com;
+    shock.r(i, j, k) = state.r;
+    shock.theta(i, j, k) = state.theta;
+    shock.column_num_den(i, j, k) = N_down_str / (state.r * state.r);
+    shock.B(i, j, k) = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
 }
 #include "forward-shock.hpp"
 #include "reverse-shock.hpp"

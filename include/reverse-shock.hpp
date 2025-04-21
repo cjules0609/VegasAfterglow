@@ -261,14 +261,14 @@ Real FRShockEqn::crossedB(State const& state) const {
 template <typename Eqn, typename State>
 inline void updateCrossedReverseShock(size_t i, size_t j, size_t k, size_t k0, Eqn const& eqn, State const& state,
                                       Shock& shock) {
-    Real r0 = shock.r[i][j][k0];
-    shock.t_com[i][j][k] = state.t_com;
-    shock.r[i][j][k] = state.r;
-    shock.theta[i][j][k] = state.theta;
-    shock.Gamma_rel[i][j][k] = eqn.crossedGamma_rel(state);
-    shock.Gamma[i][j][k] = eqn.crossedGamma3(shock.Gamma_rel[i][j][k], state.r);
-    shock.column_num_den[i][j][k] = shock.column_num_den[i][j][k0] * (r0 * r0) / (state.r * state.r);
-    shock.B[i][j][k] = eqn.crossedB(state);
+    Real r0 = shock.r(i, j, k0);
+    shock.t_com(i, j, k) = state.t_com;
+    shock.r(i, j, k) = state.r;
+    shock.theta(i, j, k) = state.theta;
+    shock.Gamma_rel(i, j, k) = eqn.crossedGamma_rel(state);
+    shock.Gamma(i, j, k) = eqn.crossedGamma3(shock.Gamma_rel(i, j, k), state.r);
+    shock.column_num_den(i, j, k) = shock.column_num_den(i, j, k0) * (r0 * r0) / (state.r * state.r);
+    shock.B(i, j, k) = eqn.crossedB(state);
 }
 
 /********************************************************************************************************************
@@ -341,20 +341,20 @@ bool handleLowGamma(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, Arra
 size_t solveReverseShockUntilCross(size_t i, size_t j, const Array& t, auto& stepper_rvs, auto& eqn_rvs, auto& y_rvs,
                                    auto& state_rvs, Shock& shock_fwd, Shock& shock_rvs) {
     size_t k0 = 0;
-    Real t_back = t[t.size() - 1];
+    Real t_back = t.back();
     bool crossed = false;
     size_t k = 0;
 
     while (!crossed && stepper_rvs.current_time() <= t_back) {
         stepper_rvs.do_step(eqn_rvs);
-        while (k < t.size() && stepper_rvs.current_time() > t[k]) {
-            stepper_rvs.calc_state(t[k], y_rvs);
-            crossed = updateForwardReverseShock(i, j, k, eqn_rvs, state_rvs, t[k], shock_fwd, shock_rvs);
+        while (k < t.size() && stepper_rvs.current_time() > t(k)) {
+            stepper_rvs.calc_state(t(k), y_rvs);
+            crossed = updateForwardReverseShock(i, j, k, eqn_rvs, state_rvs, t(k), shock_fwd, shock_rvs);
             if (crossed) {
                 k0 = k;
-                shock_rvs.injection_idx[i][j] = k0;
-                eqn_rvs.setCrossState(state_rvs, shock_rvs.B[i][j][k], t[k]);
-                stepper_rvs.initialize(y_rvs, t[k0], stepper_rvs.current_time_step());
+                shock_rvs.injection_idx(i, j) = k0;
+                eqn_rvs.setCrossState(state_rvs, shock_rvs.B(i, j, k), t(k));
+                stepper_rvs.initialize(y_rvs, t(k0), stepper_rvs.current_time_step());
                 break;
             }
             k++;
@@ -368,12 +368,12 @@ size_t solveReverseShockUntilCross(size_t i, size_t j, const Array& t, auto& ste
 void solveForwardShockAfterCross(size_t i, size_t j, const Array& t, size_t k0, auto& stepper_fwd, const auto& eqn_fwd,
                                  auto& y_fwd, auto& state_fwd, Shock& shock_fwd) {
     size_t k = k0 + 1;
-    Real t_back = t[t.size() - 1];
+    Real t_back = t.back();
 
     while (stepper_fwd.current_time() <= t_back) {
         stepper_fwd.do_step(eqn_fwd);
-        while (k < t.size() && stepper_fwd.current_time() > t[k]) {
-            stepper_fwd.calc_state(t[k], y_fwd);
+        while (k < t.size() && stepper_fwd.current_time() > t(k)) {
+            stepper_fwd.calc_state(t(k), y_fwd);
             updateForwardShock(i, j, k, eqn_fwd, state_fwd, shock_fwd);
             k++;
         }
@@ -384,12 +384,12 @@ void solveForwardShockAfterCross(size_t i, size_t j, const Array& t, size_t k0, 
 void solveReverseShockAfterCross(size_t i, size_t j, const Array& t, size_t k0, auto& stepper_rvs, auto& eqn_rvs,
                                  auto& y_rvs, auto& state_rvs, Shock& shock_rvs) {
     size_t k = k0 + 1;
-    Real t_back = t[t.size() - 1];
+    Real t_back = t.back();
 
     while (stepper_rvs.current_time() <= t_back) {
         stepper_rvs.do_step(eqn_rvs);
-        while (k < t.size() && stepper_rvs.current_time() > t[k]) {
-            stepper_rvs.calc_state(t[k], y_rvs);
+        while (k < t.size() && stepper_rvs.current_time() > t(k)) {
+            stepper_rvs.calc_state(t(k), y_rvs);
             updateCrossedReverseShock(i, j, k, k0, eqn_rvs, state_rvs, shock_rvs);
             k++;
         }
@@ -405,7 +405,7 @@ struct FState;
  ********************************************************************************************************************/
 template <typename FwdEqn, typename RvsEqn>
 void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& shock_rvs, FwdEqn const& eqn_fwd,
-                  RvsEqn& eqn_rvs, Real rtol = 1e-9) {
+                  RvsEqn& eqn_rvs, Real rtol = 1e-6) {
     using namespace boost::numeric::odeint;
     auto stepper_fwd = make_dense_output(0, rtol, runge_kutta_dopri5<typename FwdEqn::StateArray>());
 
@@ -413,7 +413,10 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
     typename FwdEqn::StateArray y_fwd;
     FState state_fwd(y_fwd);
     RState state_rvs(y_rvs);
-    Real t0 = t[0];
+    Real t0 = t.front();
+
+    shock_fwd.injection_idx(i, j) = t.size();
+    shock_rvs.injection_idx(i, j) = t.size();
 
     Real t_dec = setForwardInit(eqn_fwd, state_fwd, t0);
     Real dt = t_dec / 100;
@@ -431,8 +434,8 @@ void solveFRShell(size_t i, size_t j, Array const& t, Shock& shock_fwd, Shock& s
 
     size_t k0 = solveReverseShockUntilCross(i, j, t, stepper_rvs, eqn_rvs, y_rvs, state_rvs, shock_fwd, shock_rvs);
 
-    set_f_state(state_fwd, state_rvs, shock_rvs.Gamma[i][j][k0]);
-    stepper_fwd.initialize(y_fwd, t[k0], stepper_rvs.current_time_step());
+    set_f_state(state_fwd, state_rvs, shock_rvs.Gamma(i, j, k0));
+    stepper_fwd.initialize(y_fwd, t(k0), stepper_rvs.current_time_step());
 
     solveForwardShockAfterCross(i, j, t, k0, stepper_fwd, eqn_fwd, y_fwd, state_fwd, shock_fwd);
     solveReverseShockAfterCross(i, j, t, k0, stepper_rvs, eqn_rvs, y_rvs, state_rvs, shock_rvs);

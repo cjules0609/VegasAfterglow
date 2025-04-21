@@ -5,18 +5,13 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#include <omp.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "mcmc.h"
 
 namespace py = pybind11;
-
 PYBIND11_MODULE(vegasglow, m) {
-    m.def("get_max_threads", []() { return omp_get_max_threads(); });
-    m.def("set_num_threads", [](int n) { omp_set_num_threads(n); }, "Set the number of OpenMP threads");
-
     // Parameters for MCMC modeling
     py::class_<Params>(m, "params")
         .def(py::init<>())
@@ -70,11 +65,5 @@ PYBIND11_MODULE(vegasglow, m) {
     py::class_<MultiBandModel>(m, "mcmcModel")
         .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
         .def("configure", &MultiBandModel::configure, py::arg("param"))
-        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>())
-        .def("chiSquareBatch", &MultiBandModel::chiSquareBatch, py::arg("param_batch"),
-             py::call_guard<py::gil_scoped_release>());
-
-    py::class_<EvaluatorPool>(m, "EvaluatorPool")
-        .def(py::init<const MultiBandData &, const ConfigParams &>())
-        .def("evaluate_batch", &EvaluatorPool::evaluate_batch, py::call_guard<py::gil_scoped_release>());
+        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>());
 }

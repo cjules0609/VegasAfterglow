@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX         := g++
-CXXFLAGS    := -std=c++20 -Iinclude -Iexternal -O3 -w -march=native -DNDEBUG  #-DEXTREME_SPEED -flto
+CXXFLAGS    := -std=c++20 -flto -Iinclude -Iexternal -O3 -w -march=native -DNDEBUG -DXTENSOR_DISABLE_ASSERT -DXTENSOR_DISABLE_CHECK_DIMENSION -DXTENSOR_DISABLE_CHECK_SHAPE #-DEXTREME_SPEED -flto
 
 # Directories
 SRC_DIR     := src
@@ -39,13 +39,14 @@ MODULE_SRC := pybind/pybind.cpp pybind/mcmc.cpp
 MODULE_OUT := $(MODULE_NAME).so
 
 OMP_PATH := $(shell brew --prefix libomp)
-PYBIND11_FLAGS := $(shell python3 -m pybind11 --includes) -Xpreprocessor -fopenmp -I$(OMP_PATH)/include -L$(OMP_PATH)/lib -lomp
+PYBIND11_FLAGS := $(shell python3 -m pybind11 --includes)
 PYTHON_LIBS := $(shell python3-config --ldflags)
+NUMPY_INCLUDE := $(shell python3 -c "import numpy; print(numpy.get_include())")
 
 # Fixed rule (use TAB for indentation, not spaces)
 $(MODULE_OUT): $(MODULE_SRC) $(SRC_FILES)
 	$(CXX) -arch x86_64 -O3 -w -shared -std=c++20 -DNDEBUG -fPIC \
-		$(PYBIND11_FLAGS) $(MODULE_SRC) $(SRC_FILES) -o $(MODULE_OUT) \
+		$(PYBIND11_FLAGS) $(MODULE_SRC) -I$(NUMPY_INCLUDE)  $(SRC_FILES) -o $(MODULE_OUT) \
 		$(PYTHON_LIBS) -Iinclude -Iexternal -undefined dynamic_lookup
 
 pymodule: $(MODULE_OUT)

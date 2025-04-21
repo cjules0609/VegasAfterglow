@@ -29,7 +29,7 @@ void GCN36236(Real theta_c) {
     size_t theta_num = 64;
     size_t phi_num = 64;
 
-    Array t_bins = logspace(1e-1 * con::day, 1e3 * con::day, 100);
+    Array t_bins = xt::logspace(std::log10(1e-1 * con::day), std::log10(1e3 * con::day), 100);
 
     Coord coord = autoGrid(jet, t_bins, theta_w, phi_num, theta_num, r_num);
 
@@ -39,13 +39,13 @@ void GCN36236(Real theta_c) {
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
 
-    Array theta_obs = linspace(5 * con::deg, 60 * con::deg, 56);
+    Array theta_obs = xt::linspace(5 * con::deg, 60 * con::deg, 56);
 
     Observer obs(coord, f_shock, 0, lumi_dist, z);
 
     std::vector<std::string> prefix = {"Optical"};
 
-    Array band_pass = logspace(eVtoHz(1.5 * con::eV), eVtoHz(3.5 * con::eV), 5);
+    Array band_pass = xt::logspace(std::log10(eVtoHz(1.5 * con::eV)), std::log10(eVtoHz(3.5 * con::eV)), 5);
     for (auto theta_v : theta_obs) {
         obs.changeViewingAngle(theta_v);
 
@@ -93,7 +93,7 @@ void std_afterglow(Real theta_c) {
     size_t theta_num = 64;
     size_t phi_num = 64;
 
-    Array t_bins = logspace(1e-1 * con::day, 3e3 * con::day, 100);
+    Array t_bins = xt::logspace(std::log10(1e-1 * con::day), std::log10(3e3 * con::day), 100);
 
     Real theta_obs_max = (*std::max_element(theta_obs.begin(), theta_obs.end())) * con::deg;
 
@@ -120,7 +120,7 @@ void std_afterglow(Real theta_c) {
 
     std::vector<std::string> prefix = {"EP"};
 
-    Array band_pass = logspace(lo[0], hi[0], 10);
+    Array band_pass = xt::logspace(std::log10(lo[0]), std::log10(hi[0]), 10);
 
     for (auto theta_v : theta_obs) {
         obs.changeViewingAngle(theta_v * con::deg);

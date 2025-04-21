@@ -34,7 +34,7 @@ void tests() {
     size_t theta_num = 250;
     size_t phi_num = 37;
 
-    Array t_obs = logspace(1e2 * con::sec, 1e8 * con::sec, 100);
+    Array t_obs = xt::logspace(std::log10(1e2 * con::sec), std::log10(1e8 * con::sec), 100);
     Coord coord = autoGrid(jet, t_obs, 0.5, 0, phi_num, theta_num, r_num);
 
     output(coord, data_folder + "/coord");

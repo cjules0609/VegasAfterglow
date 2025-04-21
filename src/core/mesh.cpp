@@ -11,39 +11,6 @@
 #include <iostream>
 
 #include "macros.h"
-/********************************************************************************************************************
- * FUNCTION: linspace
- * DESCRIPTION: Creates and returns an Array with 'num' linearly spaced values between 'start' and 'end'.
- ********************************************************************************************************************/
-Array linspace(Real start, Real end, size_t num) {
-    // Create an Array with the specified size using boost::multi_array extents.
-    Array result(boost::extents[num]);
-
-    Real step = (end - start) / (num - 1);
-    if (num == 1) step = 0;
-    for (size_t i = 0; i < num; i++) {
-        // Compute each value by linear interpolation between start and end.
-        result[i] = start + i * step;
-    }
-    return result;
-}
-
-/********************************************************************************************************************
- * FUNCTION: logspace
- * DESCRIPTION: Creates and returns an Array with 'num' logarithmically spaced values between 'start' and 'end'.
- ********************************************************************************************************************/
-Array logspace(Real start, Real end, size_t num) {
-    Array result(boost::extents[num]);
-    Real log_start = std::log(start);
-    Real log_end = std::log(end);
-    Real step = (log_end - log_start) / (num - 1);
-    if (num == 1) step = 0;
-    for (size_t i = 0; i < num; i++) {
-        // Exponentiate the linearly spaced logarithmic values to obtain logarithmically spaced values.
-        result[i] = std::exp(log_start + i * step);
-    }
-    return result;
-}
 
 /********************************************************************************************************************
  * FUNCTION: uniform_cos
@@ -52,7 +19,7 @@ Array logspace(Real start, Real end, size_t num) {
  ********************************************************************************************************************/
 Array uniform_cos(Real start, Real end, size_t num) {
     // First generate a linearly spaced array in cosine space.
-    Array result = linspace(std::cos(start), std::cos(end), num);
+    Array result = xt::linspace(std::cos(start), std::cos(end), num);
     for (size_t i = 0; i < num; i++) {
         // Convert back to angle by taking the arccosine.
         result[i] = std::acos(result[i]);
@@ -67,42 +34,12 @@ Array uniform_cos(Real start, Real end, size_t num) {
  ********************************************************************************************************************/
 Array uniform_sin(Real start, Real end, size_t num) {
     // First generate a linearly spaced array in cosine space.
-    Array result = linspace(std::sin(start), std::sin(end), num);
+    Array result = xt::linspace(std::sin(start), std::sin(end), num);
     for (size_t i = 0; i < num; i++) {
         // Convert back to angle by taking the arccosine.
         result[i] = std::asin(result[i]);
     }
     return result;
-}
-
-/********************************************************************************************************************
- * FUNCTION: zeros
- * DESCRIPTION: Creates and returns an Array of size 'num' initialized to zero.
- ********************************************************************************************************************/
-Array zeros(size_t num) {
-    Array result(boost::extents[num]);
-    std::fill(result.data(), result.data() + result.num_elements(), 0);
-    return result;
-}
-
-/********************************************************************************************************************
- * FUNCTION: ones
- * DESCRIPTION: Creates and returns an Array of size 'num' filled with ones.
- ********************************************************************************************************************/
-Array ones(size_t num) {
-    Array array(boost::extents[num]);
-    std::fill(array.data(), array.data() + array.num_elements(), 1);
-    return array;
-}
-
-/********************************************************************************************************************
- * FUNCTION: createGrid
- * DESCRIPTION: Creates and returns a 2D MeshGrid with dimensions (theta_size x t_size) filled with the value 'val'.
- ********************************************************************************************************************/
-MeshGrid createGrid(size_t theta_size, size_t t_size, Real val) {
-    MeshGrid grid(boost::extents[theta_size][t_size]);
-    std::fill(grid.data(), grid.data() + grid.num_elements(), val);
-    return grid;
 }
 
 /********************************************************************************************************************
@@ -140,117 +77,18 @@ bool isLogScale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: createGridLike
- * DESCRIPTION: Creates a 2D MeshGrid with the same shape as the given grid 'grid_old', filled with the value 'val'.
- ********************************************************************************************************************/
-MeshGrid createGridLike(MeshGrid const& grid_old, Real val) {
-    const size_t* shape = grid_old.shape();
-    MeshGrid grid(boost::extents[shape[0]][shape[1]]);
-    std::fill(grid.data(), grid.data() + grid.num_elements(), val);
-    return grid;
-}
-
-/********************************************************************************************************************
- * FUNCTION: create3DGrid
- * DESCRIPTION: Creates and returns a 3D MeshGrid (MeshGrid3d) with dimensions (phi_size x theta_size x r_size)
- *              filled with the value 'val'.
- ********************************************************************************************************************/
-MeshGrid3d create3DGrid(size_t phi_size, size_t theta_size, size_t t_size, Real val) {
-    MeshGrid3d grid(boost::extents[phi_size][theta_size][t_size]);
-    std::fill(grid.data(), grid.data() + grid.num_elements(), val);
-    return grid;
-}
-
-/********************************************************************************************************************
- * FUNCTION: create3DGridLike
- * DESCRIPTION: Creates a 3D MeshGrid with the same shape as the provided grid 'grid_old', filled with the value 'val'.
- ********************************************************************************************************************/
-MeshGrid3d create3DGridLike(MeshGrid3d const& grid_old, Real val) {
-    const size_t* shape = grid_old.shape();
-    MeshGrid3d grid(boost::extents[shape[0]][shape[1]][shape[2]]);
-    std::fill(grid.data(), grid.data() + grid.num_elements(), val);
-    return grid;
-}
-
-/********************************************************************************************************************
  * CONSTRUCTOR: Coord::Coord
  * DESCRIPTION: Constructs a Coord object with the provided phi, theta, and t arrays. It also computes the
  *              differential arrays dphi and dcos for phi and theta, respectively.
  ********************************************************************************************************************/
-Coord::Coord(Array const& phi, Array const& theta, Array const& t)
-    : phi(phi), theta(theta), t(t), dphi(zeros(phi.size())), dcos(zeros(theta.size())) {
-    size_t phi_size = phi.size();
-    if (phi_size > 1) {
-        // Compute dphi for the first element.
-        dphi[0] = std::abs(phi[1] - phi[0]) / 2;
-        // Compute dphi for intermediate elements.
-        for (size_t i = 1; i < phi_size - 1; i++) {
-            dphi[i] = std::abs(phi[i + 1] - phi[i - 1]) / 2;
-        }
-        // Compute dphi for the last element.
-        dphi[phi_size - 1] = std::abs(phi[phi_size - 1] - phi[phi_size - 2]) / 2;
-    } else if (phi_size == 1) {
-        dphi[0] = 2 * con::pi;
-    }
-
-    size_t theta_size = theta.size();
-    if (theta_size > 1) {
-        // Compute dcos for the first element.
-        Real theta_hi = (theta[1] + theta[0]) / 2;
-        dcos[0] = std::abs(std::cos(theta_hi) - std::cos(theta[0]));
-
-        // Compute dcos for intermediate theta values.
-        for (size_t j = 1; j < theta_size - 1; j++) {
-            Real theta_lo = (theta[j] + theta[j - 1]) / 2;
-            Real theta_hi = (theta[j] + theta[j + 1]) / 2;
-            dcos[j] = std::abs(std::cos(theta_hi) - std::cos(theta_lo));
-        }
-        // Compute dcos for the last element.
-        Real theta_lo = (theta[theta_size - 1] + theta[theta_size - 2]) / 2;
-        dcos[theta_size - 1] = std::abs(std::cos(theta[theta_size - 1]) - std::cos(theta_lo));
-    } else if (theta_size == 1) {
-        dcos[0] = 1;
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: min (MeshGrid)
- * DESCRIPTION: Returns the minimum value found in the provided 2D MeshGrid.
- ********************************************************************************************************************/
-Real min(MeshGrid const& grid) {
-    Real min = grid[0][0];
-    for (size_t i = 0; i < grid.size(); ++i) {
-        for (size_t j = 0; j < grid[i].size(); ++j) {
-            if (grid[i][j] < min) {
-                min = grid[i][j];
-            }
-        }
-    }
-    return min;
-}
-
-/********************************************************************************************************************
- * FUNCTION: max (MeshGrid)
- * DESCRIPTION: Returns the maximum value found in the provided 2D MeshGrid.
- ********************************************************************************************************************/
-Real max(MeshGrid const& grid) {
-    Real max = grid[0][0];
-    for (size_t i = 0; i < grid.size(); ++i) {
-        for (size_t j = 0; j < grid[i].size(); ++j) {
-            if (grid[i][j] > max) {
-                max = grid[i][j];
-            }
-        }
-    }
-    return max;
-}
+Coord::Coord(Array const& phi, Array const& theta, Array const& t) : phi(phi), theta(theta), t(t) {}
 
 /********************************************************************************************************************
  * FUNCTION: boundaryToCenter (linear)
  * DESCRIPTION: Converts a boundary array to center values by averaging adjacent boundaries.
  ********************************************************************************************************************/
 Array boundaryToCenter(Array const& boundary) {
-    Array center(boost::extents[boundary.size() - 1]);
+    Array center({boundary.size() - 1}, 0);
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = 0.5 * (boundary[i] + boundary[i + 1]);
     }
@@ -262,7 +100,7 @@ Array boundaryToCenter(Array const& boundary) {
  * DESCRIPTION: Converts a boundary array to center values in logarithmic space using the geometric mean.
  ********************************************************************************************************************/
 Array boundaryToCenterLog(Array const& boundary) {
-    Array center(boost::extents[boundary.size() - 1]);
+    Array center({boundary.size() - 1}, 0);
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }

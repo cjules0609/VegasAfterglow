@@ -57,10 +57,10 @@ struct IntegratorGrid {
     // Constructor: Initializes the grid with given x and y boundaries.
     IntegratorGrid(Real x_min, Real x_max, Real y_min, Real y_max)
         : x_min(x_min), x_max(x_max), y_min(y_min), y_max(y_max) {
-        logspace(x_min, x_max, x_bin);  // Generate logarithmically spaced bin edges for x.
-        logspace(y_min, y_max, y_bin);  // Generate logarithmically spaced bin edges for y.
-        boundaryToCenter(x_bin, x);     // Compute center values for x.
-        boundaryToCenter(y_bin, y);     // Compute center values for y.
+        logspace(std::log10(x_min), std::log10(x_max), x_bin);  // Generate logarithmically spaced bin edges for x.
+        logspace(std::log10(y_min), std::log10(y_max), y_bin);  // Generate logarithmically spaced bin edges for y.
+        boundaryToCenter(x_bin, x);                             // Compute center values for x.
+        boundaryToCenter(y_bin, y);                             // Compute center values for y.
     }
 
     Real x_min;                                        // Minimum x-value.
@@ -138,8 +138,8 @@ struct ICPhoton {
         Real nu_max = 4 * gamma_max * gamma_max * nu0_max;
 
         // Generate the IC frequency grid and allocate the output array.
-        nu_IC_ = logspace(nu_min, nu_max, spectrum_resol);
-        j_nu_ = Array(boost::extents[spectrum_resol]);
+        nu_IC_ = xt::logspace(std::log10(nu_min), std::log10(nu_max), spectrum_resol);
+        j_nu_ = xt::zeros<Real>({spectrum_resol});
 
         // Integrate over the grid to compute the final IC photon spectrum.
         for (size_t k = 0; k < nu_IC_.size(); ++k) {
@@ -162,15 +162,14 @@ struct ICPhoton {
 
 /********************************************************************************************************************
  * TYPE ALIAS: ICPhotonGrid
- * DESCRIPTION: Defines a 3D grid (using boost::multi_array) for storing ICPhoton objects.
+ * DESCRIPTION: Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
  ********************************************************************************************************************/
-using ICPhotonGrid = boost::multi_array<ICPhoton, 3>;
+using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
 
 /********************************************************************************************************************
  * FUNCTION PROTOTYPES: IC Photon and Electron Cooling Functions
  * DESCRIPTION: These functions create and generate IC photon grids, and apply electron cooling mechanisms.
  ********************************************************************************************************************/
-ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t t_size);
 ICPhotonGrid genICPhotons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
 void eCoolingThomson(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
 void eCoolingKleinNishina(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);

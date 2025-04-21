@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <omp.h>
-
 #include <iostream>
 #include <vector>
 
@@ -24,7 +22,6 @@ struct LightCurveData {
     Array Fv_model;
 
     double calcChiSquare() const;
-    void resize(size_t size);
 };
 
 struct SpectrumData {
@@ -35,17 +32,17 @@ struct SpectrumData {
     Array Fv_model;
 
     double calcChiSquare() const;
-    void resize(size_t size);
 };
 
 struct MultiBandData {
     using List = std::vector<double>;
+
     std::vector<LightCurveData> light_curve;
     std::vector<SpectrumData> spectrum;
 
     double calcChiSquare() const;
-    void addObsLightCurve(double nu, List& t, List& Fv_obs, List& Fv_err);
-    void addObsSpectrum(double t, List& nu, List& Fv_obs, List& Fv_err);
+    void addObsLightCurve(double nu, List const& t, List const& Fv_obs, List const& Fv_err);
+    void addObsSpectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err);
 };
 
 struct Params {
@@ -75,53 +72,18 @@ struct ConfigParams {
 };
 
 struct MultiBandModel {
+    using List = std::vector<double>;
     MultiBandModel() = delete;
     MultiBandModel(MultiBandData const& data);
 
     void configure(ConfigParams const& param);
     double chiSquare(Params const& param);
-    std::vector<std::vector<double>> lightCurve(Params const& param, std::vector<double> const& t,
-                                                std::vector<double> const& nu);
-    std::vector<std::vector<double>> spectrum(Params const& param, std::vector<double> const& nu,
-                                              std::vector<double> const& t);
-    std::vector<double> chiSquareBatch(std::vector<Params> const& param_batch);
+    MeshGrid lightCurve(Params const& param, List const& t, List const& nu);
+    MeshGrid spectrum(Params const& param, List const& nu, List const& t);
 
    private:
     MultiBandData obs_data;
-    Coord coord;
-    Shock shock;
-    SynElectronGrid electrons;
-    SynPhotonGrid photons;
-    Observer obs;
     ConfigParams config;
     double t_min{0};
     double t_max{0};
-};
-
-class EvaluatorPool {
-   public:
-    EvaluatorPool(const MultiBandData& data, const ConfigParams& cfg) {
-        int n = omp_get_max_threads();
-        models_.reserve(n);
-        for (int i = 0; i < n; ++i) {
-            models_.emplace_back(data);
-            models_.back().configure(cfg);
-        }
-    }
-
-    std::vector<double> evaluate_batch(const std::vector<Params>& param_batch) {
-        const size_t N = param_batch.size();
-        std::vector<double> results(N);
-
-#pragma omp parallel for schedule(dynamic)
-        for (int i = 0; i < N; ++i) {
-            int tid = omp_get_thread_num();
-            results[i] = models_[tid].chiSquare(param_batch[i]);
-        }
-
-        return results;
-    }
-
-   private:
-    std::vector<MultiBandModel> models_;
 };

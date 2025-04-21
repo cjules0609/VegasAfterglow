@@ -15,15 +15,6 @@
 #include "utilities.h"
 
 /********************************************************************************************************************
- * FUNCTION: createICPhotonGrid
- * DESCRIPTION: Creates and returns an ICPhotonGrid with dimensions (phi_size x theta_size x r_size)
- *              using boost::multi_array with the specified extents.
- ********************************************************************************************************************/
-ICPhotonGrid createICPhotonGrid(size_t phi_size, size_t theta_size, size_t r_size) {
-    return ICPhotonGrid(boost::extents[phi_size][theta_size][r_size]);
-}
-
-/********************************************************************************************************************
  * INLINE FUNCTION: order
  * DESCRIPTION: Returns true if the three arguments are in strictly increasing order.
  ********************************************************************************************************************/
@@ -77,13 +68,13 @@ ICPhotonGrid genICPhotons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
     size_t phi_size = e.shape()[0];
     size_t theta_size = e.shape()[1];
     size_t r_size = e.shape()[2];
-    ICPhotonGrid IC_ph = createICPhotonGrid(phi_size, theta_size, r_size);
+    ICPhotonGrid IC_ph({phi_size, theta_size, r_size});
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
                 // Generate the IC photon spectrum for each grid cell.
-                IC_ph[i][j][k].gen(e[i][j][k], ph[i][j][k]);
+                IC_ph(i, j, k).gen(e(i, j, k), ph(i, j, k));
             }
         }
     }
@@ -106,9 +97,9 @@ void eCoolingThomson(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& s
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
                 Real Y_T =
-                    effectiveYThomson(shock.B[i][j][k], shock.t_com[i][j][k], shock.eps_e, shock.eps_B, e[i][j][k]);
+                    effectiveYThomson(shock.B(i, j, k), shock.t_com(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
 
-                e[i][j][k].Ys = InverseComptonY(Y_T);
+                e(i, j, k).Ys = InverseComptonY(Y_T);
             }
         }
     }
@@ -129,11 +120,11 @@ void eCoolingKleinNishina(SynElectronGrid& e, SynPhotonGrid const& ph, Shock con
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
                 Real Y_T =
-                    effectiveYThomson(shock.B[i][j][k], shock.t_com[i][j][k], shock.eps_e, shock.eps_B, e[i][j][k]);
+                    effectiveYThomson(shock.B(i, j, k), shock.t_com(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
                 // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
                 // e[i][j][k].Ys.clear();
                 // e[i][j][k].Ys.emplace_back(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
-                e[i][j][k].Ys = InverseComptonY(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
+                e(i, j, k).Ys = InverseComptonY(ph(i, j, k).nu_m, ph(i, j, k).nu_c, shock.B(i, j, k), Y_T);
             }
         }
     }
