@@ -17,28 +17,30 @@
 
 /********************************************************************************************************************
  * CLASS: LogScaleInterp
- * DESCRIPTION: Provides logarithmic scale interpolation for various shock-related quantities. It includes methods
- *              to interpolate radius, intensity, and Doppler factor based on the logarithm of the observation time.
- *              It also defines a method to attempt to set boundary conditions for the interpolation using provided
- *              grids.
+ * DESCRIPTION: Provides logarithmic scale interpolation for various shock-related quantities. This class is used
+ *              to interpolate physical quantities (radius, intensity, Doppler factor) in logarithmic space, which
+ *              is particularly useful for GRB afterglow calculations where quantities often span many orders of
+ *              magnitude. The interpolation is performed using the logarithm of the observation time as the
+ *              independent variable.
  ********************************************************************************************************************/
 class LogScaleInterp {
    public:
     size_t jet_3d{0};  // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
 
-    // Interpolates the radius, Intensity, and Doppler factor using  the observation time (t)
+    // Interpolates the luminosity using the observation time (t_obs) in logarithmic space
+    // Returns the interpolated luminosity value
     Real interpLuminosity(Real t_obs) const;
 
-    // Tries to set the interpolation boundaries using the provided logarithmic radius array, observation time grid,
-    // Doppler grid, observed frequency, and one or more photon grids.
+    // Validates and sets the interpolation boundaries using the provided grids
+    // Returns true if both lower and upper boundaries are valid for interpolation
     template <typename... PhotonGrid>
     bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& dOmega,
                                 MeshGrid3d const& r_grid, MeshGrid3d const& t_obs, MeshGrid3d const& doppler,
                                 Real nu_obs, PhotonGrid const&... photons);
 
    private:
-    Real log_t_ratio{0};  // Ratio of logarithmic observation time
-    Real log_L_ratio{0};
+    Real log_t_ratio{0};  // Ratio of logarithmic observation times
+    Real log_L_ratio{0};  // Ratio of logarithmic luminosities
 
     Real t_obs_lo{0};  // Lower boundary of observation time
 
@@ -46,68 +48,76 @@ class LogScaleInterp {
     Real L_hi{0};  // Upper boundary of luminosity
 
     size_t idx_hi{0};  // Index for the upper boundary in the grid
-    size_t idx_i{0};
-    size_t idx_j{0};
+    size_t idx_i{0};   // Index for phi coordinate
+    size_t idx_j{0};   // Index for theta coordinate
 };
 
 /********************************************************************************************************************
  * CLASS: Observer
- * DESCRIPTION: Represents an observer in the shock simulation. The Observer stores observation grids (for
- *              observation time and Doppler factors), as well as parameters such as the observation angle,
- *              luminosity distance, and redshift. It provides methods for "observing" the simulation dynamics
- *              and for computing the specific flux, integrated flux, and spectrum.
+ * DESCRIPTION: Represents an observer in the GRB afterglow simulation. This class handles the calculation of
+ *              observed quantities such as specific flux, integrated flux, and spectra. It accounts for relativistic
+ *              effects (Doppler boosting), cosmological effects (redshift), and geometric effects (solid angle).
+ *              The observer can be placed at any viewing angle relative to the jet axis.
  ********************************************************************************************************************/
 class Observer {
    public:
-    // Constructor: .
+    // Default constructor
     Observer() = default;
-    MeshGrid3d t_obs_grid;  // Grid of observation times
-    MeshGrid3d doppler;     // Grid of Doppler factors
-    MeshGrid3d dOmega;      // Grid of solid angles
-    Real lumi_dist{1};      // Luminosity distance
-    Real z{0};              // Redshift
 
+    // Grids for storing simulation data
+    MeshGrid3d t_obs_grid;  // Grid of observation times in seconds
+    MeshGrid3d doppler;     // Grid of Doppler factors
+    MeshGrid3d dOmega;      // Grid of solid angles in steradians
+
+    // Physical parameters
+    Real lumi_dist{1};  // Luminosity distance in cm
+    Real z{0};          // Redshift
+
+    // Main observation function that sets up the observer's view of the simulation
     template <typename Dynamics>
     void observe(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
 
-    // Computes the specific flux at a single observed frequency (nu_obs) for the given observation times,
-    // using one or more photon grids.
+    // Computes the specific flux at a single observed frequency
     template <typename... PhotonGrid>
     Array specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 
-    // Computes the specific flux at multiple observed frequencies (nu_obs) for the given observation times.
+    // Computes the specific flux at multiple observed frequencies
     template <typename... PhotonGrid>
     MeshGrid specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
 
-    // Computes the integrated flux over a frequency band defined by band_freq.
+    // Computes the integrated flux over a frequency band
     template <typename... PhotonGrid>
     Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
 
-    // Computes the spectrum over a frequency band.
+    // Computes the spectrum at multiple frequencies for a single observation time
     template <typename... PhotonGrid>
     MeshGrid spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
 
+    // Computes the spectrum at multiple frequencies for a single observation time
     template <typename... PhotonGrid>
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
+    // Updates the required grid points for observation
     void updateRequired(MaskGrid& required, Array const& t_obs);
 
    private:
-    LogScaleInterp interp;   // Log-scale interpolation helper
-    MeshGrid3d r_grid;       // Grid of radius
+    LogScaleInterp interp;   // Helper class for logarithmic interpolation
+    MeshGrid3d r_grid;       // Grid of radius values
     size_t eff_phi_size{1};  // Effective number of phi grid points
-    size_t theta_size{0};
-    size_t t_size{0};
+    size_t theta_size{0};    // Number of theta grid points
+    size_t t_size{0};        // Number of time grid points
 
-    // Calculates the observation time grid based on Gamma and engine time array.
+    // Calculates the observation time grid based on Lorentz factor and engine time
     void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, Real theta_obs);
-    // Calculates the solid angle grid.
+
+    // Calculates the solid angle grid for each grid point
     void calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid);
 
-    // Template helper method to compute specific flux and store the result in a provided iterator (f_nu).
+    // Helper method to compute specific flux
     template <typename View, typename... PhotonGrid>
     void calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 
+    // Helper method to compute spectrum
     template <typename View, typename... PhotonGrid>
     void calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, PhotonGrid const&... photons);
 };
