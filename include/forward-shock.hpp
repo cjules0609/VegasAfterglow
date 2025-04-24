@@ -101,7 +101,7 @@ class ForwardShockEqn {
  *              the shock object accordingly.
  ********************************************************************************************************************/
 template <typename Eqn, typename State>
-void updateForwardShock(size_t i, size_t j, int k, Eqn const& eqn, State const& state, Shock& shock) {
+void updateForwardShock(size_t i, size_t j, size_t k, Eqn const& eqn, State const& state, Shock& shock) {
     // Calculate number density of the ambient medium at current position
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
 
@@ -173,7 +173,7 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn 
     using namespace boost::numeric::odeint;
 
     // Initialize state array and wrapper
-    typename FwdEqn::StateArray y;
+    typename FwdEqn::StateArray y{};
     FState state(y);
 
     // Get initial time and set up initial conditions
@@ -190,10 +190,9 @@ void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn 
     // Set up ODE solver with adaptive step size control
     auto stepper = make_dense_output(0, rtol, runge_kutta_dopri5<typename FwdEqn::StateArray>());
     stepper.initialize(y, t0, dt);
-    Real t_back = t.back();  // Last time in the array
 
     // Solve ODE and update shock state at each requested time point
-    for (int k = 0; stepper.current_time() <= t_back;) {
+    for (size_t k = 0; stepper.current_time() <= t.back();) {
         // Advance solution by one adaptive step
         stepper.do_step(eqn);
 

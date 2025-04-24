@@ -11,7 +11,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Real lumi_dist = 1.23e26 * con::cm;
 
-    Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 50);
+    Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 30);
     // create model
     Medium medium;
 
@@ -29,15 +29,19 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
+    Observer obs;
+
+    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
+
+    f_shock.required.fill(false);
+
+    obs.updateRequired(f_shock.required, t_obs);
+
     // output(f_shock, "shock");
 
     auto syn_e = genSynElectrons(f_shock, p);
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
-
-    Observer obs;
-
-    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
 
     // output(obs.t_obs_grid, "t_obs", con::sec);
 
@@ -70,14 +74,14 @@ int main() {
     Array theta_c = xt::linspace(0.01, 0.1, 100);
     Array theta_v = xt::linspace(0.01, 0.5, 5);
 
-    tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    /*tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(128, 128, 128, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(64, 64, 64, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(30, 30, 30, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(28, 28, 28, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(16, 16, 16, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);*/
     // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
 
     // return 0;

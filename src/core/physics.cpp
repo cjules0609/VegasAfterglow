@@ -117,7 +117,7 @@ Real jetSpreadingEdge(Ejecta const& jet, Medium const& medium, Real phi, Real th
         Real th_hi = std::min(theta + step, theta_max);
         Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
         Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
-        Real dp = (2 * G - 1) * rho * dG + (G - 1) * G * drho;
+        Real dp = dG;  //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
 
         if (dp < dp_min) {
             dp_min = dp;

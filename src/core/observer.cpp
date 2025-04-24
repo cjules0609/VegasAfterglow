@@ -31,6 +31,8 @@ Real LogScaleInterp::interpLuminosity(Real t_obs) const {
  *              the effective phi size is 1) or the differential phi value.
  ********************************************************************************************************************/
 void Observer::calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid) {
+    Array dphi({eff_phi_size}, 0);
+
     for (size_t i = 0; i < eff_phi_size; ++i) {
         Real phi_lo = 0;
         Real phi_hi = 0;
@@ -43,11 +45,14 @@ void Observer::calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid) 
         } else if (i == coord.phi.size() - 1) {
             phi_lo = coord.phi(i - 1);
             phi_hi = coord.phi(i);
-        } else {
+        } else [[likely]] {
             phi_lo = coord.phi(i - 1);
             phi_hi = coord.phi(i + 1);
         }
-        Real dphi = std::abs(phi_hi - phi_lo) / 2;
+        dphi(i) = std::abs(phi_hi - phi_lo) / 2;
+    }
+
+    for (size_t i = 0; i < eff_phi_size; ++i) {
         size_t i_eff = i * interp.jet_3d;
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
@@ -59,12 +64,12 @@ void Observer::calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid) 
                 } else if (j == coord.theta.size() - 1) {
                     theta_lo = 0.5 * (theta_grid(i_eff, j - 1, k) + theta_grid(i_eff, j, k));
                     theta_hi = theta_grid(i_eff, j, k);
-                } else {
+                } else [[likely]] {
                     theta_lo = 0.5 * (theta_grid(i_eff, j, k) + theta_grid(i_eff, j - 1, k));
                     theta_hi = 0.5 * (theta_grid(i_eff, j, k) + theta_grid(i_eff, j + 1, k));
                 }
                 Real dcos = std::abs(std::cos(theta_hi) - std::cos(theta_lo));
-                dOmega(i, j, k) = dcos * dphi;
+                dOmega(i, j, k) = dcos * dphi(i);
             }
         }
     }

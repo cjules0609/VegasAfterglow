@@ -21,11 +21,11 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
     : t_com({phi_size, theta_size, t_size}, 0),           // Initialize comoving time grid with 0
       r({phi_size, theta_size, t_size}, 0),               // Initialize engine time grid with 0
       theta({phi_size, theta_size, t_size}, 0),           // Initialize theta grid with 0
-      Gamma({phi_size, theta_size, t_size}, 1),           // Initialize Gamma grid with 0
+      Gamma({phi_size, theta_size, t_size}, 1),           // Initialize Gamma grid with 1
       Gamma_rel({phi_size, theta_size, t_size}, 1),       // Initialize Gamma_rel grid with 1
       B({phi_size, theta_size, t_size}, 0),               // Initialize magnetic field grid with 0
       column_num_den({phi_size, theta_size, t_size}, 0),  // Initialize column density grid with 0
-      injection_idx({phi_size, theta_size}, t_size),      // Initialize cross index grid with 0
+      injection_idx({phi_size, theta_size}, t_size),      // Initialize cross index grid with t_size
       required({phi_size, theta_size, t_size}, true),     // Initialize required grid with true
       eps_e(eps_e),                                       // Set electron energy fraction
       eps_B(eps_B),                                       // Set magnetic energy fraction
@@ -116,8 +116,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e, theta_s);
-            auto eqn =
-                SimpleShockEqn(medium, jet, coord.phi(i), j ? coord.theta(j - 1) : 0, coord.theta(j), eps_e, theta_s);
+            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
             solveForwardShell(i, j, coord.t, f_shock, eqn, rtol);
         }
@@ -139,8 +138,7 @@ void genForwardShock(Shock& f_shock, Coord const& coord, Medium const& medium, E
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            auto eqn =
-                SimpleShockEqn(medium, jet, coord.phi(i), j ? coord.theta(j - 1) : 0, coord.theta(j), eps_e, theta_s);
+            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
             solveForwardShell(i, j, coord.t, f_shock, eqn, rtol);
         }
@@ -165,8 +163,7 @@ ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& je
         for (size_t j = 0; j < theta_size; ++j) {
             // Create equations for forward and reverse shocks for each theta slice
             // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi(i), coord.theta(j), eps_e);
-            auto eqn_f =
-                SimpleShockEqn(medium, jet, coord.phi(i), j ? coord.theta(j - 1) : 0, coord.theta(j), eps_e_f, theta_s);
+            auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e_f, theta_s);
             auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_r);
             // Solve the forward-reverse shock shell
             solveFRShell(i, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);
@@ -192,8 +189,7 @@ void genFRShocks(Shock& f_shock, Shock& r_shock, Coord const& coord, Medium cons
         for (size_t j = 0; j < theta_size; ++j) {
             // Create equations for forward and reverse shocks for each theta slice
             // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi(i), coord.theta(j), eps_e);
-            auto eqn_f =
-                SimpleShockEqn(medium, jet, coord.phi(i), j ? coord.theta(j - 1) : 0, coord.theta(j), eps_e_f, theta_s);
+            auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e_f, theta_s);
             auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_r);
             // Solve the forward-reverse shock shell
             solveFRShell(i, j, coord.t, f_shock, r_shock, eqn_f, eqn_r, rtol);

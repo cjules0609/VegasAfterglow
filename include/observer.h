@@ -65,12 +65,12 @@ class Observer {
     Observer() = default;
 
     // Grids for storing simulation data
-    MeshGrid3d t_obs_grid;  // Grid of observation times in seconds
+    MeshGrid3d t_obs_grid;  // Grid of observation times
     MeshGrid3d doppler;     // Grid of Doppler factors
-    MeshGrid3d dOmega;      // Grid of solid angles in steradians
+    MeshGrid3d dOmega;      // Grid of solid angles
 
     // Physical parameters
-    Real lumi_dist{1};  // Luminosity distance in cm
+    Real lumi_dist{1};  // Luminosity distance
     Real z{0};          // Redshift
 
     // Main observation function that sets up the observer's view of the simulation
@@ -136,7 +136,7 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
                                             MeshGrid3d const& r_grid, MeshGrid3d const& t_obs,
                                             MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
     t_obs_lo = t_obs(i, j, k_lo);
-    log_t_ratio = fastLog(t_obs(i, j, k_lo + 1) / t_obs(i, j, k_lo));
+    log_t_ratio = fastLog(t_obs(i, j, k_lo + 1) / t_obs_lo);
 
     if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) {
         return false;
@@ -232,17 +232,22 @@ void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, con
                 Real const t_lo = t_obs_grid(i, j, k);
                 Real const t_hi = t_obs_grid(i, j, k + 1);
 
-                if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
-                    if (!interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
-                                                       photons...)) {
-                        for (; t_idx < t_obs_size && t_obs(t_idx) < t_hi; t_idx++) {
-                        }
-                        continue;
-                    }
+                if (t_hi < t_obs(t_idx)) {
+                    continue;
                 }
 
-                for (; t_idx < t_obs_size && t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi; t_idx++) {
-                    f_nu(t_idx) += interp.interpLuminosity(t_obs(t_idx));
+                if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
+                    if (interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
+                                                      photons...)) {
+                        while (t_idx < t_obs_size && t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
+                            f_nu(t_idx) += interp.interpLuminosity(t_obs(t_idx));
+                            t_idx++;
+                        }
+                    } else {
+                        while (t_idx < t_obs_size && t_obs(t_idx) < t_hi) {
+                            t_idx++;
+                        }
+                    }
                 }
             }
         }
