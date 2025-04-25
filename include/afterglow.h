@@ -8,6 +8,7 @@
 #pragma once
 
 #include "IO.h"
+#include "forward-shock.hpp"
 #include "inverse-compton.h"
 #include "jet.h"
 #include "macros.h"
@@ -16,6 +17,7 @@
 #include "observer.h"
 #include "physics.h"
 #include "prompt.h"
-#include "shock.h"
+#include "reverse-shock.hpp"
+#include "simple-shock.hpp"
 #include "synchrotron.h"
 #include "utilities.h"

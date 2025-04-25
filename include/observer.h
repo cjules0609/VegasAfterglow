@@ -34,19 +34,19 @@ class LogScaleInterp {
     // Validates and sets the interpolation boundaries using the provided grids
     // Returns true if both lower and upper boundaries are valid for interpolation
     template <typename... PhotonGrid>
-    bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& dOmega,
-                                MeshGrid3d const& r_grid, MeshGrid3d const& t_obs, MeshGrid3d const& doppler,
-                                Real nu_obs, PhotonGrid const&... photons);
+    bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& surface,
+                                MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
+                                PhotonGrid const&... photons);
 
    private:
-    Real log_t_ratio{0};  // Ratio of logarithmic observation times
-    Real log_L_ratio{0};  // Ratio of logarithmic luminosities
+    Real slope{0};
 
     Real t_obs_lo{0};  // Lower boundary of observation time
+    Real log_I_lo{0};  // Lower boundary of specific intensity
+    Real log_I_hi{0};  // Upper boundary of specific intensity
+    Real surface_lo{0};
 
-    Real L_lo{0};  // Lower boundary of luminosity
-    Real L_hi{0};  // Upper boundary of luminosity
-
+    Real nu_last{0};
     size_t idx_hi{0};  // Index for the upper boundary in the grid
     size_t idx_i{0};   // Index for phi coordinate
     size_t idx_j{0};   // Index for theta coordinate
@@ -67,15 +67,17 @@ class Observer {
     // Grids for storing simulation data
     MeshGrid3d t_obs_grid;  // Grid of observation times
     MeshGrid3d doppler;     // Grid of Doppler factors
-    MeshGrid3d dOmega;      // Grid of solid angles
+    MeshGrid3d surface;     // Grid of effective emission surface L_obs = I^\prime * S
 
     // Physical parameters
     Real lumi_dist{1};  // Luminosity distance
     Real z{0};          // Redshift
 
     // Main observation function that sets up the observer's view of the simulation
-    template <typename Dynamics>
-    void observe(Coord const& coord, Dynamics const& dyn, Real theta_view, Real luminosity_dist, Real redshift);
+    void observe(Coord const& coord, Shock const& shock, Real theta_view, Real luminosity_dist, Real redshift);
+
+    void observeAt(Array const& t_obs, Coord const& coord, Shock& shock, Real theta_view, Real luminosity_dist,
+                   Real redshift);
 
     // Computes the specific flux at a single observed frequency
     template <typename... PhotonGrid>
@@ -102,24 +104,17 @@ class Observer {
 
    private:
     LogScaleInterp interp;   // Helper class for logarithmic interpolation
-    MeshGrid3d r_grid;       // Grid of radius values
     size_t eff_phi_size{1};  // Effective number of phi grid points
     size_t theta_size{0};    // Number of theta grid points
     size_t t_size{0};        // Number of time grid points
 
+    void buildObsTimeGrid(Coord const& coord, Shock const& shock, Real theta_view, Real luminosity_dist, Real redshift);
+
     // Calculates the observation time grid based on Lorentz factor and engine time
-    void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, Real theta_obs);
+    void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, MeshGrid3d const& r_grid, Real theta_obs);
 
     // Calculates the solid angle grid for each grid point
-    void calcSolidAngle(Coord const& coord, MeshGrid3d const& theta_grid);
-
-    // Helper method to compute specific flux
-    template <typename View, typename... PhotonGrid>
-    void calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
-
-    // Helper method to compute spectrum
-    template <typename View, typename... PhotonGrid>
-    void calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, PhotonGrid const&... photons);
+    void calcEmissionSurface(Coord const& coord, Shock const& shock);
 };
 
 /********************************************************************************************************************
@@ -132,39 +127,37 @@ class Observer {
  *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& dOmega,
-                                            MeshGrid3d const& r_grid, MeshGrid3d const& t_obs,
-                                            MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) {
+bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& surface,
+                                            MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
+                                            PhotonGrid const&... photons) {
     t_obs_lo = t_obs(i, j, k_lo);
-    log_t_ratio = fastLog(t_obs(i, j, k_lo + 1) / t_obs_lo);
+    Real log_t_ratio = fastLog(t_obs(i, j, k_lo + 1) / t_obs_lo);
 
     if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) {
         return false;
     }
+
     size_t phi_idx = i * jet_3d;
+    surface_lo = surface(i, j, k_lo);
 
-    // If continuing from previous boundary, shift the high boundary values to lower. Calling .I_nu() is expensive.
-    if (idx_hi != 0 && k_lo == idx_hi && idx_i == i && idx_j == j) {
-        L_lo = L_hi;
+    // continuing from previous boundary, shift the high boundary to lower. Calling .I_nu()/.log_I_nu() could be
+    // expensive.
+    if (idx_hi != 0 && k_lo == idx_hi && idx_i == i && idx_j == j && nu_last == nu_obs) {
+        log_I_lo = log_I_hi;
     } else {
-        Real D = doppler(i, j, k_lo);
-        Real nu = (1 + z) * nu_obs / D;
-        Real I_lo = (photons(phi_idx, j, k_lo).I_nu(nu) + ...);
-        Real r = r_grid(phi_idx, j, k_lo);
-        Real solid_angle = dOmega(i, j, k_lo);
-        L_lo = I_lo * r * r * D * D * D * solid_angle;
+        Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo);
+        log_I_lo = (photons(phi_idx, j, k_lo).log_I_nu(nu) + ...);
     }
-    Real D = doppler(i, j, k_lo + 1);
-    Real nu = (1 + z) * nu_obs / D;
-    Real I_hi = (photons(phi_idx, j, k_lo + 1).I_nu(nu) + ...);
-    Real r = r_grid(phi_idx, j, k_lo + 1);
-    Real solid_angle = dOmega(i, j, k_lo + 1);
-    L_hi = I_hi * r * r * D * D * D * solid_angle;
 
-    log_L_ratio = fastLog(L_hi / L_lo);
-    if (!std::isfinite(log_L_ratio)) {
+    Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo + 1);
+    log_I_hi = (photons(phi_idx, j, k_lo + 1).log_I_nu(nu) + ...);
+
+    slope = (log_I_hi - log_I_lo + fastLog(surface(i, j, k_lo + 1) / surface_lo)) / log_t_ratio;
+
+    if (!std::isfinite(slope)) {
         return false;
     }
+    nu_last = nu_obs;
     idx_hi = k_lo + 1;
     idx_i = i;
     idx_j = j;
@@ -172,60 +165,29 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
 }
 
 /********************************************************************************************************************
- * CONSTRUCTOR: Observer::Observer
- * DESCRIPTION: Constructs an Observer object with the given coordinate grid, shocks, observation angle, luminosity
- *              and redshift. It initializes the observation time and Doppler factor grids, as well as the
- *              interpolation object.
+ * TEMPLATE METHOD: Observer::specificFlux (multi-frequency overload)
+ * DESCRIPTION: Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
+ *              the specific flux for each frequency and assembling the results into a grid.
  ********************************************************************************************************************/
-template <typename Dynamics>
-void Observer::observe(Coord const& coord, Dynamics const& shock, Real theta_view, Real luminosity_dist,
-                       Real redshift) {
-    auto [phi_size, theta_size, t_size] = shock.shape();
-
-    // Determine if the jet is 3D (more than one phi value)
-    interp.jet_3d = static_cast<size_t>((phi_size > 1));
-    // Set effective phi grid size based on the observation angle and jet dimensionality.
-    if (theta_view == 0 && interp.jet_3d == 0) {
-        this->eff_phi_size = 1;  // optimize for on-axis observer
-    } else {
-        this->eff_phi_size = coord.phi.size();
+inline size_t iterate_to(Real value, Array const& arr, size_t it) {
+    while (it < arr.size() && arr(it) < value) {
+        it++;
     }
-    this->theta_size = theta_size;
-    this->t_size = t_size;
-    this->lumi_dist = luminosity_dist;
-    this->z = redshift;
-
-    t_obs_grid.resize({eff_phi_size, theta_size, t_size});
-    doppler.resize({eff_phi_size, theta_size, t_size});
-    dOmega.resize({eff_phi_size, theta_size, t_size});
-    r_grid = shock.r;
-
-    // Calculate the solid angle grid and observation time grid.
-    calcSolidAngle(coord, shock.theta);
-    calcObsTimeGrid(coord, shock.Gamma, theta_view);
+    return it;
 }
 
-/********************************************************************************************************************
- * TEMPLATE METHOD: Observer::calcSpecificFlux
- * DESCRIPTION: Calculates the specific flux at each observation time for a given observed frequency nu_obs.
- *              For each effective phi and theta grid point, it:
- *                - Interpolates the Doppler factor, radius, and intensity using the LogScaleInterp object.
- *                - Updates the flux array by accumulating contributions from each grid cell multiplied by its
- *                  solid angle.
- *              Finally, the flux is normalized by the factor (1+z)/(lumi_dist^2).
- ********************************************************************************************************************/
-template <typename View, typename... PhotonGrid>
-void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, const PhotonGrid&... photons) {
+template <typename... PhotonGrid>
+MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
     size_t t_obs_size = t_obs.size();
+    size_t nu_size = nu_obs.size();
+
+    MeshGrid F_nu({nu_size, t_obs_size}, 0);
 
     // Loop over effective phi and theta grid points.
     for (size_t i = 0; i < eff_phi_size; i++) {
         for (size_t j = 0; j < theta_size; j++) {
             // Skip observation times that are below the grid's start time
-            size_t t_idx = 0;
-            while (t_idx < t_obs_size && t_obs(t_idx) < t_obs_grid(i, j, 0)) {
-                t_idx++;
-            }
+            size_t t_idx = iterate_to(t_obs_grid(i, j, 0), t_obs, 0);
 
             // Interpolate for observation times within the grid.
             for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
@@ -237,17 +199,15 @@ void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, con
                 }
 
                 if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
-                    if (interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler, nu_obs,
-                                                      photons...)) {
-                        while (t_idx < t_obs_size && t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
-                            f_nu(t_idx) += interp.interpLuminosity(t_obs(t_idx));
-                            t_idx++;
-                        }
-                    } else {
-                        while (t_idx < t_obs_size && t_obs(t_idx) < t_hi) {
-                            t_idx++;
+                    for (size_t l = 0; l < nu_size; l++) {
+                        if (interp.validateInterpBoundary(i, j, k, z, surface, t_obs_grid, doppler, nu_obs[l],
+                                                          photons...)) {
+                            for (size_t tt = t_idx; tt < t_obs_size && t_obs(tt) < t_hi; tt++) {
+                                F_nu(l, tt) += interp.interpLuminosity(t_obs(tt));
+                            }
                         }
                     }
+                    t_idx = iterate_to(t_hi, t_obs, t_idx);
                 }
             }
         }
@@ -255,49 +215,9 @@ void Observer::calcSpecificFlux(View& f_nu, Array const& t_obs, Real nu_obs, con
 
     // Normalize the flux by the factor (1+z)/(lumi_dist^2).
     Real const coef = (1 + z) / (lumi_dist * lumi_dist);
-    for (size_t i = 0; i < t_obs_size; ++i) {
-        f_nu(i) *= coef;
-    }
-}
+    F_nu *= coef;
 
-/********************************************************************************************************************
- * TEMPLATE METHOD: Observer::calcSpectrum
- * DESCRIPTION: Calculates the specific flux at each observation frequency for a given time t_obs.
- *              For each effective phi and theta grid point, it:
- *                - Interpolates the Doppler factor, radius, and intensity using the LogScaleInterp object.
- *                - Updates the flux array by accumulating contributions from each grid cell multiplied by its
- *                  solid angle.
- *              Finally, the flux is normalized by the factor (1+z)/(lumi_dist^2).
- ********************************************************************************************************************/
-template <typename View, typename... PhotonGrid>
-void Observer::calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, const PhotonGrid&... photons) {
-    size_t nu_size = nu_obs.size();
-
-    // Loop over effective phi and theta grid points.
-    for (size_t i = 0; i < eff_phi_size; i++) {
-        for (size_t j = 0; j < theta_size; j++) {
-            for (size_t k = 0; k < t_size - 1; k++) {
-                Real const t_lo = t_obs_grid(i, j, k);
-                Real const t_hi = t_obs_grid(i, j, k + 1);
-
-                if (t_lo <= t_obs && t_obs < t_hi) {
-                    for (size_t nu_idx = 0; nu_idx < nu_size; ++nu_idx) {
-                        if (interp.validateInterpBoundary(i, j, k, z, dOmega, r_grid, t_obs_grid, doppler,
-                                                          nu_obs[nu_idx], photons...)) {
-                            f_nu(nu_idx) += interp.interpLuminosity(t_obs);
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    // Normalize the flux by the factor (1+z)/(lumi_dist^2).
-    Real const coef = (1 + z) / (lumi_dist * lumi_dist);
-    for (size_t i = 0; i < nu_size; ++i) {
-        f_nu(i) *= coef;
-    }
+    return F_nu;
 }
 
 /********************************************************************************************************************
@@ -307,43 +227,17 @@ void Observer::calcSpectrum(View& f_nu, Array const& nu_obs, Real t_obs, const P
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
-    Array F_nu({t_obs.size()}, 0);
-    auto view = xt::view(F_nu, xt::all());
-    calcSpecificFlux(view, t_obs, nu_obs, photons...);
-    return F_nu;
-}
-
-/********************************************************************************************************************
- * TEMPLATE METHOD: Observer::specificFlux (multi-frequency overload)
- * DESCRIPTION: Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
- *              the specific flux for each frequency and assembling the results into a grid.
- ********************************************************************************************************************/
-template <typename... PhotonGrid>
-MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
-    MeshGrid F_nu({nu_obs.size(), t_obs.size()}, 0);
-    for (size_t l = 0; l < nu_obs.size(); ++l) {
-        auto view = xt::view(F_nu, l, xt::all());
-        calcSpecificFlux(view, t_obs, nu_obs(l), photons...);
-    }
-    return F_nu;
+    return xt::view(specificFlux(t_obs, Array({nu_obs}), photons...), 0);
 }
 
 template <typename... PhotonGrid>
 Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons) {
-    Array F_nu({freqs.size()}, 0);
-    auto view = xt::view(F_nu, xt::all());
-    calcSpectrum(view, freqs, t_obs, photons...);
-    return F_nu;
+    return xt::view(spectrum(freqs, Array({t_obs}), photons...), 0);
 }
 
 template <typename... PhotonGrid>
 MeshGrid Observer::spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
-    MeshGrid F_nu({t_obs.size(), freqs.size()}, 0);
-    for (size_t l = 0; l < t_obs.size(); ++l) {
-        auto view = xt::view(F_nu, l, xt::all());
-        calcSpectrum(view, freqs, t_obs(l), photons...);
-    }
-    return F_nu;
+    return xt::transpose(specificFlux(t_obs, freqs, photons...));
 }
 
 /********************************************************************************************************************

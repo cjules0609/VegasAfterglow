@@ -200,11 +200,7 @@ void MultiBandModel::buildSystem(Params const& param, Array const& t_eval, Obser
 
     auto shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
-    obs.observe(coord, shock, theta_v, lumi_dist, z);
-
-    shock.required.fill(false);
-
-    obs.updateRequired(shock.required, t_eval);
+    obs.observeAt(t_eval, coord, shock, theta_v, lumi_dist, z);
 
     electrons = genSynElectrons(shock, p, xi);
 

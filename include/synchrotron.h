@@ -54,9 +54,9 @@ struct SynElectrons {
     Real gamma_M{0};         // Maximum electron Lorentz factor
     Real p{2.3};             // Power-law index for the electron energy distribution
     Real column_num_den{0};  // Normalized column number density
-    Real Y_c{0};             // Compton Y parameter for electrons
-    size_t regime{0};        // Regime indicator
-    InverseComptonY Ys;      // InverseComptonY parameters
+    Real Y_c{0};
+    size_t regime{0};    // Regime indicator
+    InverseComptonY Ys;  // InverseComptonY parameters
 
     // Calculates the column number density for a given electron Lorentz factor
     Real columnNumDen(Real gamma) const;
@@ -72,14 +72,16 @@ struct SynElectrons {
  ********************************************************************************************************************/
 struct SynPhotons {
     // all in comoving frame
-    Real nu_m{0};                    // Characteristic frequency corresponding to gamma_m
-    Real nu_c{0};                    // Cooling frequency corresponding to gamma_c
-    Real nu_a{0};                    // Self-absorption frequency
-    Real nu_M{0};                    // Maximum photon frequency
+    Real nu_m{0};  // Characteristic frequency corresponding to gamma_m
+    Real nu_c{0};  // Cooling frequency corresponding to gamma_c
+    Real nu_a{0};  // Self-absorption frequency
+    Real nu_M{0};  // Maximum photon frequency
+    Real log_I_nu_peak{0};
     const SynElectrons* e{nullptr};  // Pointer to the associated SynElectrons
 
     // Returns the intensity at a given frequency nu
     Real I_nu(Real nu) const;
+    Real log_I_nu(Real nu) const;
     // Updates internal constants used in the spectral calculations
     void updateConstant();
 
@@ -96,8 +98,13 @@ struct SynPhotons {
     Real C2_{0};
     Real C3_{0};
 
+    Real log_C1_{0};
+    Real log_C2_{0};
+    Real log_C3_{0};
+
     // Computes the photon spectrum at a given frequency nu
     inline Real spectrum(Real nu) const;
+    inline Real log_spectrum(Real nu) const;
 };
 
 /********************************************************************************************************************

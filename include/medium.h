@@ -6,37 +6,45 @@
 //                            |___/                                            |___/
 
 #pragma once
-
-#include <iostream>
-
 #include "macros.h"
-#include "mesh.h"
 #include "utilities.h"
-
 /********************************************************************************************************************
  * CLASS: Medium
- * DESCRIPTION: Represents the interstellar medium (ISM) or any surrounding medium that the GRB jet interacts with.
+ * DESCRIPTION: Represents the generic medium or any user-defined surrounding medium that the GRB jet interacts with.
  *              The class provides methods to compute the density (rho) as a function of position (phi, theta, r).
- *              This is crucial for modeling the shock dynamics and energy dissipation in the afterglow.
  ********************************************************************************************************************/
 class Medium {
    public:
     // Density function that returns the mass density at a given position (phi, theta, r)
     // The function is initialized to zero by default
-    TernaryFunc rho{func::zero};  // density(phi, theta, r)
+    TernaryFunc rho{func::zero_3d};  // density(phi, theta, r)
+};
+
+/********************************************************************************************************************
+ * CLASS: Medium (High performance version with compile time static functor)
+ * DESCRIPTION: Represents the generic medium or any user-defined surrounding medium that the GRB jet interacts with.
+ *              The class provides methods to compute the density (rho) as a function of position (phi, theta, r).
+ ********************************************************************************************************************/
+template <typename TernaryFunc1>
+class StaticMedium {
+   public:
+    StaticMedium(TernaryFunc1 rho) noexcept : rho(std::move(rho)) {}
+
+    TernaryFunc1 const rho{func::zero_3d};  // density(phi, theta, r)
 };
 
 /********************************************************************************************************************
  * NAMESPACE: evn
  * DESCRIPTION: Provides functions to create different types of ambient medium profiles.
  *              These functions return lambda functions that compute the density at any given position.
- *              Currently supports two types of media: uniform ISM and stellar wind.
  ********************************************************************************************************************/
 namespace evn {
     // Creates a uniform interstellar medium (ISM) profile
     inline auto ISM(Real n_ism) {
-        return [n_ism](Real phi, Real theta, Real r) {
-            return n_ism * con::mp;  // Convert number density to mass density
+        Real rho = n_ism * con::mp;
+
+        return [rho](Real phi, Real theta, Real r) {
+            return rho;  // Convert number density to mass density
         };
     }
 

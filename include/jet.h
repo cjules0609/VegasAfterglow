@@ -7,36 +7,79 @@
 
 #pragma once
 
-#include "macros.h"
-#include "mesh.h"
-#include "utilities.h"
+#include <cmath>
 
+#include "utilities.h"
 /********************************************************************************************************************
  * CLASS: Ejecta
- * DESCRIPTION: Represents ejecta properties for a simulation. It uses ternary functions (TernaryFunc) to
- *              describe various quantities as functions of phi, theta, and time. This class encapsulates
- *              all the properties of the material ejected in a gamma-ray burst, including its energy,
- *              magnetization, and Lorentz factor profiles.
+ * DESCRIPTION: Represents generic ejecta properties for a simulation. It uses ternary functions (TernaryFunc) to
+ *              accept user-defined ejecta that describes various quantities as functions of phi, theta, and time. This
+ *              class encapsulates all the properties of the material ejected in a gamma-ray burst, including its
+ *              energy, magnetization, and Lorentz factor profiles.
  ********************************************************************************************************************/
 class Ejecta {
    public:
     // Initial energy per unit solid angle as a function of (phi, theta)
-    BinaryFunc dE0dOmega{func::zero0};
-
-    // Initial magnetization parameter as a function of (phi, theta)
-    BinaryFunc sigma0{func::zero0};
+    BinaryFunc dE0dOmega{func::zero_2d};
 
     // Lorentz factor profile in the ejecta as a function of (phi, theta)
     // Default is uniform (one) across all angles
-    BinaryFunc Gamma0{func::one0};
+    BinaryFunc Gamma0{func::one_2d};
+
+    // Initial magnetization parameter as a function of (phi, theta)
+    BinaryFunc sigma0{func::zero_2d};
 
     // Energy injection rate per solid angle as a function of (phi, theta, t)
     // Default is no energy injection (zero)
-    TernaryFunc dEdtdOmega{func::zero};
+    TernaryFunc dEdtdOmega{func::zero_3d};
 
     // Mass injection rate per unit solid angle as a function of (phi, theta, t)
     // Default is no mass injection (zero)
-    TernaryFunc dMdtdOmega{func::zero};
+    TernaryFunc dMdtdOmega{func::zero_3d};
+
+    // Duration of the ejecta in seconds
+    Real T0{1 * con::sec};
+
+    // Flag indicating if the ejecta spreads laterally during evolution
+    bool spreading{false};
+};
+
+/********************************************************************************************************************
+ * CLASS: Ejecta (High performance version with compile time static functor)
+ * DESCRIPTION: Represents generic ejecta properties for a simulation. It uses ternary functions (TernaryFunc) to
+ *              accept user-defined ejecta that describes various quantities as functions of phi, theta, and time. This
+ *              class encapsulates all the properties of the material ejected in a gamma-ray burst, including its
+ *              energy, magnetization, and Lorentz factor profiles.
+ ********************************************************************************************************************/
+template <typename BinaryFunc1, typename BinaryFunc2, typename BinaryFunc3 = decltype(func::zero_2d),
+          typename TernaryFunc1 = decltype(func::zero_3d), typename TernaryFunc2 = decltype(func::zero_3d)>
+class StaticEjecta {
+   public:
+    StaticEjecta(BinaryFunc1 dE0dOmega, BinaryFunc2 Gamma0, BinaryFunc3 sigma0 = func::zero_2d,
+                 TernaryFunc1 dEdtdOmega = func::zero_3d, TernaryFunc2 dMdtdOmega = func::zero_3d) noexcept
+        : dE0dOmega(std::move(dE0dOmega)),
+          Gamma0(std::move(Gamma0)),
+          sigma0(std::move(sigma0)),
+          dEdtdOmega(std::move(dEdtdOmega)),
+          dMdtdOmega(std::move(dMdtdOmega)) {}
+
+    // Initial energy per unit solid angle as a function of (phi, theta)
+    BinaryFunc1 const dE0dOmega{func::zero_2d};
+
+    // Lorentz factor profile in the ejecta as a function of (phi, theta)
+    // Default is uniform (one) across all angles
+    BinaryFunc2 const Gamma0{func::one_2d};
+
+    // Initial magnetization parameter as a function of (phi, theta)
+    BinaryFunc3 const sigma0{func::zero_2d};
+
+    // Energy injection rate per solid angle as a function of (phi, theta, t)
+    // Default is no energy injection (zero)
+    TernaryFunc1 const dEdtdOmega{func::zero_3d};
+
+    // Mass injection rate per unit solid angle as a function of (phi, theta, t)
+    // Default is no mass injection (zero)
+    TernaryFunc2 const dMdtdOmega{func::zero_3d};
 
     // Duration of the ejecta in seconds
     Real T0{1 * con::sec};

@@ -50,23 +50,61 @@ class Shock {
 };
 
 /********************************************************************************************************************
- * FUNCTION PROTOTYPES: Shock Generation Interfaces
- * DESCRIPTION: These function templates declare interfaces to generate forward shocks (2D and 3D) and
- *              forward/reverse shock pairs.
+ * CLASS: FState
+ * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
+ *              components. It maps array indices to meaningful physical quantities and provides type-safe access.
  ********************************************************************************************************************/
-using ShockPair = std::pair<Shock, Shock>;
+template <typename StateArray>
+struct FState {
+    using T = decltype(std::declval<StateArray>()[0]);  // Extract the type of array elements
 
-Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                      Real rtol = 1e-6, bool is_axisymmetric = true);
+    // Prevent default construction to ensure proper initialization
+    FState() = delete;
 
-ShockPair genFRShocks(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                      Real eps_e_r, Real eps_B_r, Real rtol = 1e-6, bool is_axisymmetric = true);
+    // Constructor that maps array elements to named references
+    // The state vector contains: [Gamma, u, r, t_com, theta, M_sw, M_ej, E_ej]
+    FState(StateArray& y)
+        : Gamma(y[0]),   // Bulk Lorentz factor of the shock
+          u(y[1]),       // Internal energy per unit solid angle
+          r(y[2]),       // Radial position of the shock
+          t_com(y[3]),   // Comoving time in the shock frame
+          theta(y[4]),   // Jet opening angle
+          M_sw(y[5]),    // Swept-up mass per unit solid angle
+          M_ej(y[6]),    // Ejecta mass per unit solid angle
+          E_ej(y[7]) {}  // Ejecta energy per unit solid angle
 
-void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                     Real rtol = 1e-6, bool is_axisymmetric = true);
+    // References to state variables - these provide direct access to the underlying array
+    T& Gamma;  // Bulk Lorentz factor of the shock
+    T& u;      // Internal energy per unit solid angle
+    T& r;      // Radial position of the shock
+    T& t_com;  // Comoving time in the shock frame
+    T& theta;  // Jet opening angle
+    T& M_sw;   // Swept-up mass per unit solid angle
+    T& M_ej;   // Ejecta mass per unit solid angle
+    T& E_ej;   // Ejecta energy per unit solid angle
+};
 
-void genFRShocks(Shock& shock_f, Shock& shock_r, Coord const& coord, Medium const& medium, Ejecta const& jet,
-                 Real eps_e_f, Real eps_B_f, Real eps_e_r, Real eps_B_r, Real rtol = 1e-6, bool is_axisymmetric = true);
+/********************************************************************************************************************
+ * CLASS: RState
+ * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
+ *              solver) components.
+ ********************************************************************************************************************/
+template <typename StateArray>
+struct RState {
+    using T = decltype(std::declval<StateArray>()[0]);
+    RState() = delete;
+
+    RState(StateArray& y)
+        : width(y[0]), N3(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
+    T& width;
+    T& N3;
+    T& r;
+    T& t_com;
+    T& theta;
+    T& M_sw;
+    T& M_ej;
+    T& E_ej;
+};
 
 /********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities
@@ -180,5 +218,3 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, State const& s
     shock.B(i, j, k) = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
     shock.column_num_den(i, j, k) = N_down_str / (state.r * state.r);
 }
-#include "forward-shock.hpp"
-#include "reverse-shock.hpp"

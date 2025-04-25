@@ -13,15 +13,17 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 30);
     // create model
-    Medium medium;
+    StaticMedium medium(evn::ISM(n_ism));
 
+    StaticEjecta jet(math::gaussian(theta_c, E_iso / (4 * con::pi)), math::gaussian(theta_c, Gamma0));
+
+    /*Medium medium;
     medium.rho = evn::ISM(n_ism);
 
     Ejecta jet;
-
-    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-
     jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+
+    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));*/
 
     Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, phi_num, theta_num, r_num);
 
@@ -31,11 +33,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Observer obs;
 
-    obs.observe(coord, f_shock, theta_v, lumi_dist, z);
-
-    f_shock.required.fill(false);
-
-    obs.updateRequired(f_shock.required, t_obs);
+    obs.observeAt(t_obs, coord, f_shock, theta_v, lumi_dist, z);
 
     // output(f_shock, "shock");
 
@@ -74,14 +72,14 @@ int main() {
     Array theta_c = xt::linspace(0.01, 0.1, 100);
     Array theta_v = xt::linspace(0.01, 0.5, 5);
 
-    /*tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(128, 128, 128, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(64, 64, 64, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(30, 30, 30, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(28, 28, 28, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(16, 16, 16, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);*/
+    tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
 
     // return 0;

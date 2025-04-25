@@ -56,26 +56,30 @@ void lc_gen(std::string folder_name) {
     } else {
         throw std::runtime_error("Jet type not recognized");
     }
-    jet.spreading = true;
+    jet.spreading = false;
 
     size_t t_num = 128;
     size_t theta_num = 64;
     size_t phi_num = 64;
 
     Coord coord = autoGrid(jet, t_bins, con::pi / 2, theta_view, phi_num, theta_num, t_num);
-
+    output(coord, "coord");
     // solve dynamics
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
     output(f_shock, "shock");
 
+    Observer obs;
+
+    obs.observeAt(t_bins, coord, f_shock, theta_view, lumi_dist, z);
+
     auto syn_e = genSynElectrons(f_shock, p);
+
+    output(syn_e, "syn_e");
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
 
-    Observer obs;
-
-    obs.observe(coord, f_shock, theta_view, lumi_dist, z);
+    output(syn_ph, "syn_ph");
 
     Array band_pass =
         xt::logspace(std::log10(eVtoHz(band_pass_[0] * con::keV)), std::log10(eVtoHz(band_pass_[1] * con::keV)), 10);

@@ -87,8 +87,8 @@ struct MultiBandModel {
                      SynPhotonGrid& photons);
     MultiBandData obs_data;
     ConfigParams config;
-    SynElectronGrid electrons;
-    SynPhotonGrid photons;
-    Observer obs;
+    // SynElectronGrid electrons;
+    // SynPhotonGrid photons;
+    // Observer obs;
     Array t_eval;
 };

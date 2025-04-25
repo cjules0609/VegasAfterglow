@@ -8,8 +8,6 @@
 #pragma once
 
 #include <cmath>
-#include <functional>
-#include <vector>
 
 #include "macros.h"
 #include "xtensor/containers/xadapt.hpp"
@@ -22,16 +20,6 @@ using Array = xt::xtensor<Real, 1>;       // 1D array for storing 1D data (e.g.,
 using MeshGrid = xt::xtensor<Real, 2>;    // 2D grid for storing 2D data (e.g., spatial coordinates)
 using MeshGrid3d = xt::xtensor<Real, 3>;  // 3D grid for storing 3D data (e.g., full spatial-temporal data)
 using MaskGrid = xt::xtensor<bool, 3>;    // 3D boolean grid for masking operations
-
-/********************************************************************************************************************
- * FUNCTION TYPE DEFINITIONS
- * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.
- *              These function types are used throughout the codebase for various mathematical operations
- *              and physical calculations.
- ********************************************************************************************************************/
-using UnaryFunc = std::function<Real(Real)>;                // Function taking one Real argument
-using BinaryFunc = std::function<Real(Real, Real)>;         // Function taking two Real arguments
-using TernaryFunc = std::function<Real(Real, Real, Real)>;  // Function taking three Real arguments
 
 /********************************************************************************************************************
  * FUNCTION PROTOTYPES: Array and Grid Utilities
@@ -129,4 +117,5 @@ void boundaryToCenterLog(Arr1 const& boundary, Arr2& center) {
 
 // Non-template versions of the boundary-to-center conversion functions
 Array boundaryToCenter(Array const& boundary);
+
 Array boundaryToCenterLog(Array const& boundary);

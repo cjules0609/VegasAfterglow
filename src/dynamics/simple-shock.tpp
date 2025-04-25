@@ -5,7 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#include "simple-shock.h"
+#include "simple-shock.hpp"
 
 /********************************************************************************************************************
  * METHOD: SimpleShockEqn::operator()(State const& y, State& dydr, Real t)
@@ -20,7 +20,8 @@
  *                  y[6] - M (ejecta mass per solid angle)
  *                  y[7] - E_ejecta (ejecta energy per solid angle)
  ********************************************************************************************************************/
-void SimpleShockEqn::operator()(StateArray const& y, StateArray& dydt, Real t) {
+template <typename Ejecta, typename Medium>
+void SimpleShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) {
     FState state(y);
     FState diff(dydt);
 
@@ -48,8 +49,9 @@ void SimpleShockEqn::operator()(StateArray const& y, StateArray& dydt, Real t) {
  * DESCRIPTION: Initializes a SimpleShockEqn object with references to the medium and ejecta
  *              along with the angular coordinates and energy fraction.
  ********************************************************************************************************************/
-SimpleShockEqn::SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta_lo, Real theta,
-                               Real eps_e, Real theta_s)
+template <typename Ejecta, typename Medium>
+SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta_lo,
+                                               Real theta, Real eps_e, Real theta_s)
     : medium(medium),
       ejecta(ejecta),
       phi(phi),
@@ -63,7 +65,8 @@ SimpleShockEqn::SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real 
  * METHOD: SimpleShockEqn::dGammadt
  * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
-Real SimpleShockEqn::dGammadt(Real t, FState<const StateArray> const& state, FState<StateArray> const& diff) {
+template <typename Ejecta, typename Medium>
+Real SimpleShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff) {
     Real M_sw = state.M_sw;
     Real dMdt = diff.M_sw;
 

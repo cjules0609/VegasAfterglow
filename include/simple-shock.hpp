@@ -6,6 +6,8 @@
 //                            |___/                                            |___/
 
 #pragma once
+#include <array>
+
 #include "shock.h"
 /********************************************************************************************************************
  * CLASS: SimpleShockEqn
@@ -14,10 +16,13 @@
  *              respect to radius t. It also declares helper functions for the derivatives. Simple version from
  *              Huang et al. 2000
  ********************************************************************************************************************/
+template <typename Ejecta, typename Medium>
 class SimpleShockEqn {
    public:
-    using StateArray =
-        std::array<Real, 8>;  // State vector: typically [Gamma, u, r, t_com, theta_jet, m, M_ej, E_ejecta]
+    // State vector: typically [Gamma, u, r, t_com, theta_jet, m, M_ej, E_ejecta]
+    using StateArray = std::array<Real, 8>;
+    using State = FState<StateArray>;             // Mutable state wrapper
+    using constState = FState<const StateArray>;  // Const state wrapper
 
     SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta_lo, Real theta, Real eps_e,
                    Real theta_s);
@@ -33,8 +38,10 @@ class SimpleShockEqn {
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    inline Real dGammadt(Real t, FState<const StateArray> const& state, FState<StateArray> const& diff);
+    Real dGammadt(Real t, constState const& state, State const& diff);
     Real const dOmega0{0};  // Initial solid angle
     Real const theta_s{0};  // Critical angle for jet spreading
     Real const theta_lo{0};
 };
+
+#include "../src/dynamics/simple-shock.tpp"

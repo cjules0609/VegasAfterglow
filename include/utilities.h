@@ -11,16 +11,26 @@
 #include "mesh.h"
 
 /********************************************************************************************************************
+ * FUNCTION TYPE DEFINITIONS
+ * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.
+ *              These function types are used throughout the codebase for various mathematical operations
+ *              and physical calculations.
+ ********************************************************************************************************************/
+using UnaryFunc = std::function<Real(Real)>;                // Function taking one Real argument
+using BinaryFunc = std::function<Real(Real, Real)>;         // Function taking two Real arguments
+using TernaryFunc = std::function<Real(Real, Real, Real)>;  // Function taking three Real arguments
+
+/********************************************************************************************************************
  * NAMESPACE: func
  * DESCRIPTION: Contains inline constexpr lambda functions that return constant values.
  ********************************************************************************************************************/
 namespace func {
     // Always returns 0 regardless of the input.
-    inline constexpr auto zero = [](Real phi, Real theta, Real t) -> Real { return 0; };
-    inline constexpr auto zero0 = [](Real phi, Real theta) -> Real { return 0; };
+    inline constexpr auto zero_3d = [](Real phi, Real theta, Real t) -> Real { return 0; };
+    inline constexpr auto zero_2d = [](Real phi, Real theta) -> Real { return 0; };
     // Always returns 1 regardless of the input.
-    inline constexpr auto one = [](Real phi, Real theta, Real t) -> Real { return 1; };
-    inline constexpr auto one0 = [](Real phi, Real theta) -> Real { return 1; };
+    inline constexpr auto one_3d = [](Real phi, Real theta, Real t) -> Real { return 1; };
+    inline constexpr auto one_2d = [](Real phi, Real theta) -> Real { return 1; };
 }  // namespace func
 
 /********************************************************************************************************************
