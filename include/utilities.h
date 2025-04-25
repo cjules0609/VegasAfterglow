@@ -142,17 +142,56 @@ inline double fastLog(double x) {
 #endif
 }
 
-inline double fastLog2(double x) {
+inline double fastLog2(double val) {
 #ifdef EXTREME_SPEED
-    return std::log2(2);
+    int64_t* const exp_ptr = reinterpret_cast<int64_t*>(&val);
+    int64_t x = *exp_ptr;
+    int log2 = ((x >> 52) & 0x7FF) - 1023;  // extract exponent bits
+
+    // Step 2: Normalize mantissa to [1.0, 2.0)
+    x &= ~(0x7FFLL << 52);  // clear exponent bits
+    x |= (1023LL << 52);    // set exponent to 0
+    *exp_ptr = x;           // val is now normalized to [1.0, 2.0)
+    double mantissa = val;
+
+    // Step 3: Polynomial approximation of log2(mantissa) in [1, 2)
+    double y = mantissa - 1.0;  // small value in [0, 1)
+    double log2_mantissa =
+        y * (1.44269504088896340736 + y * (-0.721347520444482371076 + y * (0.479381953382630073738)));
+
+    /*double log2_mantissa =
+        y * (1.44269504088896340736 +  // 1/ln(2)
+        y * (-0.721347520444482371076 +
+        y * (0.479381953382630073738 +
+        y * (-0.360673760222241834679 +
+        y * (0.288539008177138356808 +
+        y * (-0.139304958445395653244))))));*/
+
+    return log2_mantissa + log2;
 #else
-    return std::log2(x);
+    return std::log2(val);
 #endif
 }
 
 inline double fastExp2(double x) {
 #ifdef EXTREME_SPEED
-    return std::exp2(x);
+    int int_part = (int)x;
+    double frac_part = x - int_part;
+
+    // Polynomial approximation for 2^frac_part where 0 <= frac_part < 1
+    // 4th order polynomial gives good balance of speed and accuracy
+    /*double poly = 1.0 + frac_part * (0.693147180559945 +
+                                     frac_part * (0.240226506959101 +
+                                                  frac_part * (0.0555041086648216 + frac_part *
+       0.00961812910762848)));*/
+    double poly =
+        1.0 + frac_part * (0.693147180559945 + frac_part * (0.240226506959101 + frac_part * (0.0555041086648216)));
+
+    // Combine with integer power of 2 using bit manipulation
+    int64_t bits = ((int64_t)(int_part + 1023)) << 52;
+    double factor = *reinterpret_cast<double*>(&bits);
+
+    return (poly * factor);
 #else
     return std::exp2(x);
 #endif

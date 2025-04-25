@@ -196,11 +196,11 @@ void MultiBandModel::buildSystem(Params const& param, Array const& t_eval, Obser
     size_t theta_num = config.theta_grid;
     size_t phi_num = config.phi_grid;
 
-    auto coord = autoGrid(jet, t_eval, theta_w, theta_v, phi_num, theta_num, t_num);
+    auto coord = autoGrid(jet, t_eval, theta_w, theta_v, z, phi_num, theta_num, t_num);
 
     auto shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
-    obs.observeAt(t_eval, coord, shock, theta_v, lumi_dist, z);
+    obs.observeAt(t_eval, coord, shock, lumi_dist, z);
 
     electrons = genSynElectrons(shock, p, xi);
 

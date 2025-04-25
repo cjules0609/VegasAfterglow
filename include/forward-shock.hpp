@@ -39,18 +39,18 @@ class ForwardShockEqn {
 
     // Forward shock ODE equation - callable interface for ODE solver
     // Computes the time derivatives of the state vector
-    void operator()(StateArray const& y, StateArray& dydt, Real t);
+    void operator()(StateArray const& y, StateArray& dydt, Real t) const noexcept;
 
    private:
     // Helper methods for computing derivatives
 
     // Computes the time derivative of the Lorentz factor
     // with respect to on-axis observer time
-    inline Real dGammadt(Real t, constState const& state, State const& diff, Real ad_idx);
+    inline Real dGammadt(Real t, constState const& state, State const& diff, Real ad_idx) const noexcept;
 
     // Computes the time derivative of internal energy
     // with respect to on-axis observer time
-    inline Real dUdt(constState const& state, State const& diff, Real ad_idx);
+    inline Real dUdt(constState const& state, State const& diff, Real ad_idx) const noexcept;
 
     // Private member variables
     Real const dOmega0{0};  // Initial solid angle element

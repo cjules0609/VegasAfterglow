@@ -12,9 +12,9 @@
  * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-void ForwardShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) {
-    FState state(y);
-    FState diff(dydt);
+void ForwardShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) const noexcept {
+    FState const state(y);
+    FState const diff(dydt);
 
     Real ad_idx = adiabaticIndex(state.Gamma);
     Real rho = medium.rho(phi, state.theta, state.r);
@@ -56,7 +56,8 @@ ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta co
  * DESCRIPTION: dGammadt with respect to on-axis observe t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff, Real ad_idx) {
+Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff,
+                                               Real ad_idx) const noexcept {
     Real Gamma2 = state.Gamma * state.Gamma;
     Real Gamma_eff = (ad_idx * (Gamma2 - 1) + 1) / state.Gamma;
     Real dGamma_eff = (ad_idx * (Gamma2 + 1) - 1) / Gamma2;
@@ -90,7 +91,7 @@ Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, 
  * DESCRIPTION: Computes the derivative of u with respect to time t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-Real ForwardShockEqn<Ejecta, Medium>::dUdt(constState const& state, State const& diff, Real ad_idx) {
+Real ForwardShockEqn<Ejecta, Medium>::dUdt(constState const& state, State const& diff, Real ad_idx) const noexcept {
     Real dmdt = diff.M_sw;
     Real dlnVdt = 3 / state.r * diff.r - diff.Gamma / state.Gamma;
     if (ejecta.spreading) {
@@ -133,7 +134,7 @@ void updateForwardShock(size_t i, size_t j, size_t k, Eqn const& eqn, State cons
  * RETURNS: The deceleration time, which helps determine an appropriate time step.
  ********************************************************************************************************************/
 template <typename Eqn, typename State>
-Real setForwardInit(Eqn const& eqn, State& state, Real t0) {
+void setForwardInit(Eqn const& eqn, State& state, Real t0) {
     // Set initial Lorentz factor from ejecta model
     state.Gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);
 
@@ -161,34 +162,25 @@ Real setForwardInit(Eqn const& eqn, State& state, Real t0) {
 
     // Set initial theta to the input value
     state.theta = eqn.theta0;
-
-    // Calculate number density for deceleration radius calculation
-    Real n_ism = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
-
-    // Calculate deceleration radius and time
-    Real r_dec = thinShellDecRadius(state.E_ej * 4 * con::pi, n_ism, state.Gamma);
-    Real t_dec = r_dec / (2 * state.Gamma * state.Gamma * con::c);
-
-    return t_dec;
 }
-
 /********************************************************************************************************************
  * FUNCTION: solveForwardShell
  * DESCRIPTION: Solve the forward shock ODE at grid (phi[i], theta[j]) as a function of t (on-axis observation time).
  *              This function uses an adaptive step size ODE solver to evolve the shock state through time.
  ********************************************************************************************************************/
-template <typename FwdEqn>
-void solveForwardShell(size_t i, size_t j, const Array& t, Shock& shock, FwdEqn const& eqn, double rtol) {
+template <typename FwdEqn, typename View>
+void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn const& eqn, double rtol) {
     using namespace boost::numeric::odeint;
 
     // Initialize state array and wrapper
     typename FwdEqn::StateArray y{};
-    FState state(y);
+    FState const state(y);
 
     // Get initial time and set up initial conditions
-    Real t0 = t.front();
-    Real t_dec = setForwardInit(eqn, state, t0);
-    Real dt = t_dec / 100;  // Initial time step based on deceleration time
+    Real t0 = std::min(t.front(), 1 * con::sec);
+
+    setForwardInit(eqn, state, t0);
+    Real dt = t0 / 10;  // Initial time step based on deceleration time
 
     // Early exit if initial Lorentz factor is below cutoff
     if (state.Gamma <= con::Gamma_cut) {
@@ -223,9 +215,9 @@ using ShockPair = std::pair<Shock, Shock>;
 
 template <typename Ejecta, typename Medium>
 Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                      Real rtol = 1e-6, bool is_axisymmetric = true) {
+                      Real rtol = 1e-6) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
-    size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    size_t phi_size_needed = coord.t.shape()[0];
     Shock shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);
 
     for (size_t i = 0; i < phi_size_needed; ++i) {
@@ -236,7 +228,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
-            solveForwardShell(i, j, coord.t, shock, eqn, rtol);
+            solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }
 
@@ -245,9 +237,9 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
 
 template <typename Ejecta, typename Medium>
 void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                     Real rtol = 1e-6, bool is_axisymmetric = true) {
+                     Real rtol = 1e-6) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
-    size_t phi_size_needed = is_axisymmetric ? 1 : phi_size;
+    size_t phi_size_needed = coord.t.shape()[0];
     shock.resize(phi_size_needed, theta_size, t_size);
     shock.eps_B = eps_B;
     shock.eps_e = eps_e;
@@ -259,7 +251,7 @@ void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Eje
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
-            solveForwardShell(i, j, coord.t, shock, eqn, rtol);
+            solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }
 }

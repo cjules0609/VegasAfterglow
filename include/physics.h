@@ -121,23 +121,30 @@ Real jetSpreadingEdge(Ejecta const& jet, Medium const& medium, Real phi, Real th
  *              is generated linearly.
  ********************************************************************************************************************/
 template <typename Ejecta>
-Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view_max, size_t phi_num = 32,
-               size_t theta_num = 32, size_t t_num = 32) {
-    Array phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
+Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, size_t phi_num = 32,
+               size_t theta_num = 32, size_t t_num = 32, bool is_axisymmetric = true) {
+    Coord coord;
+    coord.theta_view = theta_view;
+    coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = jetEdge(jet, con::Gamma_cut);        // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    Array theta = xt::linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
-    Real theta_max = theta.back();                                               // Maximum theta value.
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());                  // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());                  // Minimum observation time.
-    Real b_max = gammaTobeta(jet.Gamma0(0, 0));  // Maximum beta value.
-    Real t_start =
-        t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
+    coord.theta = xt::linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
 
-    Real t_end = 1.01 * t_max;
-    Array t =
-        xt::logspace(std::log10(t_start), std::log10(t_end), t_num);  // Generate logarithmically spaced radial grid.
+    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
+    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
+    size_t phi_size_needed = is_axisymmetric ? 1 : phi_num;
+    coord.t = xt::zeros<Real>({phi_size_needed, theta_num, t_num});
+    for (size_t i = 0; i < phi_size_needed; ++i) {
+        for (size_t j = 0; j < theta_num; ++j) {
+            Real b = gammaTobeta(jet.Gamma0(coord.phi(i), coord.theta(j)));
+            Real theta_max = coord.theta(j) + theta_view;
 
-    return Coord(phi, theta, t);  // Construct coordinate object.
+            Real t_start = 0.99 * t_min * (1 - b) / (1 - std::cos(theta_max) * b) / (1 + z);
+            Real t_end = 1.01 * t_max / (1 + z);
+            xt::view(coord.t, i, j, xt::all()) = xt::logspace(std::log10(t_start), std::log10(t_end), t_num);
+        }
+    }
+
+    return coord;  // Construct coordinate object.
 }

@@ -34,11 +34,11 @@ class SimpleShockEqn {
     Real const eps_e{0};   // Electron energy fraction
 
     // Overloaded operator() to compute the derivatives of the state vector with respect to radius r.
-    void operator()(StateArray const& y, StateArray& dydt, Real t);
+    void operator()(StateArray const& y, StateArray& dydt, Real t) const noexcept;
 
    private:
     // Helper function: computes the derivative of Gamma with respect to t.
-    Real dGammadt(Real t, constState const& state, State const& diff);
+    Real dGammadt(Real t, constState const& state, State const& diff) const noexcept;
     Real const dOmega0{0};  // Initial solid angle
     Real const theta_s{0};  // Critical angle for jet spreading
     Real const theta_lo{0};

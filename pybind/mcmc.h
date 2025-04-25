@@ -65,10 +65,10 @@ struct ConfigParams {
     double z{0};
     std::string medium{"ism"};
     std::string jet{"tophat"};
-    size_t t_grid{64};
-    size_t phi_grid{64};
-    size_t theta_grid{64};
-    double rtol{1e-6};
+    size_t t_grid{24};
+    size_t phi_grid{24};
+    size_t theta_grid{24};
+    double rtol{1e-4};
 };
 
 struct MultiBandModel {

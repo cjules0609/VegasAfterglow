@@ -21,9 +21,9 @@
  *                  y[7] - E_ejecta (ejecta energy per solid angle)
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-void SimpleShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) {
-    FState state(y);
-    FState diff(dydt);
+void SimpleShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) const noexcept {
+    FState const state(y);
+    FState const diff(dydt);
 
     Real rho = medium.rho(phi, state.theta, state.r);  // Get medium density
     Real beta = gammaTobeta(state.Gamma);              // Convert Gamma to beta (velocity/c)
@@ -66,7 +66,7 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
  * DESCRIPTION: Computes the derivative of Gamma with respect to radius t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-Real SimpleShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff) {
+Real SimpleShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff) const noexcept {
     Real M_sw = state.M_sw;
     Real dMdt = diff.M_sw;
 

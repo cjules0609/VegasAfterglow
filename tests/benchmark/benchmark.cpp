@@ -13,19 +13,19 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 30);
     // create model
-    StaticMedium medium(evn::ISM(n_ism));
+    // StaticMedium medium(evn::ISM(n_ism));
 
-    StaticEjecta jet(math::gaussian(theta_c, E_iso / (4 * con::pi)), math::gaussian(theta_c, Gamma0));
+    // StaticEjecta jet(math::gaussian(theta_c, E_iso / (4 * con::pi)), math::gaussian(theta_c, Gamma0));
 
-    /*Medium medium;
+    Medium medium;
     medium.rho = evn::ISM(n_ism);
 
     Ejecta jet;
     jet.Gamma0 = math::gaussian(theta_c, Gamma0);
 
-    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));*/
+    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
 
-    Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, phi_num, theta_num, r_num);
+    Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, z, phi_num, theta_num, r_num);
 
     // output(coord, "coord");
 
@@ -33,7 +33,8 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Observer obs;
 
-    obs.observeAt(t_obs, coord, f_shock, theta_v, lumi_dist, z);
+    obs.observeAt(t_obs, coord, f_shock, lumi_dist, z);
+    // obs.observe(coord, f_shock, lumi_dist, z);
 
     // output(f_shock, "shock");
 
@@ -68,7 +69,7 @@ int main() {
     Real p = 2.1;
     Real Gamma0 = 300;
 
-    Array E_iso = xt::logspace(std::log10(1e48 * con::erg), std::log10(1e52 * con::erg), 100);
+    Array E_iso = xt::logspace(std::log10(1e48 * con::erg), std::log10(1e52 * con::erg), 10);
     Array theta_c = xt::linspace(0.01, 0.1, 100);
     Array theta_v = xt::linspace(0.01, 0.5, 5);
 
@@ -78,11 +79,13 @@ int main() {
     tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(30, 30, 30, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(28, 28, 28, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    tests(25, 25, 25, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    tests(24, 24, 24, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(16, 16, 16, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
 
-    size_t resolu[] = {32};
+    size_t resolu[] = {24, 25, 28};
 
     for (auto r : resolu) {
         r_num = theta_num = phi_num = r;

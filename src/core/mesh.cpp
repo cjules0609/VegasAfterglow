@@ -77,13 +77,6 @@ bool isLogScale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * CONSTRUCTOR: Coord::Coord
- * DESCRIPTION: Constructs a Coord object with the provided phi, theta, and t arrays. It also computes the
- *              differential arrays dphi and dcos for phi and theta, respectively.
- ********************************************************************************************************************/
-Coord::Coord(Array const& phi, Array const& theta, Array const& t) : phi(phi), theta(theta), t(t) {}
-
-/********************************************************************************************************************
  * FUNCTION: boundaryToCenter (linear)
  * DESCRIPTION: Converts a boundary array to center values by averaging adjacent boundaries.
  ********************************************************************************************************************/

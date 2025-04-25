@@ -74,10 +74,9 @@ class Observer {
     Real z{0};          // Redshift
 
     // Main observation function that sets up the observer's view of the simulation
-    void observe(Coord const& coord, Shock const& shock, Real theta_view, Real luminosity_dist, Real redshift);
+    void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
-    void observeAt(Array const& t_obs, Coord const& coord, Shock& shock, Real theta_view, Real luminosity_dist,
-                   Real redshift);
+    void observeAt(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift);
 
     // Computes the specific flux at a single observed frequency
     template <typename... PhotonGrid>
@@ -108,12 +107,12 @@ class Observer {
     size_t theta_size{0};    // Number of theta grid points
     size_t t_size{0};        // Number of time grid points
 
-    void buildObsTimeGrid(Coord const& coord, Shock const& shock, Real theta_view, Real luminosity_dist, Real redshift);
+    void buildObsTimeGrid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
     // Calculates the observation time grid based on Lorentz factor and engine time
-    void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, MeshGrid3d const& r_grid, Real theta_obs);
+    void calcObsTimeGrid(Coord const& coord, MeshGrid3d const& Gamma, MeshGrid3d const& r_grid);
 
-    // Calculates the solid angle grid for each grid point
+    // Calculates the effective emission surface for each grid point
     void calcEmissionSurface(Coord const& coord, Shock const& shock);
 };
 
@@ -129,16 +128,17 @@ class Observer {
 template <typename... PhotonGrid>
 bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& surface,
                                             MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                            PhotonGrid const&... photons) {
+                                            PhotonGrid const&... photons) noexcept {
     t_obs_lo = t_obs(i, j, k_lo);
     Real log_t_ratio = fastLog2(t_obs(i, j, k_lo + 1) / t_obs_lo);
 
-    if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) {
+    if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) [[unlikely]] {
         return false;
     }
 
     size_t phi_idx = i * jet_3d;
     surface_lo = surface(i, j, k_lo);
+    Real log_S_ratio = fastLog2(surface(i, j, k_lo + 1) / surface_lo);
 
     // continuing from previous boundary, shift the high boundary to lower. Calling .I_nu()/.log_I_nu() could be
     // expensive.
@@ -152,9 +152,9 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
     Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo + 1);
     log_I_hi = (photons(phi_idx, j, k_lo + 1).log2_I_nu(nu) + ...);
 
-    slope = (log_I_hi - log_I_lo + fastLog2(surface(i, j, k_lo + 1) / surface_lo)) / log_t_ratio;
+    slope = (log_I_hi - log_I_lo + log_S_ratio) / log_t_ratio;
 
-    if (!std::isfinite(slope)) {
+    if (!std::isfinite(slope)) [[unlikely]] {
         return false;
     }
     nu_last = nu_obs;

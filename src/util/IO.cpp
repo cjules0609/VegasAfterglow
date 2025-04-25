@@ -46,8 +46,14 @@ void output(Coord const& coord, std::string const& filename, size_t precision) {
     file_phi.precision(precision);
 
     // Write radius values normalized by con::cm.
-    for (size_t i = 0; i < coord.t.size(); ++i) {
-        file_r << coord.t[i] / con::sec << " ";
+    for (size_t i = 0; i < coord.t.shape()[0]; ++i) {
+        for (size_t j = 0; j < coord.t.shape()[1]; ++j) {
+            for (size_t k = 0; k < coord.t.shape()[2]; ++k) {
+                file_r << coord.t(i, j, k) / con::sec << " ";
+            }
+            file_r << "\n";
+        }
+        file_r << "\n";
     }
 
     // Write theta values.
