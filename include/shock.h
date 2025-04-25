@@ -63,7 +63,7 @@ struct FState {
 
     // Constructor that maps array elements to named references
     // The state vector contains: [Gamma, u, r, t_com, theta, M_sw, M_ej, E_ej]
-    FState(StateArray& y)
+    inline explicit constexpr FState(StateArray& y) noexcept
         : Gamma(y[0]),   // Bulk Lorentz factor of the shock
           u(y[1]),       // Internal energy per unit solid angle
           r(y[2]),       // Radial position of the shock
@@ -94,7 +94,7 @@ struct RState {
     using T = decltype(std::declval<StateArray>()[0]);
     RState() = delete;
 
-    RState(StateArray& y)
+    inline explicit constexpr RState(StateArray& y) noexcept
         : width(y[0]), N3(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
     T& width;
     T& N3;

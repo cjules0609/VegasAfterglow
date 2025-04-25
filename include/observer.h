@@ -29,14 +29,14 @@ class LogScaleInterp {
 
     // Interpolates the luminosity using the observation time (t_obs) in logarithmic space
     // Returns the interpolated luminosity value
-    Real interpLuminosity(Real t_obs) const;
+    Real interpLuminosity(Real t_obs) const noexcept;
 
     // Validates and sets the interpolation boundaries using the provided grids
     // Returns true if both lower and upper boundaries are valid for interpolation
     template <typename... PhotonGrid>
     bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& surface,
                                 MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                PhotonGrid const&... photons);
+                                PhotonGrid const&... photons) noexcept;
 
    private:
     Real slope{0};
@@ -131,7 +131,7 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
                                             MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
                                             PhotonGrid const&... photons) {
     t_obs_lo = t_obs(i, j, k_lo);
-    Real log_t_ratio = fastLog(t_obs(i, j, k_lo + 1) / t_obs_lo);
+    Real log_t_ratio = fastLog2(t_obs(i, j, k_lo + 1) / t_obs_lo);
 
     if (!std::isfinite(log_t_ratio) || log_t_ratio == 0) {
         return false;
@@ -146,13 +146,13 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
         log_I_lo = log_I_hi;
     } else {
         Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo);
-        log_I_lo = (photons(phi_idx, j, k_lo).log_I_nu(nu) + ...);
+        log_I_lo = (photons(phi_idx, j, k_lo).log2_I_nu(nu) + ...);
     }
 
     Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo + 1);
-    log_I_hi = (photons(phi_idx, j, k_lo + 1).log_I_nu(nu) + ...);
+    log_I_hi = (photons(phi_idx, j, k_lo + 1).log2_I_nu(nu) + ...);
 
-    slope = (log_I_hi - log_I_lo + fastLog(surface(i, j, k_lo + 1) / surface_lo)) / log_t_ratio;
+    slope = (log_I_hi - log_I_lo + fastLog2(surface(i, j, k_lo + 1) / surface_lo)) / log_t_ratio;
 
     if (!std::isfinite(slope)) {
         return false;

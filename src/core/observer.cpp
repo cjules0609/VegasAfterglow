@@ -20,8 +20,8 @@
  ********************************************************************************************************************/
 
 Real LogScaleInterp::interpLuminosity(Real t_obs) const {
-    Real log_t = fastLog(t_obs / t_obs_lo);
-    return surface_lo * fastExp(log_I_lo + log_t * slope);
+    Real log_t = fastLog2(t_obs / t_obs_lo);
+    return surface_lo * fastExp2(log_I_lo + log_t * slope);
 }
 
 /********************************************************************************************************************
@@ -56,7 +56,7 @@ void Observer::calcEmissionSurface(Coord const& coord, Shock const& shock) {
         size_t i_eff = i * interp.jet_3d;
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                if (!shock.required(i_eff, j, k)) {
+                if (shock.required(i_eff, j, k) == 0) {
                     continue;
                 }
                 Real theta_lo = 0;
@@ -124,8 +124,8 @@ void Observer::updateRequired(MaskGrid& required, Array const& t_obs) {
                 Real const t_hi = t_obs_grid(i, j, k + 1);
 
                 if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
-                    required(i_eff, j, k) = true;
-                    required(i_eff, j, k + 1) = true;
+                    required(i_eff, j, k) = 1;
+                    required(i_eff, j, k + 1) = 1;
                 }
 
                 t_idx = iterate_to(t_hi, t_obs, t_idx);
@@ -174,7 +174,8 @@ void Observer::observeAt(Array const& t_obs, Coord const& coord, Shock& shock, R
                          Real redshift) {
     buildObsTimeGrid(coord, shock, theta_view, luminosity_dist, redshift);
 
-    shock.required.fill(false);
+    xt::noalias(shock.required) = 0;
+
     updateRequired(shock.required, t_obs);
 
     calcEmissionSurface(coord, shock);

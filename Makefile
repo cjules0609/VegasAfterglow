@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX         := g++
 
-CXXFLAG     := -std=c++20 -flto -Iinclude -Iexternal -O3 -w -DNDEBUG -DXTENSOR_DISABLE_ASSERT -DXTENSOR_DISABLE_CHECK_DIMENSION -DXTENSOR_DISABLE_CHECK_SHAPE #-DEXTREME_SPEED 
+CXXFLAG     := -std=c++20 -flto -Iinclude -Iexternal -g -O3 -w -DNDEBUG -DXTENSOR_DISABLE_ASSERT -DXTENSOR_DISABLE_CHECK_DIMENSION -DXTENSOR_DISABLE_CHECK_SHAPE #-DEXTREME_SPEED 
 CXXFLAGS    := $(CXXFLAG) -march=native
 # Directories
 SRC_DIR     := src

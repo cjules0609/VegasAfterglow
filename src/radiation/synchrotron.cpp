@@ -283,12 +283,12 @@ Real SynPhotons::I_nu(Real nu) const {
     }
 }
 
-Real SynPhotons::log_I_nu(Real nu) const {
+Real SynPhotons::log2_I_nu(Real nu) const {
     if (nu < nu_c) {
-        return log_I_nu_peak + log_spectrum(nu);  // Below cooling frequency, simple scaling
+        return log2_I_nu_peak + log2_spectrum(nu);  // Below cooling frequency, simple scaling
     } else {
-        return log_I_nu_peak + log_spectrum(nu) + fastLog(1 + e->Y_c) -
-               fastLog(1 + InverseComptonY::Y_tilt_nu(e->Ys, nu, e->p));
+        return log2_I_nu_peak + log2_spectrum(nu) + fastLog2(1 + e->Y_c) -
+               fastLog2(1 + InverseComptonY::Y_tilt_nu(e->Ys, nu, e->p));
     }
 }
 /********************************************************************************************************************
@@ -305,8 +305,8 @@ void SynPhotons::updateConstant() {
         C1_ = std::cbrt(nu_a / nu_m);
         C2_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
 
-        log_C1_ = fastLog(C1_);
-        log_C2_ = fastLog(C2_);
+        log_C1_ = fastLog2(C1_);
+        log_C2_ = fastLog2(C2_);
     } else if (e->regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
@@ -315,33 +315,33 @@ void SynPhotons::updateConstant() {
         C2_ = fastPow(nu_a / nu_m, (-p + 1) / 2);
         C3_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
 
-        log_C1_ = fastLog(C1_);
-        log_C2_ = fastLog(C2_);
-        log_C3_ = fastLog(C3_);
+        log_C1_ = fastLog2(C1_);
+        log_C2_ = fastLog2(C2_);
+        log_C3_ = fastLog2(C3_);
     } else if (e->regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
         C1_ = std::cbrt(nu_a / nu_c);
         C2_ = std::sqrt(nu_c / nu_m);
 
-        log_C1_ = fastLog(C1_);
-        log_C2_ = fastLog(C2_);
+        log_C1_ = fastLog2(C1_);
+        log_C2_ = fastLog2(C2_);
     } else if (e->regime == 4) {
         // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
         // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
         C1_ = std::sqrt(nu_a / nu_m);
         C2_ = std::sqrt(nu_c / nu_a) / 3;
 
-        log_C1_ = fastLog(C1_);
-        log_C2_ = fastLog(C2_);
+        log_C1_ = fastLog2(C1_);
+        log_C2_ = fastLog2(C2_);
     } else if (e->regime == 5 || e->regime == 6) {
         // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for
         // regime 4 R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
         C1_ = std::sqrt(nu_c / nu_a) / 3;
         C2_ = C1_ * fastPow(nu_m / nu_a, (p - 1) / 2);
 
-        log_C1_ = fastLog(C1_);
-        log_C2_ = fastLog(C2_);
+        log_C1_ = fastLog2(C1_);
+        log_C2_ = fastLog2(C2_);
     }
     // R5 = (p - 1) * R6;  // R5 scales R6 (commented out)
 }
@@ -365,7 +365,7 @@ Real SynPhotons::spectrum(Real nu) const {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C2_ * fastPow(nu / nu_c, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_c, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
         case 2:
@@ -379,7 +379,7 @@ Real SynPhotons::spectrum(Real nu) const {
                 return fastPow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C3_ * fastPow(nu / nu_c, -p / 2) * fastExp(-nu / nu_M);
+            return C3_ * fastPow(nu / nu_c, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
         case 3:
@@ -392,7 +392,7 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_m) {
                 return std::sqrt(nu_c / nu);
             }
-            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
         case 4:
@@ -402,21 +402,21 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_m) {
                 return C2_ * std::sqrt(nu_a / nu);
             }
-            return C2_ * C1_ * fastPow(nu / nu_m, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * C1_ * fastPow(nu / nu_m, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return (p - 1) * C2_ * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
+            return (p - 1) * C2_ * fastPow(nu / nu_a, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return C2_ * fastPow(nu / nu_a, -p / 2) * fastExp(-nu / nu_M);
+            return C2_ * fastPow(nu / nu_a, -p / 2) * fastExp2(-nu / nu_M);
 
             break;
 
@@ -426,72 +426,72 @@ Real SynPhotons::spectrum(Real nu) const {
     }
 }
 
-Real SynPhotons::log_spectrum(Real nu) const {
+Real SynPhotons::log2_spectrum(Real nu) const {
     Real p = e->p;
     switch (e->regime) {
         case 1:
             if (nu <= nu_a) {
-                return log_C1_ + 2 * fastLog(nu / nu_a);
+                return log_C1_ + 2 * fastLog2(nu / nu_a);
             }
             if (nu <= nu_m) {
-                return fastLog(nu / nu_m) / 3;
+                return fastLog2(nu / nu_m) / 3;
             }
             if (nu <= nu_c) {
-                return -(p - 1) / 2 * fastLog(nu / nu_m);
+                return -(p - 1) / 2 * fastLog2(nu / nu_m);
             }
 
-            return log_C2_ - p / 2 * fastLog(nu / nu_c) - nu / nu_M;
+            return log_C2_ - p / 2 * fastLog2(nu / nu_c) - nu / nu_M;
 
             break;
         case 2:
             if (nu <= nu_m) {
-                return log_C1_ + 2 * fastLog(nu / nu_m);
+                return log_C1_ + 2 * fastLog2(nu / nu_m);
             }
             if (nu <= nu_a) {
-                return log_C2_ + 2.5 * fastLog(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
+                return log_C2_ + 2.5 * fastLog2(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
             }
             if (nu <= nu_c) {
-                return -(p - 1) / 2 * fastLog(nu / nu_m);
+                return -(p - 1) / 2 * fastLog2(nu / nu_m);
             }
 
-            return log_C3_ - p / 2 * fastLog(nu / nu_c) - nu / nu_M;
+            return log_C3_ - p / 2 * fastLog2(nu / nu_c) - nu / nu_M;
 
             break;
         case 3:
             if (nu <= nu_a) {
-                return log_C1_ + 2 * fastLog(nu / nu_a);
+                return log_C1_ + 2 * fastLog2(nu / nu_a);
             }
             if (nu <= nu_c) {
-                return fastLog(nu / nu_c) / 3;
+                return fastLog2(nu / nu_c) / 3;
             }
             if (nu <= nu_m) {
-                return 0.5 * fastLog(nu_c / nu);
+                return 0.5 * fastLog2(nu_c / nu);
             }
-            return log_C2_ - p / 2 * fastLog(nu / nu_m) - nu / nu_M;
+            return log_C2_ - p / 2 * fastLog2(nu / nu_m) - nu / nu_M;
 
             break;
         case 4:
             if (nu <= nu_a) {
-                return 2 * fastLog(nu / nu_a);
+                return 2 * fastLog2(nu / nu_a);
             }
             if (nu <= nu_m) {
-                return log_C2_ + 0.5 * fastLog(nu_a / nu);
+                return log_C2_ + 0.5 * fastLog2(nu_a / nu);
             }
-            return log_C2_ + log_C1_ - p / 2 * fastLog(nu / nu_m) - nu / nu_M;
+            return log_C2_ + log_C1_ - p / 2 * fastLog2(nu / nu_m) - nu / nu_M;
 
             break;
         case 5:
             if (nu <= nu_a) {
-                return 2 * fastLog(nu / nu_a);
+                return 2 * fastLog2(nu / nu_a);
             }
-            return fastLog(p - 1) + log_C2_ - p / 2 * fastLog(nu / nu_a) - nu / nu_M;
+            return fastLog2(p - 1) + log_C2_ - p / 2 * fastLog2(nu / nu_a) - nu / nu_M;
 
             break;
         case 6:
             if (nu <= nu_a) {
-                return 2 * fastLog(nu / nu_a);
+                return 2 * fastLog2(nu / nu_a);
             }
-            return log_C2_ - p / 2 * fastLog(nu / nu_a) - nu / nu_M;
+            return log_C2_ - p / 2 * fastLog2(nu / nu_a) - nu / nu_M;
 
             break;
 
@@ -665,7 +665,7 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                if (!shock.required(i, j, k)) {
+                if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
@@ -706,7 +706,7 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                if (!shock.required(i, j, k)) {
+                if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
@@ -751,7 +751,7 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k_inj = shock.injection_idx(i, j);
             for (size_t k = 0; k < t_size; ++k) {
-                if (!shock.required(i, j, k)) {
+                if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
@@ -799,7 +799,7 @@ SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
                 ph(i, j, k).e = &(e(i, j, k));
-                if (!shock.required(i, j, k)) {
+                if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real B = shock.B(i, j, k);
@@ -809,7 +809,7 @@ SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
                 ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
                 ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
 
-                ph(i, j, k).log_I_nu_peak = fastLog(e(i, j, k).I_nu_peak);
+                ph(i, j, k).log2_I_nu_peak = fastLog2(e(i, j, k).I_nu_peak);
                 ph(i, j, k).updateConstant();
             }
         }
@@ -825,7 +825,7 @@ void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const&
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
                 ph(i, j, k).e = &(e(i, j, k));
-                if (!shock.required(i, j, k)) {
+                if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real B = shock.B(i, j, k);
@@ -835,7 +835,7 @@ void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const&
                 ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
                 ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
 
-                ph(i, j, k).log_I_nu_peak = fastLog(e(i, j, k).I_nu_peak);
+                ph(i, j, k).log2_I_nu_peak = fastLog2(e(i, j, k).I_nu_peak);
                 ph(i, j, k).updateConstant();
             }
         }

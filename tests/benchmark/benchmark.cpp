@@ -82,7 +82,6 @@ int main() {
     tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
     // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
 
-    // return 0;
     size_t resolu[] = {32};
 
     for (auto r : resolu) {

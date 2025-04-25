@@ -26,11 +26,11 @@ using TernaryFunc = std::function<Real(Real, Real, Real)>;  // Function taking t
  ********************************************************************************************************************/
 namespace func {
     // Always returns 0 regardless of the input.
-    inline constexpr auto zero_3d = [](Real phi, Real theta, Real t) -> Real { return 0; };
-    inline constexpr auto zero_2d = [](Real phi, Real theta) -> Real { return 0; };
+    inline constexpr auto zero_3d = [](Real phi, Real theta, Real t) constexpr noexcept { return 0.; };
+    inline constexpr auto zero_2d = [](Real phi, Real theta) constexpr noexcept { return 0.; };
     // Always returns 1 regardless of the input.
-    inline constexpr auto one_3d = [](Real phi, Real theta, Real t) -> Real { return 1; };
-    inline constexpr auto one_2d = [](Real phi, Real theta) -> Real { return 1; };
+    inline constexpr auto one_3d = [](Real phi, Real theta, Real t) constexpr noexcept { return 1.; };
+    inline constexpr auto one_2d = [](Real phi, Real theta) constexpr noexcept { return 1.; };
 }  // namespace func
 
 /********************************************************************************************************************
@@ -142,4 +142,20 @@ inline double fastLog(double x) {
 #endif
 }
 
-inline Real fastPow(Real a, Real b) { return fastExp(b * fastLog(a)); }
+inline double fastLog2(double x) {
+#ifdef EXTREME_SPEED
+    return std::log2(2);
+#else
+    return std::log2(x);
+#endif
+}
+
+inline double fastExp2(double x) {
+#ifdef EXTREME_SPEED
+    return std::exp2(x);
+#else
+    return std::exp2(x);
+#endif
+}
+
+inline Real fastPow(Real a, Real b) { return fastExp2(b * fastLog2(a)); }

@@ -76,12 +76,12 @@ struct SynPhotons {
     Real nu_c{0};  // Cooling frequency corresponding to gamma_c
     Real nu_a{0};  // Self-absorption frequency
     Real nu_M{0};  // Maximum photon frequency
-    Real log_I_nu_peak{0};
+    Real log2_I_nu_peak{0};
     const SynElectrons* e{nullptr};  // Pointer to the associated SynElectrons
 
     // Returns the intensity at a given frequency nu
     Real I_nu(Real nu) const;
-    Real log_I_nu(Real nu) const;
+    Real log2_I_nu(Real nu) const;
     // Updates internal constants used in the spectral calculations
     void updateConstant();
 
@@ -104,7 +104,7 @@ struct SynPhotons {
 
     // Computes the photon spectrum at a given frequency nu
     inline Real spectrum(Real nu) const;
-    inline Real log_spectrum(Real nu) const;
+    inline Real log2_spectrum(Real nu) const;
 };
 
 /********************************************************************************************************************

@@ -30,7 +30,7 @@ class StaticMedium {
    public:
     StaticMedium(TernaryFunc1 rho) noexcept : rho(std::move(rho)) {}
 
-    TernaryFunc1 const rho{func::zero_3d};  // density(phi, theta, r)
+    TernaryFunc1 rho{func::zero_3d};  // density(phi, theta, r)
 };
 
 /********************************************************************************************************************
@@ -43,7 +43,7 @@ namespace evn {
     inline auto ISM(Real n_ism) {
         Real rho = n_ism * con::mp;
 
-        return [rho](Real phi, Real theta, Real r) {
+        return [rho](Real phi, Real theta, Real r) noexcept {
             return rho;  // Convert number density to mass density
         };
     }
@@ -55,6 +55,6 @@ namespace evn {
 
         // Return a function that computes density = A/r^2
         // This represents a steady-state stellar wind where density falls off as 1/r^2
-        return [A](Real phi, Real theta, Real r) { return A / (r * r); };
+        return [A](Real phi, Real theta, Real r) noexcept { return A / (r * r); };
     }
 }  // namespace evn

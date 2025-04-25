@@ -131,35 +131,13 @@ Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta
     Real theta_max = theta.back();                                               // Maximum theta value.
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());                  // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());                  // Minimum observation time.
-    t_min = std::min(t_min, 10 * con::sec);
     Real b_max = gammaTobeta(jet.Gamma0(0, 0));  // Maximum beta value.
     Real t_start =
         t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
 
-    Real t_end = t_max;
+    Real t_end = 1.01 * t_max;
     Array t =
         xt::logspace(std::log10(t_start), std::log10(t_end), t_num);  // Generate logarithmically spaced radial grid.
 
     return Coord(phi, theta, t);  // Construct coordinate object.
-}
-
-template <typename Ejecta>
-void autoGrid(Coord& coord, Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view_max,
-              size_t phi_num = 32, size_t theta_num = 32, size_t t_num = 32) {
-    coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
-    Real jet_edge = jetEdge(jet, con::Gamma_cut);        // Determine the jet edge angle.
-    // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
-    // cosine.
-    coord.theta = xt::linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
-    Real theta_max = coord.theta.back();                                         // Maximum theta value.
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());                  // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());                  // Minimum observation time.
-    t_min = std::min(t_min, 10 * con::sec);
-    Real b_max = gammaTobeta(jet.Gamma0(0, 0));  // Maximum beta value.
-    Real t_start =
-        t_min * (1 - b_max) / (1 - std::cos(theta_max + theta_view_max) * b_max);  // Start time for the grid.
-
-    Real t_end = t_max;
-    coord.t =
-        xt::logspace(std::log10(t_start), std::log10(t_end), t_num);  // Generate logarithmically spaced radial grid.
 }

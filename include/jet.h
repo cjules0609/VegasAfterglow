@@ -64,22 +64,22 @@ class StaticEjecta {
           dMdtdOmega(std::move(dMdtdOmega)) {}
 
     // Initial energy per unit solid angle as a function of (phi, theta)
-    BinaryFunc1 const dE0dOmega{func::zero_2d};
+    BinaryFunc1 dE0dOmega{func::zero_2d};
 
     // Lorentz factor profile in the ejecta as a function of (phi, theta)
     // Default is uniform (one) across all angles
-    BinaryFunc2 const Gamma0{func::one_2d};
+    BinaryFunc2 Gamma0{func::one_2d};
 
     // Initial magnetization parameter as a function of (phi, theta)
-    BinaryFunc3 const sigma0{func::zero_2d};
+    BinaryFunc3 sigma0{func::zero_2d};
 
     // Energy injection rate per solid angle as a function of (phi, theta, t)
     // Default is no energy injection (zero)
-    TernaryFunc1 const dEdtdOmega{func::zero_3d};
+    TernaryFunc1 dEdtdOmega{func::zero_3d};
 
     // Mass injection rate per unit solid angle as a function of (phi, theta, t)
     // Default is no mass injection (zero)
-    TernaryFunc2 const dMdtdOmega{func::zero_3d};
+    TernaryFunc2 dMdtdOmega{func::zero_3d};
 
     // Duration of the ejecta in seconds
     Real T0{1 * con::sec};
@@ -98,63 +98,64 @@ namespace math {
     // Combines a spatial function (f_spatial) and a temporal function (f_temporal)
     // into one function of (phi, theta, t). The result is the product of both functions.
     template <typename F1, typename F2>
-    inline auto combine(F1 f_spatial, F2 f_temporal) {
-        return [=](Real phi, Real theta, Real t) -> Real { return f_spatial(phi, theta) * f_temporal(t); };
+    constexpr inline auto combine(F1 f_spatial, F2 f_temporal) noexcept {
+        return [=](Real phi, Real theta, Real t) constexpr noexcept { return f_spatial(phi, theta) * f_temporal(t); };
     }
 
     // Creates a time-independent function from a spatial function
     // by ignoring the time parameter t
     template <typename F1>
-    inline auto t_indep(F1 f_spatial) {
-        return [=](Real phi, Real theta, Real t) -> Real { return f_spatial(phi, theta); };
+    constexpr inline auto t_indep(F1 f_spatial) noexcept {
+        return [=](Real phi, Real theta, Real t) constexpr noexcept { return f_spatial(phi, theta); };
     }
 
     // Returns a constant (isotropic) function with a fixed height.
     // This creates a uniform distribution across all angles.
-    inline auto isotropic(Real height) {
-        return [=](Real phi, Real theta) -> Real { return height; };
+    constexpr inline auto isotropic(Real height) noexcept {
+        return [=](Real phi, Real theta) constexpr noexcept { return height; };
     }
 
     // Returns a tophat function: it is constant (height) within the core angle theta_c
     // and zero outside. This creates a uniform jet with sharp edges.
-    inline auto tophat(Real theta_c, Real hight) {
-        return [=](Real phi, Real theta) -> Real { return theta < theta_c ? hight : 0; };
+    constexpr inline auto tophat(Real theta_c, Real hight) noexcept {
+        return [=](Real phi, Real theta) constexpr noexcept { return theta < theta_c ? hight : 0; };
     }
 
     // Returns a Gaussian profile function for jet properties.
     // The profile peaks at theta = 0 and falls off exponentially with angle.
-    inline auto gaussian(Real theta_c, Real height) {
-        return [=](Real phi, Real theta) -> Real { return height * fastExp(-theta * theta / (2 * theta_c * theta_c)); };
+    constexpr inline auto gaussian(Real theta_c, Real height) noexcept {
+        Real spread = 2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) constexpr noexcept { return height * fastExp(-theta * theta / spread); };
     }
 
     // Returns a power-law profile function for jet properties.
     // The profile follows a power-law decay with angle, controlled by the index k.
-    inline auto powerLaw(Real theta_c, Real height, Real k) {
-        return [=](Real phi, Real theta) -> Real { return height / (1 + fastPow(theta / theta_c, k)); };
+    constexpr inline auto powerLaw(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) constexpr noexcept { return height / (1 + fastPow(theta / theta_c, k)); };
     }
 
     // Creates a constant injection profile: returns 1 regardless of time.
     // This represents continuous energy/mass injection.
-    inline auto constInjection() {
-        return [=](Real t) -> Real { return 1; };
+    constexpr inline auto constInjection() noexcept {
+        return [=](Real t) constexpr noexcept { return 1.; };
     }
 
     // Creates a step injection profile: returns 1 if t > t0, else 0.
     // This represents a sudden turn-on of injection at time t0.
-    inline auto stepInjection(Real t0) {
-        return [=](Real t) -> Real { return t > t0 ? 1 : 0; };
+    constexpr inline auto stepInjection(Real t0) noexcept {
+        return [=](Real t) constexpr noexcept { return t > t0 ? 1. : 0.; };
     }
 
     // Creates a square injection profile: returns 1 if t is between t0 and t1, else 0.
     // This represents a finite duration of injection between t0 and t1.
-    inline auto squareInjection(Real t0, Real t1) {
-        return [=](Real t) -> Real { return t > t0 && t < t1 ? 1 : 0; };
+    constexpr inline auto squareInjection(Real t0, Real t1) noexcept {
+        return [=](Real t) constexpr noexcept { return t > t0 && t < t1 ? 1. : 0.; };
     }
 
     // Creates a power-law injection profile: returns a decaying function with power-law index q.
     // The injection rate decays as (1 + t/t0)^(-q).
-    inline auto powerLawInjection(Real t0, Real q) {
-        return [=](Real t) -> Real { return fastPow(1 + t / t0, -q); };
+    constexpr inline auto powerLawInjection(Real t0, Real q) noexcept {
+        return [=](Real t) constexpr noexcept { return fastPow(1 + t / t0, -q); };
     }
 }  // namespace math
 
@@ -171,7 +172,7 @@ namespace math {
  ********************************************************************************************************************/
 template <typename F>
 auto LiangGhirlanda2010(F energy_func, Real e_max, Real gamma_max, Real idx) {
-    return [=](Real phi, Real theta, Real t = 0) -> Real {
+    return [=](Real phi, Real theta, Real t = 0) noexcept {
         // Get the energy at the given angle
         Real e = energy_func(phi, theta);
 

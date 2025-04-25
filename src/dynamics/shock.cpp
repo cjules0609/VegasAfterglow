@@ -23,7 +23,7 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
       B({phi_size, theta_size, t_size}, 0),               // Initialize magnetic field grid with 0
       column_num_den({phi_size, theta_size, t_size}, 0),  // Initialize column density grid with 0
       injection_idx({phi_size, theta_size}, t_size),      // Initialize cross index grid with t_size
-      required({phi_size, theta_size, t_size}, true),     // Initialize required grid with true
+      required({phi_size, theta_size, t_size}, 1),        // Initialize required grid with true
       eps_e(eps_e),                                       // Set electron energy fraction
       eps_B(eps_B),                                       // Set magnetic energy fraction
       phi_size(phi_size),                                 // Store phi grid size
@@ -44,7 +44,7 @@ void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
     injection_idx.resize({phi_size, theta_size});
     injection_idx.fill(t_size);
     required.resize({phi_size, theta_size, t_size});
-    required.fill(true);
+    required.fill(1);
 }
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization
