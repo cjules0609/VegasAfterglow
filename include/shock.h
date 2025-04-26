@@ -50,63 +50,6 @@ class Shock {
 };
 
 /********************************************************************************************************************
- * CLASS: FState
- * DESCRIPTION: This is a helper class to provide named access to the forward ODE state array (required by ODE solver)
- *              components. It maps array indices to meaningful physical quantities and provides type-safe access.
- ********************************************************************************************************************/
-template <typename StateArray>
-struct FState {
-    using T = decltype(std::declval<StateArray>()[0]);  // Extract the type of array elements
-
-    // Prevent default construction to ensure proper initialization
-    FState() = delete;
-
-    // Constructor that maps array elements to named references
-    // The state vector contains: [Gamma, u, r, t_com, theta, M_sw, M_ej, E_ej]
-    inline explicit constexpr FState(StateArray& y) noexcept
-        : Gamma(y[0]),   // Bulk Lorentz factor of the shock
-          u(y[1]),       // Internal energy per unit solid angle
-          r(y[2]),       // Radial position of the shock
-          t_com(y[3]),   // Comoving time in the shock frame
-          theta(y[4]),   // Jet opening angle
-          M_sw(y[5]),    // Swept-up mass per unit solid angle
-          M_ej(y[6]),    // Ejecta mass per unit solid angle
-          E_ej(y[7]) {}  // Ejecta energy per unit solid angle
-
-    // References to state variables - these provide direct access to the underlying array
-    T& Gamma;  // Bulk Lorentz factor of the shock
-    T& u;      // Internal energy per unit solid angle
-    T& r;      // Radial position of the shock
-    T& t_com;  // Comoving time in the shock frame
-    T& theta;  // Jet opening angle
-    T& M_sw;   // Swept-up mass per unit solid angle
-    T& M_ej;   // Ejecta mass per unit solid angle
-    T& E_ej;   // Ejecta energy per unit solid angle
-};
-
-/********************************************************************************************************************
- * CLASS: RState
- * DESCRIPTION: This is a helper class to provide named access to the reverse shock ODE state array (required by ODE
- *              solver) components.
- ********************************************************************************************************************/
-template <typename StateArray>
-struct RState {
-    using T = decltype(std::declval<StateArray>()[0]);
-    RState() = delete;
-
-    inline explicit constexpr RState(StateArray& y) noexcept
-        : width(y[0]), N3(y[1]), r(y[2]), t_com(y[3]), theta(y[4]), M_sw(y[5]), M_ej(y[6]), E_ej(y[7]) {}
-    T& width;
-    T& N3;
-    T& r;
-    T& t_com;
-    T& theta;
-    T& M_sw;
-    T& M_ej;
-    T& E_ej;
-};
-
-/********************************************************************************************************************
  * INLINE FUNCTIONS: Shock Utilities
  * DESCRIPTION: This section defines a set of inline functions used in shock calculations. These functions compute
  *              various physical quantities such as the comoving magnetic field (via the Weibel instability),
@@ -170,7 +113,7 @@ inline Real ShellWidthSpredingRate(Real Gamma_rel, Real dtdt_com) {
     Real cs = soundSpeed(Gamma_rel);
     return cs * dtdt_com;
 }
-
+/*
 inline Real dN3dt(Real r, Real n4, Real gamma3, Real gamma4, Real sigma) {
     if (gamma3 == gamma4) {
         return 0.;
@@ -182,6 +125,19 @@ inline Real dN3dt(Real r, Real n4, Real gamma3, Real gamma4, Real sigma) {
     Real n3 = n4 * ratio_u;
     Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
     return n3 * r * r * gamma3 * dxdt;
+}*/
+
+inline Real dM3dt(Real width, Real M4, Real gamma3, Real gamma4, Real sigma) {
+    if (gamma3 == gamma4) {
+        return 0.;
+    }
+    Real beta3 = gammaTobeta(gamma3);
+    Real beta4 = gammaTobeta(gamma4);
+    Real gamma34 = relativeLorentz(gamma4, gamma3, beta4, beta3);
+    Real ratio_u = u_UpStr2u_DownStr(gamma34, sigma);
+    Real column_den3 = M4 * ratio_u / width;
+    Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
+    return column_den3 * gamma3 * dxdt;
 }
 
 inline Real calc_n4(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
@@ -215,4 +171,13 @@ void updateShockState(Shock& shock, size_t i, size_t j, size_t k, State const& s
     shock.Gamma_rel(i, j, k) = Gamma_rel;
     shock.B(i, j, k) = coMovingWeibelB(shock.eps_B, e_th) + std::sqrt(pB_down_str * 8 * con::pi);
     shock.column_num_den(i, j, k) = N_down_str / (state.r * state.r);
+}
+
+template <typename Eqn>
+Real sweptUpMass(Eqn const& eqn, typename Eqn::State const& state) {
+    if constexpr (!Eqn::State::mass_profile) {
+        return state.M_sw;
+    } else {
+        return eqn.medium.mass(eqn.phi, state.theta, state.r);
+    }
 }

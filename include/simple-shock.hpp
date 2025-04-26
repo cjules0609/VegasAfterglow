@@ -21,10 +21,7 @@ struct SimpleState {
     static constexpr bool mass_profile = HasMass<Medium>;
     static constexpr size_t array_size = 4 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0) + (mass_profile ? 0 : 1);
 
-    using array_type = std::array<Real, array_size>;
-    using value_type = typename array_type::value_type;
-    using iterator = typename array_type::iterator;
-    using const_iterator = typename array_type::const_iterator;
+    MAKE_THIS_ODEINT_STATE(data, array_size)
 
     union {
         struct {
@@ -39,13 +36,6 @@ struct SimpleState {
         };
         array_type data;
     };
-    constexpr size_t size() const noexcept { return array_size; }
-    constexpr iterator begin() noexcept { return data.begin(); }
-    constexpr iterator end() noexcept { return data.end(); }
-    constexpr const_iterator begin() const noexcept { return data.begin(); }
-    constexpr const_iterator end() const noexcept { return data.end(); }
-    constexpr Real& operator[](size_t i) noexcept { return data[i]; }
-    constexpr const Real& operator[](size_t i) const noexcept { return data[i]; }
 };
 
 /********************************************************************************************************************

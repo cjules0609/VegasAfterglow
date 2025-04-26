@@ -7,34 +7,6 @@
 
 #include "forward-shock.hpp"
 #include "simple-shock.hpp"
-/********************************************************************************************************************
- * METHOD: ForwardShockEqn::operator()(State const& y, State& dydr, Real t)
- * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
- ********************************************************************************************************************/
-template <typename Ejecta, typename Medium>
-void ForwardShockEqn<Ejecta, Medium>::operator()(StateArray const& y, StateArray& dydt, Real t) const noexcept {
-    FState const state(y);
-    FState const diff(dydt);
-
-    Real ad_idx = adiabaticIndex(state.Gamma);
-    Real rho = medium.rho(phi, state.theta, state.r);
-    Real beta = gammaTobeta(state.Gamma);
-
-    diff.r = drdt(beta);
-
-    if (ejecta.spreading && state.theta < 0.5 * con::pi) {
-        diff.theta = dtheta_dt(theta_s, state.theta, diff.r, state.r, state.Gamma);
-    } else {
-        diff.theta = 0;
-    }
-
-    diff.t_com = dtdt_CoMoving(state.Gamma);
-    diff.M_sw = state.r * state.r * rho * diff.r;
-    diff.M_ej = ejecta.dMdtdOmega(phi, theta0, t);
-    diff.E_ej = ejecta.dEdtdOmega(phi, theta0, t);
-    diff.Gamma = dGammadt(t, state, diff, ad_idx);
-    diff.u = dUdt(state, diff, ad_idx);
-}
 
 /********************************************************************************************************************
  * CONSTRUCTOR: ForwardShockEqn::ForwardShockEqn
@@ -49,41 +21,93 @@ ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta co
       theta0(theta),
       eps_e(eps_e),
       dOmega0(1 - std::cos(theta)),
-      theta_s(theta_s) {}
+      theta_s(theta_s),
+      M_ej(0) {
+    M_ej = ejecta.dE0dOmega(phi, theta0) / ejecta.Gamma0(phi, theta0) / con::c2;
+    if constexpr (HasSigma<Ejecta>) {
+        M_ej /= 1 + ejecta.sigma0(phi, theta0);
+    }
+}
+
+/********************************************************************************************************************
+ * METHOD: ForwardShockEqn::operator()(State const& y, State& dydr, Real t)
+ * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
+ ********************************************************************************************************************/
+template <typename Ejecta, typename Medium>
+void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) const noexcept {
+    Real beta = gammaTobeta(state.Gamma);
+
+    diff.r = drdt(beta);
+    diff.t_com = dtdt_CoMoving(state.Gamma);
+
+    if (ejecta.spreading && state.theta < 0.5 * con::pi) {
+        diff.theta = dtheta_dt(theta_s, state.theta, diff.r, state.r, state.Gamma);
+    } else {
+        diff.theta = 0;
+    }
+
+    if constexpr (State::mass_inject) {
+        diff.M_ej = ejecta.dMdtdOmega(phi, theta0, t);
+    }
+
+    if constexpr (State::energy_inject) {
+        diff.E_ej = ejecta.dEdtdOmega(phi, theta0, t);
+    }
+
+    Real dMdt_sw = state.r * state.r * medium.rho(phi, state.theta, state.r) * diff.r;
+    Real M_sw = sweptUpMass(*this, state);
+
+    if constexpr (!State::mass_profile) {
+        diff.M_sw = dMdt_sw;
+    }
+
+    Real ad_idx = adiabaticIndex(state.Gamma);
+
+    diff.Gamma = dGammadt(M_sw, dMdt_sw, state, diff, ad_idx);
+    diff.u = dUdt(M_sw, dMdt_sw, state, diff, ad_idx);
+}
 
 /********************************************************************************************************************
  * METHOD: ForwardShockEqn::dGammadt
  * DESCRIPTION: dGammadt with respect to on-axis observe t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, State const& diff,
+Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real M_sw, Real dMdt_sw, State const& state, State const& diff,
                                                Real ad_idx) const noexcept {
     Real Gamma2 = state.Gamma * state.Gamma;
     Real Gamma_eff = (ad_idx * (Gamma2 - 1) + 1) / state.Gamma;
     Real dGamma_eff = (ad_idx * (Gamma2 + 1) - 1) / Gamma2;
-    Real dmdt = diff.M_sw;
     Real dlnVdt = 3 / state.r * diff.r;  // only r term
-    Real M_sw = state.M_sw;              // Mass per unit solid angle from medium
-    Real u = state.u;                    // Internal energy per unit solid angle
+
+    Real M_ej = this->M_ej;
+    Real u = state.u;  // Internal energy per unit solid angle
 
     if (ejecta.spreading) {
         Real cos_theta = std::cos(state.theta);
         Real sin_theta = std::sin(state.theta);
         Real f_spread = (1 - cos_theta) / dOmega0;
-        dmdt = dmdt * f_spread + M_sw / dOmega0 * sin_theta * diff.theta;
+        dMdt_sw = dMdt_sw * f_spread + M_sw / dOmega0 * sin_theta * diff.theta;
         M_sw *= f_spread;
         dlnVdt += sin_theta / (1 - cos_theta) * diff.theta;
         u *= f_spread;
     }
 
-    Real a1 = -(state.Gamma - 1) * (Gamma_eff + 1) * con::c2 * dmdt;
+    Real a1 = -(state.Gamma - 1) * (Gamma_eff + 1) * con::c2 * dMdt_sw;
     Real a2 = (ad_idx - 1) * Gamma_eff * u * dlnVdt;
-    Real a3 = diff.E_ej - state.Gamma * diff.M_ej * con::c2;
 
-    Real b1 = (state.M_ej + M_sw) * con::c2;
+    if constexpr (State::energy_inject) {
+        a1 += diff.E_ej;
+    }
+
+    if constexpr (State::mass_inject) {
+        a1 -= state.Gamma * diff.M_ej * con::c2;
+        M_ej = state.M_ej;
+    }
+
+    Real b1 = (M_ej + M_sw) * con::c2;
     Real b2 = (dGamma_eff + Gamma_eff * (ad_idx - 1) / state.Gamma) * u;
 
-    return (a1 + a2 + a3) / (b1 + b2);
+    return (a1 + a2) / (b1 + b2);
 }
 
 /********************************************************************************************************************
@@ -91,17 +115,51 @@ Real ForwardShockEqn<Ejecta, Medium>::dGammadt(Real t, constState const& state, 
  * DESCRIPTION: Computes the derivative of u with respect to time t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-Real ForwardShockEqn<Ejecta, Medium>::dUdt(constState const& state, State const& diff, Real ad_idx) const noexcept {
-    Real dmdt = diff.M_sw;
+Real ForwardShockEqn<Ejecta, Medium>::dUdt(Real M_sw, Real dMdt_sw, State const& state, State const& diff,
+                                           Real ad_idx) const noexcept {
     Real dlnVdt = 3 / state.r * diff.r - diff.Gamma / state.Gamma;
     if (ejecta.spreading) {
         Real factor = std::sin(state.theta) / (1 - std::cos(state.theta)) * diff.theta;
-        dmdt = dmdt + state.M_sw * factor;
+        dMdt_sw = dMdt_sw + M_sw * factor;
         dlnVdt += factor;
         dlnVdt += factor / (ad_idx - 1);
     }
 
-    return (1 - eps_e) * (state.Gamma - 1) * con::c2 * dmdt - (ad_idx - 1) * dlnVdt * state.u;
+    return (1 - eps_e) * (state.Gamma - 1) * con::c2 * dMdt_sw - (ad_idx - 1) * dlnVdt * state.u;
+}
+
+/********************************************************************************************************************
+ * FUNCTION: setForwardInit
+ * DESCRIPTION: Set the initial conditions for the forward shock ODE solver.
+ *              This function computes the initial state of the shock based on the ejecta properties
+ *              and the ambient medium.
+ * RETURNS: The deceleration time, which helps determine an appropriate time step.
+ ********************************************************************************************************************/
+template <typename Ejecta, typename Medium>
+void ForwardShockEqn<Ejecta, Medium>::setInitState(State& state, Real t0) const noexcept {
+    state.Gamma = ejecta.Gamma0(phi, theta0);
+
+    Real beta0 = gammaTobeta(state.Gamma);
+    state.r = beta0 * con::c * t0 / (1 - beta0);
+
+    state.t_com = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
+
+    state.theta = theta0;
+
+    if constexpr (State::energy_inject) {
+        state.E_ej = ejecta.dE0dOmega(phi, theta0);
+    }
+
+    if constexpr (State::mass_inject) {
+        state.M_ej = M_ej;
+    }
+
+    if constexpr (!State::mass_profile) {
+        state.M_sw = medium.rho(phi, theta0, state.r) * state.r * state.r * state.r / 3;
+        state.u = (state.Gamma - 1) * state.M_sw * con::c2;
+    } else {
+        state.u = (state.Gamma - 1) * medium.mass(phi, theta0, state.r) * con::c2;
+    }
 }
 
 /********************************************************************************************************************
@@ -114,60 +172,16 @@ template <typename Eqn, typename State>
 void updateForwardShock(size_t i, size_t j, size_t k, Eqn const& eqn, State const& state, Shock& shock) {
     // Calculate number density of the ambient medium at current position
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
-
-    Real N2 = 0;
-    // Calculate number of protons per unit solid angle in the swept-up material
-    if constexpr (!State::mass_profile) {
-        N2 = state.M_sw / con::mp;
-    } else {
-        N2 = eqn.medium.mass(eqn.phi, state.theta, state.r) / con::mp;
-    }
+    Real M2 = sweptUpMass(eqn, state);
 
     // Set constant parameters for the unshocked medium
     constexpr Real gamma1 = 1;  // Lorentz factor of unshocked medium (at rest)
     constexpr Real sigma1 = 0;  // Magnetization of unshocked medium
 
     // Update the shock state with calculated values
-    updateShockState(shock, i, j, k, state, state.Gamma, gamma1, N2, n1, sigma1);
+    updateShockState(shock, i, j, k, state, state.Gamma, gamma1, M2 / con::mp, n1, sigma1);
 }
 
-/********************************************************************************************************************
- * FUNCTION: setForwardInit
- * DESCRIPTION: Set the initial conditions for the forward shock ODE solver.
- *              This function computes the initial state of the shock based on the ejecta properties
- *              and the ambient medium.
- * RETURNS: The deceleration time, which helps determine an appropriate time step.
- ********************************************************************************************************************/
-template <typename Eqn, typename State>
-void setForwardInit(Eqn const& eqn, State& state, Real t0) {
-    // Set initial Lorentz factor from ejecta model
-    state.Gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);
-
-    // Calculate initial radius based on observer time t0
-    Real beta0 = gammaTobeta(state.Gamma);
-    state.r = beta0 * con::c * t0 / (1 - beta0);
-
-    // Get ambient medium density at initial position
-    Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
-
-    // Calculate initial swept-up mass per solid angle (assuming spherical expansion)
-    state.M_sw = rho * state.r * state.r * state.r / 3;
-
-    // Set initial ejecta energy per solid angle from model
-    state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);
-
-    // Calculate initial ejecta mass per solid angle
-    state.M_ej = state.E_ej / (state.Gamma * (1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0)) * con::c2);
-
-    // Set initial internal energy
-    state.u = (state.Gamma - 1) * state.M_sw * con::c2;
-
-    // Calculate initial comoving time
-    state.t_com = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
-
-    // Set initial theta to the input value
-    state.theta = eqn.theta0;
-}
 /********************************************************************************************************************
  * FUNCTION: solveForwardShell
  * DESCRIPTION: Solve the forward shock ODE at grid (phi[i], theta[j]) as a function of t (on-axis observation time).
@@ -226,34 +240,12 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
         Real theta_s =
             jetSpreadingEdge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
-            // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            //   Solve the shock shell for this theta slice
+            // Solve the shock shell for this theta slice
             solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }
 
     return shock;
-}
-
-template <typename Ejecta, typename Medium>
-void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                     Real rtol = 1e-6) {
-    auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
-    size_t phi_size_needed = coord.t.shape()[0];
-    shock.resize(phi_size_needed, theta_size, t_size);
-    shock.eps_B = eps_B;
-    shock.eps_e = eps_e;
-    for (size_t i = 0; i < phi_size_needed; ++i) {
-        Real theta_s =
-            jetSpreadingEdge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
-        for (size_t j = 0; j < theta_size; ++j) {
-            // Create a ForwardShockEqn for each theta slice
-            // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            //   Solve the shock shell for this theta slice
-            solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
-        }
-    }
 }

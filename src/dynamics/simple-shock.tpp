@@ -69,14 +69,8 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real SimpleShockEqn<Ejecta, Medium>::dGammadt(Real dMdt, State const& state, State const& diff) const noexcept {
-    Real M_sw = 0;
+    Real M_sw = sweptUpMass(*this, state);
     Real M_ej = this->M_ej;
-
-    if constexpr (!State::mass_profile) {
-        M_sw = state.M_sw;
-    } else {
-        M_sw = medium.mass(phi, state.theta, state.r);
-    }
 
     if (ejecta.spreading) {
         Real f_spread = (1 - std::cos(state.theta)) / dOmega0;

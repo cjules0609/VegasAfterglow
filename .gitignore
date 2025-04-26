@@ -1,0 +1,17 @@
+**/*.txt
+**/*.csv
+**/*.dat
+**/*.out
+**/*.log
+**/*.err
+**/*.warn
+**/*.a
+**/*.so
+
+external/
+projects/
+build/
+.vscode/
+.idea/
+.DS_Store
+vegasglow.so.dSYM/
