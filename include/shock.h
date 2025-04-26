@@ -73,9 +73,14 @@ inline Real coMovingWeibelB(Real eps_B, Real e_thermal) { return std::sqrt(8 * c
 inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
 
 inline Real dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
-    Real ratio = theta / theta_s;
-    // return con::c / (4 * Gamma * theta_s * r) / (ratio + 1 / (ratio * ratio));
-    return drdt / (4 * Gamma * theta_s * r) * ratio;
+    // Real ratio = theta / theta_s;
+    //  return con::c / (4 * Gamma * theta_s * r) / (ratio + 1 / (ratio * ratio));
+    //  return drdt / (4 * Gamma * theta_s * r) * ratio;
+    constexpr Real Q = 2.82842712475;
+    Real u2 = Gamma * Gamma - 1;
+    Real ratio = u2 / (Q * Q * theta_s * theta_s);
+    Real f = 1 / (1 + ratio);
+    return drdt / (2 * Gamma * r) * std::sqrt((2 * u2 + 3) / (4 * u2 + 3)) * f;
 }
 
 inline Real dtdt_CoMoving(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };
