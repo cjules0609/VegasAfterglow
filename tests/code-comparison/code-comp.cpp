@@ -39,9 +39,7 @@ void lc_gen(std::string folder_name, bool out = false) {
 
     Array t_bins = xt::logspace(std::log10(t_obs[0] * con::sec / 10), std::log10(t_obs[1] * con::sec), 100);
     // create model
-    Medium medium;
-
-    medium.rho = evn::ISM(n_ism);
+    ISM medium(n_ism);
 
     Real sigma = 0;
 

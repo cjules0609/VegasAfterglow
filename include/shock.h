@@ -131,10 +131,8 @@ inline Real drdt(Real beta) { return (beta * con::c) / (1 - beta); }
 
 inline Real dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
     Real ratio = theta / theta_s;
-    // return drdt / (4 * Gamma * theta_s * r * (ratio + 1 / ratio));
-    //  return drdt / (4 * Gamma * theta_s * r) / ratio;
-    return con::c / (4 * Gamma * theta_s * r * (ratio + 1 / ratio));
-    // return con::c / (4 * Gamma * theta_s * r) * ratio;
+    // return con::c / (4 * Gamma * theta_s * r) / (ratio + 1 / (ratio * ratio));
+    return drdt / (4 * Gamma * theta_s * r) * ratio;
 }
 
 inline Real dtdt_CoMoving(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };

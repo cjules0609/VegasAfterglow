@@ -44,48 +44,67 @@ class Ejecta {
     bool spreading{false};
 };
 
-/********************************************************************************************************************
- * CLASS: Ejecta (High performance version with compile time static functor)
- * DESCRIPTION: Represents generic ejecta properties for a simulation. It uses ternary functions (TernaryFunc) to
- *              accept user-defined ejecta that describes various quantities as functions of phi, theta, and time. This
- *              class encapsulates all the properties of the material ejected in a gamma-ray burst, including its
- *              energy, magnetization, and Lorentz factor profiles.
- ********************************************************************************************************************/
-template <typename BinaryFunc1, typename BinaryFunc2, typename BinaryFunc3 = decltype(func::zero_2d),
-          typename TernaryFunc1 = decltype(func::zero_3d), typename TernaryFunc2 = decltype(func::zero_3d)>
-class StaticEjecta {
+class TophatJet {
    public:
-    StaticEjecta(BinaryFunc1 dE0dOmega, BinaryFunc2 Gamma0, BinaryFunc3 sigma0 = func::zero_2d,
-                 TernaryFunc1 dEdtdOmega = func::zero_3d, TernaryFunc2 dMdtdOmega = func::zero_3d) noexcept
-        : dE0dOmega(std::move(dE0dOmega)),
-          Gamma0(std::move(Gamma0)),
-          sigma0(std::move(sigma0)),
-          dEdtdOmega(std::move(dEdtdOmega)),
-          dMdtdOmega(std::move(dMdtdOmega)) {}
+    constexpr TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
+        : theta_c_(theta_c), eps_iso_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
-    // Initial energy per unit solid angle as a function of (phi, theta)
-    BinaryFunc1 dE0dOmega{func::zero_2d};
+    constexpr inline Real dE0dOmega(Real phi, Real theta) const noexcept { return theta < theta_c_ ? eps_iso_ : 0; }
 
-    // Lorentz factor profile in the ejecta as a function of (phi, theta)
-    // Default is uniform (one) across all angles
-    BinaryFunc2 Gamma0{func::one_2d};
+    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
-    // Initial magnetization parameter as a function of (phi, theta)
-    BinaryFunc3 sigma0{func::zero_2d};
-
-    // Energy injection rate per solid angle as a function of (phi, theta, t)
-    // Default is no energy injection (zero)
-    TernaryFunc1 dEdtdOmega{func::zero_3d};
-
-    // Mass injection rate per unit solid angle as a function of (phi, theta, t)
-    // Default is no mass injection (zero)
-    TernaryFunc2 dMdtdOmega{func::zero_3d};
-
-    // Duration of the ejecta in seconds
     Real T0{1 * con::sec};
-
-    // Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
+
+   private:
+    Real const theta_c_{0};
+    Real const eps_iso_{0};
+    Real const Gamma0_{1};
+};
+
+class GaussianJet {
+   public:
+    constexpr GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
+        : norm_(-1 / (2 * theta_c * theta_c)), eps_iso_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+
+    constexpr inline Real dE0dOmega(Real phi, Real theta) const noexcept {
+        return eps_iso_ * fastExp(theta * theta * norm_);
+    }
+
+    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return Gamma0_ * fastExp(theta * theta * norm_);
+    }
+
+    Real T0{1 * con::sec};
+    bool spreading{false};
+
+   private:
+    Real const norm_{0};
+    Real const eps_iso_{0};
+    Real const Gamma0_{1};
+};
+
+class PowerLawJet {
+   public:
+    constexpr PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
+        : theta_c_(theta_c), eps_iso_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
+
+    constexpr inline Real dE0dOmega(Real phi, Real theta) const noexcept {
+        return eps_iso_ * fastPow(theta / theta_c_, -k_);
+    }
+
+    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return Gamma0_ * fastPow(theta / theta_c_, -k_);
+    }
+
+    Real T0{1 * con::sec};
+    bool spreading{false};
+
+   private:
+    Real const theta_c_{0};
+    Real const eps_iso_{0};
+    Real const Gamma0_{1};
+    Real const k_{2};
 };
 
 /********************************************************************************************************************

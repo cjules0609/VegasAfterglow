@@ -10,6 +10,41 @@
 #include <array>
 
 #include "shock.h"
+
+template <typename Ejecta, typename Medium>
+struct ForwardState {
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;
+    static constexpr bool energy_inject = HasDedt<Ejecta>;
+    static constexpr bool mass_profile = HasMass<Medium>;
+    static constexpr size_t array_size = 4 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0) + (mass_profile ? 0 : 1);
+
+    using array_type = std::array<Real, array_size>;
+    using value_type = typename array_type::value_type;
+    using iterator = typename array_type::iterator;
+    using const_iterator = typename array_type::const_iterator;
+
+    union {
+        struct {
+            Real Gamma{1};
+            Real r{0};
+            Real t_com{0};
+            Real theta{0};
+
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> E_ej{};
+            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> M_ej{};
+            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> M_sw{};
+        };
+        array_type data;
+    };
+    constexpr size_t size() const noexcept { return array_size; }
+    constexpr iterator begin() noexcept { return data.begin(); }
+    constexpr iterator end() noexcept { return data.end(); }
+    constexpr const_iterator begin() const noexcept { return data.begin(); }
+    constexpr const_iterator end() const noexcept { return data.end(); }
+    constexpr Real& operator[](size_t i) noexcept { return data[i]; }
+    constexpr const Real& operator[](size_t i) const noexcept { return data[i]; }
+};
+
 /********************************************************************************************************************
  * CLASS: ForwardShockEqn
  * DESCRIPTION: Represents the forward shock equation for a given jet and medium. It defines a state vector

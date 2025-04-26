@@ -10,6 +10,28 @@
 #include "macros.h"
 #include "mesh.h"
 
+class Empty {};
+
+template <typename T>
+concept HasDmdt = requires(T t) {
+    { t.dMdtdOmega(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+};
+
+template <typename T>
+concept HasDedt = requires(T t) {
+    { t.dEdtdOmega(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+};
+
+template <typename T>
+concept HasMass = requires(T t) {
+    { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+};
+
+template <typename T>
+concept HasSigma = requires(T t) {
+    { t.sigma0(0.0, 0.0) } -> std::same_as<Real>;
+};
+
 /********************************************************************************************************************
  * FUNCTION TYPE DEFINITIONS
  * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.

@@ -12,18 +12,10 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     Real lumi_dist = 1.23e26 * con::cm;
 
     Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 30);
-    // create model
-    // StaticMedium medium(evn::ISM(n_ism));
 
-    // StaticEjecta jet(math::gaussian(theta_c, E_iso / (4 * con::pi)), math::gaussian(theta_c, Gamma0));
+    ISM medium(n_ism);
 
-    Medium medium;
-    medium.rho = evn::ISM(n_ism);
-
-    Ejecta jet;
-    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-
-    jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+    GaussianJet jet(theta_c, E_iso, Gamma0);
 
     Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, z, phi_num, theta_num, r_num);
 

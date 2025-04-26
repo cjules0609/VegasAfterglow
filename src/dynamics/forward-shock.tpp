@@ -115,8 +115,13 @@ void updateForwardShock(size_t i, size_t j, size_t k, Eqn const& eqn, State cons
     // Calculate number density of the ambient medium at current position
     Real n1 = eqn.medium.rho(eqn.phi, state.theta, state.r) / con::mp;
 
+    Real N2 = 0;
     // Calculate number of protons per unit solid angle in the swept-up material
-    Real N2 = state.M_sw / con::mp;
+    if constexpr (!State::mass_profile) {
+        N2 = state.M_sw / con::mp;
+    } else {
+        N2 = eqn.medium.mass(eqn.phi, state.theta, state.r) / con::mp;
+    }
 
     // Set constant parameters for the unshocked medium
     constexpr Real gamma1 = 1;  // Lorentz factor of unshocked medium (at rest)
@@ -146,7 +151,7 @@ void setForwardInit(Eqn const& eqn, State& state, Real t0) {
     Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, state.r);
 
     // Calculate initial swept-up mass per solid angle (assuming spherical expansion)
-    state.M_sw = 1. / 3 * rho * state.r * state.r * state.r;
+    state.M_sw = rho * state.r * state.r * state.r / 3;
 
     // Set initial ejecta energy per solid angle from model
     state.E_ej = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);
@@ -172,15 +177,12 @@ template <typename FwdEqn, typename View>
 void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn const& eqn, double rtol) {
     using namespace boost::numeric::odeint;
 
-    // Initialize state array and wrapper
-    typename FwdEqn::StateArray y{};
-    FState const state(y);
+    // Initialize state array
+    typename FwdEqn::State state;
 
     // Get initial time and set up initial conditions
-    Real t0 = std::min(t.front(), 1 * con::sec);
-
-    setForwardInit(eqn, state, t0);
-    Real dt = t0 / 10;  // Initial time step based on deceleration time
+    Real t0 = std::min(t.front(), 10 * con::sec);
+    eqn.setInitState(state, t0);
 
     // Early exit if initial Lorentz factor is below cutoff
     if (state.Gamma <= con::Gamma_cut) {
@@ -189,8 +191,8 @@ void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn c
     }
 
     // Set up ODE solver with adaptive step size control
-    auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::StateArray>());
-    stepper.initialize(y, t0, dt);
+    auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::State>());
+    stepper.initialize(state, t0, 0.01 * t0);
 
     // Solve ODE and update shock state at each requested time point
     for (size_t k = 0; stepper.current_time() <= t.back();) {
@@ -199,7 +201,7 @@ void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn c
 
         // Update shock state for all time points that have been passed in this step
         while (k < t.size() && stepper.current_time() > t(k)) {
-            stepper.calc_state(t(k), y);
+            stepper.calc_state(t(k), state);
             updateForwardShock(i, j, k, eqn, state, shock);
             ++k;
         }
@@ -226,7 +228,7 @@ Shock genForwardShock(Coord const& coord, Medium const& medium, Ejecta const& je
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e, theta_s);
-            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
+            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
             solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
@@ -249,7 +251,7 @@ void genForwardShock(Shock& shock, Coord const& coord, Medium const& medium, Eje
         for (size_t j = 0; j < theta_size; ++j) {
             // Create a ForwardShockEqn for each theta slice
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), 0, coord.theta(j), eps_e, theta_s);
+            auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
             //   Solve the shock shell for this theta slice
             solveForwardShell(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }

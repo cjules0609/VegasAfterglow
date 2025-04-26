@@ -20,17 +20,28 @@ class Medium {
     TernaryFunc rho{func::zero_3d};  // density(phi, theta, r)
 };
 
-/********************************************************************************************************************
- * CLASS: Medium (High performance version with compile time static functor)
- * DESCRIPTION: Represents the generic medium or any user-defined surrounding medium that the GRB jet interacts with.
- *              The class provides methods to compute the density (rho) as a function of position (phi, theta, r).
- ********************************************************************************************************************/
-template <typename TernaryFunc1>
-class StaticMedium {
+class ISM {
    public:
-    StaticMedium(TernaryFunc1 rho) noexcept : rho(std::move(rho)) {}
+    constexpr ISM(Real n_ism) noexcept : rho_(n_ism * con::mp) {}
 
-    TernaryFunc1 rho{func::zero_3d};  // density(phi, theta, r)
+    constexpr inline Real rho(Real phi, Real theta, Real r) const noexcept { return rho_; }
+
+    constexpr inline Real mass(Real phi, Real theta, Real r) const noexcept { return rho_ * r * r * r / 3; }
+
+   private:
+    Real rho_{0};
+};
+
+class Wind {
+   public:
+    constexpr Wind(Real A_star) noexcept : A(A_star * 5e11 * con::g / con::cm) {}
+
+    constexpr inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r * r); }
+
+    constexpr inline Real mass(Real phi, Real theta, Real r) const noexcept { return A * r; }
+
+   private:
+    Real A{0};
 };
 
 /********************************************************************************************************************
