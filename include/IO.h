@@ -21,24 +21,34 @@
 
 #include <string>
 
+// Write Array to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, Array const& array, Real unit = 1.0);
+// Write MeshGrid to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, MeshGrid const& grid, Real unit = 1.0);
+// Write MeshGrid3d to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit = 1.0);
+// Write SynPhotonGrid to an NPZ file
 void write_npz(std::string const& filename, SynPhotonGrid const& syn_ph);
+// Write SynElectronGrid to an NPZ file
 void write_npz(std::string const& filename, SynElectronGrid const& syn_e);
+// Write Shock to an NPZ file
 void write_npz(std::string const& filename, Shock const& shock);
+// Write Coord to an NPZ file
 void write_npz(std::string const& filename, Coord const& coord);
 
+// Write an array to an NPY file with an optional unit for value scaling
 template <typename T>
 void write_npy(std::string const& filename, const T& array, Real unit = 1.0) {
     xt::dump_npy(filename + ".npy", xt::eval(array / unit));
 }
 
+// Write an array to an NPZ file with an optional unit for value scaling
 template <typename T>
 void write_npz(std::string const& filename, const T& array, Real unit = 1.0) {
     xt::dump_npz(filename + ".npz", "array", xt::eval(array / unit), false, false);
 }
 
+// Helper recursive function for writing multiple arrays to a single NPZ file
 template <typename T, typename... Rest>
 void write_npz_recursive(std::string const& filename, bool first, std::string const& name, const T& array,
                          const Rest&... rest) {
@@ -50,6 +60,8 @@ void write_npz_recursive(std::string const& filename, bool first, std::string co
     }
 }
 
+// Write multiple named arrays to a single NPZ file
+// Usage: write_npz("filename", "name1", array1, "name2", array2, ...)
 template <typename... Args>
 void write_npz(std::string const& filename, Args const&... args) {
     static_assert(sizeof...(args) % 2 == 0, "Arguments must be pairs: name1, array1, name2, array2, ...");

@@ -111,7 +111,7 @@ void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "Gamma", shock.Gamma, false, false);
     xt::dump_npz(filename + ".npz", "Gamma_rel", shock.Gamma_rel, false, true);
     xt::dump_npz(filename + ".npz", "B", xt::eval(shock.B / con::Gauss), false, true);
-    xt::dump_npz(filename + ".npz", "t_com", xt::eval(shock.t_com / con::sec), false, true);
+    xt::dump_npz(filename + ".npz", "t_com", xt::eval(shock.t_comv / con::sec), false, true);
     xt::dump_npz(filename + ".npz", "r", xt::eval(shock.r / con::cm), false, true);
     xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
     xt::dump_npz(filename + ".npz", "column_num_den", xt::eval(shock.column_num_den * con::cm2), false, true);
