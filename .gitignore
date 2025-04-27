@@ -7,6 +7,8 @@
 **/*.warn
 **/*.a
 **/*.so
+**/*.npy
+**/*.npz
 
 external/
 projects/

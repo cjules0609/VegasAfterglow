@@ -17,22 +17,22 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     GaussianJet jet(theta_c, E_iso, Gamma0);
 
-    Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, z, phi_num, theta_num, r_num);
+    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, phi_num, theta_num, r_num);
 
-    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
+    Shock f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
 
     Observer obs;
 
-    obs.observeAt(t_obs, coord, f_shock, lumi_dist, z);
+    obs.observe_at(t_obs, coord, f_shock, lumi_dist, z);
     // obs.observe(coord, f_shock, lumi_dist, z);
 
-    auto syn_e = genSynElectrons(f_shock, p);
+    auto syn_e = generate_syn_electrons(f_shock, p);
 
-    auto syn_ph = genSynPhotons(f_shock, syn_e);
+    auto syn_ph = generate_syn_photons(f_shock, syn_e);
 
     Real nu_obs = eVtoHz(1 * con::keV);
 
-    Array F_nu = obs.specificFlux(t_obs, nu_obs, syn_ph);
+    Array F_nu = obs.specific_flux(t_obs, nu_obs, syn_ph);
     // Array F_nu = obs.flux(t_bins, linspace(eVtoHz(0.1 * con::keV), eVtoHz(10 * con::keV), 5), syn_ph);
 
     if (verbose) {

@@ -36,10 +36,10 @@ using MaskGrid = xt::xtensor<int, 3>;     // 3D boolean grid for masking operati
  ********************************************************************************************************************/
 
 // Check if an array is linearly scaled within a given tolerance
-bool isLinearScale(Array const& arr, Real tolerance = 1e-6);
+bool is_linear_scale(Array const& arr, Real tolerance = 1e-6);
 
 // Check if an array is logarithmically scaled within a given tolerance
-bool isLogScale(Array const& arr, Real tolerance = 1e-6);
+bool is_log_scale(Array const& arr, Real tolerance = 1e-6);
 
 /********************************************************************************************************************
  * CLASS: Coord
@@ -91,34 +91,34 @@ void logspace(Real start, Real end, Arr& result) {
 }
 
 /********************************************************************************************************************
- * TEMPLATE FUNCTION: boundaryToCenter (linear)
+ * TEMPLATE FUNCTION: boundary_to_center (linear)
  * DESCRIPTION: Converts boundary values to center values using linear interpolation.
  *              This is used to compute cell-centered values from cell-boundary values.
  * @param boundary: Input array of boundary values
  * @param center: Output array of center values
  ********************************************************************************************************************/
 template <typename Arr1, typename Arr2>
-void boundaryToCenter(Arr1 const& boundary, Arr2& center) {
+void boundary_to_center(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = 0.5 * (boundary[i] + boundary[i + 1]);
     }
 }
 
 /********************************************************************************************************************
- * TEMPLATE FUNCTION: boundaryToCenterLog
+ * TEMPLATE FUNCTION: boundary_to_center_log
  * DESCRIPTION: Converts boundary values to center values using geometric mean (logarithmic interpolation).
  *              This is used when working with logarithmically scaled quantities.
  * @param boundary: Input array of boundary values
  * @param center: Output array of center values
  ********************************************************************************************************************/
 template <typename Arr1, typename Arr2>
-void boundaryToCenterLog(Arr1 const& boundary, Arr2& center) {
+void boundary_to_center_log(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }
 }
 
 // Non-template versions of the boundary-to-center conversion functions
-Array boundaryToCenter(Array const& boundary);
+Array boundary_to_center(Array const& boundary);
 
-Array boundaryToCenterLog(Array const& boundary);
+Array boundary_to_center_log(Array const& boundary);

@@ -36,7 +36,7 @@ void sort_synchronized(Array& a, Array& b, Array& c) {
     c = std::move(c_sorted);
 }
 
-double LightCurveData::calcChiSquare() const {
+double LightCurveData::estimate_chi2() const {
     double chi_square = 0;
     for (size_t i = 0; i < t.size(); ++i) {
         if (Fv_err[i] == 0) continue;
@@ -46,7 +46,7 @@ double LightCurveData::calcChiSquare() const {
     return chi_square;
 }
 
-double SpectrumData::calcChiSquare() const {
+double SpectrumData::estimate_chi2() const {
     double chi_square = 0;
     for (size_t i = 0; i < nu.size(); ++i) {
         if (Fv_err[i] == 0) continue;
@@ -56,18 +56,18 @@ double SpectrumData::calcChiSquare() const {
     return chi_square;
 }
 
-double MultiBandData::calcChiSquare() const {
+double MultiBandData::estimate_chi2() const {
     double chi_square = 0;
     for (auto const& data : light_curve) {
-        chi_square += data.calcChiSquare();
+        chi_square += data.estimate_chi2();
     }
     for (auto const& data : spectrum) {
-        chi_square += data.calcChiSquare();
+        chi_square += data.estimate_chi2();
     }
     return chi_square;
 }
 
-void MultiBandData::addObsLightCurve(double nu, List const& t, List const& Fv_obs, List const& Fv_err) {
+void MultiBandData::add_light_curve(double nu, List const& t, List const& Fv_obs, List const& Fv_err) {
     assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
     LightCurveData data;
 
@@ -92,7 +92,7 @@ void MultiBandData::addObsLightCurve(double nu, List const& t, List const& Fv_ob
     light_curve.push_back(std::move(data));
 }
 
-void MultiBandData::addObsSpectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err) {
+void MultiBandData::add_spectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err) {
     assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
     SpectrumData data;
 
@@ -152,8 +152,8 @@ std::vector<double> MultiBandModel::chiSquareBatch(std::vector<Params> const& pa
 }
 */
 
-void MultiBandModel::buildSystem(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
-                                 SynPhotonGrid& photons) {
+void MultiBandModel::build_system(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
+                                  SynPhotonGrid& photons) {
     Real E_iso = param.E_iso * con::erg;
     Real Gamma0 = param.Gamma0;
     Real theta_c = param.theta_c;
@@ -180,14 +180,14 @@ void MultiBandModel::buildSystem(Params const& param, Array const& t_eval, Obser
 
     Ejecta jet;
     if (config.jet == "tophat") {
-        jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+        jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
         jet.Gamma0 = math::tophat(theta_c, Gamma0);
     } else if (config.jet == "gaussian") {
-        jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+        jet.eps_k = math::gaussian(theta_c, E_iso / (4 * con::pi));
         jet.Gamma0 = math::gaussian(theta_c, Gamma0);
     } else if (config.jet == "powerlaw") {
-        jet.dE0dOmega = math::powerLaw(theta_c, E_iso / (4 * con::pi), param.k_jet);
-        jet.Gamma0 = math::powerLaw(theta_c, Gamma0, param.k_jet);
+        jet.eps_k = math::powerlaw(theta_c, E_iso / (4 * con::pi), param.k_jet);
+        jet.Gamma0 = math::powerlaw(theta_c, Gamma0, param.k_jet);
     } else {
         std::cerr << "Error: Unknown jet type" << std::endl;
     }
@@ -196,36 +196,36 @@ void MultiBandModel::buildSystem(Params const& param, Array const& t_eval, Obser
     size_t theta_num = config.theta_grid;
     size_t phi_num = config.phi_grid;
 
-    auto coord = autoGrid(jet, t_eval, theta_w, theta_v, z, phi_num, theta_num, t_num);
+    auto coord = auto_grid(jet, t_eval, theta_w, theta_v, z, phi_num, theta_num, t_num);
 
-    auto shock = genForwardShock(coord, medium, jet, eps_e, eps_B, config.rtol);
+    auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
-    obs.observeAt(t_eval, coord, shock, lumi_dist, z);
+    obs.observe_at(t_eval, coord, shock, lumi_dist, z);
 
-    electrons = genSynElectrons(shock, p, xi);
+    electrons = generate_syn_electrons(shock, p, xi);
 
-    photons = genSynPhotons(shock, electrons);
+    photons = generate_syn_photons(shock, electrons);
 }
 
-double MultiBandModel::chiSquare(Params const& param) {
+double MultiBandModel::estimate_chi2(Params const& param) {
     Observer obs;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
 
-    buildSystem(param, t_eval, obs, electrons, photons);
+    build_system(param, t_eval, obs, electrons, photons);
 
     for (auto& data : obs_data.light_curve) {
-        data.Fv_model = obs.specificFlux(data.t, data.nu, photons);
+        data.Fv_model = obs.specific_flux(data.t, data.nu, photons);
     }
 
     for (auto& data : obs_data.spectrum) {
         data.Fv_model = obs.spectrum(data.nu, data.t, photons);
     }
 
-    return obs_data.calcChiSquare();
+    return obs_data.estimate_chi2();
 }
 
-std::vector<std::vector<double>> F_nu2Grid(MeshGrid const& grid) {
+std::vector<std::vector<double>> convert_to_std_vector(MeshGrid const& grid) {
     std::vector<std::vector<double>> out;
     out.reserve(grid.shape()[0]);
     double unit = con::erg / con::sec / con::cm2 / con::Hz;
@@ -241,28 +241,28 @@ std::vector<std::vector<double>> F_nu2Grid(MeshGrid const& grid) {
     return out;
 }
 
-auto MultiBandModel::lightCurve(Params const& param, List const& t, List const& nu) -> Grid {
+auto MultiBandModel::light_curves(Params const& param, List const& t, List const& nu) -> Grid {
     Observer obs;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
 
     Array t_bins = xt::adapt(t) * con::sec;
-    buildSystem(param, t_bins, obs, electrons, photons);
+    build_system(param, t_bins, obs, electrons, photons);
     auto nu_bins = xt::adapt(nu) * con::Hz;
-    auto F_nu = obs.specificFlux(t_bins, nu_bins, photons);
+    auto F_nu = obs.specific_flux(t_bins, nu_bins, photons);
 
-    return F_nu2Grid(F_nu);
+    return convert_to_std_vector(F_nu);
 }
 
-auto MultiBandModel::spectrum(Params const& param, List const& nu, List const& t) -> Grid {
+auto MultiBandModel::spectra(Params const& param, List const& nu, List const& t) -> Grid {
     Observer obs;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
 
     Array t_bins = xt::adapt(t) * con::sec;
-    buildSystem(param, t_bins, obs, electrons, photons);
+    build_system(param, t_bins, obs, electrons, photons);
     auto nu_bins = xt::adapt(nu) * con::Hz;
-    auto F_nu = obs.spectrum(nu_bins, t_bins, photons);
+    auto F_nu = obs.spectra(nu_bins, t_bins, photons);
 
-    return F_nu2Grid(F_nu);
+    return convert_to_std_vector(F_nu);
 }

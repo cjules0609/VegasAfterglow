@@ -46,10 +46,10 @@ void lc_gen(std::string folder_name, bool out = false) {
     Ejecta jet;
 
     if (jet_type == "Gaussian") {
-        jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
+        jet.eps_k = math::gaussian(theta_c, E_iso / (4 * con::pi));
         jet.Gamma0 = math::gaussian(theta_c, Gamma0);
     } else if (jet_type == "tophat") {
-        jet.dE0dOmega = math::tophat(theta_c, E_iso / (4 * con::pi));
+        jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
         jet.Gamma0 = math::tophat(theta_c, Gamma0);
     } else {
         throw std::runtime_error("Jet type not recognized");
@@ -60,18 +60,18 @@ void lc_gen(std::string folder_name, bool out = false) {
     size_t theta_num = 32;
     size_t phi_num = 32;
 
-    Coord coord = autoGrid(jet, t_bins, con::pi / 2, theta_view, z, phi_num, theta_num, t_num);
+    Coord coord = auto_grid(jet, t_bins, con::pi / 2, theta_view, z, phi_num, theta_num, t_num);
 
     // solve dynamics
-    Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
+    Shock f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
 
     Observer obs;
 
-    obs.observeAt(t_bins, coord, f_shock, lumi_dist, z);
+    obs.observe_at(t_bins, coord, f_shock, lumi_dist, z);
 
-    auto syn_e = genSynElectrons(f_shock, p);
+    auto syn_e = generate_syn_electrons(f_shock, p);
 
-    auto syn_ph = genSynPhotons(f_shock, syn_e);
+    auto syn_ph = generate_syn_photons(f_shock, syn_e);
 
     if (out) {
         write_npz("coord", coord);

@@ -27,7 +27,7 @@ inline const Real IC_x0 = std::sqrt(2) / 3;
 // For x = (h * nu) / (me * c²) <= 1, it returns the Thomson cross-section (con::sigmaT).
 // Otherwise, it returns 0.
 // (An alternative implementation is commented out.)
-inline Real comptonSigma(Real nu) {
+inline Real compton_sigma(Real nu) {
     Real x = con::h * nu / (con::me * con::c2);
     if (x <= 1) {
         return con::sigmaT;
@@ -59,8 +59,8 @@ struct IntegratorGrid {
         : x_min(x_min), x_max(x_max), y_min(y_min), y_max(y_max) {
         logspace(std::log10(x_min), std::log10(x_max), x_bin);  // Generate logarithmically spaced bin edges for x.
         logspace(std::log10(y_min), std::log10(y_max), y_bin);  // Generate logarithmically spaced bin edges for y.
-        boundaryToCenter(x_bin, x);                             // Compute center values for x.
-        boundaryToCenter(y_bin, y);                             // Compute center values for y.
+        boundary_to_center(x_bin, x);                           // Compute center values for x.
+        boundary_to_center(y_bin, y);                           // Compute center values for y.
     }
 
     Real x_min;                                        // Minimum x-value.
@@ -116,8 +116,8 @@ struct ICPhoton {
 
         // For each bin in nu0, compute the synchrotron intensity.
         for (size_t i = 0; i < grid.num; i++) {
-            grid.j_syn[i] = ph.I_nu(grid.x[i]);
-            grid.ns[i] = e.columnNumDen(grid.y[i]);
+            grid.j_syn[i] = ph.compute_I_nu(grid.x[i]);
+            grid.ns[i] = e.compute_column_num_den(grid.y[i]);
         }
 
         // For each (nu0, gamma) pair, compute differential contributions and fill in I0.
@@ -129,7 +129,7 @@ struct ICPhoton {
                 Real dgamma = grid.y_bin[j + 1] - grid.y_bin[j];
                 Real dS = std::fabs(dnu * dgamma);
                 Real f = 4 * gamma_ * gamma_ * nu0_ * nu0_;
-                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * comptonSigma(nu0_ / gamma_);
+                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * compton_sigma(nu0_ / gamma_);
             }
         }
 
@@ -170,6 +170,6 @@ using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
  * FUNCTION PROTOTYPES: IC Photon and Electron Cooling Functions
  * DESCRIPTION: These functions create and generate IC photon grids, and apply electron cooling mechanisms.
  ********************************************************************************************************************/
-ICPhotonGrid genICPhotons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
-void eCoolingThomson(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
-void eCoolingKleinNishina(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
+ICPhotonGrid gen_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
+void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
+void KN_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);

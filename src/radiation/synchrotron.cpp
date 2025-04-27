@@ -15,17 +15,16 @@
 #include "physics.h"
 #include "utilities.h"
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T)
- * DESCRIPTION: Constructor that initializes an InverseComptonY object using the provided minimum and cooling
- *              frequencies (nu_m, nu_c), magnetic field B, and Y_T parameter. It computes characteristic
- *              gamma values and corresponding synchrotron frequencies, and then sets the cooling regime.
+ * CONSTRUCTOR: InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T)
+ * DESCRIPTION: Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
+ *              Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) {
     gamma_hat_m = con::me * con::c2 / (con::h * nu_m);  // Compute minimum characteristic Lorentz factor
     gamma_hat_c = con::me * con::c2 / (con::h * nu_c);  // Compute cooling characteristic Lorentz factor
     this->Y_T = Y_T;                                    // Set the Thomson Y parameter
-    nu_hat_m = syn_nu(gamma_hat_m, B);                  // Compute corresponding synchrotron frequency for gamma_hat_m
-    nu_hat_c = syn_nu(gamma_hat_c, B);                  // Compute corresponding synchrotron frequency for gamma_hat_c
+    nu_hat_m = compute_syn_freq(gamma_hat_m, B);        // Compute corresponding synchrotron frequency for gamma_hat_m
+    nu_hat_c = compute_syn_freq(gamma_hat_c, B);        // Compute corresponding synchrotron frequency for gamma_hat_c
 
     if (nu_hat_m <= nu_hat_c) {
         regime = 1;  // fast IC cooling regime
@@ -35,8 +34,8 @@ InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::InverseComptonY(Real Y_T)
- * DESCRIPTION: Constructor that initializes an InverseComptonY object with only Y_T provided.
+ * CONSTRUCTOR: InverseComptonY::InverseComptonY(Real Y_T)
+ * DESCRIPTION: Simple constructor that initializes with only the Thomson Y parameter for special cases.
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY(Real Y_T) {
     this->Y_T = Y_T;  // Set the Thomson Y parameter
@@ -44,8 +43,8 @@ InverseComptonY::InverseComptonY(Real Y_T) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::InverseComptonY()
- * DESCRIPTION: Default constructor initializing all member variables to zero.
+ * CONSTRUCTOR: InverseComptonY::InverseComptonY()
+ * DESCRIPTION: Default constructor that initializes all member variables to zero.
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY() {
     nu_hat_m = 0;
@@ -57,11 +56,11 @@ InverseComptonY::InverseComptonY() {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::as_gamma(Real gamma, Real p) const
- * DESCRIPTION: Returns the effective Y parameter as a function of electron Lorentz factor (gamma) and
- *              power-law index (p), based on the cooling regime.
+ * METHOD: InverseComptonY::compute_val_at_gamma(Real gamma, Real p)
+ * DESCRIPTION: Calculates the effective Y parameter for a given Lorentz factor and spectral index.
+ *              Different scaling relations apply depending on the cooling regime and gamma value.
  ********************************************************************************************************************/
-Real InverseComptonY::as_gamma(Real gamma, Real p) const {
+Real InverseComptonY::compute_val_at_gamma(Real gamma, Real p) const {
     switch (regime) {
         case 3:
             return Y_T;  // In regime 3, simply return Y_T
@@ -79,10 +78,10 @@ Real InverseComptonY::as_gamma(Real gamma, Real p) const {
             if (gamma <= gamma_hat_c) {
                 return Y_T;  // For gamma below gamma_hat_c, no modification
             } else if (gamma <= gamma_hat_m) {
-                return Y_T * fastPow(gamma / gamma_hat_c, (p - 3) / 2);  // Scaling in intermediate regime
+                return Y_T * fast_pow(gamma / gamma_hat_c, (p - 3) / 2);  // Scaling in intermediate regime
             } else
                 return Y_T * pow43(gamma_hat_m / gamma) *
-                       fastPow(gamma_hat_m / gamma_hat_c, (p - 3) / 2);  // High gamma scaling
+                       fast_pow(gamma_hat_m / gamma_hat_c, (p - 3) / 2);  // High gamma scaling
 
             break;
         default:
@@ -92,11 +91,11 @@ Real InverseComptonY::as_gamma(Real gamma, Real p) const {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::as_nu(Real nu, Real p) const
- * DESCRIPTION: Returns the effective Y parameter as a function of frequency (nu) and power-law index (p),
- *              based on the cooling regime.
+ * METHOD: InverseComptonY::compute_val_at_nu(Real nu, Real p)
+ * DESCRIPTION: Calculates the effective Y parameter for a given frequency and spectral index.
+ *              Different scaling relations apply depending on the cooling regime and frequency range.
  ********************************************************************************************************************/
-Real InverseComptonY::as_nu(Real nu, Real p) const {
+Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
     switch (regime) {
         case 3:
             return Y_T;  // In regime 3, simply return Y_T
@@ -114,10 +113,10 @@ Real InverseComptonY::as_nu(Real nu, Real p) const {
             if (nu <= nu_hat_c) {
                 return Y_T;  // For frequencies below nu_hat_c, no modification
             } else if (nu <= nu_hat_m) {
-                return Y_T * fastPow(nu / nu_hat_c, (p - 3) / 4);  // Intermediate frequency scaling
+                return Y_T * fast_pow(nu / nu_hat_c, (p - 3) / 4);  // Intermediate frequency scaling
             } else
                 return Y_T * pow23(nu_hat_m / nu) *
-                       fastPow(nu_hat_m / nu_hat_c, (p - 3) / 4);  // High frequency scaling
+                       fast_pow(nu_hat_m / nu_hat_c, (p - 3) / 4);  // High frequency scaling
 
             break;
         default:
@@ -127,10 +126,11 @@ Real InverseComptonY::as_nu(Real nu, Real p) const {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::Y_Thompson(std::vector<InverseComptonY> const& Ys)
- * DESCRIPTION: Computes the total Y parameter by summing Y_T of all InverseComptonY objects in the vector.
+ * METHOD: InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys)
+ * DESCRIPTION: Returns the Thomson Y parameter from the provided InverseComptonY object.
+ *              Previously supported summing Y parameters from multiple objects.
  ********************************************************************************************************************/
-Real InverseComptonY::Y_Thompson(InverseComptonY const& Ys) {
+Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) {
     /*Real Y_tilt = 0;
     for (auto& Y : Ys) {
         Y_tilt += Y.Y_T;  // Sum each object's Y_T
@@ -140,59 +140,61 @@ Real InverseComptonY::Y_Thompson(InverseComptonY const& Ys) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::Y_tilt_gamma(std::vector<InverseComptonY> const& Ys, Real gamma, Real p)
- * DESCRIPTION: Computes the total effective Y parameter as a function of electron Lorentz factor (gamma) and
- *              power-law index (p) by summing contributions from all InverseComptonY objects.
+ * METHOD: InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p)
+ * DESCRIPTION: Calculates the effective Y parameter at a specific Lorentz factor and spectral index.
+ *              Previously supported summing contributions from multiple InverseComptonY objects.
  ********************************************************************************************************************/
-Real InverseComptonY::Y_tilt_gamma(InverseComptonY const& Ys, Real gamma, Real p) {
+Real InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p) {
     /*Real Y_tilt = 0;
     for (auto& Y : Ys) {
         Y_tilt += Y.as_gamma(gamma, p);  // Sum effective Y parameters based on gamma
     }
     return Y_tilt;*/
-    return Ys.as_gamma(gamma, p);
+    return Ys.compute_val_at_gamma(gamma, p);
 }
 
 /********************************************************************************************************************
- * FUNCTION: InverseComptonY::Y_tilt_nu(std::vector<InverseComptonY> const& Ys, Real nu, Real p)
- * DESCRIPTION: Computes the total effective Y parameter as a function of frequency (nu) and power-law index (p)
- *              by summing contributions from all InverseComptonY objects.
+ * METHOD: InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p)
+ * DESCRIPTION: Calculates the effective Y parameter at a specific frequency and spectral index.
+ *              Previously supported summing contributions from multiple InverseComptonY objects.
  ********************************************************************************************************************/
-Real InverseComptonY::Y_tilt_nu(InverseComptonY const& Ys, Real nu, Real p) {
+Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p) {
     /* Real Y_tilt = 0;
      for (auto& Y : Ys) {
          Y_tilt += Y.as_nu(nu, p);  // Sum effective Y parameters based on frequency
      }
      return Y_tilt;*/
-    return Ys.as_nu(nu, p);
+    return Ys.compute_val_at_nu(nu, p);
 }
 
 /********************************************************************************************************************
- * FUNCTION: SynElectrons::columnNumDen(Real gamma) const
- * DESCRIPTION: Computes the column number density for electrons at a given Lorentz factor (gamma) by scaling
- *              the base column density with the electron spectrum. It accounts for inverse Compton effects.
+ * METHOD: SynElectrons::compute_column_num_den(Real gamma)
+ * DESCRIPTION: Calculates the electron column number density at a specific Lorentz factor.
+ *              Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
  ********************************************************************************************************************/
-Real SynElectrons::columnNumDen(Real gamma) const {
+Real SynElectrons::compute_column_num_den(Real gamma) const {
     if (gamma < gamma_c) {
-        return column_num_den * gammaSpectrum(gamma);  // Below cooling Lorentz factor: direct scaling
+        return column_num_den * compute_gamma_spectrum(gamma);  // Below cooling Lorentz factor: direct scaling
     } else {
-        return column_num_den * gammaSpectrum(gamma) * (1 + Y_c) / (1 + InverseComptonY::Y_tilt_gamma(Ys, gamma, p));
+        return column_num_den * compute_gamma_spectrum(gamma) * (1 + Y_c) /
+               (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
         // Above cooling Lorentz factor: include inverse Compton Y tilt correction
     }
 }
 
 /********************************************************************************************************************
  * FUNCTION: order(Real a, Real b, Real c)
- * DESCRIPTION: Helper inline function to check if three numbers are in non-decreasing order.
+ * DESCRIPTION: Helper function that checks if three values are in non-decreasing order (a ≤ b ≤ c).
+ *              Returns true if ordered, false otherwise.
  ********************************************************************************************************************/
 inline bool order(Real a, Real b, Real c) { return a <= b && b <= c; };
 
 /********************************************************************************************************************
- * FUNCTION: getRegime(Real a, Real c, Real m)
- * DESCRIPTION: Determines the regime based on the ordering of three parameters (typically gamma_a, gamma_c, gamma_m).
- *              Returns a regime identifier (1-6) or 0 if none match.
+ * FUNCTION: determine_regime(Real a, Real c, Real m)
+ * DESCRIPTION: Determines the spectral regime (1-6) based on the ordering of absorption (a),
+ *              cooling (c), and minimum (m) Lorentz factors. Returns 0 if no valid regime is found.
  ********************************************************************************************************************/
-size_t getRegime(Real a, Real c, Real m) {
+size_t determine_regime(Real a, Real c, Real m) {
     if (order(a, m, c)) {
         return 1;
     } else if (order(m, a, c)) {
@@ -210,21 +212,23 @@ size_t getRegime(Real a, Real c, Real m) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: SynElectrons::gammaSpectrum(Real gamma) const
- * DESCRIPTION: Returns the electron energy spectrum as a function of Lorentz factor (gamma) based on the
- *              current regime. Different scaling laws apply in different regimes.
+ * METHOD: SynElectrons::compute_gamma_spectrum(Real gamma)
+ * DESCRIPTION: Calculates the electron energy spectrum at a given Lorentz factor.
+ *              Different spectral forms apply based on the current regime and relative to
+ *              characteristic Lorentz factors (gamma_a, gamma_c, gamma_m, gamma_M).
  ********************************************************************************************************************/
-Real SynElectrons::gammaSpectrum(Real gamma) const {
+Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
     switch (regime) {
         case 1:  // same as case 2
         case 2:
             if (gamma <= gamma_m) {
                 return 0;  // Below minimum Lorentz factor, spectrum is zero
             } else if (gamma <= gamma_c) {
-                return (p - 1) * fastPow(gamma / gamma_m, -p) /
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) /
                        gamma_m;  // Power-law spectrum between gamma_m and gamma_c
             } else
-                return (p - 1) * fastPow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) * fastExp(-gamma / gamma_M);
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m) *
+                       fast_exp(-gamma / gamma_M);
             // Above cooling Lorentz factor: exponential cutoff applied
 
             break;
@@ -234,7 +238,7 @@ Real SynElectrons::gammaSpectrum(Real gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);  // Intermediate regime scaling
             } else
-                return gamma_c / (gamma * gamma_m) * fastPow(gamma / gamma_m, -p) * fastExp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * fast_exp(-gamma / gamma_M);
             // Above minimum Lorentz factor: power-law with exponential cutoff
 
             break;
@@ -244,7 +248,7 @@ Real SynElectrons::gammaSpectrum(Real gamma) const {
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma);  // Transition region
             } else
-                return gamma_c / (gamma * gamma_m) * fastPow(gamma / gamma_m, -p) * fastExp(-gamma / gamma_M);
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) * fast_exp(-gamma / gamma_M);
             // High energy tail with exponential cutoff
 
             break;
@@ -252,7 +256,8 @@ Real SynElectrons::gammaSpectrum(Real gamma) const {
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);  // Rising part of the spectrum
             } else
-                return (p - 1) * gamma_c / (gamma * gamma_m) * fastPow(gamma / gamma_m, -p) * fastExp(-gamma / gamma_M);
+                return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p) *
+                       fast_exp(-gamma / gamma_M);
             // Power-law decay with exponential cutoff
 
             break;
@@ -260,7 +265,7 @@ Real SynElectrons::gammaSpectrum(Real gamma) const {
             if (gamma <= gamma_a) {
                 return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a);  // Rising part of the spectrum
             } else
-                return fastPow(gamma_m, p - 1) * gamma_c * fastPow(gamma, -(p + 1)) * fastExp(-gamma / gamma_M);
+                return fast_pow(gamma_m, p - 1) * gamma_c * fast_pow(gamma, -(p + 1)) * fast_exp(-gamma / gamma_M);
             // Steeper decay in this regime
 
             break;
@@ -270,88 +275,94 @@ Real SynElectrons::gammaSpectrum(Real gamma) const {
 }
 
 /********************************************************************************************************************
- * FUNCTION: SynPhotons::I_nu(Real nu) const
- * DESCRIPTION: Computes the synchrotron photon intensity at frequency nu based on the electron peak intensity
- *              and the computed spectrum. Adjusts for inverse Compton effects if nu exceeds nu_c.
+ * METHOD: SynPhotons::compute_I_nu(Real nu)
+ * DESCRIPTION: Calculates the synchrotron intensity at a given frequency.
+ *              Includes inverse Compton corrections for frequencies above the cooling frequency.
  ********************************************************************************************************************/
-Real SynPhotons::I_nu(Real nu) const {
+Real SynPhotons::compute_I_nu(Real nu) const {
     if (nu < nu_c) {
-        return e->I_nu_peak * spectrum(nu);  // Below cooling frequency, simple scaling
+        return e->I_nu_peak * compute_spectrum(nu);  // Below cooling frequency, simple scaling
     } else {
-        return e->I_nu_peak * spectrum(nu) * (1 + e->Y_c) / (1 + InverseComptonY::Y_tilt_nu(e->Ys, nu, e->p));
+        return e->I_nu_peak * compute_spectrum(nu) * (1 + e->Y_c) /
+               (1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, nu, e->p));
         // Above cooling frequency, include inverse Compton correction
     }
 }
 
-Real SynPhotons::log2_I_nu(Real nu) const {
+/********************************************************************************************************************
+ * METHOD: SynPhotons::compute_log2_I_nu(Real nu)
+ * DESCRIPTION: Calculates the base-2 logarithm of synchrotron intensity at a given frequency.
+ *              Optimized for numerical computation by using logarithmic arithmetic.
+ ********************************************************************************************************************/
+Real SynPhotons::compute_log2_I_nu(Real nu) const {
     if (nu < nu_c) {
-        return log2_I_nu_peak + log2_spectrum(nu);  // Below cooling frequency, simple scaling
+        return log2_I_nu_peak + compute_log2_spectrum(nu);  // Below cooling frequency, simple scaling
     } else {
-        return log2_I_nu_peak + log2_spectrum(nu) + fastLog2(1 + e->Y_c) -
-               fastLog2(1 + InverseComptonY::Y_tilt_nu(e->Ys, nu, e->p));
+        return log2_I_nu_peak + compute_log2_spectrum(nu) + fast_log2(1 + e->Y_c) -
+               fast_log2(1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, nu, e->p));
     }
 }
 /********************************************************************************************************************
- * FUNCTION: SynPhotons::updateConstant()
- * DESCRIPTION: Updates internal constants (to avoid repeat computations) used for computing the synchrotron photon
- *              spectrum based on the current spectral parameters from the associated electrons.
+ * METHOD: SynPhotons::update_constant()
+ * DESCRIPTION: Updates cached calculation constants used for efficiently computing synchrotron spectra.
+ *              Constants vary based on the electron regime (1-6) and involve different power laws.
  ********************************************************************************************************************/
-void SynPhotons::updateConstant() {
+void SynPhotons::update_constant() {
     // Update constants based on spectral parameters
     Real p = e->p;
     if (e->regime == 1) {
         // a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
         C1_ = std::cbrt(nu_a / nu_m);
-        C2_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
+        C2_ = fast_pow(nu_c / nu_m, (-p + 1) / 2);
 
-        log_C1_ = fastLog2(C1_);
-        log_C2_ = fastLog2(C2_);
+        log_C1_ = fast_log2(C1_);
+        log_C2_ = fast_log2(C2_);
     } else if (e->regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
-        C1_ = fastPow(nu_m / nu_a, (p + 4) / 2);
-        C2_ = fastPow(nu_a / nu_m, (-p + 1) / 2);
-        C3_ = fastPow(nu_c / nu_m, (-p + 1) / 2);
+        C1_ = fast_pow(nu_m / nu_a, (p + 4) / 2);
+        C2_ = fast_pow(nu_a / nu_m, (-p + 1) / 2);
+        C3_ = fast_pow(nu_c / nu_m, (-p + 1) / 2);
 
-        log_C1_ = fastLog2(C1_);
-        log_C2_ = fastLog2(C2_);
-        log_C3_ = fastLog2(C3_);
+        log_C1_ = fast_log2(C1_);
+        log_C2_ = fast_log2(C2_);
+        log_C3_ = fast_log2(C3_);
     } else if (e->regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
         C1_ = std::cbrt(nu_a / nu_c);
         C2_ = std::sqrt(nu_c / nu_m);
 
-        log_C1_ = fastLog2(C1_);
-        log_C2_ = fastLog2(C2_);
+        log_C1_ = fast_log2(C1_);
+        log_C2_ = fast_log2(C2_);
     } else if (e->regime == 4) {
         // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
         // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
         C1_ = std::sqrt(nu_a / nu_m);
         C2_ = std::sqrt(nu_c / nu_a) / 3;
 
-        log_C1_ = fastLog2(C1_);
-        log_C2_ = fastLog2(C2_);
+        log_C1_ = fast_log2(C1_);
+        log_C2_ = fast_log2(C2_);
     } else if (e->regime == 5 || e->regime == 6) {
         // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for
         // regime 4 R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
         C1_ = std::sqrt(nu_c / nu_a) / 3;
-        C2_ = C1_ * fastPow(nu_m / nu_a, (p - 1) / 2);
+        C2_ = C1_ * fast_pow(nu_m / nu_a, (p - 1) / 2);
 
-        log_C1_ = fastLog2(C1_);
-        log_C2_ = fastLog2(C2_);
+        log_C1_ = fast_log2(C1_);
+        log_C2_ = fast_log2(C2_);
     }
     // R5 = (p - 1) * R6;  // R5 scales R6 (commented out)
 }
 
 /********************************************************************************************************************
- * FUNCTION: SynPhotons::spectrum(Real nu) const
- * DESCRIPTION: Computes the synchrotron photon spectrum at frequency nu based on the regime of the associated
- *              electrons. Different formulae apply in each regime.
+ * METHOD: SynPhotons::compute_spectrum(Real nu)
+ * DESCRIPTION: Calculates the synchrotron spectrum at a given frequency based on the electron regime.
+ *              Implements the broken power-law with exponential cutoff formulae for different regimes.
  ********************************************************************************************************************/
-Real SynPhotons::spectrum(Real nu) const {
+Real SynPhotons::compute_spectrum(Real nu) const {
     Real p = e->p;
     switch (e->regime) {
         case 1:
@@ -362,10 +373,10 @@ Real SynPhotons::spectrum(Real nu) const {
                 return std::cbrt(nu / nu_m);
             }
             if (nu <= nu_c) {
-                return fastPow(nu / nu_m, -(p - 1) / 2);
+                return fast_pow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C2_ * fastPow(nu / nu_c, -p / 2) * fastExp2(-nu / nu_M);
+            return C2_ * fast_pow(nu / nu_c, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
         case 2:
@@ -376,10 +387,10 @@ Real SynPhotons::spectrum(Real nu) const {
                 return C2_ * pow52(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
             }
             if (nu <= nu_c) {
-                return fastPow(nu / nu_m, -(p - 1) / 2);
+                return fast_pow(nu / nu_m, -(p - 1) / 2);
             }
 
-            return C3_ * fastPow(nu / nu_c, -p / 2) * fastExp2(-nu / nu_M);
+            return C3_ * fast_pow(nu / nu_c, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
         case 3:
@@ -392,7 +403,7 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_m) {
                 return std::sqrt(nu_c / nu);
             }
-            return C2_ * fastPow(nu / nu_m, -p / 2) * fastExp2(-nu / nu_M);
+            return C2_ * fast_pow(nu / nu_m, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
         case 4:
@@ -402,21 +413,21 @@ Real SynPhotons::spectrum(Real nu) const {
             if (nu <= nu_m) {
                 return C2_ * std::sqrt(nu_a / nu);
             }
-            return C2_ * C1_ * fastPow(nu / nu_m, -p / 2) * fastExp2(-nu / nu_M);
+            return C2_ * C1_ * fast_pow(nu / nu_m, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
         case 5:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return (p - 1) * C2_ * fastPow(nu / nu_a, -p / 2) * fastExp2(-nu / nu_M);
+            return (p - 1) * C2_ * fast_pow(nu / nu_a, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
         case 6:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
             }
-            return C2_ * fastPow(nu / nu_a, -p / 2) * fastExp2(-nu / nu_M);
+            return C2_ * fast_pow(nu / nu_a, -p / 2) * fast_exp2(-nu / nu_M);
 
             break;
 
@@ -426,72 +437,77 @@ Real SynPhotons::spectrum(Real nu) const {
     }
 }
 
-Real SynPhotons::log2_spectrum(Real nu) const {
+/********************************************************************************************************************
+ * METHOD: SynPhotons::compute_log2_spectrum(Real nu)
+ * DESCRIPTION: Calculates the base-2 logarithm of synchrotron spectrum at a given frequency.
+ *              Uses logarithmic arithmetic for numerical stability in different spectral regimes.
+ ********************************************************************************************************************/
+Real SynPhotons::compute_log2_spectrum(Real nu) const {
     Real p = e->p;
     switch (e->regime) {
         case 1:
             if (nu <= nu_a) {
-                return log_C1_ + 2 * fastLog2(nu / nu_a);
+                return log_C1_ + 2 * fast_log2(nu / nu_a);
             }
             if (nu <= nu_m) {
-                return fastLog2(nu / nu_m) / 3;
+                return fast_log2(nu / nu_m) / 3;
             }
             if (nu <= nu_c) {
-                return -(p - 1) / 2 * fastLog2(nu / nu_m);
+                return -(p - 1) / 2 * fast_log2(nu / nu_m);
             }
 
-            return log_C2_ - p / 2 * fastLog2(nu / nu_c) - nu / nu_M;
+            return log_C2_ - p / 2 * fast_log2(nu / nu_c) - nu / nu_M;
 
             break;
         case 2:
             if (nu <= nu_m) {
-                return log_C1_ + 2 * fastLog2(nu / nu_m);
+                return log_C1_ + 2 * fast_log2(nu / nu_m);
             }
             if (nu <= nu_a) {
-                return log_C2_ + 2.5 * fastLog2(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
+                return log_C2_ + 2.5 * fast_log2(nu / nu_a);  // Using pow52 for (nu / nu_a)^(5/2)
             }
             if (nu <= nu_c) {
-                return -(p - 1) / 2 * fastLog2(nu / nu_m);
+                return -(p - 1) / 2 * fast_log2(nu / nu_m);
             }
 
-            return log_C3_ - p / 2 * fastLog2(nu / nu_c) - nu / nu_M;
+            return log_C3_ - p / 2 * fast_log2(nu / nu_c) - nu / nu_M;
 
             break;
         case 3:
             if (nu <= nu_a) {
-                return log_C1_ + 2 * fastLog2(nu / nu_a);
+                return log_C1_ + 2 * fast_log2(nu / nu_a);
             }
             if (nu <= nu_c) {
-                return fastLog2(nu / nu_c) / 3;
+                return fast_log2(nu / nu_c) / 3;
             }
             if (nu <= nu_m) {
-                return 0.5 * fastLog2(nu_c / nu);
+                return 0.5 * fast_log2(nu_c / nu);
             }
-            return log_C2_ - p / 2 * fastLog2(nu / nu_m) - nu / nu_M;
+            return log_C2_ - p / 2 * fast_log2(nu / nu_m) - nu / nu_M;
 
             break;
         case 4:
             if (nu <= nu_a) {
-                return 2 * fastLog2(nu / nu_a);
+                return 2 * fast_log2(nu / nu_a);
             }
             if (nu <= nu_m) {
-                return log_C2_ + 0.5 * fastLog2(nu_a / nu);
+                return log_C2_ + 0.5 * fast_log2(nu_a / nu);
             }
-            return log_C2_ + log_C1_ - p / 2 * fastLog2(nu / nu_m) - nu / nu_M;
+            return log_C2_ + log_C1_ - p / 2 * fast_log2(nu / nu_m) - nu / nu_M;
 
             break;
         case 5:
             if (nu <= nu_a) {
-                return 2 * fastLog2(nu / nu_a);
+                return 2 * fast_log2(nu / nu_a);
             }
-            return fastLog2(p - 1) + log_C2_ - p / 2 * fastLog2(nu / nu_a) - nu / nu_M;
+            return fast_log2(p - 1) + log_C2_ - p / 2 * fast_log2(nu / nu_a) - nu / nu_M;
 
             break;
         case 6:
             if (nu <= nu_a) {
-                return 2 * fastLog2(nu / nu_a);
+                return 2 * fast_log2(nu / nu_a);
             }
-            return log_C2_ - p / 2 * fastLog2(nu / nu_a) - nu / nu_M;
+            return log_C2_ - p / 2 * fast_log2(nu / nu_a) - nu / nu_M;
 
             break;
 
@@ -500,63 +516,66 @@ Real SynPhotons::log2_spectrum(Real nu) const {
             break;
     }
 }
+
 /********************************************************************************************************************
- * FUNCTION: syn_p_nu_peak(Real B, Real p)
- * DESCRIPTION: Computes the peak power per electron in the comoving frame based on magnetic field B and power-law
- *              index p.
+ * FUNCTION: compute_syn_peak_power(Real B, Real p)
+ * DESCRIPTION: Calculates the peak synchrotron power per electron in the comoving frame.
+ *              Based on magnetic field strength B and power-law index p of the electron distribution.
  ********************************************************************************************************************/
-Real syn_p_nu_peak(Real B, Real p) {
+Real compute_syn_peak_power(Real B, Real p) {
     constexpr double sqrt3_half = 1.73205080757 / 2;
     return (p - 1) * B * (sqrt3_half * con::e3 / (con::me * con::c2));
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_nu(Real gamma, Real B)
- * DESCRIPTION: Computes the synchrotron frequency for an electron with Lorentz factor gamma in a magnetic field B.
+ * FUNCTION: compute_syn_freq(Real gamma, Real B)
+ * DESCRIPTION: Calculates the characteristic synchrotron frequency for electrons with Lorentz factor gamma
+ *              in a magnetic field B. Uses the standard synchrotron formula.
  ********************************************************************************************************************/
-Real syn_nu(Real gamma, Real B) {
+Real compute_syn_freq(Real gamma, Real B) {
     Real nu = 3 * con::e / (4 * con::pi * con::me * con::c) * B * gamma * gamma;
     return nu;
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma(Real nu, Real B)
- * DESCRIPTION: Computes the electron Lorentz factor corresponding to a synchrotron frequency nu in a magnetic field
- *B.
+ * FUNCTION: compute_syn_gamma(Real nu, Real B)
+ * DESCRIPTION: Calculates the electron Lorentz factor corresponding to a synchrotron frequency nu
+ *              in a magnetic field B. Inverse of the compute_syn_freq function.
  ********************************************************************************************************************/
-Real syn_gamma(Real nu, Real B) {
+Real compute_syn_gamma(Real nu, Real B) {
     Real gamma = std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) * (nu / B));
     return gamma;
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_M(Real B, std::vector<InverseComptonY> const& Ys, Real p)
- * DESCRIPTION: Computes the maximum electron Lorentz factor (gamma_M) for synchrotron emission, iterating until
- *              the inverse Compton Y parameter converges.
+ * FUNCTION: compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p)
+ * DESCRIPTION: Calculates the maximum electron Lorentz factor for synchrotron emission.
+ *              Uses an iterative approach to account for inverse Compton cooling effects.
  ********************************************************************************************************************/
-Real syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
+Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
     if (B == 0) {
         return std::numeric_limits<Real>::infinity();
     }
-    Real Y0 = InverseComptonY::Y_Thompson(Ys);
+    Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
     Real gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y0)));
-    Real Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_M, p);
+    Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_M, p);
 
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
         gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y1)));
         Y0 = Y1;
-        Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_M, p);
+        Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_M, p);
     }
 
     return gamma_M;
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi)
- * DESCRIPTION: Computes the minimum electron Lorentz factor (gamma_m) for synchrotron emission based on the
- *              available energy, power-law index p, and fraction of electrons xi. Uses rootBisection for p=2.
+ * FUNCTION: compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi)
+ * DESCRIPTION: Calculates the minimum electron Lorentz factor for synchrotron emission.
+ *              Accounts for different power-law indices with special handling for the p=2 case.
+ *              Uses the fraction of shock energy given to electrons (eps_e) and electron fraction (xi).
  ********************************************************************************************************************/
-Real syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
+Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
     Real gamma_bar_minus_1 = eps_e * (Gamma_rel - 1) * (con::mp / con::me) / xi;
     Real gamma_m_minus_1 = 1;
     if (p > 2) {
@@ -564,7 +583,7 @@ Real syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
     } else if (p < 2) {
         gamma_m_minus_1 = std::pow((2 - p) / (p - 1) * gamma_bar_minus_1 * std::pow(gamma_M, p - 2), 1 / (p - 1));
     } else {
-        gamma_m_minus_1 = rootBisection(
+        gamma_m_minus_1 = root_bisect(
             [=](Real x) -> Real {
                 return (x * std::log(gamma_M) - (x + 1) * std::log(x) - gamma_bar_minus_1 - std::log(gamma_M));
             },
@@ -574,47 +593,49 @@ Real syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_c(Real t_com, Real B, std::vector<InverseComptonY> const& Ys, Real p)
- * DESCRIPTION: Computes the cooling electron Lorentz factor (gamma_c) based on the comoving time t_com, magnetic
- *              field B, and inverse Compton corrections. Iterates until convergence.
+ * FUNCTION: compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p)
+ * DESCRIPTION: Calculates the cooling electron Lorentz factor based on comoving time.
+ *              Accounts for synchrotron and inverse Compton cooling using an iterative approach
+ *              to handle the Lorentz factor dependent IC cooling.
  ********************************************************************************************************************/
-Real syn_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
+Real compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
     // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
     // Real gamma_c = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_com);
 
-    Real Y0 = InverseComptonY::Y_Thompson(Ys);
+    Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
     Real gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y0) * t_com);
     Real gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
-    Real Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_c, p);
+    Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
 
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-3;) {
         gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y1) * t_com);
         gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
         Y0 = Y1;
-        Y1 = InverseComptonY::Y_tilt_gamma(Ys, gamma_c, p);
+        Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
     }
 
     return gamma_c;
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c)
- * DESCRIPTION: Computes the self-absorption electron Lorentz factor (gamma_a) by equating the synchrotron intensity
- *              to a black-body like spectrum. Uses rootBisection if necessary.
+ * FUNCTION: compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c)
+ * DESCRIPTION: Calculates the self-absorption Lorentz factor by equating synchrotron emission to blackbody.
+ *              Uses the peak intensity and shock parameters to determine where absorption becomes important.
+ *              Handles both weak and strong absorption regimes.
  ********************************************************************************************************************/
-Real syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c) {
+Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
-    Real nu_peak = syn_nu(gamma_peak, B);
-    Real ad_idx = adiabaticIndex(Gamma_rel);
+    Real nu_peak = compute_syn_freq(gamma_peak, B);
+    Real ad_idx = adiabatic_idx(Gamma_rel);
 
     Real kT = (gamma_peak - 1) * (con::me * con::c2) * (ad_idx - 1);
     // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
-    Real nu_a = fastPow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
+    Real nu_a = fast_pow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
 
     // nu_peak is not real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(ad_idx-1), I_syn = I_peak;
     // strong absorption
     if (nu_a > nu_peak) {
-        nu_a = fastPow(
+        nu_a = fast_pow(
             I_syn_peak / (2 * con::me * (ad_idx - 1) * std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)),
             0.4);
         /* Real gamma_a = syn_gamma(nu_a, B);
@@ -630,14 +651,15 @@ Real syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gam
             nu_a *= nu_a;
         }*/
     }
-    return syn_gamma(nu_a, B) + 1;
+    return compute_syn_gamma(nu_a, B) + 1;
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_N_peak(Real gamma_a, Real gamma_m, Real gamma_c)
- * DESCRIPTION: Determines the electron Lorentz factor at which the column density peaks.
+ * FUNCTION: compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c)
+ * DESCRIPTION: Determines the electron Lorentz factor at which the number density peaks,
+ *              based on absorption, minimum, and cooling Lorentz factors.
  ********************************************************************************************************************/
-Real syn_gamma_N_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
+Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
     if (gamma_a > gamma_c) {
         return gamma_a;
@@ -647,18 +669,19 @@ Real syn_gamma_N_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: syn_gamma_N_peak(SynElectrons const& e)
- * DESCRIPTION: Overloaded function to determine the electron Lorentz factor at which the column density peaks,
- *              using a SynElectrons object.
+ * FUNCTION: compute_gamma_peak(SynElectrons const& e)
+ * DESCRIPTION: Overloaded version that determines the peak Lorentz factor directly from a SynElectrons object.
+ *              Convenient wrapper around the three-parameter version.
  ********************************************************************************************************************/
-Real syn_gamma_N_peak(SynElectrons const& e) { return syn_gamma_N_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
+Real compute_gamma_peak(SynElectrons const& e) { return compute_gamma_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
 /********************************************************************************************************************
- * FUNCTION: updateElectrons4Y(SynElectronGrid& e, Shock const& shock)
- * DESCRIPTION: Updates electron properties in the SynElectronGrid based on new inverse Compton Y parameter values
- *              and shock parameters.
+ * FUNCTION: update_electrons_4Y(SynElectronGrid& e, Shock const& shock)
+ * DESCRIPTION: Updates electron properties throughout the grid based on shock parameters and IC Y values.
+ *              Recalculates gamma_M, gamma_c, gamma_a, regime, and Y_c parameters for each grid cell.
+ *              Handles both freshly-shocked and adiabatic cooling regions.
  ********************************************************************************************************************/
-void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
+void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     for (size_t i = 0; i < phi_size; ++i) {
@@ -669,38 +692,40 @@ void updateElectrons4Y(SynElectronGrid& e, Shock const& shock) {
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
-                Real t_com = shock.t_com(i, j, k);
+                Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
                 Real p = e(i, j, k).p;
                 auto& Ys = e(i, j, k).Ys;
                 auto& electron = e(i, j, k);
 
-                electron.gamma_M = syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
+                electron.gamma_M = compute_syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
                 if (k <= k_inj) {
-                    electron.gamma_c = syn_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
+                    electron.gamma_c = compute_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
                 } else {  // no shocked electron injection, just adiabatic cooling
                     electron.gamma_c = e(i, j, k_inj).gamma_c * electron.gamma_m / e(i, j, k_inj).gamma_m;
                     electron.gamma_M = electron.gamma_c;
                 }
-                electron.gamma_a = syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
-                electron.regime = getRegime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
-                electron.Y_c = InverseComptonY::Y_tilt_gamma(Ys, electron.gamma_c, p);
+                electron.gamma_a =
+                    compute_syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
+                electron.regime = determine_regime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
+                electron.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, electron.gamma_c, p);
             }
         }
     }
 }
 
 /********************************************************************************************************************
- * FUNCTION: genSynElectrons(Shock const& shock, Real p, Real xi)
- * DESCRIPTION: Generates a SynElectronGrid based on the shock parameters, power-law index p, and electron
- *              partition factor xi.
+ * FUNCTION: generate_syn_electrons(Shock const& shock, Real p, Real xi)
+ * DESCRIPTION: Creates a new synchrotron electron grid based on shock parameters.
+ *              Initializes all electron properties including Lorentz factors, column densities,
+ *              and peak intensities for each grid cell. Returns the populated grid.
  ********************************************************************************************************************/
-SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
+SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     SynElectronGrid electrons({phi_size, theta_size, t_size});
 
-    constexpr Real gamma_syn_limit = 3;
+    constexpr Real gamma_cyclotron = 3;
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
@@ -710,30 +735,30 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
-                Real t_com = shock.t_com(i, j, k);
+                Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
                 Real Sigma = shock.column_num_den(i, j, k);
 
                 auto& e = electrons(i, j, k);
 
-                e.gamma_M = syn_gamma_M(B, electrons(i, j, k).Ys, p);
-                e.gamma_m = syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
+                e.gamma_M = compute_syn_gamma_M(B, electrons(i, j, k).Ys, p);
+                e.gamma_m = compute_syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
-                if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
-                    f = std::min(fastPow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
-                    e.gamma_m = gamma_syn_limit;
+                if (1 < e.gamma_m && e.gamma_m < gamma_cyclotron) {
+                    f = std::min(fast_pow((gamma_cyclotron - 1) / (e.gamma_m - 1), 1 - p), 1_r);
+                    e.gamma_m = gamma_cyclotron;
                 }
                 e.column_num_den = Sigma * f * xi;
-                e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
+                e.I_nu_peak = compute_syn_peak_power(B, p) * e.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = syn_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
+                    e.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
                     e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
-                e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
-                e.regime = getRegime(e.gamma_a, e.gamma_c, e.gamma_m);
+                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
+                e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
                 e.p = p;
             }
         }
@@ -741,7 +766,12 @@ SynElectronGrid genSynElectrons(Shock const& shock, Real p, Real xi) {
     return electrons;
 }
 
-void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi) {
+/********************************************************************************************************************
+ * FUNCTION: generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi)
+ * DESCRIPTION: Populates an existing synchrotron electron grid with values based on shock parameters.
+ *              Overloaded version that modifies a grid supplied by the caller rather than creating a new one.
+ ********************************************************************************************************************/
+void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     electrons.resize({phi_size, theta_size, t_size});
@@ -755,30 +785,30 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
                     continue;
                 }
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
-                Real t_com = shock.t_com(i, j, k);
+                Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
                 Real Sigma = shock.column_num_den(i, j, k);
 
                 auto& e = electrons(i, j, k);
 
-                e.gamma_M = syn_gamma_M(B, electrons(i, j, k).Ys, p);
-                e.gamma_m = syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
+                e.gamma_M = compute_syn_gamma_M(B, electrons(i, j, k).Ys, p);
+                e.gamma_m = compute_syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
                 if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
-                    f = std::min(fastPow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
+                    f = std::min(fast_pow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
                     e.gamma_m = gamma_syn_limit;
                 }
                 e.column_num_den = Sigma * f * xi;
-                e.I_nu_peak = syn_p_nu_peak(B, p) * e.column_num_den / (4 * con::pi);
+                e.I_nu_peak = compute_syn_peak_power(B, p) * e.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = syn_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
+                    e.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
                     e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
-                e.gamma_a = syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
-                e.regime = getRegime(e.gamma_a, e.gamma_c, e.gamma_m);
+                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
+                e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
                 e.p = p;
             }
         }
@@ -786,11 +816,12 @@ void genSynElectrons(SynElectronGrid& electrons, Shock const& shock, Real p, Rea
 }
 
 /********************************************************************************************************************
- * FUNCTION: genSynPhotons(Shock const& shock, SynElectronGrid const& e)
- * DESCRIPTION: Generates a SynPhotonGrid based on the shock parameters and the precomputed SynElectronGrid.
- *              For each grid cell, synchrotron photon frequencies are computed and internal constants are updated.
+ * FUNCTION: generate_syn_photons(Shock const& shock, SynElectronGrid const& e)
+ * DESCRIPTION: Creates a new synchrotron photon grid based on shock parameters and electron properties.
+ *              Computes characteristic frequencies and updates calculation constants for each grid cell.
+ *              Returns the populated photon grid.
  ********************************************************************************************************************/
-SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
+SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& e) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     SynPhotonGrid ph({phi_size, theta_size, t_size});
@@ -804,20 +835,25 @@ SynPhotonGrid genSynPhotons(Shock const& shock, SynElectronGrid const& e) {
                 }
                 Real B = shock.B(i, j, k);
 
-                ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);
-                ph(i, j, k).nu_m = syn_nu(e(i, j, k).gamma_m, B);
-                ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
-                ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
+                ph(i, j, k).nu_M = compute_syn_freq(e(i, j, k).gamma_M, B);
+                ph(i, j, k).nu_m = compute_syn_freq(e(i, j, k).gamma_m, B);
+                ph(i, j, k).nu_c = compute_syn_freq(e(i, j, k).gamma_c, B);
+                ph(i, j, k).nu_a = compute_syn_freq(e(i, j, k).gamma_a, B);
 
-                ph(i, j, k).log2_I_nu_peak = fastLog2(e(i, j, k).I_nu_peak);
-                ph(i, j, k).updateConstant();
+                ph(i, j, k).log2_I_nu_peak = fast_log2(e(i, j, k).I_nu_peak);
+                ph(i, j, k).update_constant();
             }
         }
     }
     return ph;
 }
 
-void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e) {
+/********************************************************************************************************************
+ * FUNCTION: generate_syn_photons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e)
+ * DESCRIPTION: Populates an existing synchrotron photon grid based on shock parameters and electron properties.
+ *              Overloaded version that modifies a grid supplied by the caller rather than creating a new one.
+ ********************************************************************************************************************/
+void generate_syn_photons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     ph.resize({phi_size, theta_size, t_size});
@@ -830,13 +866,13 @@ void genSynPhotons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const&
                 }
                 Real B = shock.B(i, j, k);
 
-                ph(i, j, k).nu_M = syn_nu(e(i, j, k).gamma_M, B);
-                ph(i, j, k).nu_m = syn_nu(e(i, j, k).gamma_m, B);
-                ph(i, j, k).nu_c = syn_nu(e(i, j, k).gamma_c, B);
-                ph(i, j, k).nu_a = syn_nu(e(i, j, k).gamma_a, B);
+                ph(i, j, k).nu_M = compute_syn_freq(e(i, j, k).gamma_M, B);
+                ph(i, j, k).nu_m = compute_syn_freq(e(i, j, k).gamma_m, B);
+                ph(i, j, k).nu_c = compute_syn_freq(e(i, j, k).gamma_c, B);
+                ph(i, j, k).nu_a = compute_syn_freq(e(i, j, k).gamma_a, B);
 
-                ph(i, j, k).log2_I_nu_peak = fastLog2(e(i, j, k).I_nu_peak);
-                ph(i, j, k).updateConstant();
+                ph(i, j, k).log2_I_nu_peak = fast_log2(e(i, j, k).I_nu_peak);
+                ph(i, j, k).update_constant();
             }
         }
     }

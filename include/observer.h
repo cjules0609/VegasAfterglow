@@ -29,24 +29,24 @@ class LogScaleInterp {
 
     // Interpolates the luminosity using the observation time (t_obs) in logarithmic space
     // Returns the interpolated luminosity value
-    Real interpLuminosity(Real t_obs, Real t_lo, Real surface_lo) const noexcept;
+    Real interp_luminosity(Real t_obs, Real t_lo, Real surface_lo) const noexcept;
 
     // Validates and sets the interpolation boundaries using the provided grids
     // Returns true if both lower and upper boundaries are valid for interpolation
     template <typename... PhotonGrid>
-    bool validateInterpBoundary(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& surface,
-                                MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                PhotonGrid const&... photons) noexcept;
+    bool set_interp_boundaries(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& surface, MeshGrid3d const& t_obs,
+                               MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) noexcept;
 
+    // Resets the interpolator state to initial values
     void reset() noexcept {
         slope = log_I_lo = log_I_hi = 0;
         idx_hi = 0;
     }
 
    private:
-    Real slope{0};
-    Real log_I_lo{0};  // Lower boundary of specific intensity
-    Real log_I_hi{0};  // Upper boundary of specific intensity
+    Real slope{0};     // Slope for logarithmic interpolation
+    Real log_I_lo{0};  // Lower boundary of specific intensity (log2 scale)
+    Real log_I_hi{0};  // Upper boundary of specific intensity (log2 scale)
 
     size_t idx_hi{0};  // Index for the upper boundary in the grid
 };
@@ -75,30 +75,31 @@ class Observer {
     // Main observation function that sets up the observer's view of the simulation
     void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
-    void observeAt(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift);
+    // Configures observer to observe at specific time points
+    void observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift);
 
     // Computes the specific flux at a single observed frequency
     template <typename... PhotonGrid>
-    Array specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
+    Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 
     // Computes the specific flux at multiple observed frequencies
     template <typename... PhotonGrid>
-    MeshGrid specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
+    MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
 
     // Computes the integrated flux over a frequency band
     template <typename... PhotonGrid>
     Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
 
-    // Computes the spectrum at multiple frequencies for a single observation time
+    // Computes the spectrum at multiple observation times
     template <typename... PhotonGrid>
-    MeshGrid spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
+    MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
 
-    // Computes the spectrum at multiple frequencies for a single observation time
+    // Computes the spectrum at single observation time
     template <typename... PhotonGrid>
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
     // Updates the required grid points for observation
-    void updateRequired(MaskGrid& required, Array const& t_obs);
+    void update_required(MaskGrid& required, Array const& t_obs);
 
    private:
     LogScaleInterp interp;   // Helper class for logarithmic interpolation
@@ -106,17 +107,18 @@ class Observer {
     size_t theta_size{0};    // Number of theta grid points
     size_t t_size{0};        // Number of time grid points
 
-    void buildObsTimeGrid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
+    // Builds the observation time, doppler, and surface grids
+    void build_t_obs_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
     // Calculates the observation time grid based on Lorentz factor and engine time
-    void calcObsTimeGrid(Coord const& coord, Shock const& shock);
+    void calc_t_obs_grid(Coord const& coord, Shock const& shock);
 
     // Calculates the effective emission surface for each grid point
-    void calcEmissionSurface(Coord const& coord, Shock const& shock);
+    void calc_emission_surface(Coord const& coord, Shock const& shock);
 };
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: LogScaleInterp::validateInterpBoundary
+ * TEMPLATE METHOD: LogScaleInterp::set_interp_boundaries
  * DESCRIPTION: Attempts to set the lower and upper boundary values for logarithmic interpolation.
  *              It updates the internal boundary members for:
  *                - Logarithmic observation time (t_obs_lo, log_t_ratio)
@@ -125,10 +127,10 @@ class Observer {
  *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& surface,
-                                            MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                            PhotonGrid const&... photons) noexcept {
-    Real log_t_ratio = fastLog2(t_obs(i, j, k_lo + 1) / t_obs(i, j, k_lo));
+bool LogScaleInterp::set_interp_boundaries(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& surface,
+                                           MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
+                                           PhotonGrid const&... photons) noexcept {
+    Real log_t_ratio = fast_log2(t_obs(i, j, k_lo + 1) / t_obs(i, j, k_lo));
 
     if (!std::isfinite(log_t_ratio)) [[unlikely]] {
         return false;
@@ -136,7 +138,7 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
 
     size_t eff_i = i * jet_3d;
 
-    Real log_S_ratio = fastLog2(surface(i, j, k_lo + 1) / surface(i, j, k_lo));
+    Real log_S_ratio = fast_log2(surface(i, j, k_lo + 1) / surface(i, j, k_lo));
 
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
@@ -144,11 +146,11 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
         log_I_lo = log_I_hi;
     } else {
         Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo);
-        log_I_lo = (photons(eff_i, j, k_lo).log2_I_nu(nu) + ...);
+        log_I_lo = (photons(eff_i, j, k_lo).compute_log2_I_nu(nu) + ...);
     }
 
     Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo + 1);
-    log_I_hi = (photons(eff_i, j, k_lo + 1).log2_I_nu(nu) + ...);
+    log_I_hi = (photons(eff_i, j, k_lo + 1).compute_log2_I_nu(nu) + ...);
 
     slope = (log_I_hi - log_I_lo + log_S_ratio) / log_t_ratio;
 
@@ -161,10 +163,10 @@ bool LogScaleInterp::validateInterpBoundary(size_t i, size_t j, size_t k_lo, Rea
 }
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: O
- * bserver::specificFlux (multi-frequency overload)
- * DESCRIPTION: Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
- *              the specific flux for each frequency and assembling the results into a grid.
+ * FUNCTION: iterate_to
+ * DESCRIPTION: Helper function that advances an iterator (it) through an array (arr) until the value at that
+ *              position exceeds the target value or the end of the array is reached. This is used for efficiently
+ *              finding the appropriate position in a sorted array without binary search.
  ********************************************************************************************************************/
 inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
     while (it < arr.size() && arr(it) < value) {
@@ -172,8 +174,14 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
     }
 }
 
+/********************************************************************************************************************
+ * TEMPLATE METHOD: Observer::specific_flux (multi-frequency overload)
+ * DESCRIPTION: Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
+ *              the specific flux for each frequency and assembling the results into a grid. This method accounts for
+ *              relativistic beaming and cosmological effects.
+ ********************************************************************************************************************/
 template <typename... PhotonGrid>
-MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
     size_t t_obs_size = t_obs.size();
     size_t nu_size = nu_obs.size();
 
@@ -195,10 +203,10 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
                     if (t_hi < t_obs(t_idx)) {
                         continue;
                     } else {
-                        if (interp.validateInterpBoundary(i, j, k, z, surface, t_obs_grid, doppler, nu_obs[l],
-                                                          photons...)) {
+                        if (interp.set_interp_boundaries(i, j, k, z, surface, t_obs_grid, doppler, nu_obs[l],
+                                                         photons...)) {
                             for (; t_idx < t_obs_size && t_obs(t_idx) < t_hi; t_idx++) {
-                                F_nu(l, t_idx) += interp.interpLuminosity(t_obs(t_idx), t_lo, surface(i, j, k));
+                                F_nu(l, t_idx) += interp.interp_luminosity(t_obs(t_idx), t_lo, surface(i, j, k));
                             }
                         } else {
                             iterate_to(t_hi, t_obs, t_idx);
@@ -217,23 +225,33 @@ MeshGrid Observer::specificFlux(Array const& t_obs, Array const& nu_obs, PhotonG
 }
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: Observer::specificFlux (single-frequency overload)
+ * TEMPLATE METHOD: Observer::specific_flux (single-frequency overload)
  * DESCRIPTION: Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the
  *              specific flux over the observation times.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-Array Observer::specificFlux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
-    return xt::view(specificFlux(t_obs, Array({nu_obs}), photons...), 0);
+Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
+    return xt::view(specific_flux(t_obs, Array({nu_obs}), photons...), 0);
 }
 
+/********************************************************************************************************************
+ * TEMPLATE METHOD: Observer::spectrum (single-time overload)
+ * DESCRIPTION: Returns the spectrum (as an Array) at a single observation time by computing the specific flux
+ *              for each frequency in the given array.
+ ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons) {
-    return xt::view(spectrum(freqs, Array({t_obs}), photons...), 0);
+    return xt::view(spectra(freqs, Array({t_obs}), photons...), 0);
 }
 
+/********************************************************************************************************************
+ * TEMPLATE METHOD: Observer::spectra (multi-time overload)
+ * DESCRIPTION: Returns the spectra (as a MeshGrid) for multiple observation times by computing the specific flux
+ *              for each frequency and transposing the result to get freq x time format.
+ ********************************************************************************************************************/
 template <typename... PhotonGrid>
-MeshGrid Observer::spectrum(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
-    return xt::transpose(specificFlux(t_obs, freqs, photons...));
+MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
+    return xt::transpose(specific_flux(t_obs, freqs, photons...));
 }
 
 /********************************************************************************************************************
@@ -244,8 +262,8 @@ MeshGrid Observer::spectrum(Array const& freqs, Array const& t_obs, PhotonGrid c
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
-    Array nu_obs = boundaryToCenterLog(band_freq);
-    MeshGrid F_nu = specificFlux(t_obs, nu_obs, photons...);
+    Array nu_obs = boundary_to_center_log(band_freq);
+    MeshGrid F_nu = specific_flux(t_obs, nu_obs, photons...);
     Array flux({t_obs.size()}, 0);
     for (size_t i = 0; i < nu_obs.size(); ++i) {
         Real dnu = band_freq(i + 1) - band_freq(i);

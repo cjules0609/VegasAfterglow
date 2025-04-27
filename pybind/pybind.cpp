@@ -56,16 +56,17 @@ PYBIND11_MODULE(vegasglow, m) {
     // MultiBandData bindings
     py::class_<MultiBandData>(m, "obsData")
         .def(py::init<>())
-        .def("addLightCurve", &MultiBandData::addObsLightCurve, py::arg("nu"), py::arg("t"), py::arg("Fv_obs"),
+        .def("add_light_curve", &MultiBandData::add_light_curve, py::arg("nu"), py::arg("t"), py::arg("Fv_obs"),
              py::arg("Fv_err"))
-        .def("addSpectrum", &MultiBandData::addObsSpectrum, py::arg("t"), py::arg("nu"), py::arg("Fv_obs"),
+        .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t"), py::arg("nu"), py::arg("Fv_obs"),
              py::arg("Fv_err"));
 
     // MultiBandModel bindings
     py::class_<MultiBandModel>(m, "mcmcModel")
         .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
         .def("configure", &MultiBandModel::configure, py::arg("param"))
-        .def("chiSquare", &MultiBandModel::chiSquare, py::arg("param"), py::call_guard<py::gil_scoped_release>())
-        .def("lightCurve", &MultiBandModel::lightCurve, py::arg("param"), py::arg("t"), py::arg("nu"))
-        .def("spectrum", &MultiBandModel::spectrum, py::arg("param"), py::arg("nu"), py::arg("t"));
+        .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t"), py::arg("nu"))
+        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu"), py::arg("t"));
 }

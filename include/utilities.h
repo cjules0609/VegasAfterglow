@@ -14,12 +14,12 @@ class Empty {};
 
 template <typename T>
 concept HasDmdt = requires(T t) {
-    { t.dMdtdOmega(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.dm_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };
 
 template <typename T>
 concept HasDedt = requires(T t) {
-    { t.dEdtdOmega(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.deps_k_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };
 
 template <typename T>
@@ -30,6 +30,11 @@ concept HasMass = requires(T t) {
 template <typename T>
 concept HasSigma = requires(T t) {
     { t.sigma0(0.0, 0.0) } -> std::same_as<Real>;
+};
+
+template <typename T>
+concept HasU = requires(T t) {
+    { t.u } -> std::same_as<Real>;
 };
 
 #define MAKE_THIS_ODEINT_STATE(data, array_size)                             \
@@ -46,7 +51,7 @@ concept HasSigma = requires(T t) {
     constexpr value_type& operator[](size_t i) noexcept { return data[i]; }  \
     constexpr const value_type& operator[](size_t i) const noexcept { return data[i]; }
 
-void printArray(Array const& arr);
+void print_array(Array const& arr);
 
 /********************************************************************************************************************
  * TEMPLATE FUNCTION: print (Variadic)
@@ -100,19 +105,19 @@ inline constexpr Real eVtoHz(Real eV) { return eV / con::h; }
  * FUNCTION: Fast Math & Interpolation Prototypes                                                                   *
  * DESCRIPTION: Prototypes for fast power, logarithm, and various interpolation functions.                          *
  ********************************************************************************************************************/
-Real fastPow(Real a, Real b);
-Real fastLog(Real x);
+Real fast_pow(Real a, Real b);
+Real fast_log(Real x);
 Real interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-Real interpEqSpaced(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-Real loglogInterp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
-Real loglogInterpEqSpaced(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+Real eq_space_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+Real loglog_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+Real eq_space_loglog_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 
 /********************************************************************************************************************
  * FUNCTION: Root Finding (Bisection Method)                                                                        *
  * DESCRIPTION: Template function to find the root of a function using the bisection method.                        *
  ********************************************************************************************************************/
 template <typename Fun>
-auto rootBisection(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
+auto root_bisect(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
     using Scalar = decltype(f(0));
     for (; (high - low) > std::fabs((high + low) * 0.5) * eps;) {
         Scalar mid = 0.5 * (high + low);
@@ -153,7 +158,7 @@ T max(T first, Args... args) {
  * DESCRIPTION: Inline functions that provide fast approximations of exponential and logarithm functions using      *
  *              alternative methods when EXTREME_SPEED is defined.                                                  *
  ********************************************************************************************************************/
-inline Real fastExp(Real x) {
+inline Real fast_exp(Real x) {
 #ifdef EXTREME_SPEED
     // if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
     // if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
@@ -176,7 +181,7 @@ inline Real fastExp(Real x) {
 #endif
 }
 
-inline double fastLog(double x) {
+inline double fast_log(double x) {
 #ifdef EXTREME_SPEED
     if (x <= 0.) return -std::numeric_limits<double>::infinity();
     if (std::isnan(x)) return std::numeric_limits<double>::quiet_NaN();
@@ -195,7 +200,7 @@ inline double fastLog(double x) {
 #endif
 }
 
-inline double fastLog2(double val) {
+inline double fast_log2(double val) {
 #ifdef EXTREME_SPEED
     int64_t* const exp_ptr = reinterpret_cast<int64_t*>(&val);
     int64_t x = *exp_ptr;
@@ -226,7 +231,7 @@ inline double fastLog2(double val) {
 #endif
 }
 
-inline double fastExp2(double x) {
+inline double fast_exp2(double x) {
 #ifdef EXTREME_SPEED
     int int_part = (int)x;
     double frac_part = x - int_part;
@@ -250,4 +255,4 @@ inline double fastExp2(double x) {
 #endif
 }
 
-inline Real fastPow(Real a, Real b) { return fastExp2(b * fastLog2(a)); }
+inline Real fast_pow(Real a, Real b) { return fast_exp2(b * fast_log2(a)); }

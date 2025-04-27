@@ -25,7 +25,7 @@ inline bool order(Real a, Real b, Real c) { return a < b && b < c; }
  * DESCRIPTION: Computes the photon intensity at frequency nu using logarithmic-logarithmic interpolation
  *              (specifically, loglogInterpEqSpaced) on the IC photon spectrum data.
  ********************************************************************************************************************/
-Real ICPhoton::I_nu(Real nu) const { return loglogInterpEqSpaced(nu, this->nu_IC_, this->j_nu_, true, true); }
+Real ICPhoton::I_nu(Real nu) const { return eq_space_loglog_interp(nu, this->nu_IC_, this->j_nu_, true, true); }
 
 /********************************************************************************************************************
  * INLINE FUNCTION: eta_rad
@@ -50,7 +50,7 @@ Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     Real Y1 = 2 * Y0;
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
         Y1 = Y0;
-        Real gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
+        Real gamma_c = compute_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
         b = eta_e * eps_e / eps_B;
         Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
@@ -64,7 +64,7 @@ Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
  *              SynPhotonGrid. For each grid cell, it calls the gen() method of the ICPhoton to compute the IC
  *              photon spectrum based on the local electron and synchrotron photon properties.
  ********************************************************************************************************************/
-ICPhotonGrid genICPhotons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
+ICPhotonGrid gen_IC_photons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
     size_t phi_size = e.shape()[0];
     size_t theta_size = e.shape()[1];
     size_t r_size = e.shape()[2];
@@ -88,7 +88,7 @@ ICPhotonGrid genICPhotons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
  *              clears the current inverse Compton Y parameters (Ys), and stores the computed Y_T.
  *              Finally, it updates the electrons based on the new Y parameter.
  ********************************************************************************************************************/
-void eCoolingThomson(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
+void Thomson_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
     size_t phi_size = e.shape()[0];
     size_t theta_size = e.shape()[1];
     size_t r_size = e.shape()[2];
@@ -97,13 +97,13 @@ void eCoolingThomson(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& s
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
                 Real Y_T =
-                    effectiveYThomson(shock.B(i, j, k), shock.t_com(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
+                    effectiveYThomson(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
 
                 e(i, j, k).Ys = InverseComptonY(Y_T);
             }
         }
     }
-    updateElectrons4Y(e, shock);
+    update_electrons_4Y(e, shock);
 }
 
 /********************************************************************************************************************
@@ -112,7 +112,7 @@ void eCoolingThomson(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& s
  *              Similar to eCoolingThomson, but for each cell, it creates an InverseComptonY object with additional
  *              parameters from the synchrotron photon grid.
  ********************************************************************************************************************/
-void eCoolingKleinNishina(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
+void KN_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
     size_t phi_size = e.shape()[0];
     size_t theta_size = e.shape()[1];
     size_t r_size = e.shape()[2];
@@ -120,7 +120,7 @@ void eCoolingKleinNishina(SynElectronGrid& e, SynPhotonGrid const& ph, Shock con
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
                 Real Y_T =
-                    effectiveYThomson(shock.B(i, j, k), shock.t_com(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
+                    effectiveYThomson(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
                 // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
                 // e[i][j][k].Ys.clear();
                 // e[i][j][k].Ys.emplace_back(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
@@ -128,5 +128,5 @@ void eCoolingKleinNishina(SynElectronGrid& e, SynPhotonGrid const& ph, Shock con
             }
         }
     }
-    updateElectrons4Y(e, shock);
+    update_electrons_4Y(e, shock);
 }

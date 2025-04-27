@@ -16,22 +16,18 @@ CoastingShock::CoastingShock(size_t phi_size, size_t theta_size, size_t t_size)
       theta_size(theta_size),                      // Store theta grid size
       t_size(t_size) {}
 
-PromptPhotonsGrid createPromptPhotonsGrid(size_t phi_size, size_t theta_size, size_t t_size) {
-    return PromptPhotonsGrid({phi_size, theta_size, t_size});
-}
-
-PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha) {
+PromptPhotonsGrid gen_prompt_photons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    PromptPhotonsGrid ph = createPromptPhotonsGrid(phi_size, theta_size, t_size);
+    PromptPhotonsGrid ph({phi_size, theta_size, t_size});
 
     Real Gamma_c = shock.Gamma(0, 0, 0);
-    Real beta_c = gammaTobeta(Gamma_c);
+    Real beta_c = gamma_to_beta(Gamma_c);
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             Real Gamma = shock.Gamma(i, j, 0);
-            Real beta = gammaTobeta(Gamma);
+            Real beta = gamma_to_beta(Gamma);
             Real R = R0 * beta / (1 - beta) * (1 - beta_c) / beta_c;
             Real Rmin = R * 0;
             Real Rmax = R * 1.;

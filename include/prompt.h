@@ -40,14 +40,14 @@ class CoastingShock {
 };
 
 template <typename Ejecta>
-CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
+CoastingShock gen_coasting_shock(Coord const& coord, Ejecta const& jet) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     CoastingShock shock(1, theta_size, t_size);
 
     for (size_t j = 0; j < theta_size; ++j) {
         Real Gamma = jet.Gamma0(coord.phi(0), coord.theta(j));
-        Real beta = gammaTobeta(Gamma);
-        Real epsilon = jet.dE0dOmega(coord.phi(0), coord.theta(j));
+        Real beta = gamma_to_beta(Gamma);
+        Real epsilon = jet.eps_k(coord.phi(0), coord.theta(j));
         for (size_t k = 0; k < t_size; ++k) {
             shock.Gamma(0, j, k) = Gamma;
             shock.epsilon(0, j, k) = epsilon;
@@ -59,4 +59,4 @@ CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
     return shock;
 }
 
-PromptPhotonsGrid genPromptPhotons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha);
+PromptPhotonsGrid gen_prompt_photons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha);

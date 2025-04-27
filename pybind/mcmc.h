@@ -21,7 +21,7 @@ struct LightCurveData {
     Array Fv_err;
     Array Fv_model;
 
-    double calcChiSquare() const;
+    double estimate_chi2() const;
 };
 
 struct SpectrumData {
@@ -31,7 +31,7 @@ struct SpectrumData {
     Array Fv_err;
     Array Fv_model;
 
-    double calcChiSquare() const;
+    double estimate_chi2() const;
 };
 
 struct MultiBandData {
@@ -40,9 +40,9 @@ struct MultiBandData {
     std::vector<LightCurveData> light_curve;
     std::vector<SpectrumData> spectrum;
 
-    double calcChiSquare() const;
-    void addObsLightCurve(double nu, List const& t, List const& Fv_obs, List const& Fv_err);
-    void addObsSpectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err);
+    double estimate_chi2() const;
+    void add_light_curve(double nu, List const& t, List const& Fv_obs, List const& Fv_err);
+    void add_spectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err);
 };
 
 struct Params {
@@ -78,13 +78,13 @@ struct MultiBandModel {
     MultiBandModel(MultiBandData const& data);
 
     void configure(ConfigParams const& param);
-    double chiSquare(Params const& param);
-    Grid lightCurve(Params const& param, List const& t, List const& nu);
-    Grid spectrum(Params const& param, List const& nu, List const& t);
+    double estimate_chi2(Params const& param);
+    Grid light_curves(Params const& param, List const& t, List const& nu);
+    Grid spectra(Params const& param, List const& nu, List const& t);
 
    private:
-    void buildSystem(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
-                     SynPhotonGrid& photons);
+    void build_system(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
+                      SynPhotonGrid& photons);
     MultiBandData obs_data;
     ConfigParams config;
     // SynElectronGrid electrons;
