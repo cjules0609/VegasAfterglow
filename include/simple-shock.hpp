@@ -25,14 +25,19 @@ struct SimpleState {
 
     union {
         struct {
-            Real Gamma{1};
-            Real r{0};
-            Real t_com{0};
-            Real theta{0};
+            Real Gamma{1};   // Lorentz factor
+            Real r{0};       // radius
+            Real t_comv{0};  // comoving time
+            Real theta{0};   // angle
 
-            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> E_ej{};
-            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> M_ej{};
-            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> M_sw{};
+            // shell energy density per solid angle
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell{};
+
+            // shell mass per solid angle
+            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell{};
+
+            // swept mass per solid angle
+            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> m_swept{};
         };
         array_type data;
     };
@@ -41,8 +46,8 @@ struct SimpleState {
 /********************************************************************************************************************
  * CLASS: SimpleShockEqn
  * DESCRIPTION: Represents the forward shock equation for a given Jet. It defines a state vector
- *              (an array of 8 Reals) and overloads operator() to compute the derivatives of the state with
- *              respect to radius t. It also declares helper functions for the derivatives. Simple version from
+ *              and overloads operator() to compute the derivatives of the state with
+ *              respect to time t. It also declares helper functions for the derivatives. Simple version from
  *              Huang et al. 2000
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
@@ -55,7 +60,8 @@ class SimpleShockEqn {
     // Overloaded operator() to compute the derivatives of the state vector with respect to engine time t.
     void operator()(State const& state, State& diff, Real t) const noexcept;
 
-    void setInitState(State& state, Real t0) const noexcept;
+    // Initialize the state vector at time t0
+    void set_init_state(State& state, Real t0) const noexcept;
 
     Medium const& medium;  // Reference to the medium properties
     Ejecta const& ejecta;  // Reference to the ejecta properties
@@ -64,11 +70,11 @@ class SimpleShockEqn {
     Real const eps_e{0};   // Electron energy fraction
 
    private:
-    // Helper function: computes the derivative of Gamma with respect to t.
-    Real dGammadt(Real dMdt_sw, State const& state, State const& diff) const noexcept;
+    // Helper function: computes the derivative of Gamma with respect to engine time t.
+    Real dGamma_dt(Real dm_dt_swept, State const& state, State const& diff) const noexcept;
     Real const dOmega0{0};  // Initial solid angle
     Real const theta_s{0};  // Critical angle for jet spreading
-    Real M_ej{0};           // Ejecta mass per solid angle
+    Real m_shell{0};        // Ejecta mass per solid angle
 };
 
 #include "../src/dynamics/simple-shock.tpp"

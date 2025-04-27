@@ -10,13 +10,12 @@
  * CONSTRUCTOR: Shock::Shock
  * DESCRIPTION: Constructs a Shock object with the given grid dimensions (phi_size, theta_size, t_size)
  *              and energy fractions (eps_e and eps_B). The constructor initializes various 3D grids for storing
- *              comoving time (t_com), engine time (t_eng), relative Lorentz factor (Gamma_rel), magnetic field (B),
- *              and downstream proton column density (column_num_den). Default initial values are provided via
- *create3DGrid.
+ *              physical properties of the shock, including comoving time, radius, Lorentz factors, magnetic fields,
+ *              and downstream densities. All grids are initialized with appropriate default values.
  ********************************************************************************************************************/
 Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B)
-    : t_com({phi_size, theta_size, t_size}, 0),           // Initialize comoving time grid with 0
-      r({phi_size, theta_size, t_size}, 0),               // Initialize engine time grid with 0
+    : t_comv({phi_size, theta_size, t_size}, 0),          // Initialize comoving time grid with 0
+      r({phi_size, theta_size, t_size}, 0),               // Initialize radius grid with 0
       theta({phi_size, theta_size, t_size}, 0),           // Initialize theta grid with 0
       Gamma({phi_size, theta_size, t_size}, 1),           // Initialize Gamma grid with 1
       Gamma_rel({phi_size, theta_size, t_size}, 1),       // Initialize Gamma_rel grid with 1
@@ -34,7 +33,7 @@ void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
     this->phi_size = phi_size;
     this->theta_size = theta_size;
     this->t_size = t_size;
-    t_com.resize({phi_size, theta_size, t_size});
+    t_comv.resize({phi_size, theta_size, t_size});
     r.resize({phi_size, theta_size, t_size});
     theta.resize({phi_size, theta_size, t_size});
     Gamma.resize({phi_size, theta_size, t_size});
@@ -49,8 +48,8 @@ void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
 
 // Computes the downstream fluid velocity (u) for a given relative Lorentz factor (gamma_rel) and magnetization
 // (sigma).
-Real u_DownStr(Real gamma_rel, Real sigma) {
-    Real ad_idx = adiabaticIndex(gamma_rel);
+Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
+    Real ad_idx = adiabatic_idx(gamma_rel);
     Real gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
     Real ad_idx_m_2 = ad_idx - 2;    // (ad_idx - 2)
     Real ad_idx_m_1 = ad_idx - 1;    // (ad_idx - 1)
@@ -85,9 +84,9 @@ Real u_DownStr(Real gamma_rel, Real sigma) {
     }
 }
 
-Real u_UpStr2u_DownStr(Real gamma_rel, Real sigma) {
-    Real u_down_s_ = u_DownStr(gamma_rel, sigma);
-    Real u_up_s_ = u_UpStr(u_down_s_, gamma_rel);
+Real compute_4vel_jump(Real gamma_rel, Real sigma) {
+    Real u_down_s_ = compute_downstr_4vel(gamma_rel, sigma);
+    Real u_up_s_ = compute_up_str_4vel(u_down_s_, gamma_rel);
     Real ratio_u = u_up_s_ / u_down_s_;
     if (u_down_s_ == 0) {
         ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)

@@ -8,26 +8,33 @@
 #pragma once
 #include <array>
 
+/********************************************************************************************************************
+ * STRUCT: ReverseState
+ * DESCRIPTION: Represents the state variables for the reverse shock simulation. It defines a state vector
+ *              containing properties like shell width, mass, radius, time, and energy. The struct dynamically
+ *              adapts its size based on template parameters to include mass/energy injection capabilities.
+ ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct ReverseState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;
-    static constexpr bool energy_inject = HasDedt<Ejecta>;
-    static constexpr bool mass_profile = HasMass<Medium>;
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;    // Whether ejecta has mass injection
+    static constexpr bool energy_inject = HasDedt<Ejecta>;  // Whether ejecta has energy injection
+    static constexpr bool mass_profile = HasMass<Medium>;   // Whether medium has mass profile
     static constexpr size_t array_size = 7 + (mass_profile ? 0 : 1);
 
     MAKE_THIS_ODEINT_STATE(data, array_size)
 
     union {
         struct {
-            Real width{0};
-            Real M3{0};
-            Real r{0};
-            Real t_com{0};
-            Real theta{0};
-            Real E_ej{0};
-            Real M_ej{0};
+            Real width_shell{0};  // Width of the shell
+            Real m3{0};           // Shocked ejecta mass per solid angle
+            Real r{0};            // Radius
+            Real t_comv{0};       // Comoving time
+            Real theta{0};        // Angular coordinate theta
+            Real eps_shell{0};    // energy of shell per solid angle
+            Real m_shell{0};      // shell mass per solid angle
 
-            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> M_sw{};
+            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real>
+                m_swept{};  // Swept-up mass (if needed)
         };
         array_type data;
     };
@@ -45,6 +52,7 @@ class FRShockEqn {
    public:
     using State = ReverseState<Ejecta, Medium>;
 
+    // Constructor: Initialize with medium, ejecta, angular coordinates, and electron energy fraction
     FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, Real eps_e);
 
     Medium const& medium;  // Reference to the medium properties
@@ -52,45 +60,49 @@ class FRShockEqn {
     Real const phi{0};     // Angular coordinate phi
     Real const theta0{0};  // Angular coordinate theta
     Real const eps_e{0};   // Electron energy fraction
-    Real gamma4{1};        // initial Lorentz factor of the jet
-    Real u_x{0};           // reverse shock crossed four velocity
-    Real r_x{0};           // reverse shock crossed radius
+    Real Gamma4{1};        // Initial Lorentz factor of the jet
+    Real u_x{0};           // Reverse shock crossed four velocity
+    Real r_x{0};           // Reverse shock crossed radius
 
-    // Reverse shock ODE equation
+    // Reverse shock ODE equation - callable interface for ODE solver
     void operator()(State const& state, State& diff, Real t);
 
-    bool setInitState(State& state, Real t0) const noexcept;
+    // Set initial state for the ODE solver
+    bool set_init_state(State& state, Real t0) const noexcept;
 
-    // Set the shock state when the reverse shock crosses the jet.
-    void setCrossState(State const& state, Real B, Real t);
+    // Set the shock state when the reverse shock crosses the jet
+    void set_cross_state(State const& state, Real B, Real t);
 
-    // calculate the Gamma3 during the shock crossing phase.
-    Real crossingGamma3(State const& state) const;
+    // Calculate the Gamma3 during the shock crossing phase
+    Real compute_crossing_Gamma3(State const& state) const;
 
-    // calculate the Gamma_43 post shock crossing.
-    Real crossedGamma_rel(State const& state) const;
+    // Calculate the Gamma_rel (relative Lorentz factor) post shock crossing
+    Real compute_crossed_Gamma_rel(State const& state) const;
 
-    // calculate the magnetic field post shock crossing.
-    Real crossedB(State const& state) const;
+    // Calculate the magnetic field post shock crossing
+    Real compute_crossed_B(State const& state) const;
 
-    // calculate the Gamma3 post shock crossing.
-    Real crossedGamma3(Real gamma_rel, Real r) const;
+    // Calculate the Gamma3 post shock crossing
+    Real compute_crossed_Gamma3(Real Gamma_rel, Real r) const;
 
-    Real shellMagnetization(State const& state) const;
+    // Calculate the magnetization parameter of the shell
+    Real compute_shell_sigma(State const& state) const;
+
+    // Check if the shell is still being injected at time t
+    bool is_injecting(Real t) const;
 
    private:
-    std::pair<Real, Real> getInjection(Real t) const;
+    // Get the energy and mass injection rates at time t
+    std::pair<Real, Real> get_injection_rate(Real t) const;
 
-    bool isInjecting(Real t) const;
-
-    Real N0{0};               // normalized total electron (for post crossing scaling calculation).
-    Real adiabatic_const{1};  // normalized adiabatic constant where C = rho^idx/p.
-    Real Emag_const{1};       // normalized magnetic energy constant where C = B^2/p.
-    Real ad_idx0{4. / 3};     // adiabatic index at the shock crossing.
-    Real dE0dt{0};            // ejecta energy injection rate
-    Real dM0dt{0};            // ejecta mass injection rate
-    Real u4{0};
-    bool crossed{false};
+    Real N_electron{0};        // Normalized total electron (for post crossing scaling calculation)
+    Real adiabatic_const{1};   // Normalized adiabatic constant where C = rho^idx/p
+    Real e_mag_const{1};       // Normalized magnetic energy constant where C = B^2/p
+    Real gamma_hat_x{4. / 3};  // Adiabatic index at the shock crossing
+    Real deps0_dt{0};          // Ejecta energy injection rate
+    Real dm0_dt{0};            // Ejecta mass injection rate
+    Real u4{0};                // Four-velocity of the unshocked ejecta
+    bool crossed{false};       // Flag indicating if shock has crossed the shell
 };
 
 #include "../src/dynamics/reverse-shock.tpp"

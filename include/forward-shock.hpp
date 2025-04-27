@@ -22,15 +22,20 @@ struct ForwardState {
 
     union {
         struct {
-            Real Gamma{1};
-            Real u{0};
-            Real r{0};
-            Real t_com{0};
-            Real theta{0};
+            Real Gamma{1};   // Lorentz factor
+            Real u{0};       // internal energy density
+            Real r{0};       // radius
+            Real t_comv{0};  // comoving time
+            Real theta{0};   // angle
 
-            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> E_ej{};
-            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> M_ej{};
-            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> M_sw{};
+            // shell energy density per solid angle
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell{};
+
+            // shell mass per solid angle
+            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell{};
+
+            // swept mass per solid angle
+            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> m_swept{};
         };
         array_type data;
     };
@@ -39,8 +44,8 @@ struct ForwardState {
 /********************************************************************************************************************
  * CLASS: ForwardShockEqn
  * DESCRIPTION: Represents the forward shock equation for a given jet and medium. It defines a state vector
- *              (an array of 8 Reals) and overloads operator() to compute the derivatives of the state with
- *              respect to t. It also declares helper functions for the derivatives.
+ *              (with variable size based on template parameters) and overloads operator() to compute the derivatives
+ *              of the state with respect to t. It also declares helper functions for the derivatives.
  *              This class implements the physical equations governing the forward shock evolution.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
@@ -55,7 +60,8 @@ class ForwardShockEqn {
     // Computes the time derivatives of the state vector
     void operator()(State const& state, State& diff, Real t) const noexcept;
 
-    void setInitState(State& state, Real t0) const noexcept;
+    // Set initial state for the ODE solver
+    void set_init_state(State& state, Real t0) const noexcept;
 
     // References to model components
     Medium const& medium;  // Reference to the ambient medium properties
@@ -69,16 +75,18 @@ class ForwardShockEqn {
    private:
     // Computes the time derivative of the Lorentz factor
     // with respect to on-axis observer time
-    inline Real dGammadt(Real M_sw, Real dMdt_sw, State const& state, State const& diff, Real ad_idx) const noexcept;
+    inline Real dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
+                          Real ad_idx) const noexcept;
 
     // Computes the time derivative of internal energy
     // with respect to on-axis observer time
-    inline Real dUdt(Real M_sw, Real dMdt_sw, State const& state, State const& diff, Real ad_idx) const noexcept;
+    inline Real dU_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
+                      Real ad_idx) const noexcept;
 
     // Private member variables
     Real const dOmega0{0};  // Initial solid angle element
     Real const theta_s{0};  // Jet structure parameter controlling angular dependence
-    Real M_ej{0};           // Ejecta mass per solid angle
+    Real m_shell{0};        // Ejecta mass per solid angle
 };
 
 #include "../src/dynamics/forward-shock.tpp"
