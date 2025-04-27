@@ -74,11 +74,11 @@ void lc_gen(std::string folder_name, bool out = false) {
     auto syn_ph = genSynPhotons(f_shock, syn_e);
 
     if (out) {
-        output(coord, "coord");
-        output(f_shock, "shock");
-        output(syn_e, "syn_e");
-        output(syn_ph, "syn_ph");
-        output(obs.t_obs_grid, "t_grid", con::sec);
+        write_npz("coord", coord);
+        write_npz("shock", f_shock);
+        write_npz("syn_e", syn_e);
+        write_npz("syn_ph", syn_ph);
+        write_npy("t_grid", obs.t_obs_grid, con::sec);
     }
 
     Array band_pass =

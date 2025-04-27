@@ -46,6 +46,23 @@ concept HasSigma = requires(T t) {
     constexpr value_type& operator[](size_t i) noexcept { return data[i]; }  \
     constexpr const value_type& operator[](size_t i) const noexcept { return data[i]; }
 
+void printArray(Array const& arr);
+
+/********************************************************************************************************************
+ * TEMPLATE FUNCTION: print (Variadic)
+ * DESCRIPTION: Prints multiple arguments to standard output, separated by a space.
+ *              This template function recursively prints all provided arguments.
+ ********************************************************************************************************************/
+inline void print() {  // Base case: terminates the recursion.
+    std::cout << std::endl;
+}
+
+template <typename First, typename... Rest>
+void print(First first, Rest... rest) {
+    std::cout << first << " ";
+    print(rest...);  // Recursive call to print the remaining arguments.
+}
+
 /********************************************************************************************************************
  * FUNCTION TYPE DEFINITIONS
  * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.

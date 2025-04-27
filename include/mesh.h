@@ -10,12 +10,13 @@
 #include <cmath>
 
 #include "macros.h"
+#include "xtensor-io/xnpz.hpp"
 #include "xtensor/containers/xadapt.hpp"
 #include "xtensor/containers/xtensor.hpp"
 #include "xtensor/core/xmath.hpp"
 #include "xtensor/core/xnoalias.hpp"
+#include "xtensor/io/xnpy.hpp"
 #include "xtensor/views/xview.hpp"
-
 // Type aliases for commonly used tensor types
 using Array = xt::xtensor<Real, 1>;       // 1D array for storing 1D data (e.g., time points)
 using MeshGrid = xt::xtensor<Real, 2>;    // 2D grid for storing 2D data (e.g., spatial coordinates)

@@ -90,7 +90,7 @@ Real jetSpreadingEdge(Ejecta const& jet, Medium const& medium, Real phi, Real th
     Real theta_s = theta_min;
     Real dp_min = 0;
 
-    for (double theta = theta_min; theta <= theta_max; theta += step) {
+    for (Real theta = theta_min; theta <= theta_max; theta += step) {
         Real G = jet.Gamma0(phi, theta);
         Real beta0 = gammaTobeta(G);
         Real r0 = beta0 * con::c * t0 / (1 - beta0);
@@ -129,7 +129,7 @@ Coord autoGrid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta
     Real jet_edge = jetEdge(jet, con::Gamma_cut);        // Determine the jet edge angle.
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    coord.theta = xt::linspace(1e-4, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
+    coord.theta = xt::linspace(1e-4_r, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.

@@ -13,6 +13,13 @@
 
 #include "macros.h"
 
+void printArray(Array const& arr) {
+    for (auto const& a : arr) {
+        std::cout << a << " ";
+    }
+    std::cout << std::endl;
+}
+
 /********************************************************************************************************************
  * FUNCTION: Point Interpolation Utility Functions
  * DESCRIPTION: Provides basic point-wise interpolation functions used by the higher-level interpolation routines.

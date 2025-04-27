@@ -19,8 +19,6 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Coord coord = autoGrid(jet, t_obs, 0.6, theta_v, z, phi_num, theta_num, r_num);
 
-    // output(coord, "coord");
-
     Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
 
     Observer obs;
@@ -28,13 +26,9 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     obs.observeAt(t_obs, coord, f_shock, lumi_dist, z);
     // obs.observe(coord, f_shock, lumi_dist, z);
 
-    // output(f_shock, "shock");
-
     auto syn_e = genSynElectrons(f_shock, p);
 
     auto syn_ph = genSynPhotons(f_shock, syn_e);
-
-    // output(obs.t_obs_grid, "t_obs", con::sec);
 
     Real nu_obs = eVtoHz(1 * con::keV);
 
@@ -42,19 +36,14 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     // Array F_nu = obs.flux(t_bins, linspace(eVtoHz(0.1 * con::keV), eVtoHz(10 * con::keV), 5), syn_ph);
 
     if (verbose) {
-        output(t_obs, "t_c", con::sec);
-        output(F_nu, "F_nu" + std::to_string(phi_num) + "-" + std::to_string(theta_num) + "-" + std::to_string(r_num),
-               (con::erg / con::cm / con::cm / con::sec));
+        write_npz("F_nu" + std::to_string(phi_num) + "-" + std::to_string(theta_num) + "-" + std::to_string(r_num),
+                  "F_nu", xt::eval(F_nu / con::Jy), "t_obs", xt::eval(t_obs / con::sec));
     }
 
     return;
 }
 
 int main() {
-    size_t r_num = 100;
-    size_t theta_num = 100;
-    size_t phi_num = 100;
-
     Real n_ism = 2 / con::cm3;
     Real eps_e = 1e-2;
     Real eps_B = 1e-4;
@@ -65,31 +54,24 @@ int main() {
     Array theta_c = xt::linspace(0.01, 0.1, 100);
     Array theta_v = xt::linspace(0.01, 0.5, 5);
 
-    tests(256, 256, 256, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(128, 128, 128, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(64, 64, 64, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(30, 30, 30, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(28, 28, 28, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(25, 25, 25, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(24, 24, 24, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(16, 16, 16, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    tests(8, 8, 8, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-    // tests(32, 32, 32, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
-
-    size_t resolu[] = {24, 25, 28};
+    size_t resolu[] = {256, 128, 64, 32, 30, 28, 25, 24, 16, 8};
 
     for (auto r : resolu) {
-        r_num = theta_num = phi_num = r;
-        std::ofstream file("benchmark" + std::to_string(phi_num) + "-" + std::to_string(theta_num) + "-" +
-                           std::to_string(r_num) + ".txt");
+        tests(r, r, r, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+    }
+
+    size_t benchmark_resolu[] = {24, 25, 28};
+
+    for (auto r : benchmark_resolu) {
+        std::ofstream file("benchmark" + std::to_string(r) + "-" + std::to_string(r) + "-" + std::to_string(r) +
+                           ".txt");
 
         for (size_t i = 0; i < E_iso.size(); ++i) {
             for (size_t j = 0; j < theta_c.size(); ++j) {
                 auto start = std::chrono::high_resolution_clock::now();
                 for (size_t k = 0; k < theta_v.size(); ++k) {
-                    tests(r_num, theta_num, phi_num, n_ism, eps_e, eps_B, p, E_iso[i], Gamma0, theta_c[j], theta_v[k]);
-                    // tests(r_num, theta_num, phi_num, n_ism, eps_e, eps_B, p, E_iso[i], Gamma0, theta_c[j], 0);
+                    tests(r, r, r, n_ism, eps_e, eps_B, p, E_iso[i], Gamma0, theta_c[j], theta_v[k]);
+                    // tests(r, r, r, n_ism, eps_e, eps_B, p, E_iso[i], Gamma0, theta_c[j], 0);
                 }
                 auto end = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

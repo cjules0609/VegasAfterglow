@@ -8,338 +8,111 @@
 #include "IO.h"
 
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 
 #include "macros.h"
-/********************************************************************************************************************
- * FUNCTION: printArray
- * DESCRIPTION: Prints all elements of a 1D Array to the standard output.
- ********************************************************************************************************************/
-void printArray(Array const& arr) {
-    // Iterate through each element of the array and output it.
-    for (auto const& a : arr) {
-        std::cout << a << " ";
+
+void write_csv(std::string const& filename, Array const& array, Real unit) {
+    std::ofstream file(filename + ".csv");
+    for (size_t i = 0; i < array.size(); ++i) {
+        file << array(i) / unit << "\n";
     }
-    // End the line after printing all elements.
-    std::cout << std::endl;
 }
 
-/********************************************************************************************************************
- * FUNCTION: output (Coord version)
- * DESCRIPTION: Outputs the coordinate arrays (r, theta, phi) from a Coord object to separate text files.
- *              The radius values are normalized by con::cm.
- ********************************************************************************************************************/
-void output(Coord const& coord, std::string const& filename, size_t precision) {
-    // Open files for r, theta, and phi data.
-    std::ofstream file_r(filename + "_t.txt");
-    std::ofstream file_theta(filename + "_theta.txt");
-    std::ofstream file_phi(filename + "_phi.txt");
-
-    if (!file_r || !file_theta || !file_phi) {
-        std::cerr << "Error opening files " << filename << "_*.txt\n";
-        return;
-    }
-
-    file_r.precision(precision);
-    file_theta.precision(precision);
-    file_phi.precision(precision);
-
-    // Write radius values normalized by con::cm.
-    for (size_t i = 0; i < coord.t.shape()[0]; ++i) {
-        for (size_t j = 0; j < coord.t.shape()[1]; ++j) {
-            for (size_t k = 0; k < coord.t.shape()[2]; ++k) {
-                file_r << coord.t(i, j, k) / con::sec << " ";
-            }
-            file_r << "\n";
+void write_csv(std::string const& filename, MeshGrid const& grid, Real unit) {
+    std::ofstream file(filename + ".csv");
+    auto shape = grid.shape();
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            file << grid(i, j) / unit;
+            if (j + 1 != shape[1]) file << ",";
         }
-        file_r << "\n";
-    }
-
-    // Write theta values.
-    for (size_t i = 0; i < coord.theta.size(); ++i) {
-        file_theta << coord.theta[i] << " ";
-    }
-
-    // Write phi values.
-    for (size_t i = 0; i < coord.phi.size(); ++i) {
-        file_phi << coord.phi[i] << " ";
-    }
-
-    // End each file with a newline.
-    file_r << "\n";
-    file_theta << "\n";
-    file_phi << "\n";
-}
-
-/********************************************************************************************************************
- * FUNCTION: writeGrid
- * DESCRIPTION: Writes multiple 3D grid data arrays to files. For each name provided in 'names', a file is created
- *              with that name appended to the base filename. The data are normalized by the corresponding unit.
- ********************************************************************************************************************/
-
-template <typename T, typename U, typename V>
-void writeGrid(std::string filename, T const& names, U const& data, V const& units, size_t precision) {
-    for (size_t l = 0; l < names.size(); ++l) {
-        std::ofstream file(filename + "_" + names[l] + ".txt");
-        if (!file) {
-            std::cerr << "Error opening file " << filename + "_" + names[l] + ".txt\n";
-            return;
-        }
-
-        file.precision(precision);
-
-        auto shape = (*data[l]).shape();
-
-        // Loop over the 3D grid dimensions and output the normalized values.
-        for (size_t i = 0; i < shape[0]; ++i) {
-            for (size_t j = 0; j < shape[1]; ++j) {
-                for (size_t k = 0; k < shape[2]; ++k) {
-                    file << (*data[l])(i, j, k) / units[l] << " ";
-                }
-                file << '\n';
-            }
-            file << '\n';
-        }
+        file << "\n";
     }
 }
 
-/********************************************************************************************************************
- * FUNCTION: output (Shock version)
- * DESCRIPTION: Outputs various fields of a Shock object to files by using writeGrid.
- *              The output includes Gamma_rel, B, t_com, t_eng, and column_num_den (labeled as "Sigma").
- ********************************************************************************************************************/
-void output(Shock const& shock, std::string const& filename, size_t precision) {
-    std::array<std::string, 7> strs = {"Gamma", "Gamma_rel", "B", "t_com", "r", "theta", "Sigma"};
-    std::array<MeshGrid3d const*, 7> data = {&(shock.Gamma),         &(shock.Gamma_rel), &(shock.B),
-                                             &(shock.t_com),         &(shock.r),         &(shock.theta),
-                                             &(shock.column_num_den)};
-    std::array<Real, 7> units = {1, 1, con::Gauss, con::sec, con::cm, 1, 1 / con::cm2};
-
-    writeGrid(filename, strs, data, units, precision);
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (PromptPhotonsGrid version)
- * DESCRIPTION: (Empty implementation) Intended to output a PromptPhotonsGrid to a file.
- ********************************************************************************************************************/
-void output(PromptPhotonsGrid const& ph, std::string const& filename, size_t precision) {
-    std::ofstream file(filename + ".txt");
+void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit) {
+    std::ofstream file(filename + ".csv");
     if (!file) {
-        std::cerr << "Error opening file " << filename + ".txt\n";
-        return;
+        throw std::runtime_error("Failed to open file: " + filename + ".csv");
     }
-    file.precision(precision);
-    auto shape = ph.shape();
+    file << "i,j,k,value\n";  // CSV header
+    auto shape = grid3d.shape();
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             for (size_t k = 0; k < shape[2]; ++k) {
-                file << ph(i, j, k).E_nu_peak << " ";
+                file << i << "," << j << "," << k << "," << (grid3d(i, j, k) / unit) << "\n";
             }
-            file << '\n';
         }
-        file << '\n';
     }
 }
 
-/********************************************************************************************************************
- * FUNCTION: output (SynPhotonGrid version)
- * DESCRIPTION: (Empty implementation) Intended to output a SynPhotonGrid to a file.
- ********************************************************************************************************************/
-void output(SynPhotonGrid const& ph, std::string const& filename, size_t precision) {
-    std::array<std::string, 4> strs = {"nu_a", "nu_m", "nu_c", "nu_Max"};
-    std::array<std::ofstream, 4> files;
-    for (size_t i = 0; i < strs.size(); ++i) {
-        files[i].open(filename + "_" + strs[i] + ".txt");
-        if (!files[i]) {
-            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt\n";
-            return;
-        }
-        files[i].precision(precision);
-    }
+// === Coord Output ===
+void write_npz(std::string const& filename, Coord const& coord) {
+    xt::dump_npz(filename + ".npz", "t_src", xt::eval(coord.t / con::sec), false, false);
+    xt::dump_npz(filename + ".npz", "theta", coord.theta, false, true);
+    xt::dump_npz(filename + ".npz", "phi", coord.phi, false, true);
+}
 
+// === SynPhotonGrid Output ===
+void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
     auto shape = ph.shape();
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
+    xt::xarray<Real> nu_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> nu_m = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> nu_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> nu_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> I_nu_peak = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
+    for (size_t i = 0; i < shape[0]; ++i)
+        for (size_t j = 0; j < shape[1]; ++j)
             for (size_t k = 0; k < shape[2]; ++k) {
-                files[0] << ph(i, j, k).nu_a / con::Hz << " ";
-                files[1] << ph(i, j, k).nu_m / con::Hz << " ";
-                files[2] << ph(i, j, k).nu_c / con::Hz << " ";
-                files[3] << ph(i, j, k).nu_M / con::Hz << " ";
+                nu_a(i, j, k) = ph(i, j, k).nu_a / con::Hz;
+                nu_m(i, j, k) = ph(i, j, k).nu_m / con::Hz;
+                nu_c(i, j, k) = ph(i, j, k).nu_c / con::Hz;
+                nu_M(i, j, k) = ph(i, j, k).nu_M / con::Hz;
+                I_nu_peak(i, j, k) = ph(i, j, k).e->I_nu_peak / (con::erg / con::cm2 / con::sec / con::Hz);
             }
-            files[0] << '\n';
-            files[1] << '\n';
-            files[2] << '\n';
-            files[3] << '\n';
-        }
-        files[0] << '\n';
-        files[1] << '\n';
-        files[2] << '\n';
-        files[3] << '\n';
-    }
+
+    xt::dump_npz(filename + ".npz", "nu_a", nu_a, false, false);
+    xt::dump_npz(filename + ".npz", "nu_m", nu_m, false, true);
+    xt::dump_npz(filename + ".npz", "nu_c", nu_c, false, true);
+    xt::dump_npz(filename + ".npz", "nu_Max", nu_M, false, true);
+    xt::dump_npz(filename + ".npz", "I_nu_peak", I_nu_peak, false, true);
 }
 
-/********************************************************************************************************************
- * FUNCTION: output (SynElectronGrid version)
- * DESCRIPTION: (Empty implementation) Intended to output a SynElectronGrid to a file.
- ********************************************************************************************************************/
-void output(SynElectronGrid const& e, std::string const& filename, size_t precision) {
-    std::array<std::string, 4> strs = {"gamma_a", "gamma_m", "gamma_c", "I_peak"};
-    std::array<std::ofstream, 4> files;
-    for (size_t i = 0; i < strs.size(); ++i) {
-        files[i].open(filename + "_" + strs[i] + ".txt");
-        if (!files[i]) {
-            std::cerr << "Error opening file " << filename + "_" + strs[i] << ".txt\n";
-            return;
-        }
-        files[i].precision(precision);
-    }
-
+// === SynElectronGrid Output ===
+void write_npz(std::string const& filename, SynElectronGrid const& e) {
     auto shape = e.shape();
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
+    xt::xarray<Real> gamma_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> gamma_m = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> gamma_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> gamma_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> column_num_den = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
+    for (size_t i = 0; i < shape[0]; ++i)
+        for (size_t j = 0; j < shape[1]; ++j)
             for (size_t k = 0; k < shape[2]; ++k) {
-                files[0] << e(i, j, k).gamma_a << " ";
-                files[1] << e(i, j, k).gamma_m << " ";
-                files[2] << e(i, j, k).gamma_c << " ";
-                files[3] << e(i, j, k).I_nu_peak << " ";
+                gamma_a(i, j, k) = e(i, j, k).gamma_a;
+                gamma_m(i, j, k) = e(i, j, k).gamma_m;
+                gamma_c(i, j, k) = e(i, j, k).gamma_c;
+                gamma_M(i, j, k) = e(i, j, k).gamma_M;
+                column_num_den(i, j, k) = e(i, j, k).column_num_den * con::cm2;
             }
-            files[0] << '\n';
-            files[1] << '\n';
-            files[2] << '\n';
-            files[3] << '\n';
-        }
-        files[0] << '\n';
-        files[1] << '\n';
-        files[2] << '\n';
-        files[3] << '\n';
-    }
+
+    xt::dump_npz(filename + ".npz", "gamma_a", gamma_a, false, false);
+    xt::dump_npz(filename + ".npz", "gamma_m", gamma_m, false, true);
+    xt::dump_npz(filename + ".npz", "gamma_c", gamma_c, false, true);
+    xt::dump_npz(filename + ".npz", "gamma_M", gamma_M, false, true);
+    xt::dump_npz(filename + ".npz", "column_num_den", column_num_den, false, true);
 }
 
-/********************************************************************************************************************
- * FUNCTION: output (MeshGrid3d version without unit)
- * DESCRIPTION: Outputs a 3D MeshGrid to a file. The filename is appended with ".txt".
- ********************************************************************************************************************/
-void output(MeshGrid3d const& array, std::string const& filename, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    // Iterate over each element in the 3D grid and write to file.
-    auto shape = array.shape();
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
-            for (size_t k = 0; k < shape[2]; ++k) {
-                file << array(i, j, k) << " ";
-            }
-            file << '\n';
-        }
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (MeshGrid version without unit)
- * DESCRIPTION: Outputs a 2D MeshGrid to a file.
- ********************************************************************************************************************/
-void output(MeshGrid const& grid, std::string const& filename, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    // Loop through the grid and output each element.
-    auto shape = grid.shape();
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
-            file << grid(i, j) << " ";
-        }
-        file << '\n';
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (Array version without unit)
- * DESCRIPTION: Outputs a 1D Array to a file.
- ********************************************************************************************************************/
-void output(Array const& array, std::string const& filename, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    // Output each element of the array.
-    for (size_t i = 0; i < array.size(); ++i) {
-        file << array(i) << " ";
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (MeshGrid3d version with unit)
- * DESCRIPTION: Outputs a 3D MeshGrid to a file with each value normalized by the given unit.
- ********************************************************************************************************************/
-void output(MeshGrid3d const& array, std::string const& filename, Real unit, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    auto shape = array.shape();
-    // Normalize each element by 'unit' before output.
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
-            for (size_t k = 0; k < shape[2]; ++k) {
-                file << array(i, j, k) / unit << " ";
-            }
-            file << '\n';
-        }
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (MeshGrid version with unit)
- * DESCRIPTION: Outputs a 2D MeshGrid to a file with each value normalized by the given unit.
- ********************************************************************************************************************/
-void output(MeshGrid const& grid, std::string const& filename, Real unit, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    // Output each normalized element.
-    auto shape = grid.shape();
-    for (size_t i = 0; i < shape[0]; ++i) {
-        for (size_t j = 0; j < shape[1]; ++j) {
-            file << grid(i, j) / unit << " ";
-        }
-        file << '\n';
-    }
-}
-
-/********************************************************************************************************************
- * FUNCTION: output (Array version with unit)
- * DESCRIPTION: Outputs a 1D Array to a file with each value normalized by the given unit.
- ********************************************************************************************************************/
-void output(Array const& array, std::string const& filename, Real unit, size_t precision) {
-    std::ofstream file(filename + ".txt");
-
-    if (!file) {
-        std::cerr << "Error opening file " << filename << ".txt\n";
-        return;
-    }
-    file.precision(precision);
-    // Output each element normalized by 'unit'.
-    for (size_t i = 0; i < array.size(); ++i) {
-        file << array(i) / unit << " ";
-    }
+// === Shock Output ===
+void write_npz(std::string const& filename, Shock const& shock) {
+    xt::dump_npz(filename + ".npz", "Gamma", shock.Gamma, false, false);
+    xt::dump_npz(filename + ".npz", "Gamma_rel", shock.Gamma_rel, false, true);
+    xt::dump_npz(filename + ".npz", "B", xt::eval(shock.B / con::Gauss), false, true);
+    xt::dump_npz(filename + ".npz", "t_com", xt::eval(shock.t_com / con::sec), false, true);
+    xt::dump_npz(filename + ".npz", "r", xt::eval(shock.r / con::cm), false, true);
+    xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
+    xt::dump_npz(filename + ".npz", "column_num_den", xt::eval(shock.column_num_den * con::cm2), false, true);
 }
