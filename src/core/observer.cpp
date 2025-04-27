@@ -41,24 +41,45 @@ void Observer::calcEmissionSurface(Coord const& coord, Shock const& shock) {
             dphi(i) = 0.5 * (coord.phi(std::min(i + 1, last)) - coord.phi(std::max(i - 1, 0)));
         }
     }
+    Real required_frac = xt::sum(shock.required)() / static_cast<Real>(shock.required.size());
 
-    int last = theta_size - 1;
-    for (size_t i = 0; i < eff_phi_size; ++i) {
-        size_t i_eff = i * interp.jet_3d;
-        for (size_t j = 0; j < theta_size; ++j) {
-            size_t j_m1 = (j == 0) ? 0 : (j - 1);
-            size_t j_p1 = (j == last) ? last : (j + 1);
-            for (size_t k = 0; k < t_size; ++k) {
-                if (shock.required(i_eff, j, k) == 0) {
-                    continue;
+    if (required_frac < 0.5) {  // worth to pay the cost of branch prediction
+        int last = theta_size - 1;
+        for (size_t i = 0; i < eff_phi_size; ++i) {
+            size_t i_eff = i * interp.jet_3d;
+            for (size_t j = 0; j < theta_size; ++j) {
+                size_t j_m1 = (j == 0) ? 0 : (j - 1);
+                size_t j_p1 = (j == last) ? last : (j + 1);
+                for (size_t k = 0; k < t_size; ++k) {
+                    if (shock.required(i_eff, j, k) == 0) {
+                        continue;
+                    }
+                    Real theta_lo = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_m1, k));
+                    Real theta_hi = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_p1, k));
+
+                    Real dOmega = std::fabs((std::cos(theta_hi) - std::cos(theta_lo)) * dphi(i));
+                    Real r = shock.r(i_eff, j, k);
+                    Real D = doppler(i, j, k);
+                    surface(i, j, k) = dOmega * r * r * D * D * D;
                 }
-                Real theta_lo = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_m1, k));
-                Real theta_hi = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_p1, k));
+            }
+        }
+    } else {  // branchless loop
+        int last = theta_size - 1;
+        for (size_t i = 0; i < eff_phi_size; ++i) {
+            size_t i_eff = i * interp.jet_3d;
+            for (size_t j = 0; j < theta_size; ++j) {
+                size_t j_m1 = (j == 0) ? 0 : (j - 1);
+                size_t j_p1 = (j == last) ? last : (j + 1);
+                for (size_t k = 0; k < t_size; ++k) {
+                    Real theta_lo = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_m1, k));
+                    Real theta_hi = 0.5 * (shock.theta(i_eff, j, k) + shock.theta(i_eff, j_p1, k));
 
-                Real dOmega = std::abs((std::cos(theta_hi) - std::cos(theta_lo)) * dphi(i));
-                Real r = shock.r(i_eff, j, k);
-                Real D = doppler(i, j, k);
-                surface(i, j, k) = dOmega * r * r * D * D * D;
+                    Real dOmega = std::fabs((std::cos(theta_hi) - std::cos(theta_lo)) * dphi(i));
+                    Real r = shock.r(i_eff, j, k);
+                    Real D = doppler(i, j, k);
+                    surface(i, j, k) = dOmega * r * r * D * D * D;
+                }
             }
         }
     }

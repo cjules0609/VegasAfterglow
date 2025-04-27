@@ -195,7 +195,8 @@ void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn c
     typename FwdEqn::State state;
 
     // Get initial time and set up initial conditions
-    Real t0 = std::min(t.front(), 10 * con::sec);
+    Real t_dec = decelerationTime(eqn, t.front(), t.back());
+    Real t0 = std::min(t.front(), std::max(t_dec / 2, 10 * con::sec));
     eqn.setInitState(state, t0);
 
     // Early exit if initial Lorentz factor is below cutoff
@@ -206,7 +207,8 @@ void solveForwardShell(size_t i, size_t j, View const& t, Shock& shock, FwdEqn c
 
     // Set up ODE solver with adaptive step size control
     auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::State>());
-    stepper.initialize(state, t0, 0.01 * t0);
+
+    stepper.initialize(state, t0, 0.1 * t0);
 
     // Solve ODE and update shock state at each requested time point
     for (size_t k = 0; stepper.current_time() <= t.back();) {

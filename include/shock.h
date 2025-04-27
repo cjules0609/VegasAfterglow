@@ -186,3 +186,34 @@ Real sweptUpMass(Eqn const& eqn, typename Eqn::State const& state) {
         return eqn.medium.mass(eqn.phi, state.theta, state.r);
     }
 }
+
+template <typename Eqn>
+Real decelerationTime(Eqn const& eqn, Real t0, Real t_max) {
+    Real e_iso = eqn.ejecta.dE0dOmega(eqn.phi, eqn.theta0);
+    Real gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);
+    Real beta = gammaTobeta(gamma);
+    Real r0 = beta * con::c * t0 / (1 - beta);
+    if constexpr (!Eqn::State::mass_profile) {
+        Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, r0);
+        Real r_dec = thinShellDecRadius(e_iso * 4 * con::pi, rho / con::mp, gamma);
+        Real t_dec = r_dec * (1 - beta) / (beta * con::c);
+        return t_dec;
+    } else {
+        Real M_ej = e_iso / (gamma * con::c2);
+
+        if constexpr (HasSigma<decltype(eqn.ejecta)>) {
+            M_ej /= 1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
+        }
+
+        Real r_dec = beta * con::c * t_max / (1 - beta);
+        for (size_t i = 0; i < 30; i++) {
+            Real M_sw = eqn.medium.mass(eqn.phi, eqn.theta0, r_dec);
+            if (M_sw < M_ej / gamma) {
+                break;
+            }
+            r_dec /= 3;
+        }
+        Real t_dec = r_dec * (1 - beta) / (beta * con::c);
+        return t_dec;
+    }
+}

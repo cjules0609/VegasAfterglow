@@ -48,7 +48,7 @@ Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     Real b = eta_e * eps_e / eps_B;
     Real Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
     Real Y1 = 2 * Y0;
-    for (; std::abs((Y1 - Y0) / Y0) > 1e-5;) {
+    for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
         Y1 = Y0;
         Real gamma_c = syn_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);

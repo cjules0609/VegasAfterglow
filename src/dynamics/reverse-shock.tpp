@@ -270,7 +270,7 @@ inline auto calcInitN3(Eqn const& eqn, State const& state, Real gamma4, Real t0)
     if (r_x > Rs) {
         constexpr Real rtol = 1e-3;
         Real r_x_new = (1 + 2 * rtol) * r_x;
-        for (; std::abs((r_x - r_x_new) / r_x) > rtol;) {
+        for (; std::fabs((r_x - r_x_new) / r_x) > rtol;) {
             Delta0 = con::c * eqn.ejecta.T0 + (r_x_new - Rs) / (std::sqrt(3) * gamma4 * gamma4);
             r_x = r_x_new;
             r_x_new = std::sqrt(std::sqrt(Delta0 * l * l * l / 3) / (1 + sigma0) * 3. / 4);
@@ -452,7 +452,7 @@ void solveFRShell(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& sh
     }
 
     auto stepper_rvs = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename RvsEqn::State>());
-    stepper_rvs.initialize(state_rvs, t0, 0.01 * t0);
+    stepper_rvs.initialize(state_rvs, t0, 0.1 * t0);
 
     size_t k0 = solveShockPairUntilCross(i, j, t, stepper_rvs, eqn_rvs, state_rvs, shock_fwd, shock_rvs);
 

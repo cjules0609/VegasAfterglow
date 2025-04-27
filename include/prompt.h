@@ -51,7 +51,7 @@ CoastingShock genCoastingShock(Coord const& coord, Ejecta const& jet) {
         for (size_t k = 0; k < t_size; ++k) {
             shock.Gamma(0, j, k) = Gamma;
             shock.epsilon(0, j, k) = epsilon;
-            shock.r(0, j, k) = (beta * con::c) / std::abs(1 - beta) * coord.t(k);
+            shock.r(0, j, k) = (beta * con::c) / std::fabs(1 - beta) * coord.t(k);
             shock.theta(0, j, k) = coord.theta(j);
         }
     }
