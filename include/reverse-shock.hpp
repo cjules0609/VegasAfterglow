@@ -18,8 +18,7 @@ template <typename Ejecta, typename Medium>
 struct ReverseState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>;    // Whether ejecta has mass injection
     static constexpr bool energy_inject = HasDedt<Ejecta>;  // Whether ejecta has energy injection
-    static constexpr bool mass_profile = HasMass<Medium>;   // Whether medium has mass profile
-    static constexpr size_t array_size = 7 + (mass_profile ? 0 : 1);
+    static constexpr size_t array_size = 7;
 
     MAKE_THIS_ODEINT_STATE(data, array_size)
 
@@ -32,9 +31,6 @@ struct ReverseState {
             Real theta{0};        // Angular coordinate theta
             Real eps_shell{0};    // energy of shell per solid angle
             Real m_shell{0};      // shell mass per solid angle
-
-            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real>
-                m_swept{};  // Swept-up mass (if needed)
         };
         array_type data;
     };

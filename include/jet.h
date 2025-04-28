@@ -57,10 +57,10 @@ class TophatJet {
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
     // Energy per solid angle as a function of phi and theta
-    constexpr inline Real eps_k(Real phi, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
+    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
 
     // Initial Lorentz factor as a function of phi and theta
-    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
+    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
     // Duration of the ejecta in seconds
     Real T0{1 * con::sec};
@@ -86,12 +86,12 @@ class GaussianJet {
         : norm_(-1 / (2 * theta_c * theta_c)), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
     // Energy per solid angle as a function of phi and theta, with Gaussian falloff
-    constexpr inline Real eps_k(Real phi, Real theta) const noexcept {
+    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept {
         return eps_k_ * fast_exp(theta * theta * norm_);
     }
 
     // Initial Lorentz factor as a function of phi and theta, with Gaussian falloff
-    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept {
+    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept {
         return Gamma0_ * fast_exp(theta * theta * norm_);
     }
 
@@ -119,12 +119,12 @@ class PowerLawJet {
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
 
     // Energy per solid angle as a function of phi and theta, with power-law falloff
-    constexpr inline Real eps_k(Real phi, Real theta) const noexcept {
+    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept {
         return eps_k_ * fast_pow(theta / theta_c_, -k_);
     }
 
     // Initial Lorentz factor as a function of phi and theta, with power-law falloff
-    constexpr inline Real Gamma0(Real phi, Real theta) const noexcept {
+    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept {
         return Gamma0_ * fast_pow(theta / theta_c_, -k_);
     }
 
@@ -158,38 +158,38 @@ namespace math {
     // by ignoring the time parameter t
     template <typename F1>
     constexpr inline auto t_indep(F1 f_spatial) noexcept {
-        return [=](Real phi, Real theta, Real t) constexpr noexcept { return f_spatial(phi, theta); };
+        return [=](Real phi, Real theta, Real /*t*/) constexpr noexcept { return f_spatial(phi, theta); };
     }
 
     // Returns a constant (isotropic) function with a fixed height.
     // This creates a uniform distribution across all angles.
     constexpr inline auto isotropic(Real height) noexcept {
-        return [=](Real phi, Real theta) constexpr noexcept { return height; };
+        return [=](Real /*phi*/, Real /*theta*/) constexpr noexcept { return height; };
     }
 
     // Returns a tophat function: it is constant (height) within the core angle theta_c
     // and zero outside. This creates a uniform jet with sharp edges.
     constexpr inline auto tophat(Real theta_c, Real hight) noexcept {
-        return [=](Real phi, Real theta) constexpr noexcept { return theta < theta_c ? hight : 0; };
+        return [=](Real /*phi*/, Real theta) constexpr noexcept { return theta < theta_c ? hight : 0; };
     }
 
     // Returns a Gaussian profile function for jet properties.
     // The profile peaks at theta = 0 and falls off exponentially with angle.
     constexpr inline auto gaussian(Real theta_c, Real height) noexcept {
         Real spread = 2 * theta_c * theta_c;
-        return [=](Real phi, Real theta) constexpr noexcept { return height * fast_exp(-theta * theta / spread); };
+        return [=](Real /*phi*/, Real theta) constexpr noexcept { return height * fast_exp(-theta * theta / spread); };
     }
 
     // Returns a power-law profile function for jet properties.
     // The profile follows a power-law decay with angle, controlled by the index k.
     constexpr inline auto powerlaw(Real theta_c, Real height, Real k) noexcept {
-        return [=](Real phi, Real theta) constexpr noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
+        return [=](Real /*phi*/, Real theta) constexpr noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
     }
 
     // Creates a constant injection profile: returns 1 regardless of time.
     // This represents continuous energy/mass injection.
     constexpr inline auto const_injection() noexcept {
-        return [=](Real t) constexpr noexcept { return 1.; };
+        return [=](Real /*t*/) constexpr noexcept { return 1.; };
     }
 
     // Creates a step injection profile: returns 1 if t > t0, else 0.
@@ -224,7 +224,7 @@ namespace math {
  ********************************************************************************************************************/
 template <typename F>
 auto LiangGhirlanda2010(F energy_func, Real e_max, Real gamma_max, Real idx) {
-    return [=](Real phi, Real theta, Real t = 0) noexcept {
+    return [=](Real phi, Real theta) noexcept {
         // Get the energy at the given angle
         Real e = energy_func(phi, theta);
 

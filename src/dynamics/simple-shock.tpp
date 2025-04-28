@@ -56,10 +56,6 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
     Real rho = medium.rho(phi, state.theta, state.r);
     Real dm_dt_swept = state.r * state.r * rho * diff.r;
 
-    if constexpr (!State::mass_profile) {
-        diff.m_swept = dm_dt_swept;
-    }
-
     diff.Gamma = dGamma_dt(dm_dt_swept, state, diff);
 }
 
@@ -113,9 +109,5 @@ void SimpleShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const
 
     if constexpr (State::mass_inject) {
         state.m_shell = m_shell;
-    }
-
-    if constexpr (!State::mass_profile) {
-        state.m_swept = medium.rho(phi, theta0, state.r) * state.r * state.r * state.r / 3;
     }
 }

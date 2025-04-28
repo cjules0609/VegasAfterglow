@@ -8,7 +8,6 @@ void test_reverse_shock(double xi, double sigma) {
     Real n_ism = 100 / con::cm3;
     Real eps_e = 1e-2;
     Real eps_B = 1e-4;
-    Real p = 2.1;
     Real Gamma0 = 100;
     Real z = 0;
 

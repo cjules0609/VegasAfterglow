@@ -47,6 +47,7 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
     if (dcos.shape() != shock.theta.shape()) {
         dcos.resize(shock.theta.shape());
     }
+    // MeshGrid3d dcos = xt::zeros_like(shock.theta);
 
     int last = theta_size - 1;
     size_t shock_phi_size = shock.theta.shape(0);
@@ -95,6 +96,8 @@ void Observer::calc_t_obs_grid(Coord const& coord, Shock const& shock) {
         cos_theta.resize(shock.theta.shape());
         sin_theta.resize(shock.theta.shape());
     }
+    // MeshGrid3d cos_theta = xt::zeros_like(shock.theta);
+    // MeshGrid3d sin_theta = xt::zeros_like(shock.theta);
 
     size_t shock_phi_size = shock.theta.shape(0);
     for (size_t i = 0; i < shock_phi_size; ++i) {

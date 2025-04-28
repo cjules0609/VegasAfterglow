@@ -60,10 +60,6 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     diff.r = compute_dr_dt(beta3);
     diff.t_comv = compute_dt_dt_comv(Gamma3);
 
-    if constexpr (!State::mass_profile) {
-        diff.m_swept = medium.rho(phi, state.theta, state.r) * state.r * state.r * diff.r;
-    }
-
     diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
     diff.theta = 0;  // no lateral spreading
 }
@@ -102,10 +98,6 @@ bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
             state.t_comv =
                 (std::pow(state.r, 1.5) - std::pow(r_dec, 1.5)) / (1.5 * Gamma4 * std::sqrt(r_dec)) + t_dec_com;
         }
-    }
-
-    if constexpr (!State::mass_profile) {
-        state.m_swept = state.r * state.r * state.r * rho / 3;
     }
 
     auto [crossed, m3] = solve_init_m3(*this, state, Gamma4, t0);
@@ -160,7 +152,7 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
     Real m3 = state.m3;
     Real sigma4 = compute_shell_sigma(state);
 
-    auto func = [=](Real Gamma3) -> Real {
+    auto func = [=, this](Real Gamma3) -> Real {
         Real Gamma34 = compute_rel_Gamma(Gamma4, Gamma3);
         Real adx3 = adiabatic_idx(Gamma34);
         Real adx2 = adiabatic_idx(Gamma3);
@@ -357,10 +349,6 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
         state_fwd.u = (gamma2 - 1) * m_swept * con::c2;
     }
 
-    if constexpr (!FState::mass_profile) {
-        state_fwd.m_swept = m_swept;
-    }
-
     if constexpr (FState::energy_inject) {
         state_fwd.eps_shell = state_rvs.eps_shell;
     }
@@ -477,7 +465,8 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     typename FwdEqn::State state_fwd;
     typename RvsEqn::State state_rvs;
 
-    Real t0 = std::min(t.front(), 1 * con::sec);
+    Real t_dec = compute_dec_time(eqn_rvs, t.front(), t.back());
+    Real t0 = std::min(t.front(), t_dec / 100);
 
     eqn_fwd.set_init_state(state_fwd, t0);
 

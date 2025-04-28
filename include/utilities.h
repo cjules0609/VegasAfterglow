@@ -23,11 +23,6 @@ concept HasDedt = requires(T t) {
 };
 
 template <typename T>
-concept HasMass = requires(T t) {
-    { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
-};
-
-template <typename T>
 concept HasSigma = requires(T t) {
     { t.sigma0(0.0, 0.0) } -> std::same_as<Real>;
 };
@@ -36,6 +31,11 @@ template <typename T>
 concept HasU = requires(T t) {
     { t.u } -> std::same_as<Real>;
 };
+
+/*template <typename T>
+concept HasMass = requires(T t) {
+    { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+};*/
 
 #define MAKE_THIS_ODEINT_STATE(data, array_size)                             \
     using array_type = std::array<Real, array_size>;                         \
@@ -84,11 +84,11 @@ using TernaryFunc = std::function<Real(Real, Real, Real)>;  // Function taking t
  ********************************************************************************************************************/
 namespace func {
     // Always returns 0 regardless of the input.
-    inline constexpr auto zero_3d = [](Real phi, Real theta, Real t) constexpr noexcept { return 0.; };
-    inline constexpr auto zero_2d = [](Real phi, Real theta) constexpr noexcept { return 0.; };
+    inline constexpr auto zero_3d = [](Real /*phi*/, Real /*theta*/, Real /*t*/) constexpr noexcept { return 0.; };
+    inline constexpr auto zero_2d = [](Real /*phi*/, Real /*theta*/) constexpr noexcept { return 0.; };
     // Always returns 1 regardless of the input.
-    inline constexpr auto one_3d = [](Real phi, Real theta, Real t) constexpr noexcept { return 1.; };
-    inline constexpr auto one_2d = [](Real phi, Real theta) constexpr noexcept { return 1.; };
+    inline constexpr auto one_3d = [](Real /*phi*/, Real /*theta*/, Real /*t*/) constexpr noexcept { return 1.; };
+    inline constexpr auto one_2d = [](Real /*phi*/, Real /*theta*/) constexpr noexcept { return 1.; };
 }  // namespace func
 
 /********************************************************************************************************************

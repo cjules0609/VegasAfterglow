@@ -59,7 +59,7 @@ inline Real sedov_length(Real E_iso, Real n_ism) {
  * INLINE FUNCTION: RShockCrossingRadius
  * DESCRIPTION: Returns the radius at which the reverse shock crosses, defined as the thick shell deceleration radius.
  ********************************************************************************************************************/
-inline Real RS_crossing_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
+inline Real RS_crossing_radius(Real E_iso, Real n_ism, Real engine_dura) {
     size_t l = sedov_length(E_iso, n_ism);
     return std::sqrt(std::sqrt(l * l * l * con::c * engine_dura));
 }
@@ -100,14 +100,14 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
     Real dp_min = 0;
 
     for (Real theta = theta_min; theta <= theta_max; theta += step) {
-        Real G = jet.Gamma0(phi, theta);
-        Real beta0 = gamma_to_beta(G);
-        Real r0 = beta0 * con::c * t0 / (1 - beta0);
-        Real rho = medium.rho(phi, theta, 0);
+        // Real G = jet.Gamma0(phi, theta);
+        //  Real beta0 = gamma_to_beta(G);
+        //   Real r0 = beta0 * con::c * t0 / (1 - beta0);
+        //    Real rho = medium.rho(phi, theta, 0);
         Real th_lo = std::max(theta - step, theta_min);
         Real th_hi = std::min(theta + step, theta_max);
         Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
-        Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
+        // Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
         Real dp = dG;  //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
 
         if (dp < dp_min) {

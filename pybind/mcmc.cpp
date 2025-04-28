@@ -171,9 +171,9 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
     Medium medium;
     if (config.medium == "ism") {
         Real n_ism = param.n_ism / con::cm3;
-        medium.rho = evn::ISM(n_ism);
+        std::tie(medium.rho, medium.mass) = evn::ISM(n_ism);
     } else if (config.medium == "wind") {
-        medium.rho = evn::wind(param.A_star);
+        std::tie(medium.rho, medium.mass) = evn::wind(param.A_star);
     } else {
         std::cerr << "Error: Unknown medium type" << std::endl;
     }
@@ -201,6 +201,7 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
     auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
     obs.observe_at(t_eval, coord, shock, lumi_dist, z);
+    // obs.observe(coord, shock, lumi_dist, z);
 
     electrons = generate_syn_electrons(shock, p, xi);
 

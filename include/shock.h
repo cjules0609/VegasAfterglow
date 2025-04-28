@@ -367,11 +367,7 @@ void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
  ********************************************************************************************************************/
 template <typename Eqn>
 Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
-    if constexpr (!Eqn::State::mass_profile) {
-        return state.m_swept;
-    } else {
-        return eqn.medium.mass(eqn.phi, state.theta, state.r);
-    }
+    return eqn.medium.mass(eqn.phi, state.theta, state.r);
 }
 
 /********************************************************************************************************************
@@ -389,28 +385,21 @@ Real compute_dec_time(Eqn const& eqn, Real t0, Real t_max) {
     Real e_k = eqn.ejecta.eps_k(eqn.phi, eqn.theta0);
     Real gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);
     Real beta = gamma_to_beta(gamma);
-    Real r0 = beta * con::c * t0 / (1 - beta);
-    if constexpr (!Eqn::State::mass_profile) {
-        Real rho = eqn.medium.rho(eqn.phi, eqn.theta0, r0);
-        Real r_dec = thin_shell_dec_radius(e_k * 4 * con::pi, rho / con::mp, gamma);
-        Real t_dec = r_dec * (1 - beta) / (beta * con::c);
-        return t_dec;
-    } else {
-        Real m_shell = e_k / (gamma * con::c2);
 
-        if constexpr (HasSigma<decltype(eqn.ejecta)>) {
-            m_shell /= 1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
-        }
+    Real m_shell = e_k / (gamma * con::c2);
 
-        Real r_dec = beta * con::c * t_max / (1 - beta);
-        for (size_t i = 0; i < 30; i++) {
-            Real m_swept = eqn.medium.mass(eqn.phi, eqn.theta0, r_dec);
-            if (m_swept < m_shell / gamma) {
-                break;
-            }
-            r_dec /= 3;
-        }
-        Real t_dec = r_dec * (1 - beta) / (beta * con::c);
-        return t_dec;
+    if constexpr (HasSigma<decltype(eqn.ejecta)>) {
+        m_shell /= 1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
     }
+
+    Real r_dec = beta * con::c * t_max / (1 - beta);
+    for (size_t i = 0; i < 30; i++) {
+        Real m_swept = eqn.medium.mass(eqn.phi, eqn.theta0, r_dec);
+        if (m_swept < m_shell / gamma) {
+            break;
+        }
+        r_dec /= 3;
+    }
+    Real t_dec = r_dec * (1 - beta) / (beta * con::c);
+    return t_dec;
 }

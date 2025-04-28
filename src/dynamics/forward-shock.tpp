@@ -57,10 +57,6 @@ void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff
     Real dm_dt_swpt = state.r * state.r * medium.rho(phi, state.theta, state.r) * diff.r;
     Real m_swept = compute_swept_mass(*this, state);
 
-    if constexpr (!State::mass_profile) {
-        diff.m_swept = dm_dt_swpt;
-    }
-
     Real ad_idx = adiabatic_idx(state.Gamma);
 
     diff.Gamma = dGamma_dt(m_swept, dm_dt_swpt, state, diff, ad_idx);
@@ -154,12 +150,7 @@ void ForwardShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) cons
         state.m_shell = m_shell;
     }
 
-    if constexpr (!State::mass_profile) {
-        state.m_swept = medium.rho(phi, theta0, state.r) * state.r * state.r * state.r / 3;
-        state.u = (state.Gamma - 1) * state.m_swept * con::c2;
-    } else {
-        state.u = (state.Gamma - 1) * medium.mass(phi, theta0, state.r) * con::c2;
-    }
+    state.u = (state.Gamma - 1) * medium.mass(phi, theta0, state.r) * con::c2;
 }
 
 /********************************************************************************************************************
@@ -196,7 +187,7 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
 
     // Get initial time and set up initial conditions
     Real t_dec = compute_dec_time(eqn, t.front(), t.back());
-    Real t0 = std::min(t.front(), std::max(t_dec / 2, 10 * con::sec));
+    Real t0 = min(t.front(), t_dec, 1 * con::sec);
     eqn.set_init_state(state, t0);
 
     // Early exit if initial Lorentz factor is below cutoff
@@ -208,7 +199,7 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
     // Set up ODE solver with adaptive step size control
     auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::State>());
 
-    stepper.initialize(state, t0, 0.1 * t0);
+    stepper.initialize(state, t0, 0.01 * t0);
 
     // Solve ODE and update shock state at each requested time point
     for (size_t k = 0; stepper.current_time() <= t.back();) {

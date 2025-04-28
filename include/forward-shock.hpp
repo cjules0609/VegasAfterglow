@@ -15,8 +15,7 @@ template <typename Ejecta, typename Medium>
 struct ForwardState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>;
     static constexpr bool energy_inject = HasDedt<Ejecta>;
-    static constexpr bool mass_profile = HasMass<Medium>;
-    static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0) + (mass_profile ? 0 : 1);
+    static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
     MAKE_THIS_ODEINT_STATE(data, array_size)
 
@@ -33,9 +32,6 @@ struct ForwardState {
 
             // shell mass per solid angle
             [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell{};
-
-            // swept mass per solid angle
-            [[no_unique_address]] std::conditional_t<mass_profile, class Empty, Real> m_swept{};
         };
         array_type data;
     };

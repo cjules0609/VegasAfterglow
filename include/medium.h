@@ -17,7 +17,8 @@ class Medium {
    public:
     // Density function that returns the mass density at a given position (phi, theta, r)
     // The function is initialized to zero by default
-    TernaryFunc rho{func::zero_3d};  // density(phi, theta, r)
+    TernaryFunc rho{func::zero_3d};   // density(phi, theta, r)
+    TernaryFunc mass{func::zero_3d};  // mass(phi, theta, r)
 };
 
 /********************************************************************************************************************
@@ -32,10 +33,10 @@ class ISM {
     constexpr ISM(Real n_ism) noexcept : rho_(n_ism * con::mp) {}
 
     // Return density at given position (constant everywhere)
-    constexpr inline Real rho(Real phi, Real theta, Real r) const noexcept { return rho_; }
+    constexpr inline Real rho(Real /*phi*/, Real /*theta*/, Real /*r*/) const noexcept { return rho_; }
 
     // Return integrated mass within radius r (proportional to r^3)
-    constexpr inline Real mass(Real phi, Real theta, Real r) const noexcept { return rho_ * r * r * r / 3; }
+    constexpr inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return rho_ * r * r * r / 3; }
 
    private:
     Real rho_{0};  // Mass density (particle number density × proton mass)
@@ -53,10 +54,10 @@ class Wind {
     constexpr Wind(Real A_star) noexcept : A(A_star * 5e11 * con::g / con::cm) {}
 
     // Return density at given position (proportional to 1/r²)
-    constexpr inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r * r); }
+    constexpr inline Real rho(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A / (r * r); }
 
     // Return integrated mass within radius r (proportional to r)
-    constexpr inline Real mass(Real phi, Real theta, Real r) const noexcept { return A * r; }
+    constexpr inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A * r; }
 
    private:
     Real A{0};  // Wind density parameter in physical units
@@ -73,10 +74,9 @@ namespace evn {
     inline auto ISM(Real n_ism) {
         Real rho = n_ism * con::mp;
 
-        return [rho](Real phi, Real theta, Real r) noexcept {
-            return rho;  // Convert number density to mass density
-        };
-    }
+        return std::make_pair([rho](Real /*phi*/, Real /*theta*/, Real /*r*/) noexcept { return rho; },
+                              [rho](Real /*phi*/, Real /*theta*/, Real r) noexcept { return rho * r * r * r / 3; });
+    };
 
     // Creates a stellar wind medium profile
     // Parameter A_star: Wind parameter in standard units
@@ -86,6 +86,7 @@ namespace evn {
 
         // Return a function that computes density = A/r^2
         // This represents a steady-state stellar wind where density falls off as 1/r^2
-        return [A](Real phi, Real theta, Real r) noexcept { return A / (r * r); };
+        return std::make_pair([A](Real /*phi*/, Real /*theta*/, Real r) noexcept { return A / (r * r); },
+                              [A](Real /*phi*/, Real /*theta*/, Real r) noexcept { return A * r; });
     }
 }  // namespace evn
