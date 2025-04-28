@@ -32,6 +32,8 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Real nu_obs = eVtoHz(1 * con::keV);
 
+    // Array nu_obs = xt::linspace(eVtoHz(0.1 * con::keV), eVtoHz(10 * con::keV), 10);
+
     Array F_nu = obs.specific_flux(t_obs, nu_obs, syn_ph);
     // Array F_nu = obs.flux(t_bins, linspace(eVtoHz(0.1 * con::keV), eVtoHz(10 * con::keV), 5), syn_ph);
 

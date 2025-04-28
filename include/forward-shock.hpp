@@ -73,13 +73,11 @@ class ForwardShockEqn {
     Real const eps_e{0};   // Fraction of energy given to electrons
 
    private:
-    // Computes the time derivative of the Lorentz factor
-    // with respect to on-axis observer time
+    // Computes the time derivative of the Lorentz factor with respect to engine time
     inline Real dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
                           Real ad_idx) const noexcept;
 
-    // Computes the time derivative of internal energy
-    // with respect to on-axis observer time
+    // Computes the time derivative of internal energy with respect to engine time
     inline Real dU_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
                       Real ad_idx) const noexcept;
 

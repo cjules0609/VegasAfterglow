@@ -16,42 +16,6 @@
 #include "mesh.h"
 
 /********************************************************************************************************************
- * CLASS: LogScaleInterp
- * DESCRIPTION: Provides logarithmic scale interpolation for various shock-related quantities. This class is used
- *              to interpolate physical quantities (radius, intensity, Doppler factor) in logarithmic space, which
- *              is particularly useful for GRB afterglow calculations where quantities often span many orders of
- *              magnitude. The interpolation is performed using the logarithm of the observation time as the
- *              independent variable.
- ********************************************************************************************************************/
-class LogScaleInterp {
-   public:
-    size_t jet_3d{0};  // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
-
-    // Interpolates the luminosity using the observation time (t_obs) in logarithmic space
-    // Returns the interpolated luminosity value
-    Real interp_luminosity(Real t_obs, Real t_lo, Real surface_lo) const noexcept;
-
-    // Validates and sets the interpolation boundaries using the provided grids
-    // Returns true if both lower and upper boundaries are valid for interpolation
-    template <typename... PhotonGrid>
-    bool set_interp_boundaries(size_t i, size_t j, size_t k, Real z, MeshGrid3d const& surface, MeshGrid3d const& t_obs,
-                               MeshGrid3d const& doppler, Real nu_obs, PhotonGrid const&... photons) noexcept;
-
-    // Resets the interpolator state to initial values
-    void reset() noexcept {
-        slope = log_I_lo = log_I_hi = 0;
-        idx_hi = 0;
-    }
-
-   private:
-    Real slope{0};     // Slope for logarithmic interpolation
-    Real log_I_lo{0};  // Lower boundary of specific intensity (log2 scale)
-    Real log_I_hi{0};  // Upper boundary of specific intensity (log2 scale)
-
-    size_t idx_hi{0};  // Index for the upper boundary in the grid
-};
-
-/********************************************************************************************************************
  * CLASS: Observer
  * DESCRIPTION: Represents an observer in the GRB afterglow simulation. This class handles the calculation of
  *              observed quantities such as specific flux, integrated flux, and spectra. It accounts for relativistic
@@ -69,8 +33,8 @@ class Observer {
     MeshGrid3d surface;     // Grid of effective emission surface L_obs = I^\prime * S
 
     // Physical parameters
-    Real lumi_dist{1};  // Luminosity distance
-    Real z{0};          // Redshift
+    Real lumi_dist{1};   // Luminosity distance
+    Real one_plus_z{0};  // Redshift z+1
 
     // Main observation function that sets up the observer's view of the simulation
     void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
@@ -102,7 +66,8 @@ class Observer {
     void update_required(MaskGrid& required, Array const& t_obs);
 
    private:
-    LogScaleInterp interp;   // Helper class for logarithmic interpolation
+    // for observer gird
+    size_t jet_3d{0};        // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
     size_t eff_phi_size{1};  // Effective number of phi grid points
     size_t theta_size{0};    // Number of theta grid points
     size_t t_size{0};        // Number of time grid points
@@ -115,10 +80,27 @@ class Observer {
 
     // Calculates the effective emission surface for each grid point
     void calc_emission_surface(Coord const& coord, Shock const& shock);
+
+    struct InterpState {
+        Real slope{0};      // Slope for logarithmic interpolation
+        Real log_I_lo{0};   // Lower boundary of specific intensity (log2 scale)
+        Real log_I_hi{0};   // Upper boundary of specific intensity (log2 scale)
+        size_t last_hi{0};  // Index for the upper boundary in the grid
+    };
+
+    // Interpolates the luminosity using the observation time (t_obs) in logarithmic space
+    // Returns the interpolated luminosity value
+    Real interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real t_obs) const noexcept;
+
+    // Validates and sets the interpolation boundaries.
+    // Returns true if both lower and upper boundaries are valid for interpolation
+    template <typename... PhotonGrid>
+    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real nu_obs,
+                        PhotonGrid const&... photons) noexcept;
 };
 
 /********************************************************************************************************************
- * TEMPLATE METHOD: LogScaleInterp::set_interp_boundaries
+ * TEMPLATE METHOD: LogScaleInterp::set_boundaries
  * DESCRIPTION: Attempts to set the lower and upper boundary values for logarithmic interpolation.
  *              It updates the internal boundary members for:
  *                - Logarithmic observation time (t_obs_lo, log_t_ratio)
@@ -127,38 +109,36 @@ class Observer {
  *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool LogScaleInterp::set_interp_boundaries(size_t i, size_t j, size_t k_lo, Real z, MeshGrid3d const& surface,
-                                           MeshGrid3d const& t_obs, MeshGrid3d const& doppler, Real nu_obs,
-                                           PhotonGrid const&... photons) noexcept {
-    Real log_t_ratio = fast_log2(t_obs(i, j, k_lo + 1) / t_obs(i, j, k_lo));
+bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real nu_obs,
+                              PhotonGrid const&... photons) noexcept {
+    Real log_t_ratio = fast_log2(t_obs_grid(i, j, k + 1) / t_obs_grid(i, j, k));
 
     if (!std::isfinite(log_t_ratio)) [[unlikely]] {
         return false;
     }
 
     size_t eff_i = i * jet_3d;
-
-    Real log_S_ratio = fast_log2(surface(i, j, k_lo + 1) / surface(i, j, k_lo));
+    Real log_S_ratio = fast_log2(surface(i, j, k + 1) / surface(i, j, k));
 
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
-    if (idx_hi != 0 && k_lo == idx_hi) {
-        log_I_lo = log_I_hi;
+    if (state.last_hi != 0 && k == state.last_hi) {
+        state.log_I_lo = state.log_I_hi;
     } else {
-        Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo);
-        log_I_lo = (photons(eff_i, j, k_lo).compute_log2_I_nu(nu) + ...);
+        Real nu = one_plus_z * nu_obs / doppler(i, j, k);
+        state.log_I_lo = (photons(eff_i, j, k).compute_log2_I_nu(nu) + ...);
     }
 
-    Real nu = (1 + z) * nu_obs / doppler(i, j, k_lo + 1);
-    log_I_hi = (photons(eff_i, j, k_lo + 1).compute_log2_I_nu(nu) + ...);
+    Real nu = one_plus_z * nu_obs / doppler(i, j, k + 1);
+    state.log_I_hi = (photons(eff_i, j, k + 1).compute_log2_I_nu(nu) + ...);
 
-    slope = (log_I_hi - log_I_lo + log_S_ratio) / log_t_ratio;
+    state.slope = (state.log_I_hi - state.log_I_lo + log_S_ratio) / log_t_ratio;
 
-    if (!std::isfinite(slope)) [[unlikely]] {
+    if (!std::isfinite(state.slope)) [[unlikely]] {
         return false;
     }
 
-    idx_hi = k_lo + 1;
+    state.last_hi = k + 1;
     return true;
 }
 
@@ -186,6 +166,8 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
     size_t nu_size = nu_obs.size();
 
     MeshGrid F_nu({nu_size, t_obs_size}, 0);
+
+    InterpState state;
     for (size_t l = 0; l < nu_size; l++) {
         // Loop over effective phi and theta grid points.
         for (size_t i = 0; i < eff_phi_size; i++) {
@@ -194,19 +176,16 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                 size_t t_idx = 0;
                 iterate_to(t_obs_grid(i, j, 0), t_obs, t_idx);
 
-                interp.reset();
                 // Interpolate for observation times within the grid.
                 for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
-                    Real const t_lo = t_obs_grid(i, j, k);
                     Real const t_hi = t_obs_grid(i, j, k + 1);
 
                     if (t_hi < t_obs(t_idx)) {
                         continue;
                     } else {
-                        if (interp.set_interp_boundaries(i, j, k, z, surface, t_obs_grid, doppler, nu_obs[l],
-                                                         photons...)) {
+                        if (set_boundaries(state, i, j, k, nu_obs[l], photons...)) {
                             for (; t_idx < t_obs_size && t_obs(t_idx) < t_hi; t_idx++) {
-                                F_nu(l, t_idx) += interp.interp_luminosity(t_obs(t_idx), t_lo, surface(i, j, k));
+                                F_nu(l, t_idx) += interpolate(state, i, j, k, t_obs(t_idx));
                             }
                         } else {
                             iterate_to(t_hi, t_obs, t_idx);
@@ -218,7 +197,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
     }
 
     // Normalize the flux by the factor (1+z)/(lumi_dist^2).
-    Real const coef = (1 + z) / (lumi_dist * lumi_dist);
+    Real const coef = one_plus_z / (lumi_dist * lumi_dist);
     F_nu *= coef;
 
     return F_nu;

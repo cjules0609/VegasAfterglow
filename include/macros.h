@@ -98,6 +98,6 @@ namespace con {
     constexpr Real H0 = 67.66 * km / sec / Mpc;
 
     // Gamma cut-off, defined very close to 1.
-    constexpr Real Gamma_cut = 1 + 1e-6;
+    constexpr Real Gamma_cut = 1 + 1e-5;
     constexpr Real inf = std::numeric_limits<Real>::infinity();
 }  // namespace con

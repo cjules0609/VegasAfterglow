@@ -513,7 +513,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol = 1e-6) {
+                              Real eps_e_r, Real eps_B_r, Real rtol = 1e-5) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = coord.t.shape()[0];
     Shock f_shock(phi_size_needed, theta_size, t_size, eps_e_f, eps_B_f);

@@ -31,7 +31,7 @@ ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta co
 
 /********************************************************************************************************************
  * METHOD: ForwardShockEqn::operator()(State const& y, State& dydr, Real t)
- * DESCRIPTION: Computes the derivatives of the state variables with respect to radius t.
+ * DESCRIPTION: Computes the derivatives of the state variables with respect to engine t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) const noexcept {
@@ -68,8 +68,8 @@ void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff
 }
 
 /********************************************************************************************************************
- * METHOD: ForwardShockEqn::dGammadt
- * DESCRIPTION: dGammadt with respect to on-axis observe t.
+ * METHOD: ForwardShockEqn::dGamma_dt
+ * DESCRIPTION: dGamma_dt with respect to engine time t.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real ForwardShockEqn<Ejecta, Medium>::dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
@@ -233,7 +233,7 @@ using ShockPair = std::pair<Shock, Shock>;
 
 template <typename Ejecta, typename Medium>
 Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                         Real rtol = 1e-6) {
+                         Real rtol = 1e-5) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
     size_t phi_size_needed = coord.t.shape()[0];
     Shock shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);

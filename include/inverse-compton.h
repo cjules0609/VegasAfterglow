@@ -102,7 +102,7 @@ struct ICPhoton {
     //   - Finally, integrate over the grid to populate the IC photon spectrum (j_nu_).
     template <typename Electrons, typename Photons>
     void gen(Electrons const& e, Photons const& ph) {
-        // Real gamma_e_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
+        // Real gamma_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
         Real nu_ph_min = min(ph.nu_m, ph.nu_c, ph.nu_a);
 
         Real nu0_max = ph.nu_M * 10;

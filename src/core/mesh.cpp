@@ -33,17 +33,17 @@ Array uniform_cos(Real start, Real end, size_t num) {
  *'end'.
  ********************************************************************************************************************/
 Array uniform_sin(Real start, Real end, size_t num) {
-    // First generate a linearly spaced array in cosine space.
+    // First generate a linearly spaced array in sine space.
     Array result = xt::linspace(std::sin(start), std::sin(end), num);
     for (size_t i = 0; i < num; i++) {
-        // Convert back to angle by taking the arccosine.
+        // Convert back to angle by taking the arcsine.
         result[i] = std::asin(result[i]);
     }
     return result;
 }
 
 /********************************************************************************************************************
- * FUNCTION: isLinearScale
+ * FUNCTION: is_linear_scale
  * DESCRIPTION: Checks if the values in the given Array are approximately linearly spaced within the specified
  *tolerance.
  ********************************************************************************************************************/
@@ -60,7 +60,7 @@ bool is_linear_scale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: isLogScale
+ * FUNCTION: is_log_scale
  * DESCRIPTION: Checks if the values in the given Array are approximately logarithmically spaced (constant ratio)
  *              within the specified tolerance.
  ********************************************************************************************************************/
@@ -77,7 +77,7 @@ bool is_log_scale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: boundaryToCenter (linear)
+ * FUNCTION: boundary_to_center
  * DESCRIPTION: Converts a boundary array to center values by averaging adjacent boundaries.
  ********************************************************************************************************************/
 Array boundary_to_center(Array const& boundary) {
@@ -89,7 +89,7 @@ Array boundary_to_center(Array const& boundary) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: boundaryToCenterLog
+ * FUNCTION: boundary_to_center_log
  * DESCRIPTION: Converts a boundary array to center values in logarithmic space using the geometric mean.
  ********************************************************************************************************************/
 Array boundary_to_center_log(Array const& boundary) {

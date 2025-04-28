@@ -1,0 +1,60 @@
+name: Build and Test (Cross-Platform)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: Build and Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build g++ python3-dev python3-pip
+        python3 -m pip install --upgrade pip
+        pip install numpy pybind11 scikit-build-core
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake ninja
+        python3 -m pip install --upgrade pip
+        pip install numpy pybind11 scikit-build-core
+
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install cmake ninja -y
+        python -m pip install --upgrade pip
+        pip install numpy pybind11 scikit-build-core
+
+    - name: Configure CMake
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
+
+    - name: Build with CMake
+      run: |
+        cd build
+        cmake --build . --config Release
+
+    - name: Install Python package
+      run: |
+        pip install .
+
+    - name: Test Python Import
+      run: |
+        python -c "import vegasglow"
