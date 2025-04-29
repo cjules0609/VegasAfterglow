@@ -42,16 +42,7 @@ concept HasMass = requires(T t) {
     using value_type = typename array_type::value_type;                      \
     using iterator = typename array_type::iterator;                          \
     using const_iterator = typename array_type::const_iterator;              \
-    classname() = default;                                                   \
-    classname(const classname&) = default;                                   \
-    classname(classname&&) = default;                                        \
-    classname& operator=(const classname&) = default;                        \
-    classname& operator=(classname&&) = default;                             \
-    classname(array_type&& data) : data(std::move(data)) {}                  \
-    classname& operator=(array_type&& data) {                                \
-        data = std::move(data);                                              \
-        return *this;                                                        \
-    }                                                                        \
+    classname() : data{} {};                                                 \
     constexpr size_t size() const noexcept { return array_size; }            \
     constexpr iterator begin() noexcept { return data.begin(); }             \
     constexpr iterator end() noexcept { return data.end(); }                 \
