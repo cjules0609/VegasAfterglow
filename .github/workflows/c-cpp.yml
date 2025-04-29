@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: C/C++ CI
 
 on:
@@ -8,47 +9,40 @@ on:
 
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
 
-    # force all `run:` steps to use Bash, even on Windows
+    # use Bash everywhere (MSYS2 on Windows gives us bash, make, gcc, etc)
     defaults:
       run:
         shell: bash
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    # MSYS2 on Windows for Autotools + make + gcc
-    - name: Setup MSYS2 (Windows only)
-      if: runner.os == 'Windows'
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        install: base-devel
+      # Install compilers + make
+      - name: Install toolchain
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+      - name: Install toolchain
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install pkg-config
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: base-devel
 
-    # Install Autotools on Linux/macOS
-    - name: Install build deps (Linux/macOS)
-      run: |
-        case "$(uname -s)" in
-          Linux*)
-            sudo apt-get update
-            sudo apt-get install -y autoconf automake libtool pkg-config build-essential
-            ;;
-          Darwin*)
-            brew update
-            brew install autoconf automake libtool pkg-config
-            ;;
-          *)
-            # Windows under MSYS2 has base-devel already
-            ;;
-        esac
-
-    # Build & test on all platforms
-    - name: Build
-      run: |
-        CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-        make -j"$CORES"
-        
+      # Build and test
+      - name: Build & Test
+        run: |
+          # pick up number of cores, fallback to 2
+          CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+          make -j"$CORES"
