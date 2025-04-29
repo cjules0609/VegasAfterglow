@@ -11,9 +11,9 @@
 #include "mcmc.h"
 
 namespace py = pybind11;
-PYBIND11_MODULE(vegasglow, m) {
+PYBIND11_MODULE(VegasAfterglowC, m) {
     // Parameters for MCMC modeling
-    py::class_<Params>(m, "params")
+    py::class_<Params>(m, "ModelParams")
         .def(py::init<>())
         .def_readwrite("E_iso", &Params::E_iso)
         .def_readwrite("Gamma0", &Params::Gamma0)
@@ -36,7 +36,7 @@ PYBIND11_MODULE(vegasglow, m) {
                    ", xi=" + std::to_string(p.xi) + ", k_jet=" + std::to_string(p.k_jet) + ">";
         });
     // Parameters for modeling that are not used in the MCMC
-    py::class_<ConfigParams>(m, "configParams")
+    py::class_<ConfigParams>(m, "Setups")
         .def(py::init<>())
         .def_readwrite("lumi_dist", &ConfigParams::lumi_dist)
         .def_readwrite("z", &ConfigParams::z)
@@ -54,19 +54,19 @@ PYBIND11_MODULE(vegasglow, m) {
         });
 
     // MultiBandData bindings
-    py::class_<MultiBandData>(m, "obsData")
+    py::class_<MultiBandData>(m, "ObsData")
         .def(py::init<>())
-        .def("add_light_curve", &MultiBandData::add_light_curve, py::arg("nu"), py::arg("t"), py::arg("Fv_obs"),
-             py::arg("Fv_err"))
-        .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t"), py::arg("nu"), py::arg("Fv_obs"),
-             py::arg("Fv_err"));
+        .def("add_light_curve", &MultiBandData::add_light_curve, py::arg("nu_cgs"), py::arg("t_cgs"),
+             py::arg("Fnu_cgs"), py::arg("Fnu_err"))
+        .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t_cgs"), py::arg("nu_cgs"), py::arg("Fnu_cgs"),
+             py::arg("Fnu_err"));
 
     // MultiBandModel bindings
-    py::class_<MultiBandModel>(m, "mcmcModel")
+    py::class_<MultiBandModel>(m, "VegasMC")
         .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
-        .def("configure", &MultiBandModel::configure, py::arg("param"))
+        .def("set", &MultiBandModel::configure, py::arg("param"))
         .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
              py::call_guard<py::gil_scoped_release>())
-        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t"), py::arg("nu"))
-        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu"), py::arg("t"));
+        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"))
+        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu_cgs"), py::arg("t_cgs"));
 }

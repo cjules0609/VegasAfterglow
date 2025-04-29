@@ -69,6 +69,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
  * DESCRIPTION: Set the initial conditions for the reverse shock ODE.
  ********************************************************************************************************************/
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T);
+
 template <typename Ejecta, typename Medium>
 bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
     Real beta4 = gamma_to_beta(Gamma4);

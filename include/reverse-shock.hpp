@@ -8,6 +8,7 @@
 #pragma once
 #include <array>
 
+#include "macros.h"
 /********************************************************************************************************************
  * STRUCT: ReverseState
  * DESCRIPTION: Represents the state variables for the reverse shock simulation. It defines a state vector
