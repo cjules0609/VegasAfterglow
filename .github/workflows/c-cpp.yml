@@ -1,0 +1,39 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # matrix over three OSes
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # On Windows, set up an MSYS2 environment so we get bash/make/autotools
+    - name: Setup MSYS2 on Windows
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: base-devel  # includes autoconf, automake, make, gcc, etc.
+
+    # On macOS you may need to install automake/autoconf via Homebrew
+    - name: Install build‐deps on macOS
+      if: runner.os == 'macOS'
+      run: |
+        brew install autoconf automake libtool # etc.
+
+    # Finally, configure + build + test on all OSes using bash
+    - name: Configure & build & test
+      # Forces all steps below to run in bash (even on Windows under MSYS2)
+      shell: bash -l -c
+      run: |
+        make -j$(nproc || sysctl -n hw.ncpu)
