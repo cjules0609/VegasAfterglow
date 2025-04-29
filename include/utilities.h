@@ -19,7 +19,7 @@ concept HasDmdt = requires(T t) {
 
 template <typename T>
 concept HasDedt = requires(T t) {
-    { t.deps_k_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.deps_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };
 
 template <typename T>
