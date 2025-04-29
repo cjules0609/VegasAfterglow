@@ -37,12 +37,21 @@ concept HasMass = requires(T t) {
     { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };*/
 
-#define MAKE_THIS_ODEINT_STATE(data, array_size)                             \
+#define MAKE_THIS_ODEINT_STATE(classname, data, array_size)                  \
     using array_type = std::array<Real, array_size>;                         \
     using value_type = typename array_type::value_type;                      \
     using iterator = typename array_type::iterator;                          \
     using const_iterator = typename array_type::const_iterator;              \
-                                                                             \
+    classname() = default;                                                   \
+    classname(const classname&) = default;                                   \
+    classname(classname&&) = default;                                        \
+    classname& operator=(const classname&) = default;                        \
+    classname& operator=(classname&&) = default;                             \
+    classname(array_type&& data) : data(std::move(data)) {}                  \
+    classname& operator=(array_type&& data) {                                \
+        data = std::move(data);                                              \
+        return *this;                                                        \
+    }                                                                        \
     constexpr size_t size() const noexcept { return array_size; }            \
     constexpr iterator begin() noexcept { return data.begin(); }             \
     constexpr iterator end() noexcept { return data.end(); }                 \

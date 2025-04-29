@@ -17,7 +17,7 @@ struct ForwardState {
     static constexpr bool energy_inject = HasDedt<Ejecta>;
     static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
-    MAKE_THIS_ODEINT_STATE(data, array_size)
+    MAKE_THIS_ODEINT_STATE(ForwardState, data, array_size)
 
     union {
         struct {

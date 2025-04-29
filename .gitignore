@@ -12,7 +12,7 @@
 **/.DS_Store
 **/*.pyc
 
-#external/
+external/
 projects/
 build/
 .vscode/

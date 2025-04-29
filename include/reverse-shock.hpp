@@ -21,7 +21,7 @@ struct ReverseState {
     static constexpr bool energy_inject = HasDedt<Ejecta>;  // Whether ejecta has energy injection
     static constexpr size_t array_size = 7;
 
-    MAKE_THIS_ODEINT_STATE(data, array_size)
+    MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)
 
     union {
         struct {
