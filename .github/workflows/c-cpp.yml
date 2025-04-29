@@ -36,4 +36,4 @@ jobs:
       # Forces all steps below to run in bash (even on Windows under MSYS2)
       shell: bash -l -c
       run: |
-        make -j$(nproc || sysctl -n hw.ncpu)
+        make -j
