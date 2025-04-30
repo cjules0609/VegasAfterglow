@@ -38,7 +38,7 @@ class Ejecta {
     TernaryFunc dm_dt{func::zero_3d};
 
     // Duration of the ejecta in seconds
-    Real T0{1 * con::sec};
+    Real T0{1 * unit::sec};
 
     // Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
@@ -63,7 +63,7 @@ class TophatJet {
     constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
     // Duration of the ejecta in seconds
-    Real T0{1 * con::sec};
+    Real T0{1 * unit::sec};
     // Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
@@ -96,7 +96,7 @@ class GaussianJet {
     }
 
     // Duration of the ejecta in seconds
-    Real T0{1 * con::sec};
+    Real T0{1 * unit::sec};
     // Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
@@ -129,7 +129,7 @@ class PowerLawJet {
     }
 
     // Duration of the ejecta in seconds
-    Real T0{1 * con::sec};
+    Real T0{1 * unit::sec};
     // Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 

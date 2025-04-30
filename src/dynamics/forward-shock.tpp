@@ -38,7 +38,7 @@ void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff
     Real beta = gamma_to_beta(state.Gamma);
 
     diff.r = compute_dr_dt(beta);
-    diff.t_comv = compute_dt_dt_comv(state.Gamma);
+    diff.t_comv = compute_dt_dt_comv(state.Gamma, beta);
 
     if (ejecta.spreading && state.theta < 0.5 * con::pi) {
         diff.theta = compute_dtheta_dt(theta_s, state.theta, diff.r, state.r, state.Gamma);
@@ -187,7 +187,7 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
 
     // Get initial time and set up initial conditions
     Real t_dec = compute_dec_time(eqn, t.front(), t.back());
-    Real t0 = min(t.front(), t_dec, 1 * con::sec);
+    Real t0 = min(t.front(), t_dec, 1 * unit::sec);
     eqn.set_init_state(state, t0);
 
     // Early exit if initial Lorentz factor is below cutoff

@@ -1,17 +1,17 @@
 #include "afterglow.h"
 
 void test_reverse_shock(double xi, double sigma) {
-    Real E_iso = 1e51 * con::erg;
+    Real E_iso = 1e51 * unit::erg;
     Real theta_c = 0.1;
     Real theta_v = 0;
 
-    Real n_ism = 100 / con::cm3;
+    Real n_ism = 100 / unit::cm3;
     Real eps_e = 1e-2;
     Real eps_B = 1e-4;
     Real Gamma0 = 100;
     Real z = 0;
 
-    Array t_obs = xt::logspace(std::log10(0.1 * con::sec), std::log10(1e10 * con::sec), 130);
+    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e10 * unit::sec), 130);
 
     ISM medium(n_ism);
 

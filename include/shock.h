@@ -149,29 +149,30 @@ inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real 
  * DESCRIPTION: Computes the time derivative of comoving time (dt_comv/dt) based on the Lorentz factor.
  * PARAMETERS:
  *   - Gamma: Bulk Lorentz factor
+ *   - beta: Bulk velocity as a fraction of light speed
  * RETURNS: The rate of change of comoving time with respect to observer time
  ********************************************************************************************************************/
-inline Real compute_dt_dt_comv(Real Gamma) { return 1 / (Gamma - std::sqrt(Gamma * Gamma - 1)); };
+inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 - beta)); };
 
 /********************************************************************************************************************
- * FUNCTION: compute_up_str_mag_p(n_up, sigma)
+ * FUNCTION: compute_upstr_mag_p(n_up, sigma)
  * DESCRIPTION: Computes the upstream magnetic pressure based on number density and magnetization.
  * PARAMETERS:
  *   - n_up: Upstream number density
  *   - sigma: Magnetization parameter
  * RETURNS: The upstream magnetic pressure
  ********************************************************************************************************************/
-inline Real compute_up_str_mag_p(Real n_up, Real sigma) { return sigma * n_up * con::mp * con::c2 / 2; }
+inline Real compute_upstr_mag_p(Real n_up, Real sigma) { return sigma * n_up * con::mp * con::c2 / 2; }
 
 /********************************************************************************************************************
- * FUNCTION: compute_up_str_4vel(u_down, gamma_rel)
+ * FUNCTION: compute_upstr_4vel(u_down, gamma_rel)
  * DESCRIPTION: Computes the upstream four-velocity from downstream four-velocity and relative Lorentz factor.
  * PARAMETERS:
  *   - u_down: Downstream four-velocity
  *   - gamma_rel: Relative Lorentz factor
  * RETURNS: The upstream four-velocity in the shock frame
  ********************************************************************************************************************/
-inline Real compute_up_str_4vel(Real u_down, Real gamma_rel) {
+inline Real compute_upstr_4vel(Real u_down, Real gamma_rel) {
     return std::sqrt((1 + u_down * u_down) * (gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
 }
 
@@ -343,7 +344,7 @@ void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
                       Real Gamma_upstr, Real N_downstr, Real n_upstr, Real sigma_upstr) {
     Real Gamma_rel = compute_rel_Gamma(Gamma_upstr, Gamma_downstr);
     Real ratio_u = compute_4vel_jump(Gamma_rel, sigma_upstr);
-    Real pB_upstr = compute_up_str_mag_p(n_upstr, sigma_upstr);
+    Real pB_upstr = compute_upstr_mag_p(n_upstr, sigma_upstr);
     Real pB_downstr = pB_upstr * ratio_u * ratio_u;
     Real n_downstr = n_upstr * ratio_u;
     Real e_th = compute_downstr_eth(Gamma_rel, n_downstr);

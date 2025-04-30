@@ -86,7 +86,7 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
 
 Real compute_4vel_jump(Real gamma_rel, Real sigma) {
     Real u_down_s_ = compute_downstr_4vel(gamma_rel, sigma);
-    Real u_up_s_ = compute_up_str_4vel(u_down_s_, gamma_rel);
+    Real u_up_s_ = compute_upstr_4vel(u_down_s_, gamma_rel);
     Real ratio_u = u_up_s_ / u_down_s_;
     if (u_down_s_ == 0) {
         ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)

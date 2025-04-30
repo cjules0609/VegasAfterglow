@@ -9,9 +9,9 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
            Real Gamma0, Real theta_c, Real theta_v, bool verbose = false) {
     Real z = 0.009;
 
-    Real lumi_dist = 1.23e26 * con::cm;
+    Real lumi_dist = 1.23e26 * unit::cm;
 
-    Array t_obs = xt::logspace(std::log10(1e3 * con::sec), std::log10(1e7 * con::sec), 30);
+    Array t_obs = xt::logspace(std::log10(1e3 * unit::sec), std::log10(1e7 * unit::sec), 30);
 
     ISM medium(n_ism);
 
@@ -30,7 +30,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     auto syn_ph = generate_syn_photons(f_shock, syn_e);
 
-    Real nu_obs = eVtoHz(1 * con::keV);
+    Real nu_obs = eVtoHz(1 * unit::keV);
 
     // Array nu_obs = xt::linspace(eVtoHz(0.1 * con::keV), eVtoHz(10 * con::keV), 10);
 
@@ -39,27 +39,27 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     if (verbose) {
         write_npz("F_nu" + std::to_string(phi_num) + "-" + std::to_string(theta_num) + "-" + std::to_string(r_num),
-                  "F_nu", xt::eval(F_nu / con::Jy), "t_obs", xt::eval(t_obs / con::sec));
+                  "F_nu", xt::eval(F_nu / unit::Jy), "t_obs", xt::eval(t_obs / unit::sec));
     }
 
     return;
 }
 
 int main() {
-    Real n_ism = 2 / con::cm3;
+    Real n_ism = 2 / unit::cm3;
     Real eps_e = 1e-2;
     Real eps_B = 1e-4;
     Real p = 2.1;
     Real Gamma0 = 300;
 
-    Array E_iso = xt::logspace(std::log10(1e48 * con::erg), std::log10(1e52 * con::erg), 10);
+    Array E_iso = xt::logspace(std::log10(1e48 * unit::erg), std::log10(1e52 * unit::erg), 10);
     Array theta_c = xt::linspace(0.01, 0.1, 100);
     Array theta_v = xt::linspace(0.01, 0.5, 5);
 
     size_t resolu[] = {256, 128, 64, 32, 30, 28, 25, 24, 16, 8};
 
     for (auto r : resolu) {
-        tests(r, r, r, n_ism, eps_e, eps_B, p, 1e52 * con::erg, Gamma0, 0.1, 0.3, true);
+        tests(r, r, r, n_ism, eps_e, eps_B, p, 1e52 * unit::erg, Gamma0, 0.1, 0.3, true);
     }
 
     size_t benchmark_resolu[] = {24, 25, 28};

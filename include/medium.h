@@ -51,7 +51,7 @@ class ISM {
 class Wind {
    public:
     // Constructor: Initialize with wind parameter A_star (in standard units)
-    constexpr Wind(Real A_star) noexcept : A(A_star * 5e11 * con::g / con::cm) {}
+    constexpr Wind(Real A_star) noexcept : A(A_star * 5e11 * unit::g / unit::cm) {}
 
     // Return density at given position (proportional to 1/r²)
     constexpr inline Real rho(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A / (r * r); }
@@ -82,7 +82,7 @@ namespace evn {
     // Parameter A_star: Wind parameter in standard units
     inline auto wind(Real A_star) {
         // Convert A_star to proper units: A_star * 5e11 g/cm
-        Real A = A_star * 5e11 * con::g / con::cm;
+        Real A = A_star * 5e11 * unit::g / unit::cm;
 
         // Return a function that computes density = A/r^2
         // This represents a steady-state stellar wind where density falls off as 1/r^2

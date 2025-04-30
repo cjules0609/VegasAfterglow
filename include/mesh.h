@@ -49,15 +49,12 @@ bool is_log_scale(Array const& arr, Real tolerance = 1e-6);
  ********************************************************************************************************************/
 class Coord {
    public:
-    // Constructor taking phi, theta, and t arrays
-    // Coord(Array const& phi, Array const& theta, Array const& t);
-
     // Default constructor
     Coord() = default;
 
     Array phi;     // Array of azimuthal angles (phi) in radians
     Array theta;   // Array of polar angles (theta) in radians
-    MeshGrid3d t;  // Array of time points in seconds
+    MeshGrid3d t;  // Array of engine time points
     Real theta_view{0};
 
     // Returns the dimensions of the coordinate arrays as a tuple (n_phi, n_theta, n_t)

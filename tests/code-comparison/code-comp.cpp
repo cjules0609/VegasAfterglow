@@ -12,10 +12,10 @@ void lc_gen(std::string folder_name, bool out = false) {
     json data = json::parse(f);
 
     Real E_iso = data["E_iso"];
-    E_iso *= con::erg;
+    E_iso *= unit::erg;
 
     Real lumi_dist = data["luminosity distance"];
-    lumi_dist *= con::cm;
+    lumi_dist *= unit::cm;
     Real z = data["z"];
     std::string jet_type = data["jet type"];
     Real theta_c = data["theta_core"];
@@ -25,7 +25,7 @@ void lc_gen(std::string folder_name, bool out = false) {
     bool ic_cool = data["inverse compton cooling"];
 
     Real n_ism = data["n_ism"];
-    n_ism /= (con::cm * con::cm * con::cm);
+    n_ism /= (unit::cm3);
 
     Real eps_e = data["epsilon_e"];
     Real eps_B = data["epsilon_B"];
@@ -37,7 +37,7 @@ void lc_gen(std::string folder_name, bool out = false) {
 
     std::vector<Real> band_pass_ = data["band pass (kev)"];
 
-    Array t_bins = xt::logspace(std::log10(t_obs[0] * con::sec / 10), std::log10(t_obs[1] * con::sec), 100);
+    Array t_bins = xt::logspace(std::log10(t_obs[0] * unit::sec / 10), std::log10(t_obs[1] * unit::sec), 100);
     // create model
     ISM medium(n_ism);
 
@@ -76,11 +76,11 @@ void lc_gen(std::string folder_name, bool out = false) {
         write_npz("shock", f_shock);
         write_npz("syn_e", syn_e);
         write_npz("syn_ph", syn_ph);
-        write_npy("t_grid", obs.t_obs_grid, con::sec);
+        write_npy("t_grid", obs.time, unit::sec);
     }
 
     Array band_pass =
-        xt::logspace(std::log10(eVtoHz(band_pass_[0] * con::keV)), std::log10(eVtoHz(band_pass_[1] * con::keV)), 10);
+        xt::logspace(std::log10(eVtoHz(band_pass_[0] * unit::keV)), std::log10(eVtoHz(band_pass_[1] * unit::keV)), 10);
 
     namespace fs = std::filesystem;
 
@@ -93,13 +93,12 @@ void lc_gen(std::string folder_name, bool out = false) {
     if (ic_cool) {
         Array F_nu_syn = obs.flux(t_bins, band_pass, syn_ph);
         for (size_t i = 0; i < t_bins.size(); ++i) {
-            file << t_bins[i] / con::sec << ',' << F_nu_syn[i] / (con::erg / con::cm / con::cm / con::sec) << '\n';
+            file << t_bins[i] / unit::sec << ',' << F_nu_syn[i] / unit::flux_cgs << '\n';
         }
     } else {
         Array F_nu_syn_no_cool = obs.flux(t_bins, band_pass, syn_ph);
         for (size_t i = 0; i < t_bins.size(); ++i) {
-            file << t_bins[i] / con::sec << ',' << F_nu_syn_no_cool[i] / (con::erg / con::cm / con::cm / con::sec)
-                 << '\n';
+            file << t_bins[i] / unit::sec << ',' << F_nu_syn_no_cool[i] / unit::flux_cgs << '\n';
         }
     }
     std::cout << "finish" + working_dir << '\n';

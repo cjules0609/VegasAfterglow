@@ -18,9 +18,8 @@
  * DESCRIPTION: Interpolates the luminosity at a given observation time (t) using linear
  *              interpolation in log-space. The result is returned in linear space.
  ********************************************************************************************************************/
-
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real t_obs) const noexcept {
-    Real log_t = fast_log2(t_obs / t_obs_grid(i, j, k));
+    Real log_t = fast_log2(t_obs / time(i, j, k));
     return surface(i, j, k) * fast_exp2(state.log_I_lo + log_t * state.slope);
 }
 
@@ -87,7 +86,7 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
  *              For each grid point, the Doppler factor is computed and the observed time is calculated taking
  *              redshift into account.
  ********************************************************************************************************************/
-void Observer::calc_t_obs_grid(Coord const& coord, Shock const& shock) {
+void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
     Real cos_obs = std::cos(coord.theta_view);
     Real sin_obs = std::sin(coord.theta_view);
 
@@ -123,7 +122,7 @@ void Observer::calc_t_obs_grid(Coord const& coord, Shock const& shock) {
                 // Compute the Doppler factor: D = 1 / [Gamma * (1 - beta * cos_v)]
                 doppler(i, j, k) = 1 / (gamma_ - std::sqrt(gamma_ * gamma_ - 1) * cos_v);
                 // Compute the observed time: t_obs = [t_eng + (1 - cos_v) * r / c] * (1 + z)
-                t_obs_grid(i, j, k) = (t_eng_ + (1 - cos_v) * r / con::c) * one_plus_z;
+                time(i, j, k) = (t_eng_ + (1 - cos_v) * r / con::c) * one_plus_z;
             }
         }
     }
@@ -138,12 +137,12 @@ void Observer::update_required(MaskGrid& required, Array const& t_obs) {
         for (size_t j = 0; j < theta_size; j++) {
             // Skip observation times that are below the grid's start time
             size_t t_idx = 0;
-            iterate_to(t_obs_grid(i, j, 0), t_obs, t_idx);
+            iterate_to(time(i, j, 0), t_obs, t_idx);
 
             // find the grid points that are required for the interpolation.
             for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
-                Real const t_lo = t_obs_grid(i, j, k);
-                Real const t_hi = t_obs_grid(i, j, k + 1);
+                Real const t_lo = time(i, j, k);
+                Real const t_hi = time(i, j, k + 1);
 
                 if (t_lo <= t_obs(t_idx) && t_obs(t_idx) < t_hi) {
                     required(i_eff, j, k) = 1;
@@ -156,7 +155,7 @@ void Observer::update_required(MaskGrid& required, Array const& t_obs) {
     }
 }
 
-void Observer::build_t_obs_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
+void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     // Determine if the jet is 3D (more than one phi value)
@@ -172,12 +171,12 @@ void Observer::build_t_obs_grid(Coord const& coord, Shock const& shock, Real lum
     this->lumi_dist = luminosity_dist;
     this->one_plus_z = 1 + redshift;
 
-    t_obs_grid.resize({eff_phi_size, theta_size, t_size});
+    time.resize({eff_phi_size, theta_size, t_size});
     doppler.resize({eff_phi_size, theta_size, t_size});
     surface.resize({eff_phi_size, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
-    calc_t_obs_grid(coord, shock);
+    calc_t_obs(coord, shock);
 }
 
 /********************************************************************************************************************
@@ -187,12 +186,12 @@ void Observer::build_t_obs_grid(Coord const& coord, Shock const& shock, Real lum
  *              emission surface.
  ********************************************************************************************************************/
 void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
-    build_t_obs_grid(coord, shock, luminosity_dist, redshift);
+    build_time_grid(coord, shock, luminosity_dist, redshift);
     calc_emission_surface(coord, shock);
 }
 
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
-    build_t_obs_grid(coord, shock, luminosity_dist, redshift);
+    build_time_grid(coord, shock, luminosity_dist, redshift);
 
     xt::noalias(shock.required) = 0;
 

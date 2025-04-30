@@ -28,9 +28,9 @@ class Observer {
     Observer() = default;
 
     // Grids for storing simulation data
-    MeshGrid3d t_obs_grid;  // Grid of observation times
-    MeshGrid3d doppler;     // Grid of Doppler factors
-    MeshGrid3d surface;     // Grid of effective emission surface L_obs = I^\prime * S
+    MeshGrid3d time;     // Grid of observation times
+    MeshGrid3d doppler;  // Grid of Doppler factors
+    MeshGrid3d surface;  // Grid of effective emission surface L_obs = I^\prime * S
 
     // Physical parameters
     Real lumi_dist{1};   // Luminosity distance
@@ -73,10 +73,10 @@ class Observer {
     size_t t_size{0};        // Number of time grid points
 
     // Builds the observation time, doppler, and surface grids
-    void build_t_obs_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
+    void build_time_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
     // Calculates the observation time grid based on Lorentz factor and engine time
-    void calc_t_obs_grid(Coord const& coord, Shock const& shock);
+    void calc_t_obs(Coord const& coord, Shock const& shock);
 
     // Calculates the effective emission surface for each grid point
     void calc_emission_surface(Coord const& coord, Shock const& shock);
@@ -111,7 +111,7 @@ class Observer {
 template <typename... PhotonGrid>
 bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real nu_obs,
                               PhotonGrid const&... photons) noexcept {
-    Real log_t_ratio = fast_log2(t_obs_grid(i, j, k + 1) / t_obs_grid(i, j, k));
+    Real log_t_ratio = fast_log2(time(i, j, k + 1) / time(i, j, k));
 
     if (!std::isfinite(log_t_ratio)) [[unlikely]] {
         return false;
@@ -174,11 +174,11 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
             for (size_t j = 0; j < theta_size; j++) {
                 // Skip observation times that are below the grid's start time
                 size_t t_idx = 0;
-                iterate_to(t_obs_grid(i, j, 0), t_obs, t_idx);
+                iterate_to(time(i, j, 0), t_obs, t_idx);
 
                 // Interpolate for observation times within the grid.
                 for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
-                    Real const t_hi = t_obs_grid(i, j, k + 1);
+                    Real const t_hi = time(i, j, k + 1);
 
                     if (t_hi < t_obs(t_idx)) {
                         continue;

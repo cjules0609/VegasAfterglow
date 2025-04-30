@@ -37,7 +37,7 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
     Real beta = gamma_to_beta(state.Gamma);
 
     diff.r = compute_dr_dt(beta);
-    diff.t_comv = compute_dt_dt_comv(state.Gamma);
+    diff.t_comv = compute_dt_dt_comv(state.Gamma, beta);
 
     if (ejecta.spreading && state.theta < 0.5 * con::pi) {
         diff.theta = compute_dtheta_dt(theta_s, state.theta, diff.r, state.r, state.Gamma);

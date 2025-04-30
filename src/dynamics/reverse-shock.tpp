@@ -33,7 +33,9 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
-    Real Gamma3 = 1, Gamma_rel = 1;
+    Real Gamma3 = 1;
+
+    // Gamma_rel = 1;
 
     auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
     diff.eps_shell = deps_shell_dt;
@@ -43,7 +45,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
 
     if (!crossed) {
         Gamma3 = compute_crossing_Gamma3(state);
-        Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
+        // Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
 
         Real sigma4 = compute_shell_sigma(state);
         diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4);
@@ -58,7 +60,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
 
     Real beta3 = gamma_to_beta(Gamma3);
     diff.r = compute_dr_dt(beta3);
-    diff.t_comv = compute_dt_dt_comv(Gamma3);
+    diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
 
     diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
     diff.theta = 0;  // no lateral spreading
