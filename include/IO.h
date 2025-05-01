@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "mesh.h"
 #include "prompt.h"
 #include "shock.h"
@@ -18,9 +20,6 @@
  *              (SynPhotonGrid, SynElectronGrid, PromptPhotonsGrid, Shock, Coord, MeshGrid3d, MeshGrid, and Array)
  *              to a file, optionally with a specified unit.
  ********************************************************************************************************************/
-
-#include <string>
-
 // Write Array to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, Array const& array, Real unit = 1.0);
 // Write MeshGrid to a CSV file with an optional unit for value scaling

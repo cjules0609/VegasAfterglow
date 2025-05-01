@@ -17,7 +17,8 @@ class Medium {
    public:
     // Density function that returns the mass density at a given position (phi, theta, r)
     // The function is initialized to zero by default
-    TernaryFunc rho{func::zero_3d};   // density(phi, theta, r)
+    TernaryFunc rho{func::zero_3d};  // density(phi, theta, r)
+
     TernaryFunc mass{func::zero_3d};  // mass(phi, theta, r)
 };
 

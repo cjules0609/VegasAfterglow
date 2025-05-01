@@ -20,11 +20,11 @@
  *              Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) {
-    gamma_hat_m = con::me * con::c2 / (con::h * nu_m);  // Compute minimum characteristic Lorentz factor
-    gamma_hat_c = con::me * con::c2 / (con::h * nu_c);  // Compute cooling characteristic Lorentz factor
-    this->Y_T = Y_T;                                    // Set the Thomson Y parameter
-    nu_hat_m = compute_syn_freq(gamma_hat_m, B);        // Compute corresponding synchrotron frequency for gamma_hat_m
-    nu_hat_c = compute_syn_freq(gamma_hat_c, B);        // Compute corresponding synchrotron frequency for gamma_hat_c
+    gamma_hat_m = con::me * con::c2 / con::h / nu_m;  // Compute minimum characteristic Lorentz factor
+    gamma_hat_c = con::me * con::c2 / con::h / nu_c;  // Compute cooling characteristic Lorentz factor
+    this->Y_T = Y_T;                                  // Set the Thomson Y parameter
+    nu_hat_m = compute_syn_freq(gamma_hat_m, B);      // Compute corresponding synchrotron frequency for gamma_hat_m
+    nu_hat_c = compute_syn_freq(gamma_hat_c, B);      // Compute corresponding synchrotron frequency for gamma_hat_c
 
     if (nu_hat_m <= nu_hat_c) {
         regime = 1;  // fast IC cooling regime
@@ -557,11 +557,11 @@ Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
         return std::numeric_limits<Real>::infinity();
     }
     Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
-    Real gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y0)));
+    Real gamma_M = std::sqrt(6 * con::pi * con::e / con::sigmaT / (B * (1 + Y0)));
     Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_M, p);
 
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
-        gamma_M = std::sqrt(6 * con::pi * con::e / (con::sigmaT * B * (1 + Y1)));
+        gamma_M = std::sqrt(6 * con::pi * con::e / con::sigmaT / (B * (1 + Y1)));
         Y0 = Y1;
         Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_M, p);
     }

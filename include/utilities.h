@@ -62,10 +62,9 @@ inline void print() {  // Base case: terminates the recursion.
     std::cout << std::endl;
 }
 
-template <typename First, typename... Rest>
-void print(First first, Rest... rest) {
-    std::cout << first << " ";
-    print(rest...);  // Recursive call to print the remaining arguments.
+template <typename... Args>
+void print(std::format_string<Args...> fmt, Args&&... args) {
+    std::cout << std::format(fmt, std::forward<Args>(args)...);
 }
 
 /********************************************************************************************************************

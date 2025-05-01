@@ -113,11 +113,10 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
         size_t i_eff = i * jet_3d;
         for (size_t j = 0; j < theta_size; ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
-            // Real cos_v = std::sin(coord.theta[j]) * cos_phi * sin_obs + std::cos(coord.theta[j]) * cos_obs;
             for (size_t k = 0; k < t_size; ++k) {
-                Real gamma_ = shock.Gamma(i_eff, j, k);  // Get Gamma at the grid point.
+                Real gamma_ = shock.Gamma(i_eff, j, k);  
                 Real r = shock.r(i_eff, j, k);
-                Real t_eng_ = coord.t(i_eff, j, k);  // Get engine time at the grid point.
+                Real t_eng_ = coord.t(i_eff, j, k);
                 Real cos_v = sin_theta(i_eff, j, k) * cos_phi * sin_obs + cos_theta(i_eff, j, k) * cos_obs;
                 // Compute the Doppler factor: D = 1 / [Gamma * (1 - beta * cos_v)]
                 doppler(i, j, k) = 1 / (gamma_ - std::sqrt(gamma_ * gamma_ - 1) * cos_v);

@@ -28,7 +28,7 @@ Real dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
  *                  R_dec = [3E_iso / (4π n_ism mp c^2 Gamma0^2)]^(1/3)
  ********************************************************************************************************************/
 Real thin_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0) {
-    return std::cbrt(3 * E_iso / (4 * con::pi * n_ism * con::mp * con::c2 * Gamma0 * Gamma0));
+    return std::cbrt(3 * E_iso / (4 * con::pi * con::mp * con::c2 * n_ism * Gamma0 * Gamma0));
 }
 
 /********************************************************************************************************************
@@ -37,7 +37,7 @@ Real thin_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0) {
  *                  R_dec = [3 E_iso engine_dura c / (4π n_ism mp c^2)]^(1/4)
  ********************************************************************************************************************/
 Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
-    return std::sqrt(std::sqrt(3 * E_iso * engine_dura * con::c / (4 * con::pi * n_ism * con::mp * con::c2)));
+    return std::sqrt(std::sqrt(3 * E_iso * engine_dura / n_ism * con::c / (4 * con::pi * con::mp * con::c2)));
 }
 
 /********************************************************************************************************************

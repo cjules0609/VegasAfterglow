@@ -101,9 +101,9 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
 
     for (Real theta = theta_min; theta <= theta_max; theta += step) {
         // Real G = jet.Gamma0(phi, theta);
-        //  Real beta0 = gamma_to_beta(G);
-        //   Real r0 = beta0 * con::c * t0 / (1 - beta0);
-        //    Real rho = medium.rho(phi, theta, 0);
+        // Real beta0 = gamma_to_beta(G);
+        // Real r0 = beta0 * con::c * t0 / (1 - beta0);
+        // Real rho = medium.rho(phi, theta, 0);
         Real th_lo = std::max(theta - step, theta_min);
         Real th_hi = std::min(theta + step, theta_max);
         Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);

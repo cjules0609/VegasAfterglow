@@ -53,7 +53,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
             diff.m3 = std::min(diff.m3, diff.m_shell);
         }
     } else {
-        Gamma_rel = compute_crossed_Gamma_rel(state);
+        Real Gamma_rel = compute_crossed_Gamma_rel(state);
         Gamma3 = compute_crossed_Gamma3(Gamma_rel, state.r);
         diff.m3 = 0;
     }
@@ -98,8 +98,9 @@ bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
             rho = medium.rho(phi, theta0, state.r);
 
             Real t_dec_com = r_dec / std::sqrt(Gamma4 * Gamma4 - 1) / con::c;
-            state.t_comv =
-                (std::pow(state.r, 1.5) - std::pow(r_dec, 1.5)) / (1.5 * Gamma4 * std::sqrt(r_dec)) + t_dec_com;
+            state.t_comv = (std::sqrt(state.r * state.r * state.r) - std::sqrt(r_dec * r_dec * r_dec)) /
+                               (1.5 * Gamma4 * std::sqrt(r_dec)) +
+                           t_dec_com;
         }
     }
 
@@ -285,7 +286,7 @@ inline auto solve_init_m3(Eqn const& eqn, State const& state, Real Gamma4, Real 
         }
     }
 
-    Real m4_tot = E_iso / (4 * con::pi * Gamma4 * (1 + sigma0) * con::c2);
+    Real m4_tot = E_iso / (4 * con::pi * con::c2 * Gamma4 * (1 + sigma0));
 
     if (!eqn.is_injecting(t0)) {
         Real m3 = m4_tot * std::pow(state.r / r_x, 1.5);
