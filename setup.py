@@ -10,7 +10,7 @@ def find_sources():
                 sources.append(os.path.join(root, fn))
     return sources
 
-extra_compile_args = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC"]
+extra_compile_args = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
 extra_link_args    = ["-lz"]
 if platform.system() == "Darwin":
     extra_link_args += ["-undefined", "dynamic_lookup"]

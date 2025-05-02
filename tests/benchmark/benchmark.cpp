@@ -23,9 +23,9 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Observer obs;
 
-    obs.observe_at(t_obs, coord, f_shock, lumi_dist, z);
+    // obs.observe_at(t_obs, coord, f_shock, lumi_dist, z);
 
-    // obs.observe(coord, f_shock, lumi_dist, z);
+    obs.observe(coord, f_shock, lumi_dist, z);
 
     auto syn_e = generate_syn_electrons(f_shock, p);
 
@@ -63,7 +63,7 @@ int main() {
         tests(r, r, r, n_ism, eps_e, eps_B, p, 1e52 * unit::erg, Gamma0, 0.1, 0.3, true);
     }
 
-    size_t benchmark_resolu[] = {24, 25, 28};
+    size_t benchmark_resolu[] = {24, 32};
 
     for (auto r : benchmark_resolu) {
         std::ofstream file("benchmark" + std::to_string(r) + "-" + std::to_string(r) + "-" + std::to_string(r) +

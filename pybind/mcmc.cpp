@@ -200,8 +200,8 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
 
     auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
 
-    obs.observe_at(t_eval, coord, shock, lumi_dist, z);
-    // obs.observe(coord, shock, lumi_dist, z);
+    // obs.observe_at(t_eval, coord, shock, lumi_dist, z);
+    obs.observe(coord, shock, lumi_dist, z);
 
     electrons = generate_syn_electrons(shock, p, xi);
 

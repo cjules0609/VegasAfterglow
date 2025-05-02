@@ -65,10 +65,9 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
         size_t i_eff = i * jet_3d;
         for (size_t j = 0; j < theta_grid; ++j) {
             for (size_t k = 0; k < t_grid; ++k) {
-                if (shock.required(i_eff, j, k) == 0) {
-                    continue;
-                }
-
+                // if (shock.required(i_eff, j, k) == 0) {
+                //     continue;
+                // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
                 Real r = shock.r(i_eff, j, k);
                 lg2_surface(i, j, k) = std::log2(dOmega * r * r) + 3 * lg2_doppler(i, j, k);
@@ -188,10 +187,7 @@ void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_d
 
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
-
     xt::view(shock.required, xt::all(), xt::all(), xt::all()) = 0;
-
     update_required(shock.required, t_obs);
-
     calc_emission_surface(coord, shock);
 }
