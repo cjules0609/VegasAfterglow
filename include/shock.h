@@ -382,7 +382,7 @@ Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
  * RETURNS: The estimated deceleration time
  ********************************************************************************************************************/
 template <typename Eqn>
-Real compute_dec_time(Eqn const& eqn, Real t0, Real t_max) {
+Real compute_dec_time(Eqn const& eqn, Real t_max) {
     Real e_k = eqn.ejecta.eps_k(eqn.phi, eqn.theta0);
     Real gamma = eqn.ejecta.Gamma0(eqn.phi, eqn.theta0);
     Real beta = gamma_to_beta(gamma);

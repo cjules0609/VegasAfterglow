@@ -67,6 +67,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def("set", &MultiBandModel::configure, py::arg("param"))
         .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
              py::call_guard<py::gil_scoped_release>())
-        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"))
-        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu_cgs"), py::arg("t_cgs"));
+        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu_cgs"), py::arg("t_cgs"),
+             py::call_guard<py::gil_scoped_release>());
 }

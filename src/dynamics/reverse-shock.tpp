@@ -178,7 +178,7 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
  *              shock crossing state to crossed state.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
-void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B, Real t) {
+void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
     this->r_x = state.r;
     constexpr Real n3_norm = 1;  // normalized n3/n3_x = 1
     this->N_electron = n3_norm * state.width_shell * state.r * state.r;
@@ -392,7 +392,7 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
  *              Returns true if stopping condition was applied.
  ********************************************************************************************************************/
 bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, auto const& state_fwd,
-                         auto const& state_rvs, auto const& eqn_rvs) {
+                         auto const& state_rvs) {
     if (state_fwd.Gamma < con::Gamma_cut) {
         set_stopping_shock(i, j, shock_fwd, state_fwd);
         set_stopping_shock(i, j, shock_rvs, state_rvs);
@@ -423,7 +423,7 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, auto& stepper_rvs, a
             if (crossed) {
                 k0 = k;
                 shock_rvs.injection_idx(i, j) = k0;
-                eqn_rvs.set_cross_state(state_rvs, shock_rvs.B(i, j, k), t(k));
+                eqn_rvs.set_cross_state(state_rvs, shock_rvs.B(i, j, k));
                 stepper_rvs.initialize(state_rvs, t(k0), stepper_rvs.current_time_step());
                 break;
             }
@@ -469,14 +469,14 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     typename FwdEqn::State state_fwd;
     typename RvsEqn::State state_rvs;
 
-    Real t_dec = compute_dec_time(eqn_rvs, t.front(), t.back());
+    Real t_dec = compute_dec_time(eqn_rvs, t.back());
     Real t0 = std::min(t.front(), t_dec / 100);
 
     eqn_fwd.set_init_state(state_fwd, t0);
 
     bool crossed = eqn_rvs.set_init_state(state_rvs, t0);
 
-    if (set_stopping_shocks(i, j, shock_fwd, shock_rvs, state_fwd, state_rvs, eqn_rvs)) return;
+    if (set_stopping_shocks(i, j, shock_fwd, shock_rvs, state_fwd, state_rvs)) return;
 
     if (crossed) {
         grid_solve_fwd_shock(i, j, t, shock_fwd, eqn_fwd, rtol);

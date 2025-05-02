@@ -26,7 +26,7 @@ MODULE := vegasglow
 
 # === Compiler & flags ===
 CXX ?= g++
-CXXFLAGS := -std=c++20 -O3 -march=native -flto -Iinclude -Iexternal -g -w -DNDEBUG -fno-math-errno -fno-trapping-math #-DXTENSOR_USE_XSIMD
+CXXFLAGS := -std=c++20 -O3 -march=native -flto -Iinclude -Iexternal -g3 -w -ffast-math
 LDFLAGS := -lz
 AR := ar
 ARFLAGS := rcs

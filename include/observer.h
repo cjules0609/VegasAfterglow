@@ -28,13 +28,9 @@ class Observer {
     Observer() = default;
 
     // Grids for storing simulation data
-    MeshGrid3d time;     // Grid of observation times
-    MeshGrid3d doppler;  // Grid of Doppler factors
-    MeshGrid3d surface;  // Grid of effective emission surface L_obs = I^\prime * S
-
-    // Physical parameters
-    Real lumi_dist{1};   // Luminosity distance
-    Real one_plus_z{0};  // Redshift z+1
+    MeshGrid3d time;  // Grid of observation times
+    // MeshGrid3d doppler;  // Grid of Doppler factors
+    // MeshGrid3d surface;  // Grid of effective emission surface L_obs = I^\prime * S
 
     // Main observation function that sets up the observer's view of the simulation
     void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
@@ -66,11 +62,18 @@ class Observer {
     void update_required(MaskGrid& required, Array const& t_obs);
 
    private:
+    MeshGrid3d lg2_t;
+    MeshGrid3d lg2_doppler;
+    MeshGrid3d lg2_surface;
+    Real one_plus_z{1};
+    Real lg2_one_plus_z{0};
+    Real lumi_dist{1};  // Luminosity distance
+
     // for observer gird
     size_t jet_3d{0};        // Flag indicating if the jet is non-axis-symmetric (non-zero if true)
-    size_t eff_phi_size{1};  // Effective number of phi grid points
-    size_t theta_size{0};    // Number of theta grid points
-    size_t t_size{0};        // Number of time grid points
+    size_t eff_phi_grid{1};  // Effective number of phi grid points
+    size_t theta_grid{0};    // Number of theta grid points
+    size_t t_grid{0};        // Number of time grid points
 
     // Builds the observation time, doppler, and surface grids
     void build_time_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
@@ -83,8 +86,8 @@ class Observer {
 
     struct InterpState {
         Real slope{0};      // Slope for logarithmic interpolation
-        Real log_I_lo{0};   // Lower boundary of specific intensity (log2 scale)
-        Real log_I_hi{0};   // Upper boundary of specific intensity (log2 scale)
+        Real lg2_I_lo{0};   // Lower boundary of specific intensity (log2 scale)
+        Real lg2_I_hi{0};   // Upper boundary of specific intensity (log2 scale)
         size_t last_hi{0};  // Index for the upper boundary in the grid
     };
 
@@ -95,7 +98,7 @@ class Observer {
     // Validates and sets the interpolation boundaries.
     // Returns true if both lower and upper boundaries are valid for interpolation
     template <typename... PhotonGrid>
-    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real nu_obs,
+    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu,
                         PhotonGrid const&... photons) noexcept;
 };
 
@@ -109,32 +112,28 @@ class Observer {
  *              Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
-bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real nu_obs,
+bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
                               PhotonGrid const&... photons) noexcept {
-    Real log_t_ratio = fast_log2(time(i, j, k + 1) / time(i, j, k));
-
-    if (!std::isfinite(log_t_ratio)) [[unlikely]] {
-        return false;
-    }
+    Real lg2_t_ratio = lg2_t(i, j, k + 1) - lg2_t(i, j, k);
 
     size_t eff_i = i * jet_3d;
-    Real log_S_ratio = fast_log2(surface(i, j, k + 1) / surface(i, j, k));
+    Real lg2_S_ratio = lg2_surface(i, j, k + 1) - lg2_surface(i, j, k);
 
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
     if (state.last_hi != 0 && k == state.last_hi) {
-        state.log_I_lo = state.log_I_hi;
+        state.lg2_I_lo = state.lg2_I_hi;
     } else {
-        Real nu = one_plus_z * nu_obs / doppler(i, j, k);
-        state.log_I_lo = (photons(eff_i, j, k).compute_log2_I_nu(nu) + ...);
+        Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
+        state.lg2_I_lo = (photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + ...);
     }
 
-    Real nu = one_plus_z * nu_obs / doppler(i, j, k + 1);
-    state.log_I_hi = (photons(eff_i, j, k + 1).compute_log2_I_nu(nu) + ...);
+    Real lg2_nu_hi = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k + 1);
+    state.lg2_I_hi = (photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) + ...);
 
-    state.slope = (state.log_I_hi - state.log_I_lo + log_S_ratio) / log_t_ratio;
+    state.slope = (state.lg2_I_hi - state.lg2_I_lo + lg2_S_ratio) / lg2_t_ratio;
 
-    if (!std::isfinite(state.slope)) [[unlikely]] {
+    if (!std::isfinite(state.slope)) {
         return false;
     }
 
@@ -162,33 +161,35 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
  ********************************************************************************************************************/
 template <typename... PhotonGrid>
 MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
-    size_t t_obs_size = t_obs.size();
-    size_t nu_size = nu_obs.size();
+    size_t t_obs_len = t_obs.size();
+    size_t nu_len = nu_obs.size();
 
-    MeshGrid F_nu({nu_size, t_obs_size}, 0);
+    Array lg2_t_obs = xt::log2(t_obs);
+    Array lg2_nu = xt::log2(nu_obs);
+
+    MeshGrid F_nu({nu_len, t_obs_len}, 0);
 
     InterpState state;
-    for (size_t l = 0; l < nu_size; l++) {
+    for (size_t l = 0; l < nu_len; l++) {
         // Loop over effective phi and theta grid points.
-        for (size_t i = 0; i < eff_phi_size; i++) {
-            for (size_t j = 0; j < theta_size; j++) {
+        for (size_t i = 0; i < eff_phi_grid; i++) {
+            for (size_t j = 0; j < theta_grid; j++) {
                 // Skip observation times that are below the grid's start time
                 size_t t_idx = 0;
-                iterate_to(time(i, j, 0), t_obs, t_idx);
+                iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
 
-                // Interpolate for observation times within the grid.
-                for (size_t k = 0; k < t_size - 1 && t_idx < t_obs_size; k++) {
-                    Real const t_hi = time(i, j, k + 1);
+                for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
+                    Real const lg2_t_hi = lg2_t(i, j, k + 1);
 
-                    if (t_hi < t_obs(t_idx)) {
+                    if (lg2_t_hi < lg2_t_obs(t_idx)) {
                         continue;
                     } else {
-                        if (set_boundaries(state, i, j, k, nu_obs[l], photons...)) {
-                            for (; t_idx < t_obs_size && t_obs(t_idx) < t_hi; t_idx++) {
-                                F_nu(l, t_idx) += interpolate(state, i, j, k, t_obs(t_idx));
+                        if (set_boundaries(state, i, j, k, lg2_nu[l], photons...)) {
+                            for (; t_idx < t_obs_len && lg2_t_obs(t_idx) < lg2_t_hi; t_idx++) {
+                                F_nu(l, t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                             }
                         } else {
-                            iterate_to(t_hi, t_obs, t_idx);
+                            iterate_to(lg2_t_hi, lg2_t_obs, t_idx);
                         }
                     }
                 }
@@ -202,7 +203,6 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
 
     return F_nu;
 }
-
 /********************************************************************************************************************
  * TEMPLATE METHOD: Observer::specific_flux (single-frequency overload)
  * DESCRIPTION: Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the

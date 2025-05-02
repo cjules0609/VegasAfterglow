@@ -76,7 +76,7 @@ void lc_gen(std::string folder_name, bool out = false) {
         write_npz("shock", f_shock);
         write_npz("syn_e", syn_e);
         write_npz("syn_ph", syn_ph);
-        write_npy("t_grid", obs.time, unit::sec);
+        // write_npy("t_grid", obs.time, unit::sec);
     }
 
     Array band_pass =

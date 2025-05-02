@@ -21,7 +21,7 @@ Real dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
 // Computes deceleration radius for the thin shell case
 Real thin_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0);
 // Computes deceleration radius for the thick shell case
-Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
+Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real engine_dura);
 // Computes the radius at which shell spreading becomes significant
 Real shell_spreading_radius(Real Gamma0, Real engine_dura);
 // Computes the radius at which reverse shock transitions

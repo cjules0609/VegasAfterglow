@@ -68,7 +68,7 @@ class FRShockEqn {
     bool set_init_state(State& state, Real t0) const noexcept;
 
     // Set the shock state when the reverse shock crosses the jet
-    void set_cross_state(State const& state, Real B, Real t);
+    void set_cross_state(State const& state, Real B);
 
     // Calculate the Gamma3 during the shock crossing phase
     Real compute_crossing_Gamma3(State const& state) const;

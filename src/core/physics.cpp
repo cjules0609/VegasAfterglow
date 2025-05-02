@@ -18,8 +18,7 @@
  *              deceleration radii.
  ********************************************************************************************************************/
 Real dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
-    return std::max(thin_shell_dec_radius(E_iso, n_ism, Gamma0),
-                    thick_shell_dec_radius(E_iso, n_ism, Gamma0, engine_dura));
+    return std::max(thin_shell_dec_radius(E_iso, n_ism, Gamma0), thick_shell_dec_radius(E_iso, n_ism, engine_dura));
 }
 
 /********************************************************************************************************************
@@ -36,7 +35,7 @@ Real thin_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0) {
  * DESCRIPTION: Computes the deceleration radius for the thick shell case using the formula:
  *                  R_dec = [3 E_iso engine_dura c / (4π n_ism mp c^2)]^(1/4)
  ********************************************************************************************************************/
-Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura) {
+Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real engine_dura) {
     return std::sqrt(std::sqrt(3 * E_iso * engine_dura / n_ism * con::c / (4 * con::pi * con::mp * con::c2)));
 }
 

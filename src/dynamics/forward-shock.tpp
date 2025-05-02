@@ -186,7 +186,7 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
     typename FwdEqn::State state;
 
     // Get initial time and set up initial conditions
-    Real t_dec = compute_dec_time(eqn, t.front(), t.back());
+    Real t_dec = compute_dec_time(eqn, t.back());
     Real t0 = min(t.front(), t_dec, 1 * unit::sec);
     eqn.set_init_state(state, t0);
 

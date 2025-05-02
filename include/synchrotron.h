@@ -74,44 +74,41 @@ struct SynElectrons {
  ********************************************************************************************************************/
 struct SynPhotons {
     // All values in comoving frame
-    Real nu_m{0};                    // Characteristic frequency corresponding to gamma_m
-    Real nu_c{0};                    // Cooling frequency corresponding to gamma_c
-    Real nu_a{0};                    // Self-absorption frequency
-    Real nu_M{0};                    // Maximum photon frequency
+    Real nu_m{0};  // Characteristic frequency corresponding to gamma_m
+    Real nu_c{0};  // Cooling frequency corresponding to gamma_c
+    Real nu_a{0};  // Self-absorption frequency
+    Real nu_M{0};  // Maximum photon frequency
+
     Real log2_I_nu_peak{0};          // Log2 of peak intensity (for computational efficiency)
+    Real log2_nu_m{0};               // Log2 of nu_m
+    Real log2_nu_c{0};               // Log2 of nu_c
+    Real log2_nu_a{0};               // Log2 of nu_a
+    Real log2_nu_M{0};               // Log2 of nu_M
     const SynElectrons* e{nullptr};  // Pointer to the associated SynElectrons
 
     // Returns the intensity at a given frequency nu
-    Real compute_I_nu(Real nu) const;       // Linear intensity
-    Real compute_log2_I_nu(Real nu) const;  // Log2 intensity (for computational efficiency)
+    Real compute_I_nu(Real nu) const;            // Linear intensity
+    Real compute_log2_I_nu(Real log2_nu) const;  // Log2 intensity (for computational efficiency)
 
     // Updates internal constants used in the spectral calculations
     void update_constant();
 
    private:
     // Cached calculation constants for spectral computations
-    /*Real a_m_1_3{0};     // (nu_a / nu_m)^(1/3)
-    Real c_m_1_2{0};     // (nu_c / nu_m)^(1/2)
-    Real m_a_pa4_2{0};   // (nu_m / nu_a)^((p+4)/2)
-    Real a_m_mpa1_2{0};  // (nu_a / nu_m)^((-p+1)/2)
-    Real a_c_1_3{0};     // (nu_a / nu_c)^(1/3)
-    Real a_m_1_2{0};     // (nu_a / nu_m)^(1/2)
-    Real R4{0};          // R coefficient for case 4 (Bing Zhang's Book, page 199)
-    Real R6{0};          // R coefficient for case 6 (Bing Zhang's Book, page 200)*/
-
     // Optimized calculation constants
     Real C1_{0};  // Cached spectral coefficient 1
     Real C2_{0};  // Cached spectral coefficient 2
     Real C3_{0};  // Cached spectral coefficient 3
 
     // Log2 of calculation constants for faster computation
-    Real log_C1_{0};  // Log2 of C1_
-    Real log_C2_{0};  // Log2 of C2_
-    Real log_C3_{0};  // Log2 of C3_
+    Real log2_C1_{0};  //
+    Real log2_C2_{0};  //
+    Real log2_C3_{0};  //
+    Real log2_C4_{0};  //
 
     // Computes the photon spectrum at a given frequency nu
-    inline Real compute_spectrum(Real nu) const;       // Linear spectrum
-    inline Real compute_log2_spectrum(Real nu) const;  // Log2 spectrum
+    inline Real compute_spectrum(Real nu) const;            // Linear spectrum
+    inline Real compute_log2_spectrum(Real log2_nu) const;  // Log2 spectrum
 };
 
 /********************************************************************************************************************

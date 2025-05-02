@@ -24,6 +24,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
     Observer obs;
 
     obs.observe_at(t_obs, coord, f_shock, lumi_dist, z);
+
     // obs.observe(coord, f_shock, lumi_dist, z);
 
     auto syn_e = generate_syn_electrons(f_shock, p);
