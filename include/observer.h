@@ -35,7 +35,7 @@ class Observer {
     // Main observation function that sets up the observer's view of the simulation
     void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
-    // Configures observer to observe at specific time points
+    // Configures observer to observe at specific time points for possible performance boost
     void observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift);
 
     // Computes the specific flux at a single observed frequency
