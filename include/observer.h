@@ -180,7 +180,6 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
 
                 for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
                     Real const lg2_t_hi = lg2_t(i, j, k + 1);
-
                     if (lg2_t_hi < lg2_t_obs(t_idx)) {
                         continue;
                     } else {

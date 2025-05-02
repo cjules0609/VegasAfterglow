@@ -71,8 +71,7 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
 
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
                 Real r = shock.r(i_eff, j, k);
-                Real logD = lg2_doppler(i, j, k);
-                lg2_surface(i, j, k) = std::log2(dOmega * r * r) + 3 * logD;
+                lg2_surface(i, j, k) = std::log2(dOmega * r * r) + 3 * lg2_doppler(i, j, k);
             }
         }
     }
