@@ -1,6 +1,7 @@
 # setup.py (at root)
 from setuptools import setup, find_packages, Extension
 import os, platform
+import pybind11
 
 def find_sources():
     sources = ["pybind/pybind.cpp", "pybind/mcmc.cpp"]
@@ -21,7 +22,7 @@ ext_modules = [
     Extension(
         "VegasAfterglow.VegasAfterglowC",
         find_sources(),
-        include_dirs=["include", "external"],
+        include_dirs=[pybind11.get_include(),"include", "external"],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
         language="c++",
