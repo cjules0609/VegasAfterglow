@@ -178,7 +178,6 @@ Real SynElectrons::compute_column_num_den(Real gamma) const {
     } else {
         return column_num_den * compute_gamma_spectrum(gamma) * (1 + Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
-        // Above cooling Lorentz factor: include inverse Compton Y tilt correction
     }
 }
 
@@ -285,7 +284,6 @@ Real SynPhotons::compute_I_nu(Real nu) const {
     } else {
         return e->I_nu_peak * compute_spectrum(nu) * (1 + e->Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, nu, e->p));
-        // Above cooling frequency, include inverse Compton correction
     }
 }
 

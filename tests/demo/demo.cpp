@@ -40,6 +40,39 @@ void test_reverse_shock(double xi, double sigma) {
     return;
 }
 
+void test_spreading() {
+    Real E_iso = 1e51 * unit::erg;
+    Real theta_c = 10 * unit::deg;
+    Real theta_v = 0;
+
+    Real n_ism = 1 / unit::cm3;
+    Real eps_e = 1e-2;
+    Real eps_B = 1e-3;
+    Real Gamma0 = 300;
+    Real z = 0;
+
+    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e9 * unit::sec), 130);
+
+    ISM medium(n_ism);
+
+    Ejecta jet;
+
+    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.Gamma0 = math::tophat(theta_c, Gamma0);
+
+    jet.spreading = true;
+
+    size_t t_num = 64;
+    size_t theta_num = 64;
+    size_t phi_num = 64;
+
+    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, phi_num, theta_num, t_num);
+
+    auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
+
+    write_npz("spreading-data/shock", shock);
+}
+
 int main() {
     double xi[] = {0.001, 0.01, 0.1, 1, 10, 100};
     double sigma[] = {0, 0.0001, 0.01, 1, 100};
@@ -49,5 +82,8 @@ int main() {
             test_reverse_shock(x, s);
         }
     }
+
+    test_spreading();
+
     return 0;
 }
