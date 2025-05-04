@@ -11,7 +11,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Real lumi_dist = 1.23e26 * unit::cm;
 
-    Array t_obs = xt::logspace(std::log10(1e3 * unit::sec), std::log10(1e7 * unit::sec), 130);
+    Array t_obs = xt::logspace(std::log10(1e3 * unit::sec), std::log10(1e7 * unit::sec), 30);
 
     ISM medium(n_ism);
 

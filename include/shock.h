@@ -26,7 +26,11 @@ class Shock {
    public:
     // Constructor: Initialize with grid dimensions and energy fractions
     Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
-    Shock() = default;
+    Shock() noexcept = default;
+    Shock(Shock const& other) noexcept = default;
+    Shock(Shock&& other) noexcept = default;
+    Shock& operator=(Shock&& other) noexcept = default;
+    Shock& operator=(Shock const& other) noexcept = default;
 
     MeshGrid3d t_comv;          // Comoving time
     MeshGrid3d r;               // Radius
@@ -140,7 +144,8 @@ inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real 
     constexpr Real Q = 2.82842712475;
     Real u2 = Gamma * Gamma - 1;
     Real ratio = u2 / (Q * Q * theta_s * theta_s);
-    Real f = 1 / (1 + ratio);
+    Real x = theta / theta_s;
+    Real f = 1 / (1 + ratio) * x * x;
     return drdt / (2 * Gamma * r) * std::sqrt((2 * u2 + 3) / (4 * u2 + 3)) * f;
 }
 

@@ -51,7 +51,7 @@ void test_spreading() {
     Real Gamma0 = 300;
     Real z = 0;
 
-    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e9 * unit::sec), 130);
+    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e8 * unit::sec), 130);
 
     ISM medium(n_ism);
 
@@ -62,7 +62,7 @@ void test_spreading() {
 
     jet.spreading = true;
 
-    size_t t_num = 64;
+    size_t t_num = 256;
     size_t theta_num = 64;
     size_t phi_num = 64;
 

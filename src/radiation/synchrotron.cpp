@@ -19,7 +19,7 @@
  * DESCRIPTION: Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
  *              Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
  ********************************************************************************************************************/
-InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) {
+InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcept {
     gamma_hat_m = con::me * con::c2 / con::h / nu_m;  // Compute minimum characteristic Lorentz factor
     gamma_hat_c = con::me * con::c2 / con::h / nu_c;  // Compute cooling characteristic Lorentz factor
     this->Y_T = Y_T;                                  // Set the Thomson Y parameter
@@ -37,7 +37,7 @@ InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) {
  * CONSTRUCTOR: InverseComptonY::InverseComptonY(Real Y_T)
  * DESCRIPTION: Simple constructor that initializes with only the Thomson Y parameter for special cases.
  ********************************************************************************************************************/
-InverseComptonY::InverseComptonY(Real Y_T) {
+InverseComptonY::InverseComptonY(Real Y_T) noexcept {
     this->Y_T = Y_T;  // Set the Thomson Y parameter
     regime = 3;       // Set regime to 3 (special case)
 }
@@ -46,7 +46,7 @@ InverseComptonY::InverseComptonY(Real Y_T) {
  * CONSTRUCTOR: InverseComptonY::InverseComptonY()
  * DESCRIPTION: Default constructor that initializes all member variables to zero.
  ********************************************************************************************************************/
-InverseComptonY::InverseComptonY() {
+InverseComptonY::InverseComptonY() noexcept {
     nu_hat_m = 0;
     nu_hat_c = 0;
     gamma_hat_m = 0;

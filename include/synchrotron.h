@@ -19,9 +19,9 @@
 struct InverseComptonY {
     // Constructors
     InverseComptonY(Real nu_m, Real nu_c, Real B,
-                    Real Y_T);  // Constructor with frequency thresholds and magnetic field
-    InverseComptonY(Real Y_T);  // Constructor with only Y_T parameter
-    InverseComptonY();          // Default constructor
+                    Real Y_T) noexcept;  // Constructor with frequency thresholds and magnetic field
+    InverseComptonY(Real Y_T) noexcept;  // Constructor with only Y_T parameter
+    InverseComptonY() noexcept;          // Default constructor
 
     // Member variables
     Real nu_hat_m{0};     // Frequency threshold for minimum electrons
