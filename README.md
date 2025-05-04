@@ -1,6 +1,6 @@
 # VegasAfterglow
 
-**VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It supports both **relativistic and non-relativistic** regimes and provides a **flexible, user-configurable** approach for computing light curves and spectra. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models.
+**VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It supports both **relativistic and non-relativistic** regimes and provides a **flexible, user-configurable** approach for computing light curves and spectra. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models. A Python wrapper is included to streamline configuration and usability.
 
 ## Features
 
@@ -25,100 +25,82 @@
 
 ## Installation
 
-VegasAfterglow requires **C++17** and **Make**. To compile:
+VegasAfterglow C++ source code is precompiled and wrapped in Python for immediate usage! 
 
-```sh
+1. Clone this repository:
+```bash
 git clone https://github.com/YihanWangAstro/VegasAfterglow.git
+```
+
+2. *(Optional)* Create and activate a virtual environment:
+```bash
+python -m venv vegasafterglow
+source vegasafterglow/bin/activate      # On Windows: vegasafterglow\Scripts\activate
+```
+
+3. Navigate to the file directory and install the Python package
+```bash
 cd VegasAfterglow
-make -j$(nproc)  # Use all available cores
+pip install -e .
 ```
 
 ## Usage
 
-### Simulation Pipeline
+VegasAfterglow includes a Jupyter Notebook script to fit afterglow light curves and spectra to user-provided data using MCMC. You can run it using either:
 
-1. **Shock Dynamics**  
-   - Compute the forward and reverse shock evolution.
-   
-2. **Electron Distribution**  
-   - Solve for the electron energy distribution.
+- **Option 1:** Jupyter Notebook (standalone)
+- **Option 2:** Visual Studio Code (VSCode) with the Jupyter extension
 
-3. **Photon Emission**  
-   - Compute synchrotron and inverse Compton radiation.
+Choose one of the two methods below:
 
-4. **Observation**  
-   - Generate light curves and spectra for a given observer.
+---
 
-### Example Simulation
+### ✅ Option 1: Run with **Jupyter Notebook**
 
-```cpp
-size_t r_num = 32, theta_num = 32, phi_num = 32;
-double n_ism = 1 / con::cm3, eps_e = 0.1, eps_B = 1e-3, p = 2.3;
-double E_iso = 1e53 * con::erg, Gamma0 = 300, theta_c = 0.1, theta_w =0.6, theta_v = 0.2;
-
-// Define Medium & Jet
-Medium medium;
-medium.rho = evn::ISM(n_ism);
-
-Ejecta jet;
-jet.dE0dOmega = math::gaussian(theta_c, E_iso / (4 * con::pi));
-jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-
-// Create computational grid
-Array t_obs = logspace(1e3 * con::sec, 1e7 * con::sec, 50);
-Coord coord = autoGrid(jet, t_obs, theta_w, theta_v, phi_num, theta_num, r_num);
-
-// Generate shocks
-Shock f_shock = genForwardShock(coord, medium, jet, eps_e, eps_B);
-
-// Compute electron distribution
-auto syn_e = genSynElectrons(f_shock, p);
-
-// Compute emitted photons
-auto syn_ph = genSynPhotons(f_shock, syn_e);
-
-// Setup observer
-double lumi_dist = 1.23e26 * con::cm;
-
-double z = 0.009;
-
-Observer obs(coord, f_shock, theta_v, lumi_dist, z);
-
-// Compute flux
-Array F_nu = obs.specificFlux(t_obs, 1e17*con::Hz, syn_ph);
-
-// Output results
-output(t_obs, "t_obs", con::sec);
-output(F_nu, "light_curve", con::erg / con::cm / con::cm / con::sec / con::Hz);
-
+1. Install Jupyter Notebook
+```bash
+pip install jupyter notebook
 ```
+
+2. Launch Jupyter Notebook:
+```bash
+jupyter notebook
+```
+
+3. In your browser, open `mcmc.ipynb` inside the `scripts/` directory
+
+### ✅ Option 2: Run with **VSCode + Jupyter Extension**
+
+1. Install [Visual Studio Code](https://code.visualstudio.com/) and the **Jupyter extension**:
+  - Open VSCode
+  - Go to the **Extensions** panel (or press `Cmd+Shift+X` on MacOS, `Ctrl+Shift+X` on Windows)
+  - Search for **"Jupyter"** and click **Install**
+
+2. Open the VegasAfterglow folder in VSCode:
+  - Go to **File > Open Folder** and select the cloned `VegasAfterglow` repository.
+
+3. Open `mcmc.ipynb` inside the `scripts/` directory.
+
+---
+
+Within `mcmc.ipynb`, follow the inline comments for instructions on running the MCMC script.
 
 ## Directory Structure
 
 ```
 VegasAfterglow/
+│── external/            # External dependencies
 │── include/             # Header files
+│── pybind/              # Python wrapper files
+│── python/              # Python class definitions
+│── script/              # MCMC script
 │── src/                 # Implementation files
 │── tests/               # Unit tests & validation cases
-│── boost/               # Header-only Boost.Odeint (manually included)
-│── examples/            # Example simulations
 │── docs/                # Documentation
 │── Makefile             # Build system
+│── pyproject.toml       # Python metadata and build system configuration
 │── README.md            # Project documentation
-```
-
-## Compilation
-
-The project uses a **Makefile** for building. To compile:
-
-```sh
-make -j$(nproc)
-```
-
-To clean the build:
-
-```sh
-make clean
+│── setup.py             # Python setup script
 ```
 
 ## Contributing
