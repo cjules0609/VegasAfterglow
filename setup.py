@@ -49,22 +49,4 @@ ext_modules = [
     )
 ]
 
-setup(
-    name="VegasAfterglow",
-    version="0.1.0",
-    description="MCMC tools for astrophysics",
-    author="Yihan Wang, Connery Chen & Bing Zhang",
-    author_email="yihan.astro@gmail.com",
-    packages=["VegasAfterglow"],
-    package_dir={"VegasAfterglow": "python"},
-    ext_modules=ext_modules,
-    install_requires=[
-        "numpy>=1.19",
-        "pandas>=1.1",
-        "emcee>=3.0",
-        "pybind11>=2.6.0",
-        "corner>=2.2.1",
-        "tqdm>=4.0"
-    ],
-    python_requires=">=3.8",
-)
+setup(ext_modules=ext_modules)

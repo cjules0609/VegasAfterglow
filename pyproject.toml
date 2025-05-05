@@ -1,7 +1,24 @@
 [build-system]
-requires = [
-    "setuptools>=42", 
-    "wheel", 
-    "pybind11>=2.6.0"
-]
+requires = ["setuptools>=61", "wheel", "pybind11>=2.6.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "VegasAfterglow"
+version = "0.1.0"
+description = "MCMC tools for astrophysics"
+authors = [
+  { name = "Yihan Wang" },
+  { name = "Connery Chen" },
+  { name = "Bing Zhang" }
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "numpy>=1.19",
+  "pandas>=1.1",
+  "emcee>=3.0",
+  "pybind11>=2.6.0",
+  "corner>=2.2.1",
+  "tqdm>=4.0"
+]
