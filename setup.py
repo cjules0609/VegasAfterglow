@@ -9,6 +9,12 @@ def find_sources():
         for fn in files:
             if fn.endswith(".cpp"):
                 sources.append(os.path.join(root, fn))
+
+    zlib_dir = os.path.join("external", "zlib")
+    for fn in os.listdir(zlib_dir):
+        if fn.endswith(".c"):
+            sources.append(os.path.join(zlib_dir, fn))
+
     return sources
 
 system = platform.system()
@@ -41,7 +47,8 @@ ext_modules = [
         include_dirs=[
             pybind11.get_include(),
             "include",
-            "external"
+            "external",
+            "external/zlib"
         ],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
