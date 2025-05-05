@@ -32,7 +32,7 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse
 
         env:
-          CIBW_BUILD: "cp37-* cp38-* cp39-* cp310-* cp311-*"
+          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
           CIBW_SKIP: "pp* cp36-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_ARCHS_MACOS: universal2

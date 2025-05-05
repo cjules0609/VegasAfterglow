@@ -46,8 +46,8 @@ setup(
         "pandas>=1.1",
         "emcee>=3.0",
         "pybind11>=2.6.0",
-        "corner>=2.2.3",
+        "corner>=2.2.1",
         "tqdm>=4.0"
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
 )
