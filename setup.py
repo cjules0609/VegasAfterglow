@@ -25,13 +25,13 @@ if system == "Linux":
 
 elif system == "Darwin":
     extra_compile_args = ["-std=c++20", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
-    extra_link_args = ["-lz", "-undefined", "dynamic_lookup"]
+    extra_link_args = ["-undefined", "dynamic_lookup"]
     # Don't use -march=native for universal builds
     if "-arch arm64" not in archflags or "-arch x86_64" not in archflags:
         extra_compile_args.append("-march=native")
 
 elif system == "Windows":
-    extra_compile_args = ["/std:c++20", "/O2", "/DNDEBUG", "/fp:fast"]
+    extra_compile_args = ["/std:c++20", "/O2", "/DNDEBUG", "/fp:fast", "/D_USE_ZLIB"]
     extra_link_args = []
 
 ext_modules = [

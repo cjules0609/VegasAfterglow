@@ -18,25 +18,54 @@ namespace strict_fstream {
 
     /// Overload of error-reporting function, to enable use with VS.
     /// Ref: http://stackoverflow.com/a/901316/717706
+    /* static std::string strerror() {
+         std::string buff(80, '\0');
+ #ifdef _WIN32
+         if (strerror_s(&buff[0], buff.size(), errno) != 0) {
+             buff = "Unknown error";
+         }
+ #elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE || defined(__APPLE__)
+         // XSI-compliant strerror_r()
+         if (strerror_r(errno, &buff[0], buff.size()) != 0) {
+             buff = "Unknown error";
+         }
+ #else
+         // GNU-specific strerror_r()
+         auto p = strerror_r(errno, &buff[0], buff.size());
+         std::string tmp(p, std::strlen(p));
+         std::swap(buff, tmp);
+ #endif
+         buff.resize(buff.find('\0'));
+         return buff;
+     }*/
     static std::string strerror() {
         std::string buff(80, '\0');
+
 #ifdef _WIN32
         if (strerror_s(&buff[0], buff.size(), errno) != 0) {
-            buff = "Unknown error";
+            return "Unknown error";
         }
-#elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE || defined(__APPLE__)
-        // XSI-compliant strerror_r()
-        if (strerror_r(errno, &buff[0], buff.size()) != 0) {
-            buff = "Unknown error";
-        }
-#else
-        // GNU-specific strerror_r()
-        auto p = strerror_r(errno, &buff[0], buff.size());
-        std::string tmp(p, std::strlen(p));
-        std::swap(buff, tmp);
-#endif
-        buff.resize(buff.find('\0'));
+        buff.resize(std::strlen(buff.c_str()));
         return buff;
+
+#elif defined(__GLIBC__) && !defined(__APPLE__)
+        // GNU-specific strerror_r (returns char*)
+        char* msg = strerror_r(errno, &buff[0], buff.size());
+        if (msg) {
+            return std::string(msg);
+        } else {
+            return "Unknown error";
+        }
+
+#else
+        // POSIX-compliant strerror_r (returns int)
+        if (strerror_r(errno, &buff[0], buff.size()) != 0) {
+            return "Unknown error";
+        }
+        buff.resize(std::strlen(buff.c_str()));
+        return buff;
+
+#endif
     }
 
     /// Exception class thrown by failed operations.
