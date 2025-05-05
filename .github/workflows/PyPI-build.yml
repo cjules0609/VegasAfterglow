@@ -119,30 +119,7 @@ jobs:
           python -m pip install build
           python -m build --sdist --outdir dist/
 
-      # 4. Fix wheel metadata if needed
-      - name: Fix wheel metadata
-        run: |
-          pip install wheel
-          mkdir -p fixed_dist
-          for whl in dist/*.whl; do
-            echo "Fixing metadata in $whl"
-            wheel unpack "$whl" -d temp_wheel
-            # Remove problematic lines from METADATA
-            cd temp_wheel/*/
-            if grep -q "License-File:" *.dist-info/METADATA; then
-              grep -v "License-File:" *.dist-info/METADATA > temp_metadata
-              mv temp_metadata *.dist-info/METADATA
-              echo "Fixed license-file entry in METADATA"
-            fi
-            cd ../..
-            wheel pack temp_wheel/*/ -d fixed_dist/
-            rm -rf temp_wheel
-          done
-          cp dist/*.tar.gz fixed_dist/
-          rm -rf dist
-          mv fixed_dist dist
-
-      # 5. Validate and upload everything
+      # 4. Validate and upload everything
       - name: Upload to PyPI
         run: |
           pip install twine
