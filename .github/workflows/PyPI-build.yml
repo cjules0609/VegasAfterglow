@@ -9,7 +9,7 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    continue-on-error: false  
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -67,8 +67,8 @@ jobs:
 
       - name: Install tools and clean build
         run: |
-          pip install --upgrade pip setuptools>=61 wheel cibuildwheel
-          python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ['build', 'dist', 'VegasAfterglow.egg-info']]"
+          python -m pip install --upgrade pip setuptools wheel cibuildwheel
+          python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ['build','dist','VegasAfterglow.egg-info']]"
 
       - name: Build wheels (Windows)
         run: python -m cibuildwheel --platform windows --output-dir wheelhouse
