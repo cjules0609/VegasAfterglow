@@ -61,7 +61,7 @@ This extreme performance comes from careful algorithm design, vectorization, and
 
 VegasAfterglow requires the following to build: 
 
-> For Python users, unless you want to build the Python package from source, you can skip this section. These system toolsare typically provided by your operating system. You can skip this section unless your operating system is out of date.
+> For Python users, unless you want to build the Python package from source, you can skip this section. These system tools are typically provided by your operating system. You can skip this section unless your operating system is out of date.
 
 - **C++20 compatible compiler**:
   - **Linux**: GCC 10+ or Clang 10+
