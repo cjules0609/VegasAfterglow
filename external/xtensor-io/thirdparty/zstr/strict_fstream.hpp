@@ -15,6 +15,8 @@
  * - turn on the badbit in the exception mask
  */
 namespace strict_fstream {
+    template <typename T>
+    constexpr bool returns_char_ptr = std::is_same<T, char*>::value;
 
     /// Overload of error-reporting function, to enable use with VS.
     /// Ref: http://stackoverflow.com/a/901316/717706
@@ -31,8 +33,25 @@ namespace strict_fstream {
         }
 #else
         // GNU-specific strerror_r()
-        auto p = strerror_r(errno, &buff[0], buff.size());
-        std::swap(buff, tmp);
+        // auto p = strerror_r(errno, &buff[0], buff.size());
+        // std::string tmp(p, std::strlen(p));
+        // std::swap(buff, tmp);
+
+        using strerror_r_type = decltype(strerror_r(errno, &buff[0], buff.size()));
+        if constexpr (std::is_same_v<strerror_r_type, int>) {
+            // POSIX strerror_r
+            if (strerror_r(errno, &buff[0], buff.size()) != 0) {
+                return "Unknown error";
+            }
+        } else {
+            // GNU strerror_r
+            char* msg = strerror_r(errno, &buff[0], buff.size());
+            if (msg) {
+                return std::string(msg);
+            } else {
+                return "Unknown error";
+            }
+        }
 
 #endif
         buff.resize(buff.find('\0'));
