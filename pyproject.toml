@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 zip-safe = false
-license-files = ["LICENSE"]
 
 [tool.setuptools.package-dir]
 "VegasAfterglow" = "python"
