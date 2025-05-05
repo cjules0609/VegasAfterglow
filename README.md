@@ -8,6 +8,19 @@
 <img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
 </div>
 
+## Table of Contents
+
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Python Installation](#python-installation)
+  - [C++ Installation](#c-installation)
+- [Usage](#usage)
+  - [MCMC Parameter Fitting](#mcmc-parameter-fitting-with-vegasafterglow)
+  - [Custom C++ Applications](#creating-custom-problem-generators-with-c)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Features
 
 - **Forward and Reverse Shock Modeling**  
@@ -28,6 +41,21 @@
 - **Inverse Compton Scattering (IC)**  
   - Supports **forward SSC**, **reverse SSC**, and **pairwise IC** between forward and reverse shock electrons and photons.
   - Includes **Klein-Nishina corrections** for IC cooling.
+
+### Performance Highlights
+
+<div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #4682b4;">
+
+VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
+
+- **Ultra-fast model evaluation**: Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in just **0.6ms** on an Apple M2 chip
+- **Rapid MCMC exploration**: Complete 10,000-step parameter estimation with 8 parameters against 20 data points in:
+  - **10 seconds** for on-axis GRB cases
+  - **30 seconds** for more complex off-axis cases
+- **Optimized for interactive analysis**: Perform comprehensive Bayesian inference in seconds rather than hours or days, enabling rapid iteration through different physical scenarios
+
+This extreme performance comes from careful algorithm design, vectorization, and memory optimization, making VegasAfterglow suitable for both individual event analysis and large population studies.
+</div>
 
 ## Prerequisites
 
@@ -101,40 +129,12 @@ cd VegasAfterglow
 ```bash
 make lib
 ```
-Then you can write your own C++ problem generator and use the provided VegasAfterglow interfaces to do afterglow modeling by linking the VegasAfterglow library. (See more details in the [C++ API] section, or just take a look at the example problem generator under `tests/demo/` to see how to use the VegasAfterglow interfaces.)
+Then you can write your own C++ problem generator and use the provided VegasAfterglow interfaces to do afterglow modeling by linking the VegasAfterglow library. (See more details in the [Creating Custom Problem Generators with C++](#creating-custom-problem-generators-with-c) section, or just take a look at the example problem generator under `tests/demo/` to see how to use the VegasAfterglow interfaces.)
 
 3. (Optional) Compile and run tests:
 ```bash
 make tests
 ```
-
-### Creating Custom Problem Generators with C++
-
-After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
-
-1. **Include necessary headers**
-```cpp
-#include "afterglow.h"              // Afterglow models
-```
-
-2. **Define your problem configuration**
-```cpp
-
-```
-
-3. **Compute radiation and create light curves/spectra**
-```cpp
-
-```
-
-4. **Building Custom Applications**
-```bash
-g++ -std=c++20 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
-```
-
-5. **Example Problem Generators**
-The repository includes several example problem generators in the `tests/demo/` directory that demonstrate different use cases:
-
 
 ## Usage
 
@@ -183,21 +183,6 @@ jupyter notebook
 
 This section guides you through using the MCMC (Markov Chain Monte Carlo) module in VegasAfterglow to explore parameter space and determine posterior distributions for GRB afterglow models. Rather than just finding a single best-fit solution, MCMC allows you to quantify parameter uncertainties and understand correlations between different physical parameters.
 
-### Performance Highlights
-
-<div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #4682b4;">
-
-VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
-
-- **Ultra-fast model evaluation**: Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in just **0.6ms** on an Apple M2 chip
-- **Rapid MCMC exploration**: Complete 10,000-step parameter estimation with 8 parameters against 20 data points in:
-  - **10 seconds** for on-axis GRB cases
-  - **30 seconds** for more complex off-axis cases
-- **Optimized for interactive analysis**: Perform comprehensive Bayesian inference in seconds rather than hours or days, enabling rapid iteration through different physical scenarios
-
-This extreme performance comes from careful algorithm design, vectorization, and memory optimization, making VegasAfterglow suitable for both individual event analysis and large population studies.
-</div>
-
 ### Overview
 
 The MCMC module follows these key steps:
@@ -214,9 +199,6 @@ from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale
 ### 1. Preparing Your Data
 
 VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (flux vs. time) and spectra (flux vs. frequency) in multiple ways.
-
-<details open>
-<summary><b>Using the ObsData Interface:</b></summary>
 
 ```python
 # Create an instance to store observational data
@@ -251,14 +233,10 @@ for nu, fname in zip(bands, lc_files):
 ```
 
 > **Note:** The `ObsData` interface is designed to be flexible. You can mix and match different data sources, and add multiple light curves at different frequencies as well as multiple spectra at different times.
-</details>
 
 ### 2. Configuring the Model
 
 The `Setups` class defines the global properties and environment for your model. These settings remain fixed during the MCMC process.
-
-<details open>
-<summary><b>Setting up the model configuration:</b></summary>
 
 ```python
 cfg = Setups()
@@ -286,14 +264,10 @@ cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or 
 </div>
 
 These settings affect how the model is calculated but are not varied during the MCMC process, allowing you to focus on exploring the most relevant physical parameters.
-</details>
 
 ### 3. Defining Parameters
 
 The `ParamDef` class is used to define the parameters for MCMC exploration. Each parameter requires a name, initial value, prior range, and sampling scale:
-
-<details open>
-<summary><b>Setting up MCMC parameters:</b></summary>
 
 ```python
 mc_params = [
@@ -325,7 +299,6 @@ The parameters you include depend on your model configuration:
 - For "ISM" medium: use `n_ism` parameter instead
 - Different jet structures may require different parameters
 </div>
-</details>
 
 ### 4. Running the MCMC Fitting
 
@@ -396,8 +369,7 @@ spec_best = fitter.spectra(result.best_params, nu_out, times)
 
 ### 7. Visualizing Results
 
-<details>
-<summary><b>Creating Corner Plots</b></summary>
+#### Creating Corner Plots
 
 Corner plots are essential for visualizing parameter correlations and posterior distributions:
 
@@ -425,10 +397,8 @@ def plot_corner(flat_chain, labels, filename="corner_plot.png"):
 flat_chain = result.samples.reshape(-1, result.samples.shape[-1])
 plot_corner(flat_chain, result.labels)
 ```
-</details>
 
-<details>
-<summary><b>Creating Trace Plots</b></summary>
+#### Creating Trace Plots
 
 Trace plots help verify MCMC convergence:
 
@@ -449,7 +419,6 @@ def plot_trace(chain, labels, filename="trace_plot.png"):
 # Create the trace plot
 plot_trace(result.samples, result.labels)
 ```
-</details>
 
 ### 8. Tips for Effective Posterior Exploration
 
@@ -462,27 +431,54 @@ plot_trace(result.samples, result.labels)
 5. **Physical Interpretation**: Connect parameter constraints with physical processes in GRB afterglows
 </div>
 
-## Directory Structure
+## Creating Custom Problem Generators with C++
 
+After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
+
+### 1. Include necessary headers
+
+```cpp
+#include "afterglow.h"              // Afterglow models
 ```
-VegasAfterglow/
-│── external/            # External dependencies
-│── include/             # Header files
-│── pybind/              # Python wrapper files
-│── python/              # Python class definitions
-│── script/              # MCMC script
-│── src/                 # Implementation files
-│── tests/               # Unit tests & validation cases
-│── docs/                # Documentation
-│── Makefile             # Build system
-│── pyproject.toml       # Python metadata and build system configuration
-│── README.md            # Project documentation
-│── setup.py             # Python setup script
+
+### 2. Define your problem configuration
+
+```cpp
+// Example configuration code will be added in future documentation
 ```
+
+### 3. Compute radiation and create light curves/spectra
+
+```cpp
+// Example light curve calculation code will be added in future documentation
+```
+
+### 4. Building Custom Applications
+
+```bash
+g++ -std=c++20 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
+```
+
+### 5. Example Problem Generators
+
+The repository includes several example problem generators in the `tests/demo/` directory that demonstrate different use cases.
 
 ## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
+If you encounter any issues, have questions about the code, or want to request new features:
+
+1. **GitHub Issues** - The most straightforward and fastest way to get help:
+   - Open an issue at [https://github.com/YihanWangAstro/VegasAfterglow/issues](https://github.com/YihanWangAstro/VegasAfterglow/issues)
+   - You can report bugs, suggest features, or ask questions
+   - This allows other users to see the problem/solution as well
+   - Can be done anonymously if preferred
+
+2. **Pull Requests** - If you've implemented a fix or feature:
+   - Fork the repository
+   - Create a branch for your changes
+   - Submit a pull request with your changes
+
+We value all contributions and aim to respond to issues promptly.
 
 ## License
 
