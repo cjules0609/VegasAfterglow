@@ -1,6 +1,21 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "pybind11>=2.6.0"]
+requires = ["setuptools>=61", "wheel", "pybind11>=2.6.0", "ninja"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+license-files = ["LICENSE"]
+
+[tool.setuptools.package-dir]
+"VegasAfterglow" = "python"
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["VegasAfterglow*"]
+
+[tool.cibuildwheel]
+environment = { PIP_NO_COMPILE="1", CMAKE_GENERATOR="Ninja" }
+test-command = "python -c 'import VegasAfterglow'"
 
 [project]
 name = "VegasAfterglow"
@@ -11,7 +26,7 @@ authors = [
   { name = "Connery Chen" },
   { name = "Bing Zhang" }
 ]
-license = { file = "LICENSE" }
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -21,4 +36,11 @@ dependencies = [
   "pybind11>=2.6.0",
   "corner>=2.2.1",
   "tqdm>=4.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "ninja",
+  "pytest",
+  "black"
 ]
