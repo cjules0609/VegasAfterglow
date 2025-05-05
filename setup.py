@@ -20,13 +20,12 @@ def find_sources():
 
     return cpp_sources + c_sources, c_sources
 
+extra_compile_args = []
+extra_link_args = []
+
 sources, c_sources = find_sources()
 system = platform.system()
 archflags = os.environ.get("ARCHFLAGS", "")
-
-# Common flags
-compile_args_cpp = []
-compile_args_c = []
 
 if system == "Linux":
     compile_args_cpp = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
@@ -53,13 +52,22 @@ class CustomBuildExt(build_ext):
     def build_extensions(self):
         c_flags = compile_args_c
         cpp_flags = compile_args_cpp
+
         for ext in self.extensions:
-            ext.extra_compile_args = []
+            objects = []
             for src in ext.sources:
-                if src in c_sources:
-                    ext.extra_compile_args.append(c_flags)
-                else:
-                    ext.extra_compile_args.append(cpp_flags)
+                flags = c_flags if src in c_sources else cpp_flags
+                obj = self.compiler.compile(
+                    [src],
+                    output_dir=self.build_temp,
+                    include_dirs=ext.include_dirs,
+                    extra_postargs=flags,
+                    depends=ext.depends,
+                )
+                objects.extend(obj)
+
+            ext.extra_objects = objects
+            ext.sources = []  # Prevent double-compilation
         build_ext.build_extensions(self)
 
 ext_modules = [
