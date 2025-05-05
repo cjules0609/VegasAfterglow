@@ -53,14 +53,14 @@ class Ejecta {
 class TophatJet {
    public:
     // Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
-    constexpr TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
+    TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
     // Energy per solid angle as a function of phi and theta
-    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
+    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
 
     // Initial Lorentz factor as a function of phi and theta
-    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
+    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
     // Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -82,18 +82,14 @@ class TophatJet {
 class GaussianJet {
    public:
     // Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
-    constexpr GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
+    GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
         : norm_(-1 / (2 * theta_c * theta_c)), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
     // Energy per solid angle as a function of phi and theta, with Gaussian falloff
-    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept {
-        return eps_k_ * fast_exp(theta * theta * norm_);
-    }
+    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return eps_k_ * fast_exp(theta * theta * norm_); }
 
     // Initial Lorentz factor as a function of phi and theta, with Gaussian falloff
-    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept {
-        return Gamma0_ * fast_exp(theta * theta * norm_);
-    }
+    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return Gamma0_ * fast_exp(theta * theta * norm_); }
 
     // Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -115,18 +111,14 @@ class GaussianJet {
 class PowerLawJet {
    public:
     // Constructor: Initialize with core angle, isotropic energy, initial Lorentz factor, and power-law index
-    constexpr PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
+    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
 
     // Energy per solid angle as a function of phi and theta, with power-law falloff
-    constexpr inline Real eps_k(Real /*phi*/, Real theta) const noexcept {
-        return eps_k_ * fast_pow(theta / theta_c_, -k_);
-    }
+    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return eps_k_ * fast_pow(theta / theta_c_, -k_); }
 
     // Initial Lorentz factor as a function of phi and theta, with power-law falloff
-    constexpr inline Real Gamma0(Real /*phi*/, Real theta) const noexcept {
-        return Gamma0_ * fast_pow(theta / theta_c_, -k_);
-    }
+    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return Gamma0_ * fast_pow(theta / theta_c_, -k_); }
 
     // Duration of the ejecta in seconds
     Real T0{1 * unit::sec};

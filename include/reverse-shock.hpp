@@ -25,13 +25,13 @@ struct ReverseState {
 
     union {
         struct {
-            Real width_shell{0};  // Width of the shell
-            Real m3{0};           // Shocked ejecta mass per solid angle
-            Real r{0};            // Radius
-            Real t_comv{0};       // Comoving time
-            Real theta{0};        // Angular coordinate theta
-            Real eps_shell{0};    // energy of shell per solid angle
-            Real m_shell{0};      // shell mass per solid angle
+            Real width_shell;  // Width of the shell
+            Real m3;           // Shocked ejecta mass per solid angle
+            Real r;            // Radius
+            Real t_comv;       // Comoving time
+            Real theta;        // Angular coordinate theta
+            Real eps_shell;    // energy of shell per solid angle
+            Real m_shell;      // shell mass per solid angle
         };
         array_type data;
     };
