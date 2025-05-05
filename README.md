@@ -175,8 +175,7 @@ VegasAfterglow provides flexible options for loading observational data through 
 # Create an instance to store observational data
 data = ObsData()
 
-# Method 1: Add data directly from lists or numpyarrays
-import numpy as np
+# Method 1: Add data directly from lists or numpy arrays
 
 # For light curves
 t_data = [1e3, 2e3, 5e3, 1e4, 2e4]  # Time in seconds

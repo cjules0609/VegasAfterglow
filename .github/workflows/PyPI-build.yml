@@ -113,18 +113,16 @@ jobs:
           name: wheels-windows
           path: dist/
 
-      # 3. Build source distribution (sdist)
       - name: Build source distribution
         run: |
           python -m pip install build
           python -m build --sdist --outdir dist/
 
-      # 4. Validate and upload everything
       - name: Upload to PyPI
         run: |
           pip install twine
           python -m pip install --upgrade twine build setuptools wheel
-          twine check dist/*
+          twine check "dist/**/*"
           twine upload dist/*
         env:
           TWINE_USERNAME: __token__
