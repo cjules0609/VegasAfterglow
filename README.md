@@ -173,7 +173,7 @@ from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale
 
 ### 1. Preparing Your Data
 
-VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (flux vs. time) and spectra (flux vs. frequency) in multiple ways.
+VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (specificflux vs. time) and spectra (specific flux vs. frequency) in multiple ways.
 
 ```python
 # Create an instance to store observational data
