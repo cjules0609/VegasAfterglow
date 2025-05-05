@@ -1,4 +1,4 @@
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 import os
 import platform
 import pybind11
@@ -49,4 +49,35 @@ ext_modules = [
     )
 ]
 
-setup(ext_modules=ext_modules)
+setup(
+    name="VegasAfterglow",
+    version="0.1.0",
+    description="MCMC tools for astrophysics",
+    long_description=open("README.md", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
+    author="Yihan Wang, Connery Chen, Bing Zhang",
+
+    license="MIT",
+    license_files=["LICENSE"],
+
+    python_requires=">=3.8",
+    install_requires=[
+        "numpy>=1.19",
+        "pandas>=1.1",
+        "emcee>=3.0",
+        "pybind11>=2.6.0",
+        "corner>=2.2.1",
+        "tqdm>=4.0",
+        "scipy>=1.10",
+    ],
+    extras_require={
+        "dev": ["ninja", "pytest", "black"],
+    },
+
+    packages=find_packages(where="python"),
+    package_dir={"": "python"},
+
+    ext_modules=ext_modules,
+    zip_safe=False,
+    include_package_data=True,
+    )
