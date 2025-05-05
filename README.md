@@ -98,7 +98,7 @@ git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 2. Navigate to the directory and install the Python package:
 ```bash
 cd VegasAfterglow
-pip install -e .
+pip install .
 ```
 
 ### C++ Installation
@@ -169,27 +169,29 @@ from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale
 
 ### 1. Preparing Your Data
 
-VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (specificflux vs. time) and spectra (specific flux vs. frequency) in multiple ways.
+VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (specific flux vs. time) and spectra (specific flux vs. frequency) in multiple ways.
 
 ```python
 # Create an instance to store observational data
 data = ObsData()
 
-# Method 1: Add data directly from arrays
+# Method 1: Add data directly from lists or numpyarrays
 import numpy as np
 
 # For light curves
-t_data = np.array([1e3, 2e3, 5e3, 1e4, 2e4])  # Time in seconds
-flux_data = np.array([1e-26, 8e-27, 5e-27, 3e-27, 2e-27])  # Specific flux in erg/cm²/s/Hz
-flux_err = np.array([1e-28, 8e-28, 5e-28, 3e-28, 2e-28])  # Specific flux error
+t_data = [1e3, 2e3, 5e3, 1e4, 2e4]  # Time in seconds
+flux_data = [1e-26, 8e-27, 5e-27, 3e-27, 2e-27]  # Specific flux in erg/cm²/s/Hz
+flux_err = [1e-28, 8e-28, 5e-28, 3e-28, 2e-28]  # Specific flux error in erg/cm²/s/Hz
 data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err)
 
 # For spectra
-nu_data = np.logspace(9, 18, 10)  # Frequencies in Hz
-spectrum_data = np.array([...])  # Specific flux values in erg/cm²/s/Hz
-spectrum_err = np.array([...])   # Specific flux errors in erg/cm²/s/Hz
+nu_data = [...]  # Frequencies in Hz
+spectrum_data = [...] # Specific flux values in erg/cm²/s/Hz
+spectrum_err = [...]   # Specific flux errors in erg/cm²/s/Hz
 data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_err)
+```
 
+```python
 # Method 2: Load from CSV files
 import pandas as pd
 
@@ -201,6 +203,14 @@ lc_files = ["data/ep.csv", "data/r.csv"]
 for nu, fname in zip(bands, lc_files):
     df = pd.read_csv(fname)
     data.add_light_curve(nu_cgs=nu, t_cgs=df["t"], Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
+
+times = [3000,6000] # Example: time in seconds
+spec_files = ["data/spec_1.csv", "data/spec_2.csv"]
+
+# Load spectra from files
+for t, fname in zip(times, spec_files):
+    df = pd.read_csv(fname)
+    data.add_spectrum(t_cgs=t, nu_cgs=df["nu"], Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
 ```
 
 > **Note:** The `ObsData` interface is designed to be flexible. You can mix and match different data sources, and add multiple light curves at different frequencies as well as multiple spectra at different times.

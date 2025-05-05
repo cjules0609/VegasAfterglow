@@ -28,7 +28,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_SKIP: "*-manylinux_i686 *-musllinux_*"
           # Optimize build speed
-          CIBW_ENVIRONMENT: "MAKEFLAGS='-j$(nproc)' CMAKE_BUILD_PARALLEL_LEVEL=$(nproc)"
+          CIBW_ENVIRONMENT: "MAKEFLAGS='-j$(nproc)' CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rm -rf {package}/build"
 
       - uses: actions/upload-artifact@v4
@@ -55,7 +55,7 @@ jobs:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_ARCHS_MACOS: universal2
           # Optimize build speed
-          CIBW_ENVIRONMENT: "MAKEFLAGS='-j3' CMAKE_BUILD_PARALLEL_LEVEL=3"
+          CIBW_ENVIRONMENT: "MAKEFLAGS='-j3' CMAKE_BUILD_PARALLEL_LEVEL=3 SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rm -rf {package}/build"
 
       - uses: actions/upload-artifact@v4
@@ -82,7 +82,7 @@ jobs:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "*-win32"
           # Optimize build speed
-          CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=4"
+          CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=4 SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rd /s /q {package}\\build 2>nul || echo No build directory"
 
       - uses: actions/upload-artifact@v4
@@ -123,6 +123,7 @@ jobs:
       - name: Upload to PyPI
         run: |
           pip install twine
+          python -m pip install --upgrade twine build setuptools wheel
           twine check dist/*
           twine upload dist/*
         env:
