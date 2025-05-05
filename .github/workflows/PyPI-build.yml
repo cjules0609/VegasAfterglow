@@ -120,8 +120,7 @@ jobs:
 
       - name: Upload to PyPI
         run: |
-          pip install twine
-          python -m pip install --upgrade twine build setuptools wheel
+          pip install twine==6.0.1
           twine check "dist/*"
           twine upload dist/*
         env:

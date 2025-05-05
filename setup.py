@@ -57,8 +57,8 @@ setup(
     long_description_content_type="text/markdown",
     author="Yihan Wang, Connery Chen, Bing Zhang",
 
-    license="MIT",
-    license_files=["LICENSE"],
+    license="MIT",                         # SPDX expression only
+    data_files=[("", ["LICENSE"])],
 
     python_requires=">=3.8",
     install_requires=[
