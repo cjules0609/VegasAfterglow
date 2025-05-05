@@ -23,9 +23,33 @@
   - Supports **forward SSC**, **reverse SSC**, and **pairwise IC** between forward and reverse shock electrons and photons.
   - Includes **Klein-Nishina corrections** for IC cooling.
 
+## Prerequisites
+
+VegasAfterglow requires the following to build and run:
+
+- **C++20 compatible compiler**:
+  - **Linux**: GCC 10+ or Clang 10+
+  - **macOS**: Apple Clang 12+ (with Xcode 12+) or GCC 10+ (via Homebrew)
+  - **Windows**: MSVC 19.27+ (Visual Studio 2019 16.7+) or MinGW-w64 with GCC 10+
+  - 
+- **Build tools**:
+  - Make (GNU Make 4.0+ recommended) [if you want to compile& run the C++ code]
+
 ## Installation
 
-VegasAfterglow C++ source code is precompiled and wrapped in Python for immediate usage! 
+VegasAfterglow is available as a Python package with C++ source code also provided for direct use.
+
+### Python Installation
+
+#### Option 1: Install from PyPI (Recommended)
+
+The simplest way to install VegasAfterglow is from PyPI:
+
+```bash
+pip install vegasafterglow
+```
+
+#### Option 2: Install from Source
 
 1. Clone this repository:
 ```bash
@@ -44,9 +68,29 @@ cd VegasAfterglow
 pip install -e .
 ```
 
+### C++ Installation
+
+For advanced users who want to compile and use the C++ library directly:
+
+1. Clone the repository (if you haven't already):
+```bash
+git clone https://github.com/YihanWangAstro/VegasAfterglow.git
+cd VegasAfterglow
+```
+
+2. Compile the static library:
+```bash
+make lib
+```
+Then you can write your own C++ problem generator and use the provided VegasAfterglow interface to do afterglow modeling by linking the VegasAfterglow library. (See more details in the [C++ API] section, or just take a look at the example problem generator under `tests/demo/` to see how to use the VegasAfterglow interfaces.)
+
+1. (Optional) Compile and run tests:
+```bash
+make tests
+```
 ## Usage
 
-VegasAfterglow includes a Jupyter Notebook script to fit afterglow light curves and spectra to user-provided data using MCMC. You can run it using either:
+We provide an example of using MCMC to fit afterglow light curves and spectra to user-provided data. You can run it using either:
 
 - **Option 1:** Jupyter Notebook (standalone)
 - **Option 2:** Visual Studio Code (VSCode) with the Jupyter extension
@@ -55,7 +99,7 @@ Choose one of the two methods below:
 
 ---
 
-### ✅ Option 1: Run with **Jupyter Notebook**
+### Option 1: Run with **Jupyter Notebook**
 
 1. Install Jupyter Notebook
 ```bash
@@ -69,7 +113,7 @@ jupyter notebook
 
 3. In your browser, open `mcmc.ipynb` inside the `script/` directory
 
-### ✅ Option 2: Run with **VSCode + Jupyter Extension**
+### Option 2: Run with **VSCode + Jupyter Extension**
 
 1. Install [Visual Studio Code](https://code.visualstudio.com/) and the **Jupyter extension**:
   - Open VSCode

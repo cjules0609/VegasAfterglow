@@ -33,8 +33,8 @@ setup(
     name="VegasAfterglow",
     version="0.1.0",
     description="MCMC tools for astrophysics",
-    author="Your Name",
-    author_email="you@example.com",
+    author="Yihan Wang",
+    author_email="yihan.astro@gmail.com",
 
     # <-- here’s the trick:
     packages=["VegasAfterglow"],

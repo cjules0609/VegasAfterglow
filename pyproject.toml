@@ -1,4 +1,4 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "pybind11>=2.6.0"]
+requires = ["setuptools>=42", "wheel", "pybind11>=2.6.0","tqdm>=4.0","emcee>=3.0","corner>=2.2.3","pandas>=1.1","numpy>=1.19"]
 build-backend = "setuptools.build_meta"
 requires-python = ">=3.7" 
