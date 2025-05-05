@@ -21,7 +21,7 @@ extra_link_args = []
 # Platform-specific settings
 if system == "Linux":
     extra_compile_args = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
-    extra_link_args = ["-lz"]
+    extra_link_args = []
 
 elif system == "Darwin":
     extra_compile_args = ["-std=c++20", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
