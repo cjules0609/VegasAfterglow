@@ -31,7 +31,7 @@ namespace strict_fstream {
         }
 #else
         // GNU-specific strerror_r()
-        char* p = strerror_r(errno, &buff[0], buff.size());
+        auto p = strerror_r(errno, &buff[0], buff.size());
         if (p) {
             std::string tmp(p);
             std::swap(buff, tmp);
