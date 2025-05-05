@@ -40,13 +40,6 @@ void write_npz(std::string const& filename, SynElectronGrid const& syn_e);
 void write_npz(std::string const& filename, Shock const& shock);
 // Write Coord to an NPZ file
 void write_npz(std::string const& filename, Coord const& coord);
-#endif
-
-// Write an array to an NPY file with an optional unit for value scaling
-template <typename T>
-void write_npy(std::string const& filename, const T& array, Real unit = 1.0) {
-    xt::dump_npy(filename + ".npy", xt::eval(array / unit));
-}
 
 // Write an array to an NPZ file with an optional unit for value scaling
 template <typename T>
@@ -73,4 +66,11 @@ void write_npz(std::string const& filename, Args const&... args) {
     static_assert(sizeof...(args) % 2 == 0, "Arguments must be pairs: name1, array1, name2, array2, ...");
 
     write_npz_recursive(filename, true, args...);
+}
+#endif
+
+// Write an array to an NPY file with an optional unit for value scaling
+template <typename T>
+void write_npy(std::string const& filename, const T& array, Real unit = 1.0) {
+    xt::dump_npy(filename + ".npy", xt::eval(array / unit));
 }
