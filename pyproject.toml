@@ -1,5 +1,11 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "pybind11>=2.6.0", "ninja"]
+requires = [
+  "setuptools>=68.0.0",   # PEP 621 license-files support lands in 68+
+  "wheel",
+  "packaging>=23.0",      # ensures the TOML parser knows about license-files
+  "pybind11>=2.6.0",
+  "ninja",
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -14,7 +20,7 @@ where = ["python"]
 include = ["VegasAfterglow*"]
 
 [tool.cibuildwheel]
-environment = { PIP_NO_COMPILE="1", CMAKE_GENERATOR="Ninja" }
+environment = { PIP_NO_COMPILE = "1", CMAKE_GENERATOR = "Ninja" }
 test-command = "python -c \"import VegasAfterglow; print('OK')\""
 
 [project]
@@ -24,9 +30,10 @@ description = "MCMC tools for astrophysics"
 authors = [
   { name = "Yihan Wang" },
   { name = "Connery Chen" },
-  { name = "Bing Zhang" }
+  { name = "Bing Zhang" },
 ]
-license-files = ["LICENSE"]
+license = { text = "MIT" }        # SPDX expression
+license-files = ["LICENSE"]       # now recognized by setuptools ≥68
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -36,12 +43,12 @@ dependencies = [
   "pybind11>=2.6.0",
   "corner>=2.2.1",
   "tqdm>=4.0",
-  "scipy>=1.10"
+  "scipy>=1.10",
 ]
 
 [project.optional-dependencies]
 dev = [
   "ninja",
   "pytest",
-  "black"
+  "black",
 ]
