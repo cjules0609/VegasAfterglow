@@ -15,7 +15,7 @@ include = ["VegasAfterglow*"]
 
 [tool.cibuildwheel]
 environment = { PIP_NO_COMPILE="1", CMAKE_GENERATOR="Ninja" }
-test-command = "python -c 'import VegasAfterglow'"
+test-command = "python -c \"import VegasAfterglow; print('OK')\""
 
 [project]
 name = "VegasAfterglow"
