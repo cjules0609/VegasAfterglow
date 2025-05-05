@@ -1,6 +1,6 @@
-# setup.py (at root)
-from setuptools import setup, find_packages, Extension
-import os, platform
+from setuptools import setup, Extension
+import os
+import platform
 import pybind11
 
 def find_sources():
@@ -11,18 +11,38 @@ def find_sources():
                 sources.append(os.path.join(root, fn))
     return sources
 
-extra_compile_args = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
-extra_link_args    = ["-lz"]
-if platform.system() == "Darwin":
-    extra_link_args += ["-undefined", "dynamic_lookup"]
-elif platform.system() == "Linux":
-    extra_compile_args.append("-fPIC")
+system = platform.system()
+archflags = os.environ.get("ARCHFLAGS", "")
+
+# Base flags
+extra_compile_args = []
+extra_link_args = []
+
+# Platform-specific settings
+if system == "Linux":
+    extra_compile_args = ["-std=c++20", "-O3", "-march=native", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
+    extra_link_args = ["-lz"]
+
+elif system == "Darwin":
+    extra_compile_args = ["-std=c++20", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math"]
+    extra_link_args = ["-lz", "-undefined", "dynamic_lookup"]
+    # Don't use -march=native for universal builds
+    if "-arch arm64" not in archflags or "-arch x86_64" not in archflags:
+        extra_compile_args.append("-march=native")
+
+elif system == "Windows":
+    extra_compile_args = ["/std:c++20", "/O2", "/DNDEBUG", "/fp:fast"]
+    extra_link_args = []
 
 ext_modules = [
     Extension(
         "VegasAfterglow.VegasAfterglowC",
-        find_sources(),
-        include_dirs=[pybind11.get_include(),"include", "external"],
+        sources=find_sources(),
+        include_dirs=[
+            pybind11.get_include(),
+            "include",
+            "external"
+        ],
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
         language="c++",
@@ -33,13 +53,10 @@ setup(
     name="VegasAfterglow",
     version="0.1.0",
     description="MCMC tools for astrophysics",
-    author="Yihan Wang",
+    author="Yihan Wang, Connery Chen & Bing Zhang",
     author_email="yihan.astro@gmail.com",
-
-    # <-- here’s the trick:
     packages=["VegasAfterglow"],
     package_dir={"VegasAfterglow": "python"},
-
     ext_modules=ext_modules,
     install_requires=[
         "numpy>=1.19",
