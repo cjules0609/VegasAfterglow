@@ -115,22 +115,22 @@ import numpy as np
 
 # For light curves
 t_data = np.array([1e3, 2e3, 5e3, 1e4, 2e4])  # Time in seconds
-flux_data = np.array([1e-26, 8e-27, 5e-27, 3e-27, 2e-27])  # Flux in erg/cm²/s/Hz
-flux_err = np.array([1e-28, 8e-28, 5e-28, 3e-28, 2e-28])  # Flux error
+flux_data = np.array([1e-26, 8e-27, 5e-27, 3e-27, 2e-27])  # Specific flux in erg/cm²/s/Hz
+flux_err = np.array([1e-28, 8e-28, 5e-28, 3e-28, 2e-28])  # Specific flux error
 data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err)
 
 # For spectra
 nu_data = np.logspace(9, 18, 10)  # Frequencies in Hz
-spectrum_data = np.array([...])  # Flux values
-spectrum_err = np.array([...])   # Flux errors
+spectrum_data = np.array([...])  # Specific flux values in erg/cm²/s/Hz
+spectrum_err = np.array([...])   # Specific flux errors in erg/cm²/s/Hz
 data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_err)
 
 # Method 2: Load from CSV files
 import pandas as pd
 
 # Define your bands and files
-bands = [2.4e17, 4.84e14, 1.4e14]  # Example: X-ray, optical R-band, radio
-lc_files = ["data/ep.csv", "data/r.csv", "data/vt-r.csv"]
+bands = [2.4e17, 4.84e14]  # Example: X-ray, optical R-band
+lc_files = ["data/ep.csv", "data/r.csv"]
 
 # Load light curves from files
 for nu, fname in zip(bands, lc_files):
@@ -152,19 +152,19 @@ cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]
 cfg.z = 1.58               # Redshift
 
 # Physical model configuration
-cfg.medium = "wind"        # Ambient medium: "wind" or "ISM" (Interstellar Medium)
-cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", or "tophat"
+cfg.medium = "wind"        # Ambient medium: "wind", "ISM" (Interstellar Medium) or "user" (user-defined)
+cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
 
-# Optional: Advanced grid settings
-# cfg.phi_num = 32         # Number of grid points in phi direction
-# cfg.theta_num = 32       # Number of grid points in theta direction
-# cfg.t_num = 32           # Number of time grid points
+# Optional: Advanced grid settings. 
+# cfg.phi_num = 24         # Number of grid points in phi direction
+# cfg.theta_num = 24       # Number of grid points in theta direction
+# cfg.t_num = 24           # Number of time grid points
 ```
 
 **Why Configure These Properties?**
 - **Source properties:** These parameters define the observer's relation to the source and are typically known from independent measurements
 - **Physical model configuration:** These define the fundamental model choices that aren't fitted but instead represent different physical scenarios
-- **Grid settings:** Control the numerical precision of the calculations (advanced users)
+- **Grid settings:** Control the numerical precision of the calculations (advanced users). Default is (24, 24, 24). VegasAfterglow is optimized to converge with this grid resolution for most cases.
 
 These settings affect how the model is calculated but are not varied during the MCMC process, allowing you to focus on exploring the most relevant physical parameters.
 
@@ -178,11 +178,11 @@ mc_params = [
     ParamDef("Gamma0",     30,     5,  1000,  Scale.LOG),       # Lorentz factor at the core
     ParamDef("theta_c",   0.2,   0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
     ParamDef("theta_v",   0.,  None,  None,   Scale.FIXED),     # Viewing angle [rad]
-    ParamDef("p",         2.5,     2,     3,  Scale.LINEAR),    # Power law index
+    ParamDef("p",         2.5,     2,     3,  Scale.LINEAR),    # Shocked electron power law index
     ParamDef("eps_e",     0.1,  1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
     ParamDef("eps_B",    1e-2,  1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
     ParamDef("A_star",   0.01,  1e-3,     1,  Scale.LOG),       # Wind parameter
-    ParamDef("xi",        0.5,  1e-3,     1,  Scale.LOG),       # Efficiency factor
+    ParamDef("xi",        0.5,  1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
 ]
 ```
 
@@ -209,7 +209,7 @@ fitter = Fitter(data, cfg)
 result = fitter.fit(
     param_defs=mc_params,          # Parameter definitions
     resolution=(24, 24, 24),       # Grid resolution (phi, theta, time)
-    total_steps=10_000,            # Total number of MCMC steps
+    total_steps=10000,            # Total number of MCMC steps
     burn_frac=0.3,                 # Fraction of steps to discard as burn-in
     thin=1                         # Thinning factor
 )
@@ -248,19 +248,15 @@ Use samples from the posterior to generate model predictions with uncertainties:
 ```python
 # Define time and frequency ranges for predictions
 t_out = np.logspace(2, 9, 150)
-nu_out = np.logspace(6, 20, 150)
+bands = [2.4e17, 4.84e14] 
 
 # Generate light curves with the best-fit model
-lc_best = fitter.light_curves(result.best_params, t_out, band)
+lc_best = fitter.light_curves(result.best_params, t_out, bands)
 
-# Sample models from the posterior (e.g., 100 random samples)
-n_samples = 100
-sample_indices = np.random.randint(0, len(flat_chain), n_samples)
-lc_samples = []
-
-for idx in sample_indices:
-    params = flat_chain[idx]
-    lc_samples.append(fitter.light_curves(params, t_out, band))
+nu_out = np.logspace(6, 20, 150)
+times = [3000]
+# Generate model spectra at the specified times using the best-fit parameters
+spec_best = fitter.spectra(result.best_params, nu_out, times)
 
 # Now you can plot the best-fit model and the uncertainty envelope
 ```
@@ -325,26 +321,6 @@ plot_trace(result.samples, result.labels)
 3. **Parameter Correlations**: Use corner plots to identify degeneracies and correlations
 4. **Model Comparison**: Compare different physical models (e.g., wind vs. ISM) using Bayesian evidence
 5. **Physical Interpretation**: Connect parameter constraints with physical processes in GRB afterglows
-
-### 9. Advanced MCMC Options
-
-The `Fitter` class offers various options to customize your analysis:
-
-```python
-# Create fitter with parallel processing
-fitter = Fitter(data, cfg, num_workers=4)  # Use 4 CPU cores
-
-# Run MCMC with custom settings
-result = fitter.fit(
-    param_defs=mc_params,
-    resolution=(24, 24, 24),  # Grid resolution
-    total_steps=50_000,       # Longer chains for better convergence
-    burn_frac=0.3,            # Discard first 30% as burn-in
-    thin=10                   # Save only every 10th sample to reduce autocorrelation
-)
-```
-
-By focusing on posterior distribution rather than just best-fit values, you'll gain a much deeper understanding of parameter constraints and model uncertainties in your GRB afterglow analysis.
 
 ## Directory Structure
 
