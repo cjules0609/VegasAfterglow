@@ -59,7 +59,9 @@ This extreme performance comes from careful algorithm design, vectorization, and
 
 ## Prerequisites
 
-VegasAfterglow requires the following to build and run:
+VegasAfterglow requires the following to build: 
+
+> For Python users, unless you want to build the Python package from source, you can skip this section.
 
 > These are typically provided by your operating system. You can skip this section unless your operating system is out of date.
 
