@@ -33,7 +33,8 @@ namespace strict_fstream {
         // GNU-specific strerror_r()
         char* p = strerror_r(errno, &buff[0], buff.size());
         if (p) {
-            std::swap(buff, std::string(p));
+            std::string tmp(p);
+            std::swap(buff, tmp);
         } else {
             buff = "Unknown error";
         }

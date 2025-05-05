@@ -31,13 +31,13 @@ class Medium {
 class ISM {
    public:
     // Constructor: Initialize with particle number density in cm^-3
-    constexpr ISM(Real n_ism) noexcept : rho_(n_ism * con::mp) {}
+    ISM(Real n_ism) noexcept : rho_(n_ism * con::mp) {}
 
     // Return density at given position (constant everywhere)
-    constexpr inline Real rho(Real /*phi*/, Real /*theta*/, Real /*r*/) const noexcept { return rho_; }
+    inline Real rho(Real /*phi*/, Real /*theta*/, Real /*r*/) const noexcept { return rho_; }
 
     // Return integrated mass within radius r (proportional to r^3)
-    constexpr inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return rho_ * r * r * r / 3; }
+    inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return rho_ * r * r * r / 3; }
 
    private:
     Real rho_{0};  // Mass density (particle number density × proton mass)
@@ -52,13 +52,13 @@ class ISM {
 class Wind {
    public:
     // Constructor: Initialize with wind parameter A_star (in standard units)
-    constexpr Wind(Real A_star) noexcept : A(A_star * 5e11 * unit::g / unit::cm) {}
+    Wind(Real A_star) noexcept : A(A_star * 5e11 * unit::g / unit::cm) {}
 
     // Return density at given position (proportional to 1/r²)
-    constexpr inline Real rho(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A / (r * r); }
+    inline Real rho(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A / (r * r); }
 
     // Return integrated mass within radius r (proportional to r)
-    constexpr inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A * r; }
+    inline Real mass(Real /*phi*/, Real /*theta*/, Real r) const noexcept { return A * r; }
 
    private:
     Real A{0};  // Wind density parameter in physical units

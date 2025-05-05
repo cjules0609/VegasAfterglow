@@ -22,11 +22,11 @@ struct ForwardState {
 
     union {
         struct {
-            Real Gamma{1};   // Lorentz factor
-            Real u{0};       // internal energy density
-            Real r{0};       // radius
-            Real t_comv{0};  // comoving time
-            Real theta{0};   // angle
+            Real Gamma;   // Lorentz factor
+            Real u;       // internal energy density
+            Real r;       // radius
+            Real t_comv;  // comoving time
+            Real theta;   // angle
 
             // shell energy density per solid angle
             [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell;
