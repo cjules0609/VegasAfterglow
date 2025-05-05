@@ -47,14 +47,18 @@ else:
     compile_args_cpp = []
     compile_args_c = []
     extra_link_args = []
-
 class CustomBuildExt(build_ext):
     def build_extensions(self):
         for ext in self.extensions:
             objects = []
             new_sources = []
             for src in ext.sources:
-                flags = compile_args_c if src.endswith(".c") else compile_args_cpp
+                is_c_file = src.endswith(".c")
+                flags = compile_args_c if is_c_file else compile_args_cpp
+                flags = flags.copy()  # Important: don't mutate global list
+                if is_c_file and self.compiler.compiler_type == "msvc":
+                    flags.append("/TC")  # <-- Force C mode for MSVC
+
                 obj = self.compiler.compile(
                     [src],
                     output_dir=self.build_temp,
@@ -63,11 +67,11 @@ class CustomBuildExt(build_ext):
                     depends=ext.depends,
                 )
                 objects.extend(obj)
-                if not src.endswith(".c"):
+                if not is_c_file:
                     new_sources.append(src)
 
             ext.extra_objects = objects
-            ext.sources = new_sources  # Keep .cpp sources for linking
+            ext.sources = new_sources  # Keep only C++ sources for linking
         build_ext.build_extensions(self)
 
 ext_modules = [

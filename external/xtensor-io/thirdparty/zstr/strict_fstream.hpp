@@ -15,69 +15,28 @@
  * - turn on the badbit in the exception mask
  */
 namespace strict_fstream {
-    template <typename T>
-    constexpr bool returns_char_ptr = std::is_same<T, char*>::value;
 
     /// Overload of error-reporting function, to enable use with VS.
     /// Ref: http://stackoverflow.com/a/901316/717706
-    /*   static std::string strerror() {
-           std::string buff(80, '\0');
-   #ifdef _WIN32
-           if (strerror_s(&buff[0], buff.size(), errno) != 0) {
-               buff = "Unknown error";
-           }
-   #elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE || defined(__APPLE__)
-           // XSI-compliant strerror_r()
-           if (strerror_r(errno, &buff[0], buff.size()) != 0) {
-               buff = "Unknown error";
-           }
-   #else
-           // GNU-specific strerror_r()
-           // auto p = strerror_r(errno, &buff[0], buff.size());
-           // std::string tmp(p, std::strlen(p));
-           // std::swap(buff, tmp);
-
-           using strerror_r_type = decltype(strerror_r(errno, &buff[0], buff.size()));
-           if constexpr (std::is_same_v<strerror_r_type, int>) {
-               // POSIX strerror_r
-               if (strerror_r(errno, &buff[0], buff.size()) != 0) {
-                   return "Unknown error";
-               }
-           } else {
-               // GNU strerror_r
-               char* msg = strerror_r(errno, &buff[0], buff.size());
-               if (msg) {
-                   return std::string(msg);
-               } else {
-                   return "Unknown error";
-               }
-           }
-
-   #endif
-           buff.resize(buff.find('\0'));
-           return buff;
-       }
-   */
     static std::string strerror() {
         std::string buff(80, '\0');
 #ifdef _WIN32
         if (strerror_s(&buff[0], buff.size(), errno) != 0) {
-            return "Unknown error";
+            buff = "Unknown error";
         }
-        buff.resize(std::strlen(buff.c_str()));
-        return buff;
-#elif defined(__APPLE__) || ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !defined(_GNU_SOURCE))
-        // XSI-compliant (POSIX) strerror_r
+#elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE || defined(__APPLE__)
+        // XSI-compliant strerror_r()
         if (strerror_r(errno, &buff[0], buff.size()) != 0) {
-            return "Unknown error";
+            buff = "Unknown error";
         }
-        buff.resize(std::strlen(buff.c_str()));
-        return buff;
 #else
-        // GNU-specific strerror_r
-        char* msg = strerror_r(errno, &buff[0], buff.size());
-        return msg ? std::string(msg) : "Unknown error";
+        // GNU-specific strerror_r()
+        auto p = strerror_r(errno, &buff[0], buff.size());
+        std::string tmp(p, std::strlen(p));
+        std::swap(buff, tmp);
 #endif
+        buff.resize(buff.find('\0'));
+        return buff;
     }
 
     /// Exception class thrown by failed operations.
