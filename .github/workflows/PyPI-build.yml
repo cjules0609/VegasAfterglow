@@ -49,15 +49,30 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: |
-          pip install cibuildwheel
-          cibuildwheel --platform windows --output-dir wheelhouse
+
+      - name: Install dependencies
+        run: pip install cibuildwheel
+
+      - name: Install zlib (Windows)
+        run: choco install zlib -y
+        shell: cmd
+
+      - name: Set INCLUDE and LIB paths for zlib
+        run: |
+          echo "INCLUDE=C:\ProgramData\chocolatey\lib\zlib\build\native\include;%INCLUDE%" >> $env:GITHUB_ENV
+          echo "LIB=C:\ProgramData\chocolatey\lib\zlib\build\native\lib;%LIB%" >> $env:GITHUB_ENV
+        shell: powershell
+
+      - name: Build wheels
+        run: python -m cibuildwheel --platform windows --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
           CIBW_SKIP: "*-win32"
+
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-windows
