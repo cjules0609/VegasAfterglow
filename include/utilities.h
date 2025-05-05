@@ -157,7 +157,7 @@ T max(T first, Args... args) {
  * DESCRIPTION: Inline functions that provide fast approximations of exponential and logarithm functions using      *
  *              alternative methods when EXTREME_SPEED is defined.                                                  *
  ********************************************************************************************************************/
-inline Real fast_exp(Real x) {
+inline constexpr Real fast_exp(Real x) {
 #ifdef EXTREME_SPEED
     // if (std::isnan(x)) return std::numeric_limits<Real>::quiet_NaN();
     // if (x == std::numeric_limits<Real>::infinity()) return std::numeric_limits<Real>::infinity();
@@ -180,7 +180,7 @@ inline Real fast_exp(Real x) {
 #endif
 }
 
-inline double fast_log(double x) {
+inline constexpr double fast_log(double x) {
 #ifdef EXTREME_SPEED
     if (x <= 0.) return -std::numeric_limits<double>::infinity();
     if (std::isnan(x)) return std::numeric_limits<double>::quiet_NaN();
@@ -199,7 +199,7 @@ inline double fast_log(double x) {
 #endif
 }
 
-inline double fast_log2(double val) {
+inline constexpr double fast_log2(double val) {
 #ifdef EXTREME_SPEED
     int64_t* const exp_ptr = reinterpret_cast<int64_t*>(&val);
     int64_t x = *exp_ptr;
@@ -230,7 +230,7 @@ inline double fast_log2(double val) {
 #endif
 }
 
-inline double fast_exp2(double x) {
+inline constexpr double fast_exp2(double x) {
 #ifdef EXTREME_SPEED
     int int_part = (int)x;
     double frac_part = x - int_part;
@@ -254,4 +254,4 @@ inline double fast_exp2(double x) {
 #endif
 }
 
-inline Real fast_pow(Real a, Real b) { return fast_exp2(b * fast_log2(a)); }
+inline constexpr Real fast_pow(Real a, Real b) { return fast_exp2(b * fast_log2(a)); }
