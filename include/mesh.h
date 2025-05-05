@@ -10,7 +10,6 @@
 #include <cmath>
 
 #include "macros.h"
-#include "xtensor-io/xnpz.hpp"
 #include "xtensor/containers/xadapt.hpp"
 #include "xtensor/containers/xtensor.hpp"
 #include "xtensor/core/xmath.hpp"

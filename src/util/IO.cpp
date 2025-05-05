@@ -47,6 +47,7 @@ void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit)
     }
 }
 
+#ifndef _WIN32
 // === Coord Output ===
 void write_npz(std::string const& filename, Coord const& coord) {
     xt::dump_npz(filename + ".npz", "t_src", xt::eval(coord.t / unit::sec), false, false);
@@ -116,3 +117,4 @@ void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
     xt::dump_npz(filename + ".npz", "column_num_den", xt::eval(shock.column_num_den * unit::cm2), false, true);
 }
+#endif

@@ -9,6 +9,10 @@
 
 #include <string>
 
+#ifndef _WIN32
+#include "xtensor-io/xnpz.hpp"
+#endif
+
 #include "mesh.h"
 #include "prompt.h"
 #include "shock.h"
@@ -26,6 +30,8 @@ void write_csv(std::string const& filename, Array const& array, Real unit = 1.0)
 void write_csv(std::string const& filename, MeshGrid const& grid, Real unit = 1.0);
 // Write MeshGrid3d to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit = 1.0);
+
+#ifndef _WIN32
 // Write SynPhotonGrid to an NPZ file
 void write_npz(std::string const& filename, SynPhotonGrid const& syn_ph);
 // Write SynElectronGrid to an NPZ file
@@ -34,6 +40,7 @@ void write_npz(std::string const& filename, SynElectronGrid const& syn_e);
 void write_npz(std::string const& filename, Shock const& shock);
 // Write Coord to an NPZ file
 void write_npz(std::string const& filename, Coord const& coord);
+#endif
 
 // Write an array to an NPY file with an optional unit for value scaling
 template <typename T>
