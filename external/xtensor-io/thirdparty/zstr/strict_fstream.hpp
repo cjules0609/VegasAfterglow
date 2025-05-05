@@ -32,12 +32,8 @@ namespace strict_fstream {
 #else
         // GNU-specific strerror_r()
         auto p = strerror_r(errno, &buff[0], buff.size());
-        if (p) {
-            std::string tmp(p);
-            std::swap(buff, tmp);
-        } else {
-            buff = "Unknown error";
-        }
+        std::swap(buff, tmp);
+
 #endif
         buff.resize(buff.find('\0'));
         return buff;
