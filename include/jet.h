@@ -142,64 +142,64 @@ namespace math {
     // Combines a spatial function (f_spatial) and a temporal function (f_temporal)
     // into one function of (phi, theta, t). The result is the product of both functions.
     template <typename F1, typename F2>
-    constexpr inline auto combine(F1 f_spatial, F2 f_temporal) noexcept {
-        return [=](Real phi, Real theta, Real t) constexpr noexcept { return f_spatial(phi, theta) * f_temporal(t); };
+    inline auto combine(F1 f_spatial, F2 f_temporal) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return f_spatial(phi, theta) * f_temporal(t); };
     }
 
     // Creates a time-independent function from a spatial function
     // by ignoring the time parameter t
     template <typename F1>
-    constexpr inline auto t_indep(F1 f_spatial) noexcept {
-        return [=](Real phi, Real theta, Real /*t*/) constexpr noexcept { return f_spatial(phi, theta); };
+    inline auto t_indep(F1 f_spatial) noexcept {
+        return [=](Real phi, Real theta, Real /*t*/) noexcept { return f_spatial(phi, theta); };
     }
 
     // Returns a constant (isotropic) function with a fixed height.
     // This creates a uniform distribution across all angles.
-    constexpr inline auto isotropic(Real height) noexcept {
-        return [=](Real /*phi*/, Real /*theta*/) constexpr noexcept { return height; };
+    inline auto isotropic(Real height) noexcept {
+        return [=](Real /*phi*/, Real /*theta*/) noexcept { return height; };
     }
 
     // Returns a tophat function: it is constant (height) within the core angle theta_c
     // and zero outside. This creates a uniform jet with sharp edges.
-    constexpr inline auto tophat(Real theta_c, Real hight) noexcept {
-        return [=](Real /*phi*/, Real theta) constexpr noexcept { return theta < theta_c ? hight : 0; };
+    inline auto tophat(Real theta_c, Real hight) noexcept {
+        return [=](Real /*phi*/, Real theta) noexcept { return theta < theta_c ? hight : 0; };
     }
 
     // Returns a Gaussian profile function for jet properties.
     // The profile peaks at theta = 0 and falls off exponentially with angle.
-    constexpr inline auto gaussian(Real theta_c, Real height) noexcept {
+    inline auto gaussian(Real theta_c, Real height) noexcept {
         Real spread = 2 * theta_c * theta_c;
-        return [=](Real /*phi*/, Real theta) constexpr noexcept { return height * fast_exp(-theta * theta / spread); };
+        return [=](Real /*phi*/, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
     }
 
     // Returns a power-law profile function for jet properties.
     // The profile follows a power-law decay with angle, controlled by the index k.
-    constexpr inline auto powerlaw(Real theta_c, Real height, Real k) noexcept {
-        return [=](Real /*phi*/, Real theta) constexpr noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
+    inline auto powerlaw(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real /*phi*/, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
     }
 
     // Creates a constant injection profile: returns 1 regardless of time.
     // This represents continuous energy/mass injection.
-    constexpr inline auto const_injection() noexcept {
-        return [=](Real /*t*/) constexpr noexcept { return 1.; };
+    inline auto const_injection() noexcept {
+        return [=](Real /*t*/) noexcept { return 1.; };
     }
 
     // Creates a step injection profile: returns 1 if t > t0, else 0.
     // This represents a sudden turn-on of injection at time t0.
-    constexpr inline auto step_injection(Real t0) noexcept {
-        return [=](Real t) constexpr noexcept { return t > t0 ? 1. : 0.; };
+    inline auto step_injection(Real t0) noexcept {
+        return [=](Real t) noexcept { return t > t0 ? 1. : 0.; };
     }
 
     // Creates a square injection profile: returns 1 if t is between t0 and t1, else 0.
     // This represents a finite duration of injection between t0 and t1.
-    constexpr inline auto square_injection(Real t0, Real t1) noexcept {
-        return [=](Real t) constexpr noexcept { return t > t0 && t < t1 ? 1. : 0.; };
+    inline auto square_injection(Real t0, Real t1) noexcept {
+        return [=](Real t) noexcept { return t > t0 && t < t1 ? 1. : 0.; };
     }
 
     // Creates a power-law injection profile: returns a decaying function with power-law index q.
     // The injection rate decays as (1 + t/t0)^(-q).
-    constexpr inline auto powerlaw_injection(Real t0, Real q) noexcept {
-        return [=](Real t) constexpr noexcept { return fast_pow(1 + t / t0, -q); };
+    inline auto powerlaw_injection(Real t0, Real q) noexcept {
+        return [=](Real t) noexcept { return fast_pow(1 + t / t0, -q); };
     }
 }  // namespace math
 
