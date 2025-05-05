@@ -104,8 +104,6 @@ inline constexpr Real eVtoHz(Real eV) { return eV / con::h; }
  * FUNCTION: Fast Math & Interpolation Prototypes                                                                   *
  * DESCRIPTION: Prototypes for fast power, logarithm, and various interpolation functions.                          *
  ********************************************************************************************************************/
-Real fast_pow(Real a, Real b);
-Real fast_log(Real x);
 Real interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 Real eq_space_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 Real loglog_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);

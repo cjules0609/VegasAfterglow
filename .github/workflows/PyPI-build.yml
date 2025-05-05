@@ -3,61 +3,86 @@ name: Build and Upload Wheels
 on:
   push:
     tags:
-      - '*'   # Trigger on version tags like v0.1.0
-  workflow_dispatch:  # Allow manual trigger
+      - 'v*.*.*'
+  workflow_dispatch:
 
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
+  build-linux:
+    runs-on: ubuntu-latest
+    continue-on-error: false  # or true if you want to tolerate failure
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
+      - run: |
           pip install cibuildwheel
-
-      - name: Build wheels
-        run: |
-          python -m cibuildwheel --output-dir wheelhouse
-
+          cibuildwheel --platform linux --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
-          CIBW_SKIP: "pp* cp36-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_ARCHS_MACOS: universal2
-
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-linux
+          path: wheelhouse/
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install cibuildwheel
+          cibuildwheel --platform macos --output-dir wheelhouse
+        env:
+          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
+          CIBW_ARCHS_MACOS: universal2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos
+          path: wheelhouse/
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install cibuildwheel
+          cibuildwheel --platform windows --output-dir wheelhouse
+        env:
+          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows
           path: wheelhouse/
 
   publish:
     name: Publish to PyPI
-    needs: build_wheels
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels
-          path: dist
-
-      - name: Publish with Twine
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          name: wheels-linux
+          path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-macos
+          path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-windows
+          path: dist/
+      - name: Upload to PyPI
         run: |
           pip install twine
           twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
