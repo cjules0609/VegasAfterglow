@@ -87,6 +87,10 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
+      # 1. Checkout code so build can see pyproject.toml / setup.py
+      - uses: actions/checkout@v4
+
+      # 2. Download built wheels into dist/
       - uses: actions/download-artifact@v4
         with:
           name: wheels-linux
@@ -100,11 +104,13 @@ jobs:
           name: wheels-windows
           path: dist/
 
+      # 3. Build source distribution (sdist)
       - name: Build source distribution
         run: |
           python -m pip install build
           python -m build --sdist --outdir dist/
 
+      # 4. Validate and upload everything
       - name: Upload to PyPI
         run: |
           pip install twine
