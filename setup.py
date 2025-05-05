@@ -74,8 +74,8 @@ setup(
         "dev": ["ninja", "pytest", "black"],
     },
 
-    packages=find_packages(where="python"),
-    package_dir={"": "python"},
+    packages=find_packages(where="pymodule"),
+    package_dir={"": "pymodule"},
 
     ext_modules=ext_modules,
     zip_safe=False,
