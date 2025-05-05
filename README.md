@@ -32,10 +32,8 @@
 ## Prerequisites
 
 VegasAfterglow requires the following to build and run:
-<details>
-<summary>System requirements (expand for details)</summary>
 
-> These are typically provided by your operating system. You can skip this section unless your OS is out of date.
+> These are typically provided by your operating system. You can skip this section unless your operating system is out of date.
 
 - **C++20 compatible compiler**:
   - **Linux**: GCC 10+ or Clang 10+
@@ -44,7 +42,6 @@ VegasAfterglow requires the following to build and run:
   
 - **Build tools**:
   - Make (GNU Make 4.0+ recommended) [if you want to compile & run the C++ code]
-</details>
 
 ## Installation
 
@@ -92,8 +89,7 @@ pip install -e .
 
 ### C++ Installation
 
-<details>
-<summary>For advanced users who want to compile and use the C++ library directly</summary>
+For advanced users who want to compile and use the C++ library directly:
 
 1. Clone the repository (if you haven't already):
 ```bash
@@ -111,7 +107,34 @@ Then you can write your own C++ problem generator and use the provided VegasAfte
 ```bash
 make tests
 ```
-</details>
+
+### Creating Custom Problem Generators with C++
+
+After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
+
+1. **Include necessary headers**
+```cpp
+#include "afterglow.h"              // Afterglow models
+```
+
+2. **Define your problem configuration**
+```cpp
+
+```
+
+3. **Compute radiation and create light curves/spectra**
+```cpp
+
+```
+
+4. **Building Custom Applications**
+```bash
+g++ -std=c++20 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
+```
+
+5. **Example Problem Generators**
+The repository includes several example problem generators in the `tests/demo/` directory that demonstrate different use cases:
+
 
 ## Usage
 
