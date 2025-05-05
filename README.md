@@ -76,6 +76,10 @@ VegasAfterglow is available as a Python package with C++ source code also provid
 
 ### Python Installation
 
+0. Install [Python](https://www.python.org/downloads/) (if it's not already installed). We recommend using the latest version, but version 3.8 or higher is required.
+
+1. Choose one of the options below to install VegasAterglow
+
 #### Option 1: Install from PyPI (Recommended)
 
 The simplest way to install VegasAfterglow is from PyPI:
@@ -91,13 +95,7 @@ pip install vegasafterglow
 git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 ```
 
-2. *(Optional)* Create and activate a virtual environment:
-```bash
-python -m venv vegasafterglow
-source vegasafterglow/bin/activate      # On Windows: vegasafterglow\Scripts\activate
-```
-
-3. Navigate to the directory and install the Python package:
+2. Navigate to the directory and install the Python package:
 ```bash
 cd VegasAfterglow
 pip install -e .
@@ -151,8 +149,6 @@ jupyter notebook
    - Search for **"Jupyter"** and click **Install**
 
 2. Open the VegasAfterglow folder in VSCode and navigate to `mcmc.ipynb` in the `script/` directory
-
----
 
 ## MCMC Parameter Fitting with VegasAfterglow
 
