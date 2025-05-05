@@ -50,13 +50,11 @@ else:
 
 class CustomBuildExt(build_ext):
     def build_extensions(self):
-        c_flags = compile_args_c
-        cpp_flags = compile_args_cpp
-
         for ext in self.extensions:
             objects = []
+            new_sources = []
             for src in ext.sources:
-                flags = c_flags if src in c_sources else cpp_flags
+                flags = compile_args_c if src.endswith(".c") else compile_args_cpp
                 obj = self.compiler.compile(
                     [src],
                     output_dir=self.build_temp,
@@ -65,9 +63,11 @@ class CustomBuildExt(build_ext):
                     depends=ext.depends,
                 )
                 objects.extend(obj)
+                if not src.endswith(".c"):
+                    new_sources.append(src)
 
             ext.extra_objects = objects
-            ext.sources = []  # Prevent double-compilation
+            ext.sources = new_sources  # Keep .cpp sources for linking
         build_ext.build_extensions(self)
 
 ext_modules = [
