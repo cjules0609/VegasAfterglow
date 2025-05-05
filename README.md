@@ -2,15 +2,17 @@
 
 **VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It supports both **relativistic and non-relativistic** regimes and provides a **flexible, user-configurable** approach for computing light curves and spectra. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models. A Python wrapper is included to streamline configuration and usability.
 
-<div align="center">
+<p align="center">
 <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
 <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 <img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
-</div>
+<img src="https://img.shields.io/badge/Python-3.8%2B-blue.svg" alt="Python Version">
+</p>
 
 ## Table of Contents
 
 - [Features](#features)
+- [Performance Highlights](#performance-highlights)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
   - [Python Installation](#python-installation)
@@ -24,44 +26,41 @@
 ## Features
 
 - **Forward and Reverse Shock Modeling**  
-  - Arbitrary magnetization for both shocks.
-  - Works in both relativistic and non-relativistic regimes.
+  - Arbitrary magnetization for both shocks
+  - Works in both relativistic and non-relativistic regimes
 
 - **Structured Jet with User-Defined Profiles**  
-  - Supports custom **energy distribution**, **Lorentz factor**, and **magnetization** profiles.
-  - **Jet Spreading** is included for realistic dynamics.
-  - **Non-Axisymmetric Jets** allow complex jet structures.
+  - Supports custom **energy distribution**, **Lorentz factor**, and **magnetization** profiles
+  - **Jet Spreading** is included for realistic dynamics
+  - **Non-Axisymmetric Jets** allow complex jet structures
 
 - **Energy Injection Mechanisms**  
-  - Allows user-defined energy injection profiles.
+  - Allows user-defined energy injection profiles
 
 - **Synchrotron Radiation with Self-Absorption**  
-  - Includes **synchrotron self-absorption (SSA)**.
+  - Includes **synchrotron self-absorption (SSA)**
 
 - **Inverse Compton Scattering (IC)**  
-  - Supports **forward SSC**, **reverse SSC**, and **pairwise IC** between forward and reverse shock electrons and photons.
-  - Includes **Klein-Nishina corrections** for IC cooling.
+  - Supports **forward SSC**, **reverse SSC**, and **pairwise IC** between forward and reverse shock electrons and photons
+  - Includes **Klein-Nishina corrections** for IC cooling
 
-### Performance Highlights
-
-<div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #4682b4;">
+## Performance Highlights
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
 - **Ultra-fast model evaluation**: Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in just **0.6ms** on an Apple M2 chip
 - **Rapid MCMC exploration**: Complete 10,000-step parameter estimation with 8 parameters against 20 data points multi-wavelength light curves/spectra in:
-  - **10 seconds** for on-axis structured jetcases
+  - **10 seconds** for on-axis structured jet cases
   - **30 seconds** for more complex off-axis cases
 - **Optimized for interactive analysis**: Perform comprehensive Bayesian inference in seconds/minutes rather than hours or days on laptop, enabling rapid iteration through different physical scenarios
 
 This extreme performance comes from careful algorithm design, vectorization, and memory optimization, making VegasAfterglow suitable for both individual event analysis and large population studies.
-</div>
 
 ## Prerequisites
 
 VegasAfterglow requires the following to build: 
 
-> For Python users, unless you want to build the Python package from source, you can skip this section. These system tools are typically provided by your operating system. You can skip this section unless your operating system is out of date.
+> **Note for Python Users**: If you install via pip (recommended), you generally do not need to install these C++ tools manually. This section is primarily for users building the C++ library directly or installing the Python package from the source code.
 
 - **C++20 compatible compiler**:
   - **Linux**: GCC 10+ or Clang 10+
@@ -77,10 +76,6 @@ VegasAfterglow is available as a Python package with C++ source code also provid
 
 ### Python Installation
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
 #### Option 1: Install from PyPI (Recommended)
 
 The simplest way to install VegasAfterglow is from PyPI:
@@ -88,10 +83,6 @@ The simplest way to install VegasAfterglow is from PyPI:
 ```bash
 pip install vegasafterglow
 ```
-You are all set!
-
-</td>
-<td width="50%" valign="top">
 
 #### Option 2: Install from Source
 
@@ -106,15 +97,11 @@ python -m venv vegasafterglow
 source vegasafterglow/bin/activate      # On Windows: vegasafterglow\Scripts\activate
 ```
 
-3. Navigate to the file directory and install the Python package
+3. Navigate to the directory and install the Python package:
 ```bash
 cd VegasAfterglow
 pip install -e .
 ```
-
-</td>
-</tr>
-</table>
 
 ### C++ Installation
 
@@ -130,7 +117,8 @@ cd VegasAfterglow
 ```bash
 make lib
 ```
-Then you can write your own C++ problem generator and use the provided VegasAfterglow interfaces to do afterglow modeling by linking the VegasAfterglow library. (See more details in the [Creating Custom Problem Generators with C++](#creating-custom-problem-generators-with-c) section, or just take a look at the example problem generator under `tests/demo/` to see how to use the VegasAfterglow interfaces.)
+
+This allows you to write your own C++ problem generator and use the provided VegasAfterglow interfaces. See more details in the [Creating Custom Problem Generators with C++](#creating-custom-problem-generators-with-c) section, or review the example problem generator under `tests/demo/`.
 
 3. (Optional) Compile and run tests:
 ```bash
@@ -141,13 +129,9 @@ make tests
 
 We provide an example of using MCMC to fit afterglow light curves and spectra to user-provided data. You can run it using either:
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
 ### Option 1: Run with Jupyter Notebook
 
-1. Install Jupyter Notebook
+1. Install Jupyter Notebook:
 ```bash
 pip install jupyter notebook
 ```
@@ -159,24 +143,14 @@ jupyter notebook
 
 3. In your browser, open `mcmc.ipynb` inside the `script/` directory
 
-</td>
-<td width="50%" valign="top">
-
 ### Option 2: Run with VSCode + Jupyter Extension
 
 1. Install [Visual Studio Code](https://code.visualstudio.com/) and the **Jupyter extension**:
-  - Open VSCode
-  - Go to the **Extensions** panel (or press `Cmd+Shift+X` on MacOS, `Ctrl+Shift+X` on Windows)
-  - Search for **"Jupyter"** and click **Install**
+   - Open VSCode
+   - Go to the **Extensions** panel (or press `Cmd+Shift+X` on macOS, `Ctrl+Shift+X` on Windows)
+   - Search for **"Jupyter"** and click **Install**
 
-2. Open the VegasAfterglow folder in VSCode:
-  - Go to **File > Open Folder** and select the cloned `VegasAfterglow` repository.
-
-3. Open `mcmc.ipynb` inside the `script/` directory.
-
-</td>
-</tr>
-</table>
+2. Open the VegasAfterglow folder in VSCode and navigate to `mcmc.ipynb` in the `script/` directory
 
 ---
 
@@ -256,13 +230,10 @@ cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or 
 # cfg.t_num = 24           # Number of time grid points
 ```
 
-<div style="background-color: #f0fff0; padding: 10px; border-radius: 5px; border-left: 5px solid #2e8b57;">
-
 **Why Configure These Properties?**
 - **Source properties:** These parameters define the observer's relation to the source and are typically known from independent measurements
 - **Physical model configuration:** These define the fundamental model choices that aren't fitted but instead represent different physical scenarios
 - **Grid settings:** Control the numerical precision of the calculations (advanced users). Default is (24, 24, 24). VegasAfterglow is optimized to converge with this grid resolution for most cases.
-</div>
 
 These settings affect how the model is calculated but are not varied during the MCMC process, allowing you to focus on exploring the most relevant physical parameters.
 
@@ -284,22 +255,16 @@ mc_params = [
 ]
 ```
 
-<div style="background-color: #fff5ee; padding: 10px; border-radius: 5px; border-left: 5px solid #ff7f50;">
-
 **Scale Types:**
 - `Scale.LOG`: Sample in logarithmic space (log10) - ideal for parameters spanning multiple orders of magnitude
 - `Scale.LINEAR`: Sample in linear space - appropriate for parameters with narrower ranges
 - `Scale.FIXED`: Keep parameter fixed at the initial value - use for parameters you don't want to vary
-</div>
-
-<div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; border-left: 5px solid #708090;">
 
 **Parameter Choices:**
 The parameters you include depend on your model configuration:
 - For "wind" medium: use `A_star` parameter 
 - For "ISM" medium: use `n_ism` parameter instead
 - Different jet structures may require different parameters
-</div>
 
 ### 4. Running the MCMC Fitting
 
@@ -313,19 +278,16 @@ fitter = Fitter(data, cfg)
 result = fitter.fit(
     param_defs=mc_params,          # Parameter definitions
     resolution=(24, 24, 24),       # Grid resolution (phi, theta, time)
-    total_steps=10000,            # Total number of MCMC steps
+    total_steps=10000,             # Total number of MCMC steps
     burn_frac=0.3,                 # Fraction of steps to discard as burn-in
     thin=1                         # Thinning factor
 )
 ```
 
-<div style="background-color: #fffaf0; padding: 10px; border-radius: 5px; border-left: 5px solid #ffa500;">
-
 The `result` object contains:
 - `samples`: The MCMC chain samples (posterior distribution)
 - `labels`: Parameter names
 - `best_params`: Maximum likelihood parameter values
-</div>
 
 ### 5. Exploring the Posterior Distribution
 
@@ -423,14 +385,11 @@ plot_trace(result.samples, result.labels)
 
 ### 8. Tips for Effective Posterior Exploration
 
-<div style="background-color: #f0f0ff; padding: 10px; border-radius: 5px; border-left: 5px solid #6a5acd;">
-
 1. **Prior Ranges**: Set physically meaningful prior ranges based on theoretical constraints
 2. **Convergence Testing**: Check convergence using trace plots and autocorrelation metrics
 3. **Parameter Correlations**: Use corner plots to identify degeneracies and correlations
 4. **Model Comparison**: Compare different physical models (e.g., wind vs. ISM) using Bayesian evidence
 5. **Physical Interpretation**: Connect parameter constraints with physical processes in GRB afterglows
-</div>
 
 ## Creating Custom Problem Generators with C++
 
