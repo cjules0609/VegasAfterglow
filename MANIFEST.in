@@ -1,0 +1,8 @@
+include LICENSE
+include README.md
+
+recursive-include include *
+recursive-include src *
+recursive-include pybind *
+recursive-include external *
+recursive-include python *

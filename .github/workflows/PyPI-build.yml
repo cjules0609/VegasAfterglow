@@ -9,7 +9,7 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    continue-on-error: false  # or true if you want to tolerate failure
+    continue-on-error: false  
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,7 +21,7 @@ jobs:
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_SKIP: "*-manylinux_i686"
+          CIBW_SKIP: "*-manylinux_i686 *-musllinux_*"
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-linux
