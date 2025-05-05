@@ -31,7 +31,7 @@ struct SimpleState {
             Real theta{0};   // angle
 
             // shell energy density per solid angle
-            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell{};
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell;
 
             // shell mass per solid angle
             [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell{};
