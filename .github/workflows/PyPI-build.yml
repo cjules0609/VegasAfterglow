@@ -21,6 +21,7 @@ jobs:
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_SKIP: "*-manylinux_i686"
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-linux
@@ -56,6 +57,7 @@ jobs:
           cibuildwheel --platform windows --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-*"
+          CIBW_SKIP: "*-win32"
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-windows
