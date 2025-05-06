@@ -1,17 +1,21 @@
 # VegasAfterglow
 
-<p align="center">
-<img src="assets/logo.svg" alt="VegasAfterglow Logo" width="200"/>
-</p>
-
-<p align="center">
-<img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
-<img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-<img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
-<img src="https://img.shields.io/badge/Python-3.8%2B-blue.svg" alt="Python Version">
-</p>
-
-**VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It supports both **relativistic and non-relativistic** regimes and provides a **flexible, user-configurable** approach for computing light curves and spectra. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models. A Python wrapper is included to streamline configuration and usability.
+<div style="display: flex; align-items: center;">
+  <div style="flex: 0 0 40%;">
+    <img src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
+  </div>
+  <div style="flex: 0 0 60%;">
+    <p>
+      <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
+      <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+      <img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
+      <img src="https://img.shields.io/badge/Python-3.8%2B-blue.svg" alt="Python Version">
+    </p>
+    <p>
+      <b>VegasAfterglow</b> is a <b>high-performance</b> C++ framework for modeling <b>gamma-ray burst (GRB) afterglows</b>. It delivers <b>exceptional computational speed</b>, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds rather than hours. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
+    </p>
+  </div>
+</div>
 
 ---
 
@@ -74,11 +78,11 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 
 <table>
 <tr>
-  <td width="40%"><b>Ultra-fast model evaluation</b></td>
+  <td width="40%"><b>⚡ Ultra-fast model evaluation</b></td>
   <td>Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in just <b>0.6ms</b> on an Apple M2 chip</td>
 </tr>
 <tr>
-  <td><b>Rapid MCMC exploration</b></td>
+  <td><b>🚀 Rapid MCMC exploration</b></td>
   <td>
     Complete 10,000-step parameter estimation with 8 parameters against 20 data points multi-wavelength light curves/spectra in:<br>
     • <b>10 seconds</b> for on-axis structured jet cases<br>
@@ -86,8 +90,16 @@ VegasAfterglow delivers exceptional computational performance through deep optim
   </td>
 </tr>
 <tr>
-  <td><b>Optimized for interactive analysis</b></td>
+  <td><b>💻 Optimized for interactive analysis</b></td>
   <td>Perform comprehensive Bayesian inference in seconds/minutes rather than hours or days on laptop, enabling rapid iteration through different physical scenarios</td>
+</tr>
+<tr>
+  <td><b>🔍 Precision with performance</b></td>
+  <td>Maintains high numerical accuracy while achieving computational speed through advanced algorithms, not by sacrificing scientific precision</td>
+</tr>
+<tr>
+  <td><b>📊 Scalable computation</b></td>
+  <td>Efficiently handles complex physical scenarios including structured jets, reverse shocks, and inverse Compton processes with minimal performance degradation</td>
 </tr>
 </table>
 

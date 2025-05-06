@@ -1,21 +1,85 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<svg width="800" height="800" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
   <!-- Background circle -->
-  <circle cx="200" cy="200" r="180" fill="#1a1a2e" />
+  <circle cx="400" cy="400" r="350" fill="#1a1a2e" />
   
-  <!-- Central burst -->
-  <circle cx="200" cy="200" r="40" fill="#ff9e00" />
-  <circle cx="200" cy="200" r="20" fill="#ffcc00" />
+  <!-- Binary code background elements -->
+  <g opacity="0.5">
+    <text x="130" y="250" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-10, 130, 250)">10110100</text>
+    <text x="540" y="250" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(8, 540, 250)">01001011</text>
+    <text x="200" y="600" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(12, 200, 600)">11100010</text>
+    <text x="480" y="600" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-5, 480, 600)">00101101</text>
+  </g>
   
-  <!-- Simplified afterglow radiation waves -->
-  <circle cx="200" cy="200" r="150" fill="none" stroke="#3282b8" stroke-width="8" stroke-dasharray="20,12" />
-  <circle cx="200" cy="200" r="110" fill="none" stroke="#5c6cff" stroke-width="6" stroke-dasharray="15,10" />
-  <circle cx="200" cy="200" r="70" fill="none" stroke="#ff5e78" stroke-width="4" stroke-dasharray="10,8" />
+  <!-- Binary code around center - BEHIND central burst -->
+  <g>
+    <!-- Top cluster -->
+    <text x="370" y="310" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(15, 370, 310)">1010</text>
+    <text x="430" y="340" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(8, 430, 340)">1100</text>
+    
+    <!-- Right cluster -->
+    <text x="470" y="380" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-20, 470, 380)">0110</text>
+    <text x="480" y="440" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(18, 480, 440)">0111</text>
+    
+    <!-- Bottom cluster -->
+    <text x="370" y="490" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-8, 370, 490)">1101</text>
+    <text x="420" y="460" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-15, 420, 460)">1110</text>
+    
+    <!-- Left cluster -->
+    <text x="280" y="380" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(10, 280, 380)">1011</text>
+    <text x="290" y="440" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(22, 290, 440)">1111</text>
+  </g>
   
-  <!-- Directional jet representation -->
-  <path d="M200,200 L280,120 C300,100 310,90 325,75" stroke="#ffcc00" stroke-width="10" fill="none" stroke-linecap="round" />
-  <path d="M200,200 L120,280 C100,300 90,310 75,325" stroke="#ffcc00" stroke-width="10" fill="none" stroke-linecap="round" />
+  <!-- Additional 4-digit binary code -->
+  <g opacity="0.7">
+    <text x="180" y="280" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-24, 180, 280)">1010</text>
+    <text x="580" y="280" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(16, 580, 280)">0101</text>
+    <text x="180" y="520" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(4, 180, 520)">1100</text>
+    <text x="580" y="520" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-18, 580, 520)">0011</text>
+    <text x="330" y="180" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-12, 330, 180)">0110</text>
+    <text x="460" y="180" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(10, 460, 180)">1001</text>
+    <text x="330" y="620" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(20, 330, 620)">1110</text>
+    <text x="460" y="620" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-14, 460, 620)">0001</text>
+  </g>
   
-  <!-- Simplified "VA" initials (optional) -->
-  <text x="200" y="370" font-family="Arial, sans-serif" font-weight="bold" font-size="28" text-anchor="middle" fill="#ffffff">VA</text>
+  <!-- Large prominent binary/code elements (moved behind the main elements) -->
+  <text x="230" y="385" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-6, 230, 385)">101101</text>
+  <text x="420" y="385" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(4, 420, 385)">010010</text>
+  <text x="250" y="445" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(7, 250, 445)">110101</text>
+  <text x="400" y="445" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-3, 400, 445)">001011</text>
+  
+  <!-- Gamma-ray burst afterglow representation (moved to foreground) -->
+  <g>
+    <!-- Afterglow radiation waves with purple inner to red outer gradient -->
+    <g opacity="0.85">
+      <!-- Outermost ring - Faint Red -->
+      <path d="M400,100 A300,300 0 0,1 700,400 A300,300 0 0,1 400,700 A300,300 0 0,1 100,400 A300,300 0 0,1 400,100 Z" 
+            fill="none" stroke="#ff6666" stroke-width="10" stroke-dasharray="40,25" />
+      
+      <!-- Ring 2 - Light Blue -->
+      <path d="M400,150 A250,250 0 0,1 650,400 A250,250 0 0,1 400,650 A250,250 0 0,1 150,400 A250,250 0 0,1 400,150 Z" 
+            fill="none" stroke="#66ccff" stroke-width="8" stroke-dasharray="30,20" />
+      
+      <!-- Ring 3 - Deep Blue -->
+      <path d="M400,200 A200,200 0 0,1 600,400 A200,200 0 0,1 400,600 A200,200 0 0,1 200,400 A200,200 0 0,1 400,200 Z" 
+            fill="none" stroke="#0066cc" stroke-width="6" stroke-dasharray="20,15" />
+      
+      <!-- Innermost ring - Purple -->
+      <path d="M400,250 A150,150 0 0,1 550,400 A150,150 0 0,1 400,550 A150,150 0 0,1 250,400 A150,150 0 0,1 400,250 Z" 
+            fill="none" stroke="#8800cc" stroke-width="4" stroke-dasharray="15,10" />
+    </g>
+    
+    <!-- Directional jet representation (in foreground) -->
+    <path d="M400,400 L550,250 C600,200 620,180 650,150" stroke="#ffcc00" stroke-width="15" fill="none" stroke-linecap="round" />
+    <path d="M400,400 L250,550 C200,600 180,620 150,650" stroke="#ffcc00" stroke-width="15" fill="none" stroke-linecap="round" />
+    
+    <!-- Central burst (in foreground) -->
+    <circle cx="400" cy="400" r="60" fill="#ff9e00" />
+    <circle cx="400" cy="400" r="30" fill="#ffcc00" />
+  </g>
+  
+  <!-- Brand Text -->
+  <g>
+    <text x="400" y="770" font-family="Arial, sans-serif" font-weight="bold" font-size="50" text-anchor="middle" fill="#ffffff">VegasAfterglow</text>
+  </g>
 </svg> 
