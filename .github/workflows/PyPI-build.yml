@@ -25,9 +25,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install build tools & clean
+      - name: Install build tools
         run: |
-          pip install --upgrade pip setuptools wheel cibuildwheel ninja
+            python -m pip install --upgrade pip setuptools wheel cibuildwheel ninja
 
       - name: Build wheels
         run: |
