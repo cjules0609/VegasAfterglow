@@ -7,12 +7,16 @@
 
 #pragma once
 
+#include <type_traits>
+#include <utility>
+
 #include "macros.h"
 #include "mesh.h"
 
 class Empty {};
 
-template <typename T>
+// c++20 concept
+/*template <typename T>
 concept HasDmdt = requires(T t) {
     { t.dm_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };
@@ -32,10 +36,53 @@ concept HasU = requires(T t) {
     { t.u } -> std::same_as<Real>;
 };
 
-/*template <typename T>
+template <typename T>
 concept HasMass = requires(T t) {
     { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };*/
+
+template <typename, typename = void>
+struct HasDmdt : std::false_type {};
+
+template <typename T>
+struct HasDmdt<T, std::void_t<decltype(std::declval<T>().dm_dt(0.0, 0.0, 0.0))>>
+    : std::is_same<decltype(std::declval<T>().dm_dt(0.0, 0.0, 0.0)), Real> {};
+
+// helper variable template
+template <typename T>
+constexpr bool HasDmdt_v = HasDmdt<T>::value;
+
+// ——— deps_dt detection ——————————————————————————————————————————————————
+template <typename, typename = void>
+struct HasDedt : std::false_type {};
+
+template <typename T>
+struct HasDedt<T, std::void_t<decltype(std::declval<T>().deps_dt(0.0, 0.0, 0.0))>>
+    : std::is_same<decltype(std::declval<T>().deps_dt(0.0, 0.0, 0.0)), Real> {};
+
+template <typename T>
+constexpr bool HasDedt_v = HasDedt<T>::value;
+
+// ——— sigma0 detection ——————————————————————————————————————————————————
+template <typename, typename = void>
+struct HasSigma : std::false_type {};
+
+template <typename T>
+struct HasSigma<T, std::void_t<decltype(std::declval<T>().sigma0(0.0, 0.0))>>
+    : std::is_same<decltype(std::declval<T>().sigma0(0.0, 0.0)), Real> {};
+
+template <typename T>
+constexpr bool HasSigma_v = HasSigma<T>::value;
+
+// ——— data‐member u detection ——————————————————————————————————————————————
+template <typename, typename = void>
+struct HasU : std::false_type {};
+
+template <typename T>
+struct HasU<T, std::void_t<decltype(std::declval<T>().u)>> : std::is_same<decltype(std::declval<T>().u), Real> {};
+
+template <typename T>
+constexpr bool HasU_v = HasU<T>::value;
 
 #define MAKE_THIS_ODEINT_STATE(classname, data, array_size)                  \
     using array_type = std::array<Real, array_size>;                         \
@@ -52,20 +99,6 @@ concept HasMass = requires(T t) {
     constexpr const value_type& operator[](size_t i) const noexcept { return data[i]; }
 
 void print_array(Array const& arr);
-
-/********************************************************************************************************************
- * TEMPLATE FUNCTION: print (Variadic)
- * DESCRIPTION: Prints multiple arguments to standard output, separated by a space.
- *              This template function recursively prints all provided arguments.
- ********************************************************************************************************************/
-inline void print() {  // Base case: terminates the recursion.
-    std::cout << std::endl;
-}
-
-template <typename... Args>
-void print(std::format_string<Args...> fmt, Args&&... args) {
-    std::cout << std::format(fmt, std::forward<Args>(args)...);
-}
 
 /********************************************************************************************************************
  * FUNCTION TYPE DEFINITIONS

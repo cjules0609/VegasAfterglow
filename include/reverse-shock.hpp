@@ -17,8 +17,8 @@
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct ReverseState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;    // Whether ejecta has mass injection
-    static constexpr bool energy_inject = HasDedt<Ejecta>;  // Whether ejecta has energy injection
+    static constexpr bool mass_inject = HasDmdt<Ejecta>::value;    // Whether ejecta has mass injection
+    static constexpr bool energy_inject = HasDedt<Ejecta>::value;  // Whether ejecta has energy injection
     static constexpr size_t array_size = 7;
 
     MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)

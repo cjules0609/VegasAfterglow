@@ -145,7 +145,7 @@ inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real 
     Real u2 = Gamma * Gamma - 1;
     Real ratio = u2 / (Q * Q * theta_s * theta_s);
     Real x = theta / theta_s;
-    Real f = 1 / (1 + ratio) * x * x;
+    Real f = 1 / (1 + ratio) * x;
     return drdt / (2 * Gamma * r) * std::sqrt((2 * u2 + 3) / (4 * u2 + 3)) * f;
 }
 
@@ -394,7 +394,7 @@ Real compute_dec_time(Eqn const& eqn, Real t_max) {
 
     Real m_shell = e_k / (gamma * con::c2);
 
-    if constexpr (HasSigma<decltype(eqn.ejecta)>) {
+    if constexpr (HasSigma<decltype(eqn.ejecta)>::value) {
         m_shell /= 1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
     }
 

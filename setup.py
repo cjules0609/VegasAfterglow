@@ -20,18 +20,18 @@ extra_link_args = []
 
 # Platform-specific settings
 if system == "Linux":
-    extra_compile_args = ["-std=c++20", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math", "-pipe"]
+    extra_compile_args = ["-std=c++17", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math", "-pipe"]
     extra_link_args = []
 
 elif system == "Darwin":
-    extra_compile_args = ["-std=c++20", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math", "-pipe"]
+    extra_compile_args = ["-std=c++17", "-O3", "-flto", "-w", "-DNDEBUG", "-fPIC", "-ffast-math", "-pipe"]
     extra_link_args = ["-undefined", "dynamic_lookup"]
     # Don't use -march=native for universal builds
     #if "-arch arm64" not in archflags or "-arch x86_64" not in archflags:
     #    extra_compile_args.append("-march=native")
 
 elif system == "Windows":
-    extra_compile_args = ["/std:c++20", "/O2", "/DNDEBUG", "/fp:fast", "/MP", "/GL"]
+    extra_compile_args = ["/std:c++17", "/O2", "/DNDEBUG", "/fp:fast", "/MP", "/GL"]
     extra_link_args = ["/LTCG"]
 
 ext_modules = [

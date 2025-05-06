@@ -22,7 +22,7 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
       deps0_dt(ejecta.eps_k(phi, theta) / ejecta.T0),
       dm0_dt(deps0_dt / (Gamma4 * con::c2)),
       u4(std::sqrt(Gamma4 * Gamma4 - 1) * con::c) {
-    if constexpr (HasSigma<Ejecta>) {
+    if constexpr (HasSigma<Ejecta>::value) {
         dm0_dt /= 1 + ejecta.sigma0(phi, theta);
     }
 }
@@ -349,7 +349,7 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
 
     Real m_swept = compute_swept_mass(eqn_rvs, state_rvs);
 
-    if constexpr (HasU<FState>) {
+    if constexpr (HasU<FState>::value) {
         state_fwd.u = (gamma2 - 1) * m_swept * con::c2;
     }
 
@@ -391,8 +391,9 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
  * DESCRIPTION: Handle low Gamma scenario by stopping both shocks when the Lorentz factor drops below threshold.
  *              Returns true if stopping condition was applied.
  ********************************************************************************************************************/
-bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, auto const& state_fwd,
-                         auto const& state_rvs) {
+template <typename FState, typename RState>
+bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, FState const& state_fwd,
+                         RState const& state_rvs) {
     if (state_fwd.Gamma < con::Gamma_cut) {
         set_stopping_shock(i, j, shock_fwd, state_fwd);
         set_stopping_shock(i, j, shock_rvs, state_rvs);
@@ -407,8 +408,8 @@ bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs,
  *              Advances the ODE solver and saves shock states at each time step.
  *              Returns the index where shock crossing occurs.
  ********************************************************************************************************************/
-template <typename View>
-size_t solve_until_cross(size_t i, size_t j, View const& t, auto& stepper_rvs, auto& eqn_rvs, auto& state_rvs,
+template <typename View, typename RState, typename REqn, typename Stepper>
+size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs, REqn& eqn_rvs, RState& state_rvs,
                          Shock& shock_fwd, Shock& shock_rvs) {
     size_t k0 = 0;
     Real t_back = t.back();
@@ -439,8 +440,8 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, auto& stepper_rvs, a
  * DESCRIPTION: Solve shock after crossing using the provided update function.
  *              Advances the ODE solver and saves shock states at each time step.
  ********************************************************************************************************************/
-template <typename UpdateFunc>
-void solve_post_cross(size_t i, size_t j, auto const& t, size_t k0, auto& stepper, const auto& eqn, auto& state,
+template <typename UpdateFunc, typename Stepper, typename Eqn, typename State, typename View>
+void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& stepper, Eqn& eqn, State& state,
                       Shock& shock, UpdateFunc update) {
     size_t k = k0 + 1;
     Real t_back = t.back();

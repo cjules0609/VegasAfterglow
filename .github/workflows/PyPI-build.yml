@@ -25,7 +25,7 @@ jobs:
         run: cibuildwheel --platform linux --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux
           CIBW_SKIP: "*-manylinux_i686 *-musllinux_*"
           # Optimize build speed
           CIBW_ENVIRONMENT: "MAKEFLAGS='-j$(nproc)' CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) SETUPTOOLS_ENABLE_FEATURES=legacy-editable"

@@ -23,7 +23,7 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
       theta_s(theta_s),
       m_shell(0) {
     m_shell = ejecta.eps_k(phi, theta0) / ejecta.Gamma0(phi, theta0) / con::c2;
-    if constexpr (HasSigma<Ejecta>) {
+    if constexpr (HasSigma<Ejecta>::value) {
         m_shell /= 1 + ejecta.sigma0(phi, theta0);
     }
 }
