@@ -1,6 +1,10 @@
 # VegasAfterglow
 
 <p align="center">
+<img src="assets/logo.svg" alt="VegasAfterglow Logo" width="200"/>
+</p>
+
+<p align="center">
 <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
 <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 <img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
