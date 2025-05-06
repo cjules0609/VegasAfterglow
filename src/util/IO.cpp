@@ -47,7 +47,7 @@ void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit)
     }
 }
 
-#ifndef _WIN32
+#ifdef ZLIB_FOUND
 // === Coord Output ===
 void write_npz(std::string const& filename, Coord const& coord) {
     xt::dump_npz(filename + ".npz", "t_src", xt::eval(coord.t / unit::sec), false, false);

@@ -9,7 +9,7 @@
 
 #include <string>
 
-#ifndef _WIN32
+#ifdef ZLIB_FOUND
 #include "xtensor-io/xnpz.hpp"
 #endif
 
@@ -31,7 +31,7 @@ void write_csv(std::string const& filename, MeshGrid const& grid, Real unit = 1.
 // Write MeshGrid3d to a CSV file with an optional unit for value scaling
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit = 1.0);
 
-#ifndef _WIN32
+#ifdef ZLIB_FOUND
 // Write SynPhotonGrid to an NPZ file
 void write_npz(std::string const& filename, SynPhotonGrid const& syn_ph);
 // Write SynElectronGrid to an NPZ file
