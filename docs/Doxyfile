@@ -1,0 +1,89 @@
+# Doxyfile for VegasAfterglow
+
+# Project information
+PROJECT_NAME           = "VegasAfterglow"
+PROJECT_BRIEF          = "A high-performance C++ framework for modeling gamma-ray burst afterglows"
+PROJECT_LOGO           = "../logo.svg"
+OUTPUT_DIRECTORY       = doxygen
+
+# Input settings
+INPUT                  = ../src ../include ../pybind
+INPUT_ENCODING         = UTF-8
+FILE_PATTERNS          = *.c *.cpp *.h *.hpp *.cc *.hh
+RECURSIVE              = YES
+EXCLUDE                = ../external
+EXCLUDE_SYMLINKS       = YES
+EXCLUDE_PATTERNS       = */external/* */build/* */dist/*
+EXCLUDE_SYMBOLS        = 
+
+# Generate XML for Breathe integration
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+# Output settings
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_EXTRA_STYLESHEET  = 
+HTML_EXTRA_FILES       = 
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+
+# Extraction options
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+CASE_SENSE_NAMES       = NO
+
+# Diagrams and graphs
+HAVE_DOT               = YES
+CLASS_DIAGRAMS         = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_PATH               = 
+DOT_GRAPH_MAX_NODES    = 50
+
+# Source browsing options
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+VERBATIM_HEADERS       = YES
+
+# Build options
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+SORT_GROUP_NAMES       = YES
+
+# Other settings
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+MULTILINE_CPP_IS_BRIEF = NO
+TAB_SIZE               = 2
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_OUTPUT_VHDL   = NO
+EXTENSION_MAPPING      = 
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+CPP_CLI_SUPPORT        = NO
+SIP_SUPPORT            = NO
+IDL_PROPERTY_SUPPORT   = YES
+DISTRIBUTE_GROUP_DOC   = NO
+GROUP_NESTED_COMPOUNDS = NO
+SUBGROUPING            = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES 
