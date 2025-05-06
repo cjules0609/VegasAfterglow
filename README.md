@@ -1,11 +1,11 @@
 # VegasAfterglow
 
-<table>
+<table border="0" cellspacing="0" cellpadding="0">
 <tr>
-<td width="40%">
+<td width="40%" valign="top" style="border: none;">
 <img src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
 </td>
-<td width="60%">
+<td width="60%" valign="top" style="border: none;">
 <p>
 <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
 <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
@@ -94,14 +94,6 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 <tr>
   <td><b>💻 Optimized for interactive analysis</b></td>
   <td>Perform comprehensive Bayesian inference in seconds/minutes rather than hours or days on laptop, enabling rapid iteration through different physical scenarios</td>
-</tr>
-<tr>
-  <td><b>🔍 Precision with performance</b></td>
-  <td>Maintains high numerical accuracy while achieving computational speed through advanced algorithms, not by sacrificing scientific precision</td>
-</tr>
-<tr>
-  <td><b>📊 Scalable computation</b></td>
-  <td>Efficiently handles complex physical scenarios including structured jets, reverse shocks, and inverse Compton processes with minimal performance degradation</td>
 </tr>
 </table>
 
