@@ -1,11 +1,10 @@
 # VegasAfterglow
 
-<table border="0" cellspacing="0" cellpadding="0">
-<tr>
-<td width="40%" valign="top" style="border: none;">
+<div align="center">
+<div style="display: inline-block; width: 40%; vertical-align: top;">
 <img src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
-</td>
-<td width="60%" valign="top" style="border: none;">
+</div>
+<div style="display: inline-block; width: 59%; vertical-align: top; text-align: left;">
 <p>
 <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
 <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
@@ -15,9 +14,8 @@
 <p>
 <b>VegasAfterglow</b> is a <b>high-performance</b> C++ framework for modeling <b>gamma-ray burst (GRB) afterglows</b>. It delivers <b>exceptional computational speed</b>, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds rather than hours. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
 </p>
-</td>
-</tr>
-</table>
+</div>
+</div>
 
 ---
 
