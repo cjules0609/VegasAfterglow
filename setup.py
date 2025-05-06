@@ -73,7 +73,6 @@ setup(
         "pybind11>=2.6.0",
         "corner>=2.2.1",
         "tqdm>=4.0",
-        "scipy>=1.10",
     ],
     extras_require={
         "dev": ["ninja", "pytest", "black"],
