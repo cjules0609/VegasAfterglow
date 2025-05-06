@@ -14,8 +14,6 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-          - os: ubuntu-22.04-arm64
-            platform: linux
           - os: macos-latest
             platform: macos
           - os: windows-latest
