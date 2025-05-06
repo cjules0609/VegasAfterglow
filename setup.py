@@ -56,7 +56,7 @@ package_data = {
 
 setup(
     name="VegasAfterglow",
-    version="0.1.0",
+    version="0.1.1",
     description="MCMC tools for astrophysics",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
