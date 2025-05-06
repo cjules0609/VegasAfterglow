@@ -57,9 +57,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v4
+      - name: Download wheels
+        uses: actions/download-artifact@v4
         with:
-          path: dist/
+          path: wheelhouse/
+
+      - name: Gather wheels
+        run: |
+          mkdir -p dist
+          mv wheelhouse/*.whl dist/
 
       - name: Build source distribution
         run: |
