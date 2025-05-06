@@ -28,7 +28,6 @@ jobs:
       - name: Install build tools & clean
         run: |
           pip install --upgrade pip setuptools wheel cibuildwheel ninja
-          rm -rf build dist *.egg-info
 
       - name: Build wheels
         run: |
