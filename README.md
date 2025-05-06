@@ -1,6 +1,6 @@
 # VegasAfterglow
 
-<img align="left" src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
+<img align="left" src="assets/logo.svg" alt="VegasAfterglow Logo" width="200"/>
 
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)

@@ -1,81 +1,73 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="100" cy="100" r="87.5" fill="#1a1a2e" />
+  <!-- Definitions: gradients & glow filter -->
+  <defs>
+    <!-- Radial background gradient -->
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2a2a44"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </radialGradient>
+
+    <!-- Jet stroke gradient -->
+    <linearGradient id="jet-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffcc00" />
+      <stop offset="100%" stop-color="#ff6600" />
+    </linearGradient>
+
+    <!-- Text glow filter -->
+    <filter id="text-glow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0.75" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle with radial gradient -->
+  <circle cx="100" cy="100" r="87.5" fill="url(#bg-grad)" />
   
-  <!-- Binary code background elements -->
-  <g opacity="0.5">
-    <text x="32.5" y="62.5" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-10, 32.5, 62.5)">10110100</text>
-    <text x="135" y="62.5" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(8, 135, 62.5)">01001011</text>
-    <text x="50" y="150" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(12, 50, 150)">11100010</text>
-    <text x="120" y="150" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-5, 120, 150)">00101101</text>
+  <!-- Simplified binary-code accents -->
+  <g opacity="0.4" fill="#333" font-family="Courier New, monospace" font-size="4.5" font-weight="bold">
+    <text x="45" y="70" transform="rotate(-20 45 70)">1010</text>
+    <text x="145" y="70" transform="rotate(15 145 70)">0101</text>
+    <text x="55" y="150" transform="rotate(12 55 150)">1110</text>
+    <text x="137.5" y="137.5" transform="rotate(-10 137.5 137.5)">0001</text>
   </g>
-  
-  <!-- Binary code around center - BEHIND central burst -->
-  <g>
-    <!-- Top cluster - removed 1 -->
-    <text x="92.5" y="77.5" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(15, 92.5, 77.5)">1010</text>
+
+  <!-- Afterglow rings -->
+  <g opacity="0.9" fill="none">
+    <!-- Outermost ring (more transparent) -->
+    <path d="M100,25 A75,75 0 0,1 175,100 A75,75 0 0,1 100,175 A75,75 0 0,1 25,100 A75,75 0 0,1 100,25 Z" 
+          stroke="#ff6666" stroke-width="2" stroke-dasharray="10,6.25" opacity="0.5"/>
     
-    <!-- Right cluster - removed 1 -->
-    <text x="120" y="110" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(18, 120, 110)">0111</text>
-    
-    <!-- Bottom cluster - removed 1 -->
-    <text x="92.5" y="122.5" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-8, 92.5, 122.5)">1101</text>
-    
-    <!-- Left cluster - removed 1 -->
-    <text x="72.5" y="110" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(22, 72.5, 110)">1111</text>
+    <!-- Middle rings -->
+    <path d="M100,37.5 A62.5,62.5 0 0,1 162.5,100 A62.5,62.5 0 0,1 100,162.5 A62.5,62.5 0 0,1 37.5,100 A62.5,62.5 0 0,1 100,37.5 Z" 
+          stroke="#66ccff" stroke-width="2" stroke-dasharray="7.5,5"/>
+    <path d="M100,50 A50,50 0 0,1 150,100 A50,50 0 0,1 100,150 A50,50 0 0,1 50,100 A50,50 0 0,1 100,50 Z" 
+          stroke="#0066cc" stroke-width="1.5" stroke-dasharray="5,3.75"/>
+    <path d="M100,62.5 A37.5,37.5 0 0,1 137.5,100 A37.5,37.5 0 0,1 100,137.5 A37.5,37.5 0 0,1 62.5,100 A37.5,37.5 0 0,1 100,62.5 Z" 
+          stroke="#8800cc" stroke-width="1" stroke-dasharray="3.75,2.5"/>
   </g>
-  
-  <!-- Additional 4-digit binary code -->
-  <g opacity="0.7">
-    <text x="45" y="70" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-24, 45, 70)">1010</text>
-    <text x="145" y="70" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(16, 145, 70)">0101</text>
-    <text x="45" y="130" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(4, 45, 130)">1100</text>
-    <text x="145" y="130" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-18, 145, 130)">0011</text>
-    <text x="82.5" y="45" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-12, 82.5, 45)">0110</text>
-    <text x="115" y="45" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(10, 115, 45)">1001</text>
-    <text x="82.5" y="155" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(20, 82.5, 155)">1110</text>
-    <text x="115" y="155" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-14, 115, 155)">0001</text>
-  </g>
-  
-  <!-- Large prominent binary/code elements (moved behind the main elements) -->
-  <text x="57.5" y="96.25" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-6, 57.5, 96.25)">101101</text>
-  <text x="105" y="96.25" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(4, 105, 96.25)">010010</text>
-  <text x="62.5" y="111.25" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(7, 62.5, 111.25)">110101</text>
-  <text x="100" y="111.25" font-family="Courier New, monospace" font-size="5" fill="#000000" font-weight="bold" transform="rotate(-3, 100, 111.25)">001011</text>
-  
-  <!-- Gamma-ray burst afterglow representation (moved to foreground) -->
-  <g>
-    <!-- Afterglow radiation waves with purple inner to red outer gradient -->
-    <g opacity="0.85">
-      <!-- Outermost ring - Faint Red -->
-      <path d="M100,25 A75,75 0 0,1 175,100 A75,75 0 0,1 100,175 A75,75 0 0,1 25,100 A75,75 0 0,1 100,25 Z" 
-            fill="none" stroke="#ff6666" stroke-width="2.5" stroke-dasharray="10,6.25" />
-      
-      <!-- Ring 2 - Light Blue -->
-      <path d="M100,37.5 A62.5,62.5 0 0,1 162.5,100 A62.5,62.5 0 0,1 100,162.5 A62.5,62.5 0 0,1 37.5,100 A62.5,62.5 0 0,1 100,37.5 Z" 
-            fill="none" stroke="#66ccff" stroke-width="2" stroke-dasharray="7.5,5" />
-      
-      <!-- Ring 3 - Deep Blue -->
-      <path d="M100,50 A50,50 0 0,1 150,100 A50,50 0 0,1 100,150 A50,50 0 0,1 50,100 A50,50 0 0,1 100,50 Z" 
-            fill="none" stroke="#0066cc" stroke-width="1.5" stroke-dasharray="5,3.75" />
-      
-      <!-- Innermost ring - Purple -->
-      <path d="M100,62.5 A37.5,37.5 0 0,1 137.5,100 A37.5,37.5 0 0,1 100,137.5 A37.5,37.5 0 0,1 62.5,100 A37.5,37.5 0 0,1 100,62.5 Z" 
-            fill="none" stroke="#8800cc" stroke-width="1" stroke-dasharray="3.75,2.5" />
-    </g>
-    
-    <!-- Directional jet representation (in foreground) -->
-    <path d="M100,100 L137.5,62.5 C150,50 155,45 162.5,37.5" stroke="#ffcc00" stroke-width="3.75" fill="none" stroke-linecap="round" />
-    <path d="M100,100 L62.5,137.5 C50,150 45,155 37.5,162.5" stroke="#ffcc00" stroke-width="3.75" fill="none" stroke-linecap="round" />
-    
-    <!-- Simple central burst -->
-    <circle cx="100" cy="100" r="15" fill="#ff9e00" />
-    <circle cx="100" cy="100" r="8.75" fill="#ffcc00" />
-  </g>
-  
-  <!-- Brand Text -->
-  <g>
-    <text x="100" y="192.5" font-family="Arial, sans-serif" font-weight="bold" font-size="12.5" text-anchor="middle" fill="#ffffff">VegasAfterglow</text>
-  </g>
+
+  <!-- Directional jets with gradient stroke -->
+  <path d="M100,100 L137.5,62.5 C150,50 155,45 162.5,37.5" 
+        stroke="url(#jet-grad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M100,100 L62.5,137.5 C50,150 45,155 37.5,162.5" 
+        stroke="url(#jet-grad)" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Central burst -->
+  <circle cx="100" cy="100" r="15" fill="#ff9e00" />
+  <circle cx="100" cy="100" r="8.75" fill="#ffcc00" />
+
+  <!-- Brand Text with glow, nudged up -->
+  <text x="100" y="187.5"
+        font-family="Arial, sans-serif"
+        font-weight="bold"
+        font-size="21.25"
+        text-anchor="middle"
+        fill="#39A275"
+        filter="url(#text-glow)">
+    VegasAfterglow
+  </text>
 </svg> 
