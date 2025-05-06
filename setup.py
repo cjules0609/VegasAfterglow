@@ -79,8 +79,8 @@ setup(
         "dev": ["ninja", "pytest", "black"],
     },
 
-    packages=find_packages(where="pymodule"),
-    package_dir={"": "pymodule"},
+    packages=["VegasAfterglow"],
+    package_dir={"VegasAfterglow": "pymodule"},
     package_data=package_data,
     include_package_data=True,
 
