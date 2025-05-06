@@ -13,20 +13,16 @@
   
   <!-- Binary code around center - BEHIND central burst -->
   <g>
-    <!-- Top cluster -->
+    <!-- Top cluster - removed 1 -->
     <text x="370" y="310" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(15, 370, 310)">1010</text>
-    <text x="430" y="340" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(8, 430, 340)">1100</text>
     
-    <!-- Right cluster -->
-    <text x="470" y="380" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-20, 470, 380)">0110</text>
+    <!-- Right cluster - removed 1 -->
     <text x="480" y="440" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(18, 480, 440)">0111</text>
     
-    <!-- Bottom cluster -->
+    <!-- Bottom cluster - removed 1 -->
     <text x="370" y="490" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-8, 370, 490)">1101</text>
-    <text x="420" y="460" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(-15, 420, 460)">1110</text>
     
-    <!-- Left cluster -->
-    <text x="280" y="380" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(10, 280, 380)">1011</text>
+    <!-- Left cluster - removed 1 -->
     <text x="290" y="440" font-family="Courier New, monospace" font-size="20" fill="#000000" font-weight="bold" transform="rotate(22, 290, 440)">1111</text>
   </g>
   
@@ -73,9 +69,9 @@
     <path d="M400,400 L550,250 C600,200 620,180 650,150" stroke="#ffcc00" stroke-width="15" fill="none" stroke-linecap="round" />
     <path d="M400,400 L250,550 C200,600 180,620 150,650" stroke="#ffcc00" stroke-width="15" fill="none" stroke-linecap="round" />
     
-    <!-- Central burst (in foreground) -->
+    <!-- Simple central burst -->
     <circle cx="400" cy="400" r="60" fill="#ff9e00" />
-    <circle cx="400" cy="400" r="30" fill="#ffcc00" />
+    <circle cx="400" cy="400" r="35" fill="#ffcc00" />
   </g>
   
   <!-- Brand Text -->

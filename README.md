@@ -1,21 +1,23 @@
 # VegasAfterglow
 
-<div style="display: flex; align-items: center;">
-  <div style="flex: 0 0 40%;">
-    <img src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
-  </div>
-  <div style="flex: 0 0 60%;">
-    <p>
-      <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
-      <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-      <img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
-      <img src="https://img.shields.io/badge/Python-3.8%2B-blue.svg" alt="Python Version">
-    </p>
-    <p>
-      <b>VegasAfterglow</b> is a <b>high-performance</b> C++ framework for modeling <b>gamma-ray burst (GRB) afterglows</b>. It delivers <b>exceptional computational speed</b>, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds rather than hours. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
-    </p>
-  </div>
-</div>
+<table>
+<tr>
+<td width="40%">
+<img src="assets/logo.svg" alt="VegasAfterglow Logo" width="300"/>
+</td>
+<td width="60%">
+<p>
+<img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Version">
+<img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+<img src="https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg" alt="Platform">
+<img src="https://img.shields.io/badge/Python-3.8%2B-blue.svg" alt="Python Version">
+</p>
+<p>
+<b>VegasAfterglow</b> is a <b>high-performance</b> C++ framework for modeling <b>gamma-ray burst (GRB) afterglows</b>. It delivers <b>exceptional computational speed</b>, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds rather than hours. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
+</p>
+</td>
+</tr>
+</table>
 
 ---
 
