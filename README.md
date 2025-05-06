@@ -1,13 +1,13 @@
 # VegasAfterglow
 
-<img align="left" src="assets/logo.svg" alt="VegasAfterglow Logo" width="200"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="200"/>
 
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg)]()
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 
-**VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It delivers **exceptional computational speed**, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds rather than hours. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
+**VegasAfterglow** is a **high-performance** C++ framework for modeling **gamma-ray burst (GRB) afterglows**. It delivers **exceptional computational speed**, generating complete light curves in milliseconds and enabling MCMC parameter inference in seconds/minutes rather than hours/days. The framework includes sophisticated shock dynamics, radiation mechanisms, and structured jet models, with a Python wrapper for streamlined scientific workflows.
 
 <br clear="left"/>
 

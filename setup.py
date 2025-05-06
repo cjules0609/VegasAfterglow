@@ -49,7 +49,6 @@ ext_modules = [
     )
 ]
 
-# Ensure Python module files are included
 package_data = {
     "VegasAfterglow": ["*.py"],
 }
@@ -63,7 +62,10 @@ setup(
     author="Yihan Wang, Connery Chen, Bing Zhang",
 
     license="MIT",                         # SPDX expression only
-    data_files=[("", ["LICENSE"])],
+    data_files=[
+        ("", ["LICENSE"]),
+        ("assets", [os.path.join("assets", f) for f in os.listdir("assets") if not f.startswith(".")]),
+    ],
 
     python_requires=">=3.8",
     install_requires=[
