@@ -5,7 +5,7 @@
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17) 
 [![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/) 
 [![Build Status](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml/badge.svg)](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml) 
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) 
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-green.svg)](LICENSE) 
 [![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg)]() 
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/) 
 
@@ -28,7 +28,7 @@
 
 ## Features
 
-VegasAfterglow offers a comprehensive suite of features for detailed GRB afterglow modeling:
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="300"/>
 
 **Shock Dynamics & Evolution:**
 *   **Forward and Reverse Shock Modeling:** Simulates both shock components with arbitrary magnetization levels.
@@ -36,10 +36,18 @@ VegasAfterglow offers a comprehensive suite of features for detailed GRB aftergl
 *   **Ambient Medium:** Supports various ambient medium profiles including uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
 *   **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
 
+<br clear="left"/>
+
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="300"/>
+
 **Jet Structure & Geometry:**
 *   **Structured Jet Profiles:** Allows user-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization.
 *   **Jet Spreading:** Includes lateral expansion dynamics for realistic jet evolution.
 *   **Non-Axisymmetric Jets:** Capable of modeling complex, non-axisymmetric jet structures.
+
+<br clear="left"/>
+
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="300"/>
 
 **Radiation Mechanisms:**
 *   **Synchrotron Radiation:** Calculates synchrotron emission from shocked electrons.
@@ -49,9 +57,12 @@ VegasAfterglow offers a comprehensive suite of features for detailed GRB aftergl
     *   Pairwise IC between forward and reverse shock electron and photon populations.
     *   Includes Klein-Nishina corrections for accurate high-energy IC cooling and emission.
 
+<br clear="left"/>
+
 ---
 
 ## Performance Highlights
+
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
@@ -60,6 +71,12 @@ VegasAfterglow delivers exceptional computational performance through deep optim
     *   Approximately **10 seconds** for on-axis structured jet scenarios.
     *   Approximately **30 seconds** for more complex off-axis scenarios.
 *   **Optimized for Interactive Analysis:** Facilitates comprehensive Bayesian inference on standard laptop hardware in seconds to minutes, rather than hours or days, allowing for rapid iteration through different physical models and scenarios.
+
+<div align="center" style="margin-top: 20px;">
+  <!-- MCMC Efficiency Visualization -->
+  <img src="assets/mcmc_scaling.svg" alt="MCMC Scaling Performance" width="70%"/>
+  <p align="center"><i>MCMC computational scaling with model complexity and data points</i></p>
+</div>
 
 This level of performance is achieved through meticulous algorithm design, extensive use of vectorization, and careful memory management, making VegasAfterglow highly suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
@@ -145,60 +162,21 @@ The following development tools are required:
 
 ## Usage
 
-We provide an example of using MCMC to fit afterglow light curves and spectra to user-provided data. You can run it using either:
+We provide an example MCMC notebook (`script/mcmc.ipynb`) for fitting afterglow light curves and spectra to user-provided data. To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
 
-<details>
-<summary><b>Option 1: Run with Jupyter Notebook</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
-1. Install Jupyter Notebook:
-```bash
-pip install jupyter notebook
-```
-
-2. Launch Jupyter Notebook:
-```bash
-jupyter notebook
-```
-
-3. In your browser, open `mcmc.ipynb` inside the `script/` directory
-</details>
-
-<details>
-<summary><b>Option 2: Run with VSCode + Jupyter Extension</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
-1. Install [Visual Studio Code](https://code.visualstudio.com/) and the **Jupyter extension**:
-   - Open VSCode
-   - Go to the **Extensions** panel (or press `Cmd+Shift+X` on macOS, `Ctrl+Shift+X` on Windows)
-   - Search for **"Jupyter"** and click **Install**
-
-2. Open the VegasAfterglow folder in VSCode and navigate to `mcmc.ipynb` in the `script/` directory
-</details>
+The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
 
 ### MCMC Parameter Fitting with VegasAfterglow
 
-This section guides you through using the MCMC (Markov Chain Monte Carlo) module in VegasAfterglow to explore parameter space and determine posterior distributions for GRB afterglow models. Rather than just finding a single best-fit solution, MCMC allows you to quantify parameter uncertainties and understand correlations between different physical parameters.
+This section shows how to use the MCMC module to explore parameter space and determine posterior distributions for GRB afterglow models.
 
-<details open>
-<summary><b>Overview</b> <i>(click to expand/collapse)</i></summary>
+<details>
+<summary><b>1. Preparing Data and Configuring the Model</b> <i>(click to expand/collapse)</i></summary>
 <br>
-
-The MCMC module follows these key steps:
-1. Create an `ObsData` object to hold your observational data
-2. Configure model settings through the `Setups` class
-3. Define parameters and their priors for the MCMC process
-4. Run the MCMC sampler to explore the posterior distribution
-5. Analyze and visualize the results
 
 ```python
 from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale
 ```
-</details>
-
-<details>
-<summary><b>1. Preparing Your Data</b> <i>(click to expand/collapse)</i></summary>
-<br>
 
 VegasAfterglow provides flexible options for loading observational data through the `ObsData` class. You can add light curves (specific flux vs. time) and spectra (specific flux vs. frequency) in multiple ways.
 
@@ -244,11 +222,6 @@ for t, fname in zip(times, spec_files):
 ```
 
 > **Note:** The `ObsData` interface is designed to be flexible. You can mix and match different data sources, and add multiple light curves at different frequencies as well as multiple spectra at different times.
-</details>
-
-<details>
-<summary><b>2. Configuring the Model</b> <i>(click to expand/collapse)</i></summary>
-<br>
 
 The `Setups` class defines the global properties and environment for your model. These settings remain fixed during the MCMC process.
 
@@ -263,22 +236,17 @@ cfg.z = 1.58               # Redshift
 cfg.medium = "wind"        # Ambient medium: "wind", "ISM" (Interstellar Medium) or "user" (user-defined)
 cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
 
-# Optional: Advanced grid settings. 
+# Optional: Advanced grid settings. Default (24, 24, 24) is optimized to converge for most cases.
 # cfg.phi_num = 24         # Number of grid points in phi direction
 # cfg.theta_num = 24       # Number of grid points in theta direction
 # cfg.t_num = 24           # Number of time grid points
 ```
 
-**Why Configure These Properties?**
-- **Source properties:** These parameters define the observer's relation to the source and are typically known from independent measurements
-- **Physical model configuration:** These define the fundamental model choices that aren't fitted but instead represent different physical scenarios
-- **Grid settings:** Control the numerical precision of the calculations (advanced users). Default is (24, 24, 24). VegasAfterglow is optimized to converge with this grid resolution for most cases.
-
-These settings affect how the model is calculated but are not varied during the MCMC process, allowing you to focus on exploring the most relevant physical parameters.
+These settings affect how the model is calculated but are not varied during the MCMC process.
 </details>
 
 <details>
-<summary><b>3. Defining Parameters</b> <i>(click to expand/collapse)</i></summary>
+<summary><b>2. Defining Parameters and Running MCMC</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
 The `ParamDef` class is used to define the parameters for MCMC exploration. Each parameter requires a name, initial value, prior range, and sampling scale:
@@ -307,11 +275,6 @@ The parameters you include depend on your model configuration:
 - For "wind" medium: use `A_star` parameter 
 - For "ISM" medium: use `n_ism` parameter instead
 - Different jet structures may require different parameters
-</details>
-
-<details>
-<summary><b>4. Running the MCMC Fitting</b> <i>(click to expand/collapse)</i></summary>
-<br>
 
 Initialize the `Fitter` class with your data and configuration, then run the MCMC process:
 
@@ -336,10 +299,10 @@ The `result` object contains:
 </details>
 
 <details>
-<summary><b>5. Exploring the Posterior Distribution</b> <i>(click to expand/collapse)</i></summary>
+<summary><b>3. Analyzing Results and Generating Predictions</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-Rather than focusing only on the best-fit parameters, examine the full posterior distribution:
+Examine the posterior distribution to understand parameter constraints:
 
 ```python
 # Print best-fit parameters (maximum likelihood)
@@ -357,11 +320,6 @@ print("\nParameter constraints (median and 68% credible intervals):")
 for i, name in enumerate(result.labels):
     print(f"  {name}: {medians[i]:.4f} (+{upper[i]-medians[i]:.4f}, -{medians[i]-lower[i]:.4f})")
 ```
-</details>
-
-<details>
-<summary><b>6. Generating Model Predictions</b> <i>(click to expand/collapse)</i></summary>
-<br>
 
 Use samples from the posterior to generate model predictions with uncertainties:
 
@@ -380,13 +338,6 @@ spec_best = fitter.spectra(result.best_params, nu_out, times)
 
 # Now you can plot the best-fit model and the uncertainty envelope
 ```
-</details>
-
-<details>
-<summary><b>7. Visualizing Results</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
-#### Creating Corner Plots
 
 Corner plots are essential for visualizing parameter correlations and posterior distributions:
 
@@ -415,8 +366,6 @@ flat_chain = result.samples.reshape(-1, result.samples.shape[-1])
 plot_corner(flat_chain, result.labels)
 ```
 
-#### Creating Trace Plots
-
 Trace plots help verify MCMC convergence:
 
 ```python
@@ -436,20 +385,22 @@ def plot_trace(chain, labels, filename="trace_plot.png"):
 # Create the trace plot
 plot_trace(result.samples, result.labels)
 ```
-</details>
 
-<details>
-<summary><b>8. Best Practices for Posterior Exploration</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
+**Best Practices for Posterior Exploration:**
 1. **Prior Ranges**: Set physically meaningful prior ranges based on theoretical constraints
 2. **Convergence Testing**: Check convergence using trace plots and autocorrelation metrics
 3. **Parameter Correlations**: Use corner plots to identify degeneracies and correlations
-4. **Model Comparison**: Compare different physical models (e.g., wind vs. ISM) using Bayesian evidence
+4. **Model Comparison**: Compare different physical models (e.g., wind vs. ISM)
 5. **Physical Interpretation**: Connect parameter constraints with physical processes in GRB afterglows
 </details>
 
-### Creating Custom Problem Generators with C++
+---
+
+## Advanced Usage: C++ Interface
+
+<details>
+<summary><b>Creating Custom Problem Generators with C++</b> <i>(for advanced users)</i></summary>
+<br>
 
 After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
 
@@ -489,6 +440,7 @@ Replace `/path/to/VegasAfterglow/` with the actual path to your VegasAfterglow i
 
 The repository includes several example problem generators in the `tests/demo/` directory that demonstrate different use cases. These are the best resources for understanding direct C++ API usage.
 </details>
+</details>
 
 ---
 
@@ -513,7 +465,7 @@ We value all contributions and aim to respond to issues promptly.
 
 ## License
 
-VegasAfterglow is released under the **MIT License**.
+VegasAfterglow is released under the **BSD-3-Clause License**.
 
 ---
 

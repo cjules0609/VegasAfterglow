@@ -61,7 +61,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Yihan Wang, Connery Chen, Bing Zhang",
 
-    license="MIT",                    
+    license="BSD-3-Clause",                    
     data_files=[
         ("", ["LICENSE"]),
         ("assets", [os.path.join("assets", f) for f in os.listdir("assets") if not f.startswith(".")]),
