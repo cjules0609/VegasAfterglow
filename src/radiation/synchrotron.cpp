@@ -15,9 +15,12 @@
 #include "physics.h"
 #include "utilities.h"
 /********************************************************************************************************************
- * CONSTRUCTOR: InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T)
- * DESCRIPTION: Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
- *              Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
+ * @brief Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
+ * @details Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
+ * @param nu_m Characteristic frequency for minimum Lorentz factor
+ * @param nu_c Characteristic frequency for cooling Lorentz factor
+ * @param B Magnetic field strength
+ * @param Y_T Thomson Y parameter
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcept {
     gamma_hat_m = con::me * con::c2 / con::h / nu_m;  // Compute minimum characteristic Lorentz factor
@@ -34,8 +37,8 @@ InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcep
 }
 
 /********************************************************************************************************************
- * CONSTRUCTOR: InverseComptonY::InverseComptonY(Real Y_T)
- * DESCRIPTION: Simple constructor that initializes with only the Thomson Y parameter for special cases.
+ * @brief Simple constructor that initializes with only the Thomson Y parameter for special cases.
+ * @param Y_T Thomson Y parameter
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY(Real Y_T) noexcept {
     this->Y_T = Y_T;  // Set the Thomson Y parameter
@@ -43,8 +46,7 @@ InverseComptonY::InverseComptonY(Real Y_T) noexcept {
 }
 
 /********************************************************************************************************************
- * CONSTRUCTOR: InverseComptonY::InverseComptonY()
- * DESCRIPTION: Default constructor that initializes all member variables to zero.
+ * @brief Default constructor that initializes all member variables to zero.
  ********************************************************************************************************************/
 InverseComptonY::InverseComptonY() noexcept {
     nu_hat_m = 0;
@@ -56,9 +58,11 @@ InverseComptonY::InverseComptonY() noexcept {
 }
 
 /********************************************************************************************************************
- * METHOD: InverseComptonY::compute_val_at_gamma(Real gamma, Real p)
- * DESCRIPTION: Calculates the effective Y parameter for a given Lorentz factor and spectral index.
- *              Different scaling relations apply depending on the cooling regime and gamma value.
+ * @brief Calculates the effective Y parameter for a given Lorentz factor and spectral index.
+ * @details Different scaling relations apply depending on the cooling regime and gamma value.
+ * @param gamma Electron Lorentz factor
+ * @param p Spectral index of electron distribution
+ * @return The effective Y parameter at the given gamma
  ********************************************************************************************************************/
 Real InverseComptonY::compute_val_at_gamma(Real gamma, Real p) const {
     switch (regime) {
@@ -91,9 +95,11 @@ Real InverseComptonY::compute_val_at_gamma(Real gamma, Real p) const {
 }
 
 /********************************************************************************************************************
- * METHOD: InverseComptonY::compute_val_at_nu(Real nu, Real p)
- * DESCRIPTION: Calculates the effective Y parameter for a given frequency and spectral index.
- *              Different scaling relations apply depending on the cooling regime and frequency range.
+ * @brief Calculates the effective Y parameter for a given frequency and spectral index.
+ * @details Different scaling relations apply depending on the cooling regime and frequency range.
+ * @param nu Frequency at which to compute the Y parameter
+ * @param p Spectral index of electron distribution
+ * @return The effective Y parameter at the given frequency
  ********************************************************************************************************************/
 Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
     switch (regime) {
@@ -126,9 +132,10 @@ Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
 }
 
 /********************************************************************************************************************
- * METHOD: InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys)
- * DESCRIPTION: Returns the Thomson Y parameter from the provided InverseComptonY object.
- *              Previously supported summing Y parameters from multiple objects.
+ * @brief Returns the Thomson Y parameter from the provided InverseComptonY object.
+ * @details Previously supported summing Y parameters from multiple objects.
+ * @param Ys InverseComptonY object
+ * @return The Thomson Y parameter
  ********************************************************************************************************************/
 Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) {
     /*Real Y_tilt = 0;
@@ -140,9 +147,12 @@ Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) {
 }
 
 /********************************************************************************************************************
- * METHOD: InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p)
- * DESCRIPTION: Calculates the effective Y parameter at a specific Lorentz factor and spectral index.
- *              Previously supported summing contributions from multiple InverseComptonY objects.
+ * @brief Calculates the effective Y parameter at a specific Lorentz factor and spectral index.
+ * @details Previously supported summing contributions from multiple InverseComptonY objects.
+ * @param Ys InverseComptonY object
+ * @param gamma Electron Lorentz factor
+ * @param p Spectral index of electron distribution
+ * @return The effective Y parameter at the given gamma
  ********************************************************************************************************************/
 Real InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p) {
     /*Real Y_tilt = 0;
@@ -154,9 +164,12 @@ Real InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real ga
 }
 
 /********************************************************************************************************************
- * METHOD: InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p)
- * DESCRIPTION: Calculates the effective Y parameter at a specific frequency and spectral index.
- *              Previously supported summing contributions from multiple InverseComptonY objects.
+ * @brief Calculates the effective Y parameter at a specific frequency and spectral index.
+ * @details Previously supported summing contributions from multiple InverseComptonY objects.
+ * @param Ys InverseComptonY object
+ * @param nu Frequency at which to compute the Y parameter
+ * @param p Spectral index of electron distribution
+ * @return The effective Y parameter at the given frequency
  ********************************************************************************************************************/
 Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p) {
     /* Real Y_tilt = 0;
@@ -168,9 +181,10 @@ Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, R
 }
 
 /********************************************************************************************************************
- * METHOD: SynElectrons::compute_column_num_den(Real gamma)
- * DESCRIPTION: Calculates the electron column number density at a specific Lorentz factor.
- *              Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
+ * @brief Calculates the electron column number density at a specific Lorentz factor.
+ * @details Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
+ * @param gamma Electron Lorentz factor
+ * @return Column number density at the specified Lorentz factor
  ********************************************************************************************************************/
 Real SynElectrons::compute_column_num_den(Real gamma) const {
     if (gamma < gamma_c) {
@@ -182,16 +196,22 @@ Real SynElectrons::compute_column_num_den(Real gamma) const {
 }
 
 /********************************************************************************************************************
- * FUNCTION: order(Real a, Real b, Real c)
- * DESCRIPTION: Helper function that checks if three values are in non-decreasing order (a ≤ b ≤ c).
- *              Returns true if ordered, false otherwise.
+ * @brief Helper function that checks if three values are in non-decreasing order.
+ * @param a First value
+ * @param b Middle value
+ * @param c Last value
+ * @return True if a ≤ b ≤ c, false otherwise
  ********************************************************************************************************************/
 inline bool order(Real a, Real b, Real c) { return a <= b && b <= c; };
 
 /********************************************************************************************************************
- * FUNCTION: determine_regime(Real a, Real c, Real m)
- * DESCRIPTION: Determines the spectral regime (1-6) based on the ordering of absorption (a),
- *              cooling (c), and minimum (m) Lorentz factors. Returns 0 if no valid regime is found.
+ * @brief Determines the spectral regime (1-6) based on the ordering of characteristic Lorentz factors.
+ * @details Classifies the regime based on the ordering of absorption (a), cooling (c),
+ *          and minimum (m) Lorentz factors.
+ * @param a Absorption Lorentz factor
+ * @param c Cooling Lorentz factor
+ * @param m Minimum Lorentz factor
+ * @return Regime number (1-6) or 0 if no valid regime is found
  ********************************************************************************************************************/
 size_t determine_regime(Real a, Real c, Real m) {
     if (order(a, m, c)) {
@@ -211,10 +231,11 @@ size_t determine_regime(Real a, Real c, Real m) {
 }
 
 /********************************************************************************************************************
- * METHOD: SynElectrons::compute_gamma_spectrum(Real gamma)
- * DESCRIPTION: Calculates the electron energy spectrum at a given Lorentz factor.
- *              Different spectral forms apply based on the current regime and relative to
- *              characteristic Lorentz factors (gamma_a, gamma_c, gamma_m, gamma_M).
+ * @brief Calculates the electron energy spectrum at a given Lorentz factor.
+ * @details Different spectral forms apply based on the current regime and relative to
+ *          characteristic Lorentz factors (gamma_a, gamma_c, gamma_m, gamma_M).
+ * @param gamma Electron Lorentz factor
+ * @return The normalized electron energy spectrum value
  ********************************************************************************************************************/
 Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
     switch (regime) {
@@ -274,9 +295,10 @@ Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
 }
 
 /********************************************************************************************************************
- * METHOD: SynPhotons::compute_I_nu(Real nu)
- * DESCRIPTION: Calculates the synchrotron intensity at a given frequency.
- *              Includes inverse Compton corrections for frequencies above the cooling frequency.
+ * @brief Calculates the synchrotron intensity at a given frequency.
+ * @details Includes inverse Compton corrections for frequencies above the cooling frequency.
+ * @param nu Frequency at which to compute the intensity
+ * @return The synchrotron intensity at the specified frequency
  ********************************************************************************************************************/
 Real SynPhotons::compute_I_nu(Real nu) const {
     if (nu < nu_c) {
@@ -288,9 +310,10 @@ Real SynPhotons::compute_I_nu(Real nu) const {
 }
 
 /********************************************************************************************************************
- * METHOD: SynPhotons::compute_log2_I_nu(Real nu)
- * DESCRIPTION: Calculates the base-2 logarithm of synchrotron intensity at a given frequency.
- *              Optimized for numerical computation by using logarithmic arithmetic.
+ * @brief Calculates the base-2 logarithm of synchrotron intensity at a given frequency.
+ * @details Optimized for numerical computation by using logarithmic arithmetic.
+ * @param log2_nu Base-2 logarithm of the frequency
+ * @return Base-2 logarithm of synchrotron intensity
  ********************************************************************************************************************/
 Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
     if (log2_nu < log2_nu_c) {
@@ -300,10 +323,10 @@ Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
                fast_log2(1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, std::exp2(log2_nu), e->p));
     }
 }
+
 /********************************************************************************************************************
- * METHOD: SynPhotons::update_constant()
- * DESCRIPTION: Updates cached calculation constants used for efficiently computing synchrotron spectra.
- *              Constants vary based on the electron regime (1-6) and involve different power laws.
+ * @brief Updates cached calculation constants used for efficiently computing synchrotron spectra.
+ * @details Constants vary based on the electron regime (1-6) and involve different power laws.
  ********************************************************************************************************************/
 void SynPhotons::update_constant() {
     // Update constants based on spectral parameters
@@ -363,9 +386,10 @@ void SynPhotons::update_constant() {
 }
 
 /********************************************************************************************************************
- * METHOD: SynPhotons::compute_spectrum(Real nu)
- * DESCRIPTION: Calculates the synchrotron spectrum at a given frequency based on the electron regime.
- *              Implements the broken power-law with exponential cutoff formulae for different regimes.
+ * @brief Calculates the synchrotron spectrum at a given frequency based on the electron regime.
+ * @details Implements the broken power-law with exponential cutoff formulae for different regimes.
+ * @param nu The frequency at which to compute the spectrum
+ * @return The normalized synchrotron spectrum value
  ********************************************************************************************************************/
 Real SynPhotons::compute_spectrum(Real nu) const {
     Real p = e->p;
@@ -443,9 +467,10 @@ Real SynPhotons::compute_spectrum(Real nu) const {
 }
 
 /********************************************************************************************************************
- * METHOD: SynPhotons::compute_log2_spectrum(Real nu)
- * DESCRIPTION: Calculates the base-2 logarithm of synchrotron spectrum at a given frequency.
- *              Uses logarithmic arithmetic for numerical stability in different spectral regimes.
+ * @brief Calculates the base-2 logarithm of synchrotron spectrum at a given frequency.
+ * @details Uses logarithmic arithmetic for numerical stability in different spectral regimes.
+ * @param log2_nu Base-2 logarithm of the frequency
+ * @return Base-2 logarithm of the synchrotron spectrum
  ********************************************************************************************************************/
 Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
     Real p = e->p;
@@ -526,9 +551,11 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_peak_power(Real B, Real p)
- * DESCRIPTION: Calculates the peak synchrotron power per electron in the comoving frame.
- *              Based on magnetic field strength B and power-law index p of the electron distribution.
+ * @brief Calculates the peak synchrotron power per electron in the comoving frame.
+ * @details Based on magnetic field strength B and power-law index p of the electron distribution.
+ * @param B Magnetic field strength
+ * @param p Power-law index of electron distribution
+ * @return Peak synchrotron power per electron
  ********************************************************************************************************************/
 Real compute_syn_peak_power(Real B, Real p) {
     constexpr double sqrt3_half = 1.73205080757 / 2;
@@ -536,9 +563,11 @@ Real compute_syn_peak_power(Real B, Real p) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_freq(Real gamma, Real B)
- * DESCRIPTION: Calculates the characteristic synchrotron frequency for electrons with Lorentz factor gamma
- *              in a magnetic field B. Uses the standard synchrotron formula.
+ * @brief Calculates the characteristic synchrotron frequency for electrons with a given Lorentz factor.
+ * @details Uses the standard synchrotron formula.
+ * @param gamma Electron Lorentz factor
+ * @param B Magnetic field strength
+ * @return Characteristic synchrotron frequency
  ********************************************************************************************************************/
 Real compute_syn_freq(Real gamma, Real B) {
     Real nu = 3 * con::e / (4 * con::pi * con::me * con::c) * B * gamma * gamma;
@@ -546,9 +575,11 @@ Real compute_syn_freq(Real gamma, Real B) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_gamma(Real nu, Real B)
- * DESCRIPTION: Calculates the electron Lorentz factor corresponding to a synchrotron frequency nu
- *              in a magnetic field B. Inverse of the compute_syn_freq function.
+ * @brief Calculates the electron Lorentz factor corresponding to a synchrotron frequency.
+ * @details Inverse of the compute_syn_freq function.
+ * @param nu Synchrotron frequency
+ * @param B Magnetic field strength
+ * @return Corresponding electron Lorentz factor
  ********************************************************************************************************************/
 Real compute_syn_gamma(Real nu, Real B) {
     Real gamma = std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) * (nu / B));
@@ -556,9 +587,12 @@ Real compute_syn_gamma(Real nu, Real B) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p)
- * DESCRIPTION: Calculates the maximum electron Lorentz factor for synchrotron emission.
- *              Uses an iterative approach to account for inverse Compton cooling effects.
+ * @brief Calculates the maximum electron Lorentz factor for synchrotron emission.
+ * @details Uses an iterative approach to account for inverse Compton cooling effects.
+ * @param B Magnetic field strength
+ * @param Ys InverseComptonY object
+ * @param p Spectral index of electron distribution
+ * @return Maximum electron Lorentz factor
  ********************************************************************************************************************/
 Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
     if (B == 0) {
@@ -578,10 +612,15 @@ Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi)
- * DESCRIPTION: Calculates the minimum electron Lorentz factor for synchrotron emission.
- *              Accounts for different power-law indices with special handling for the p=2 case.
- *              Uses the fraction of shock energy given to electrons (eps_e) and electron fraction (xi).
+ * @brief Calculates the minimum electron Lorentz factor for synchrotron emission.
+ * @details Accounts for different power-law indices with special handling for the p=2 case.
+ *          Uses the fraction of shock energy given to electrons (eps_e) and electron fraction (xi).
+ * @param Gamma_rel Bulk Lorentz factor of the shock
+ * @param gamma_M Maximum electron Lorentz factor
+ * @param eps_e Fraction of shock energy given to electrons
+ * @param p Power-law index of electron distribution
+ * @param xi Fraction of electrons accelerated
+ * @return Minimum electron Lorentz factor
  ********************************************************************************************************************/
 Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
     Real gamma_bar_minus_1 = eps_e * (Gamma_rel - 1) * (con::mp / con::me) / xi;
@@ -601,10 +640,14 @@ Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real 
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p)
- * DESCRIPTION: Calculates the cooling electron Lorentz factor based on comoving time.
- *              Accounts for synchrotron and inverse Compton cooling using an iterative approach
- *              to handle the Lorentz factor dependent IC cooling.
+ * @brief Calculates the cooling electron Lorentz factor based on comoving time.
+ * @details Accounts for synchrotron and inverse Compton cooling using an iterative approach
+ *          to handle the Lorentz factor dependent IC cooling.
+ * @param t_com Comoving time
+ * @param B Magnetic field strength
+ * @param Ys InverseComptonY object
+ * @param p Spectral index of electron distribution
+ * @return Cooling electron Lorentz factor
  ********************************************************************************************************************/
 Real compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
     // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
@@ -626,10 +669,15 @@ Real compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c)
- * DESCRIPTION: Calculates the self-absorption Lorentz factor by equating synchrotron emission to blackbody.
- *              Uses the peak intensity and shock parameters to determine where absorption becomes important.
- *              Handles both weak and strong absorption regimes.
+ * @brief Calculates the self-absorption Lorentz factor by equating synchrotron emission to blackbody.
+ * @details Uses the peak intensity and shock parameters to determine where absorption becomes important.
+ *          Handles both weak and strong absorption regimes.
+ * @param Gamma_rel Bulk Lorentz factor of the shock
+ * @param B Magnetic field strength
+ * @param I_syn_peak Peak synchrotron intensity
+ * @param gamma_m Minimum electron Lorentz factor
+ * @param gamma_c Cooling electron Lorentz factor
+ * @return Self-absorption Lorentz factor
  ********************************************************************************************************************/
 Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
@@ -663,9 +711,12 @@ Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, 
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c)
- * DESCRIPTION: Determines the electron Lorentz factor at which the number density peaks,
- *              based on absorption, minimum, and cooling Lorentz factors.
+ * @brief Determines the electron Lorentz factor at which the number density peaks.
+ * @details Based on the relative ordering of absorption, minimum, and cooling Lorentz factors.
+ * @param gamma_a Absorption Lorentz factor
+ * @param gamma_m Minimum electron Lorentz factor
+ * @param gamma_c Cooling electron Lorentz factor
+ * @return Peak Lorentz factor
  ********************************************************************************************************************/
 Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
@@ -677,17 +728,19 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_gamma_peak(SynElectrons const& e)
- * DESCRIPTION: Overloaded version that determines the peak Lorentz factor directly from a SynElectrons object.
- *              Convenient wrapper around the three-parameter version.
+ * @brief Determines the peak Lorentz factor directly from a SynElectrons object.
+ * @details Convenient wrapper around the three-parameter version.
+ * @param e Synchrotron electron object
+ * @return Peak Lorentz factor
  ********************************************************************************************************************/
 Real compute_gamma_peak(SynElectrons const& e) { return compute_gamma_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
 /********************************************************************************************************************
- * FUNCTION: update_electrons_4Y(SynElectronGrid& e, Shock const& shock)
- * DESCRIPTION: Updates electron properties throughout the grid based on shock parameters and IC Y values.
- *              Recalculates gamma_M, gamma_c, gamma_a, regime, and Y_c parameters for each grid cell.
- *              Handles both freshly-shocked and adiabatic cooling regions.
+ * @brief Updates electron properties throughout the grid based on shock parameters and IC Y values.
+ * @details Recalculates gamma_M, gamma_c, gamma_a, regime, and Y_c parameters for each grid cell.
+ *          Handles both freshly-shocked and adiabatic cooling regions.
+ * @param e Synchrotron electron grid to update
+ * @param shock The shock object containing evolution data
  ********************************************************************************************************************/
 void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
@@ -723,10 +776,13 @@ void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: generate_syn_electrons(Shock const& shock, Real p, Real xi)
- * DESCRIPTION: Creates a new synchrotron electron grid based on shock parameters.
- *              Initializes all electron properties including Lorentz factors, column densities,
- *              and peak intensities for each grid cell. Returns the populated grid.
+ * @brief Creates a new synchrotron electron grid based on shock parameters.
+ * @details Initializes all electron properties including Lorentz factors, column densities,
+ *          and peak intensities for each grid cell.
+ * @param shock The shock object containing evolution data
+ * @param p Power-law index of electron distribution
+ * @param xi Fraction of electrons accelerated
+ * @return The populated synchrotron electron grid
  ********************************************************************************************************************/
 SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
     auto [phi_size, theta_size, t_size] = shock.shape();
@@ -775,9 +831,12 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi)
- * DESCRIPTION: Populates an existing synchrotron electron grid with values based on shock parameters.
- *              Overloaded version that modifies a grid supplied by the caller rather than creating a new one.
+ * @brief Populates an existing synchrotron electron grid with values based on shock parameters.
+ * @details Modifies a grid supplied by the caller rather than creating a new one.
+ * @param electrons Synchrotron electron grid to populate
+ * @param shock The shock object containing evolution data
+ * @param p Power-law index of electron distribution
+ * @param xi Fraction of electrons accelerated
  ********************************************************************************************************************/
 void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi) {
     auto [phi_size, theta_size, t_size] = shock.shape();
@@ -824,10 +883,12 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
 }
 
 /********************************************************************************************************************
- * FUNCTION: generate_syn_photons(Shock const& shock, SynElectronGrid const& e)
- * DESCRIPTION: Creates a new synchrotron photon grid based on shock parameters and electron properties.
- *              Computes characteristic frequencies and updates calculation constants for each grid cell.
- *              Returns the populated photon grid.
+ * @brief Creates a new synchrotron photon grid based on shock parameters and electron properties.
+ * @details Computes characteristic frequencies and updates calculation constants for each grid cell.
+ *          Returns the populated photon grid.
+ * @param shock The shock object containing evolution data
+ * @param e The synchrotron electron grid
+ * @return The populated synchrotron photon grid
  ********************************************************************************************************************/
 SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& e) {
     auto [phi_size, theta_size, t_size] = shock.shape();
@@ -861,9 +922,11 @@ SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& e)
 }
 
 /********************************************************************************************************************
- * FUNCTION: generate_syn_photons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e)
- * DESCRIPTION: Populates an existing synchrotron photon grid based on shock parameters and electron properties.
- *              Overloaded version that modifies a grid supplied by the caller rather than creating a new one.
+ * @brief Populates an existing synchrotron photon grid based on shock parameters and electron properties.
+ * @details Modifies a grid supplied by the caller rather than creating a new one.
+ * @param ph Synchrotron photon grid to populate
+ * @param shock The shock object containing evolution data
+ * @param e The synchrotron electron grid
  ********************************************************************************************************************/
 void generate_syn_photons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e) {
     auto [phi_size, theta_size, t_size] = shock.shape();

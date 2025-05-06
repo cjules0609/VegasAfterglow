@@ -16,11 +16,11 @@
 #include "physics.h"
 
 /********************************************************************************************************************
- * CLASS: Shock
- * DESCRIPTION: Represents a shock wave in an astrophysical environment. The class stores physical properties of the
- *              shock across a 3D grid defined by azimuthal angle (phi), polar angle (theta), and time bins.
- *              Provides methods for shock calculations, including relativistic jump conditions, magnetic field
- *              calculations, and energy density computations.
+ * @class Shock
+ * @brief Represents a shock wave in an astrophysical environment.
+ * @details The class stores physical properties of the shock across a 3D grid defined by azimuthal angle (phi),
+ *          polar angle (theta), and time bins. Provides methods for shock calculations, including relativistic
+ *          jump conditions, magnetic field calculations, and energy density computations.
  ********************************************************************************************************************/
 class Shock {
    public:
@@ -57,43 +57,38 @@ class Shock {
 };
 
 /********************************************************************************************************************
- * INLINE FUNCTIONS: Shock Utilities
- * DESCRIPTION: This section defines a set of inline functions used in shock calculations. These functions compute
- *              various physical quantities such as the comoving magnetic field (via the Weibel instability),
- *              thermal energy density, time derivatives, jet width derivative, downstream number density, fluid
- *              velocities, and update the shock state.
+ * @defgroup ShockUtilities Shock Utilities
+ * @brief Inline functions used in shock calculations.
+ * @details This section defines a set of inline functions used in shock calculations. These functions compute
+ *          various physical quantities such as the comoving magnetic field (via the Weibel instability),
+ *          thermal energy density, time derivatives, jet width derivative, downstream number density, fluid
+ *          velocities, and update the shock state.
  ********************************************************************************************************************/
 
 /********************************************************************************************************************
- * FUNCTION: compute_downstr_4vel(gamma_rel, sigma)
- * DESCRIPTION: Computes the downstream four-velocity for a given relative Lorentz factor and magnetization parameter.
- *              The calculation handles both magnetized (sigma > 0) and non-magnetized (sigma = 0) cases using
- *              different equations based on jump conditions across the shock front.
- * PARAMETERS:
- *   - gamma_rel: Relative Lorentz factor between upstream and downstream regions
- *   - sigma: Magnetization parameter (ratio of magnetic to rest-mass energy density)
- * RETURNS: The downstream four-velocity in the shock frame
+ * @brief Computes the downstream four-velocity for a given relative Lorentz factor and magnetization parameter.
+ * @param gamma_rel Relative Lorentz factor between upstream and downstream regions
+ * @param sigma Magnetization parameter (ratio of magnetic to rest-mass energy density)
+ * @return The downstream four-velocity in the shock frame
+ * @details The calculation handles both magnetized (sigma > 0) and non-magnetized (sigma = 0) cases using
+ *          different equations based on jump conditions across the shock front.
  ********************************************************************************************************************/
 Real compute_downstr_4vel(Real gamma_rel, Real sigma);
 
 /********************************************************************************************************************
- * FUNCTION: compute_4vel_jump(gamma_rel, sigma)
- * DESCRIPTION: Computes the ratio of upstream to downstream four-velocity across the shock front.
- *              This ratio is a key parameter in determining various shock properties, such as compression ratio
- *              and jump conditions for density, pressure, and magnetic field.
- * PARAMETERS:
- *   - gamma_rel: Relative Lorentz factor between upstream and downstream regions
- *   - sigma: Magnetization parameter (ratio of magnetic to rest-mass energy density)
- * RETURNS: The ratio of upstream to downstream four-velocity
+ * @brief Computes the ratio of upstream to downstream four-velocity across the shock front.
+ * @param gamma_rel Relative Lorentz factor between upstream and downstream regions
+ * @param sigma Magnetization parameter (ratio of magnetic to rest-mass energy density)
+ * @return The ratio of upstream to downstream four-velocity
+ * @details This ratio is a key parameter in determining various shock properties, such as compression ratio
+ *          and jump conditions for density, pressure, and magnetic field.
  ********************************************************************************************************************/
 Real compute_4vel_jump(Real gamma_rel, Real sigma);
 
 /********************************************************************************************************************
- * FUNCTION: compute_sound_speed(Gamma_rel)
- * DESCRIPTION: Computes the sound speed in the shocked medium based on the relative Lorentz factor.
- * PARAMETERS:
- *   - Gamma_rel: Relative Lorentz factor between upstream and downstream regions
- * RETURNS: The sound speed as a fraction of light speed
+ * @brief Computes the sound speed in the shocked medium based on the relative Lorentz factor.
+ * @param Gamma_rel Relative Lorentz factor between upstream and downstream regions
+ * @return The sound speed as a fraction of light speed
  ********************************************************************************************************************/
 inline Real compute_sound_speed(Real Gamma_rel) {
     Real ad_idx = adiabatic_idx(Gamma_rel);
@@ -101,44 +96,36 @@ inline Real compute_sound_speed(Real Gamma_rel) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_effective_Gamma(adx, Gamma)
- * DESCRIPTION: Computes the effective Lorentz factor accounting for the adiabatic index.
- * PARAMETERS:
- *   - adx: Adiabatic index of the medium
- *   - Gamma: Bulk Lorentz factor
- * RETURNS: The effective Lorentz factor
+ * @brief Computes the effective Lorentz factor accounting for the adiabatic index.
+ * @param adx Adiabatic index of the medium
+ * @param Gamma Bulk Lorentz factor
+ * @return The effective Lorentz factor
  ********************************************************************************************************************/
 inline Real compute_effective_Gamma(Real adx, Real Gamma) { return (adx * Gamma * Gamma - adx + 1) / Gamma; }
 
 /********************************************************************************************************************
- * FUNCTION: compute_comv_weibel_B(eps_B, e_thermal)
- * DESCRIPTION: Computes the comoving magnetic field using the Weibel instability mechanism.
- * PARAMETERS:
- *   - eps_B: Fraction of thermal energy in magnetic fields
- *   - e_thermal: Thermal energy density
- * RETURNS: The comoving magnetic field strength
+ * @brief Computes the comoving magnetic field using the Weibel instability mechanism.
+ * @param eps_B Fraction of thermal energy in magnetic fields
+ * @param e_thermal Thermal energy density
+ * @return The comoving magnetic field strength
  ********************************************************************************************************************/
 inline Real compute_comv_weibel_B(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
 
 /********************************************************************************************************************
- * FUNCTION: compute_dr_dt(beta)
- * DESCRIPTION: Computes the time derivative of radius (dr/dt) based on the shock velocity.
- * PARAMETERS:
- *   - beta: Shock velocity as a fraction of light speed
- * RETURNS: The rate of change of radius with respect to observer time
+ * @brief Computes the time derivative of radius (dr/dt) based on the shock velocity.
+ * @param beta Shock velocity as a fraction of light speed
+ * @return The rate of change of radius with respect to observer time
  ********************************************************************************************************************/
 inline Real compute_dr_dt(Real beta) { return (beta * con::c) / (1 - beta); }
 
 /********************************************************************************************************************
- * FUNCTION: compute_dtheta_dt(theta_s, theta, drdt, r, Gamma)
- * DESCRIPTION: Computes the time derivative of theta (dθ/dt) for jet spreading.
- * PARAMETERS:
- *   - theta_s: typical spreading angle of the jet
- *   - theta: theta of the current grid point
- *   - drdt: Time derivative of radius
- *   - r: Current radius
- *   - Gamma: Current bulk Lorentz factor
- * RETURNS: The rate of change of the half-opening angle
+ * @brief Computes the time derivative of theta (dθ/dt) for jet spreading.
+ * @param theta_s Typical spreading angle of the jet
+ * @param theta Theta of the current grid point
+ * @param drdt Time derivative of radius
+ * @param r Current radius
+ * @param Gamma Current bulk Lorentz factor
+ * @return The rate of change of the half-opening angle
  ********************************************************************************************************************/
 inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
     constexpr Real Q = 2.82842712475;
@@ -150,84 +137,70 @@ inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real 
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_dt_dt_comv(Gamma)
- * DESCRIPTION: Computes the time derivative of comoving time (dt_comv/dt) based on the Lorentz factor.
- * PARAMETERS:
- *   - Gamma: Bulk Lorentz factor
- *   - beta: Bulk velocity as a fraction of light speed
- * RETURNS: The rate of change of comoving time with respect to observer time
+ * @brief Computes the time derivative of comoving time (dt_comv/dt) based on the Lorentz factor.
+ * @param Gamma Bulk Lorentz factor
+ * @param beta Bulk velocity as a fraction of light speed
+ * @return The rate of change of comoving time with respect to observer time
  ********************************************************************************************************************/
 inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 - beta)); };
 
 /********************************************************************************************************************
- * FUNCTION: compute_upstr_mag_p(n_up, sigma)
- * DESCRIPTION: Computes the upstream magnetic pressure based on number density and magnetization.
- * PARAMETERS:
- *   - n_up: Upstream number density
- *   - sigma: Magnetization parameter
- * RETURNS: The upstream magnetic pressure
+ * @brief Computes the upstream magnetic pressure based on number density and magnetization.
+ * @param n_up Upstream number density
+ * @param sigma Magnetization parameter
+ * @return The upstream magnetic pressure
  ********************************************************************************************************************/
 inline Real compute_upstr_mag_p(Real n_up, Real sigma) { return sigma * n_up * con::mp * con::c2 / 2; }
 
 /********************************************************************************************************************
- * FUNCTION: compute_upstr_4vel(u_down, gamma_rel)
- * DESCRIPTION: Computes the upstream four-velocity from downstream four-velocity and relative Lorentz factor.
- * PARAMETERS:
- *   - u_down: Downstream four-velocity
- *   - gamma_rel: Relative Lorentz factor
- * RETURNS: The upstream four-velocity in the shock frame
+ * @brief Computes the upstream four-velocity from downstream four-velocity and relative Lorentz factor.
+ * @param u_down Downstream four-velocity
+ * @param gamma_rel Relative Lorentz factor
+ * @return The upstream four-velocity in the shock frame
  ********************************************************************************************************************/
 inline Real compute_upstr_4vel(Real u_down, Real gamma_rel) {
     return std::sqrt((1 + u_down * u_down) * (gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_downstr_num_den(n_up_str, gamma_rel, sigma)
- * DESCRIPTION: Computes the downstream number density from upstream density, relative Lorentz factor,
- *              and magnetization using the shock jump conditions.
- * PARAMETERS:
- *   - n_up_str: Upstream number density
- *   - gamma_rel: Relative Lorentz factor
- *   - sigma: Magnetization parameter
- * RETURNS: The downstream number density
+ * @brief Computes the downstream number density from upstream density, relative Lorentz factor, and magnetization.
+ * @param n_up_str Upstream number density
+ * @param gamma_rel Relative Lorentz factor
+ * @param sigma Magnetization parameter
+ * @return The downstream number density
+ * @details Uses the shock jump conditions to determine the density of the downstream region.
  ********************************************************************************************************************/
 inline Real compute_downstr_num_den(Real n_up_str, Real gamma_rel, Real sigma) {
     return n_up_str * compute_4vel_jump(gamma_rel, sigma);
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_rel_Gamma(gamma1, gamma2)
- * DESCRIPTION: Computes the relative Lorentz factor between two frames with given Lorentz factors.
- * PARAMETERS:
- *   - gamma1: First frame's Lorentz factor
- *   - gamma2: Second frame's Lorentz factor
- * RETURNS: The relative Lorentz factor between the two frames
+ * @brief Computes the relative Lorentz factor between two frames with given Lorentz factors.
+ * @param gamma1 First frame's Lorentz factor
+ * @param gamma2 Second frame's Lorentz factor
+ * @return The relative Lorentz factor between the two frames
  ********************************************************************************************************************/
 inline Real compute_rel_Gamma(Real gamma1, Real gamma2) {
     return gamma1 * gamma2 - std::sqrt((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1));
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_rel_Gamma(gamma1, gamma2, beta1, beta2)
- * DESCRIPTION: Computes the relative Lorentz factor between two frames with given Lorentz factors and velocities.
- * PARAMETERS:
- *   - gamma1: First frame's Lorentz factor
- *   - gamma2: Second frame's Lorentz factor
- *   - beta1: First frame's velocity as fraction of light speed
- *   - beta2: Second frame's velocity as fraction of light speed
- * RETURNS: The relative Lorentz factor between the two frames
+ * @brief Computes the relative Lorentz factor between two frames with given Lorentz factors and velocities.
+ * @param gamma1 First frame's Lorentz factor
+ * @param gamma2 Second frame's Lorentz factor
+ * @param beta1 First frame's velocity as fraction of light speed
+ * @param beta2 Second frame's velocity as fraction of light speed
+ * @return The relative Lorentz factor between the two frames
  ********************************************************************************************************************/
 inline Real compute_rel_Gamma(Real gamma1, Real gamma2, Real beta1, Real beta2) {
     return gamma1 * gamma2 * (1 - beta1 * beta2);
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_Gamma_from_relative(gamma4, gamma_rel)
- * DESCRIPTION: Computes a Lorentz factor from a reference Lorentz factor and relative Lorentz factor.
- * PARAMETERS:
- *   - gamma4: Reference Lorentz factor (typically for region 4, unshocked ejecta)
- *   - gamma_rel: Relative Lorentz factor
- * RETURNS: The derived Lorentz factor
+ * @brief Computes a Lorentz factor from a reference Lorentz factor and relative Lorentz factor.
+ * @param gamma4 Reference Lorentz factor (typically for region 4, unshocked ejecta)
+ * @param gamma_rel Relative Lorentz factor
+ * @return The derived Lorentz factor
  ********************************************************************************************************************/
 inline Real compute_Gamma_from_relative(Real gamma4, Real gamma_rel) {
     Real b = -2 * gamma4 * gamma_rel;
@@ -236,24 +209,20 @@ inline Real compute_Gamma_from_relative(Real gamma4, Real gamma_rel) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_downstr_eth(gamma_rel, n_down_str)
- * DESCRIPTION: Computes the downstream thermal energy density.
- * PARAMETERS:
- *   - gamma_rel: Relative Lorentz factor
- *   - n_down_str: Downstream number density
- * RETURNS: The thermal energy density in the downstream region
+ * @brief Computes the downstream thermal energy density.
+ * @param gamma_rel Relative Lorentz factor
+ * @param n_down_str Downstream number density
+ * @return The thermal energy density in the downstream region
  ********************************************************************************************************************/
 inline Real compute_downstr_eth(Real gamma_rel, Real n_down_str) {
     return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_shell_spreading_rate(Gamma_rel, dtdt_com)
- * DESCRIPTION: Computes the rate at which the shock shell spreads in the comoving frame.
- * PARAMETERS:
- *   - Gamma_rel: Relative Lorentz factor
- *   - dtdt_com: Rate of change of comoving time with respect to observer time
- * RETURNS: The shell spreading rate in the comoving frame
+ * @brief Computes the rate at which the shock shell spreads in the comoving frame.
+ * @param Gamma_rel Relative Lorentz factor
+ * @param dtdt_com Rate of change of comoving time with respect to observer time
+ * @return The shell spreading rate in the comoving frame
  ********************************************************************************************************************/
 inline Real compute_shell_spreading_rate(Real Gamma_rel, Real dtdt_com) {
     Real cs = compute_sound_speed(Gamma_rel);
@@ -274,15 +243,13 @@ inline Real dN3dt(Real r, Real n4, Real gamma3, Real gamma4, Real sigma) {
 }*/
 
 /********************************************************************************************************************
- * FUNCTION: compute_dm3_dt(width, m4, gamma3, gamma4, sigma)
- * DESCRIPTION: Computes the rate of change of shocked ejecta mass per solid angle.
- * PARAMETERS:
- *   - width: Width of the shocked region
- *   - m4: Mass per solid angle in region 4 (unshocked ejecta)
- *   - gamma3: Lorentz factor in region 3 (shocked ejecta)
- *   - gamma4: Lorentz factor in region 4 (unshocked ejecta)
- *   - sigma: Magnetization parameter
- * RETURNS: The rate of change of mass in region 3
+ * @brief Computes the rate of change of shocked ejecta mass per solid angle.
+ * @param width Width of the shocked region
+ * @param m4 Mass per solid angle in region 4 (unshocked ejecta)
+ * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
+ * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
+ * @param sigma Magnetization parameter
+ * @return The rate of change of mass in region 3
  ********************************************************************************************************************/
 inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real sigma) {
     if (gamma3 == gamma4) {
@@ -298,27 +265,24 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_region4_num_den(dEdOmega, Gamma0, r, D_jet, sigma)
- * DESCRIPTION: Computes the number density in region 4 (unshocked ejecta).
- * PARAMETERS:
- *   - dEdOmega: Energy per solid angle
- *   - Gamma0: Initial Lorentz factor
- *   - r: Radius
- *   - D_jet: Jet thickness
- *   - sigma: Magnetization parameter
- * RETURNS: The number density in region 4
+ * @brief Computes the number density in region 4 (unshocked ejecta).
+ * @param dEdOmega Energy per solid angle
+ * @param Gamma0 Initial Lorentz factor
+ * @param r Radius
+ * @param D_jet Jet thickness
+ * @param sigma Magnetization parameter
+ * @return The number density in region 4
  ********************************************************************************************************************/
 inline Real compute_region4_num_den(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
     return dEdOmega / ((Gamma0 * con::mp * con::c2 * r * r * D_jet) * (1 + sigma));
 }
 
 /********************************************************************************************************************
- * FUNCTION: set_stopping_shock(i, j, shock, state0)
- * DESCRIPTION: Sets a stopping shock state when the Lorentz factor drops below threshold.
- * PARAMETERS:
- *   - i, j: Grid indices for phi and theta
- *   - shock: Reference to the Shock object to be updated
- *   - state0: Initial state to be used for some parameters
+ * @brief Sets a stopping shock state when the Lorentz factor drops below threshold.
+ * @param i Grid index for phi
+ * @param j Grid index for theta
+ * @param shock Reference to the Shock object to be updated
+ * @param state0 Initial state to be used for some parameters
  ********************************************************************************************************************/
 template <typename State>
 inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& state0) {
@@ -332,17 +296,17 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
 }
 
 /********************************************************************************************************************
- * FUNCTION: save_shock_state(shock, i, j, k, state, Gamma_downstr, Gamma_upstr, N_downstr, n_upstr, sigma_upstr)
- * DESCRIPTION: Saves the shock state at a given grid point (i,j,k).
- * PARAMETERS:
- *   - shock: Reference to the Shock object to store the state
- *   - i, j, k: Grid indices for phi, theta, and time
- *   - state: Current state of the system
- *   - Gamma_downstr: Downstream Lorentz factor
- *   - Gamma_upstr: Upstream Lorentz factor
- *   - N_downstr: Downstream total number of shocked particles
- *   - n_upstr: Upstream number density
- *   - sigma_upstr: Upstream magnetization
+ * @brief Saves the shock state at a given grid point (i,j,k).
+ * @param shock Reference to the Shock object to store the state
+ * @param i Grid index for phi
+ * @param j Grid index for theta
+ * @param k Grid index for time
+ * @param state Current state of the system
+ * @param Gamma_downstr Downstream Lorentz factor
+ * @param Gamma_upstr Upstream Lorentz factor
+ * @param N_downstr Downstream total number of shocked particles
+ * @param n_upstr Upstream number density
+ * @param sigma_upstr Upstream magnetization
  ********************************************************************************************************************/
 template <typename State>
 void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
@@ -363,13 +327,12 @@ void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_swept_mass(eqn, state)
- * DESCRIPTION: Computes the swept-up mass for a shock based on the equation system and current state.
- *              Handles both cases where mass profile is provided or calculated.
- * PARAMETERS:
- *   - eqn: The equation system containing medium properties and other parameters
- *   - state: The current state of the system
- * RETURNS: The swept-up mass per solid angle
+ * @brief Computes the swept-up mass for a shock based on the equation system and current state.
+ * @tparam Eqn Type of the equation system
+ * @param eqn The equation system containing medium properties and other parameters
+ * @param state The current state of the system
+ * @return The swept-up mass per solid angle
+ * @details Handles both cases where mass profile is provided or calculated.
  ********************************************************************************************************************/
 template <typename Eqn>
 Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
@@ -377,14 +340,12 @@ Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: compute_dec_time(eqn, t0, t_max)
- * DESCRIPTION: Computes the deceleration time for the shock based on the equation system and time bounds.
- *              The deceleration time marks when the shock begins to significantly slow down due to mass sweeping.
- * PARAMETERS:
- *   - eqn: The equation system containing ejecta and medium properties
- *   - t0: Initial time
- *   - t_max: Maximum time to consider
- * RETURNS: The estimated deceleration time
+ * @brief Computes the deceleration time for the shock based on the equation system and time bounds.
+ * @tparam Eqn Type of the equation system
+ * @param eqn The equation system containing ejecta and medium properties
+ * @param t_max Maximum time to consider
+ * @return The estimated deceleration time
+ * @details The deceleration time marks when the shock begins to significantly slow down due to mass sweeping.
  ********************************************************************************************************************/
 template <typename Eqn>
 Real compute_dec_time(Eqn const& eqn, Real t_max) {

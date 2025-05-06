@@ -13,8 +13,8 @@
 #include "shock.h"
 
 /********************************************************************************************************************
- * STRUCT: InverseComptonY
- * DESCRIPTION: Handles Inverse Compton Y parameter calculations and related threshold values.
+ * @struct InverseComptonY
+ * @brief Handles Inverse Compton Y parameter calculations and related threshold values.
  ********************************************************************************************************************/
 struct InverseComptonY {
     // Constructors
@@ -43,9 +43,9 @@ struct InverseComptonY {
 };
 
 /********************************************************************************************************************
- * STRUCT: SynElectrons
- * DESCRIPTION: Represents synchrotron-emitting electrons in the comoving frame along with their energy distribution
- *              and properties.
+ * @struct SynElectrons
+ * @brief Represents synchrotron-emitting electrons in the comoving frame along with their energy distribution
+ *        and properties.
  ********************************************************************************************************************/
 struct SynElectrons {
     // All values in comoving frame
@@ -60,17 +60,17 @@ struct SynElectrons {
     size_t regime{0};        // Regime indicator (1-6, determines spectral shape)
     InverseComptonY Ys;      // InverseComptonY parameters for this electron population
 
-    // Calculates the column number density for a given electron Lorentz factor
+    /// Calculates the column number density for a given electron Lorentz factor
     Real compute_column_num_den(Real gamma) const;
 
    private:
-    // Computes the electron energy spectrum at a given Lorentz factor
+    /// Computes the electron energy spectrum at a given Lorentz factor
     inline Real compute_gamma_spectrum(Real gamma) const;
 };
 
 /********************************************************************************************************************
- * STRUCT: SynPhotons
- * DESCRIPTION: Represents synchrotron photons in the comoving frame and provides spectral functions.
+ * @struct SynPhotons
+ * @brief Represents synchrotron photons in the comoving frame and provides spectral functions.
  ********************************************************************************************************************/
 struct SynPhotons {
     // All values in comoving frame
@@ -86,11 +86,11 @@ struct SynPhotons {
     Real log2_nu_M{0};               // Log2 of nu_M
     const SynElectrons* e{nullptr};  // Pointer to the associated SynElectrons
 
-    // Returns the intensity at a given frequency nu
+    /// Returns the intensity at a given frequency nu
     Real compute_I_nu(Real nu) const;            // Linear intensity
     Real compute_log2_I_nu(Real log2_nu) const;  // Log2 intensity (for computational efficiency)
 
-    // Updates internal constants used in the spectral calculations
+    /// Updates internal constants used in the spectral calculations
     void update_constant();
 
    private:
@@ -106,46 +106,95 @@ struct SynPhotons {
     Real log2_C3_{0};  //
     Real log2_C4_{0};  //
 
-    // Computes the photon spectrum at a given frequency nu
+    /// Computes the photon spectrum at a given frequency nu
     inline Real compute_spectrum(Real nu) const;            // Linear spectrum
     inline Real compute_log2_spectrum(Real log2_nu) const;  // Log2 spectrum
 };
 
 /********************************************************************************************************************
- * TYPE ALIASES
- * DESCRIPTION: Defines multi-dimensional grid types for Synchrotron Photons and Electrons.
+ * @defgroup SynchrotronGrids Synchrotron Grid Type Aliases
+ * @brief Defines multi-dimensional grid types for Synchrotron Photons and Electrons.
  ********************************************************************************************************************/
-using SynPhotonGrid = xt::xtensor<SynPhotons, 3>;      // 3D grid of synchrotron photons
-using SynElectronGrid = xt::xtensor<SynElectrons, 3>;  // 3D grid of synchrotron electrons
+
+/// Type alias for 3D grid of synchrotron photons
+using SynPhotonGrid = xt::xtensor<SynPhotons, 3>;
+/// Type alias for 3D grid of synchrotron electrons
+using SynElectronGrid = xt::xtensor<SynElectrons, 3>;
 
 /********************************************************************************************************************
- * FUNCTION PROTOTYPES: Synchrotron Grid Creation and Generation
- * DESCRIPTION: Functions to create and generate grids for Synchrotron electrons and photons.
+ * @defgroup SynchrotronFunctions Synchrotron Grid Creation and Generation
+ * @brief Functions to create and generate grids for Synchrotron electrons and photons.
  ********************************************************************************************************************/
-// Creates and returns a new electron grid based on shock parameters
+
+/********************************************************************************************************************
+ * @brief Creates and returns a new electron grid based on shock parameters
+ * @param shock The shock object containing physical properties
+ * @param p Power-law index for the electron energy distribution
+ * @param xi Energy partitioning parameter (default: 1)
+ * @return A new grid of synchrotron electrons
+ ********************************************************************************************************************/
 SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi = 1);
 
-// Populates an existing electron grid with values based on shock parameters
+/********************************************************************************************************************
+ * @brief Populates an existing electron grid with values based on shock parameters
+ * @param electrons The electron grid to populate
+ * @param shock The shock object containing physical properties
+ * @param p Power-law index for the electron energy distribution
+ * @param xi Energy partitioning parameter (default: 1)
+ ********************************************************************************************************************/
 void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi = 1);
 
-// Creates and returns a new photon grid based on shock and electron grid
+/********************************************************************************************************************
+ * @brief Creates and returns a new photon grid based on shock and electron grid
+ * @param shock The shock object containing physical properties
+ * @param electrons The electron grid providing energy distribution information
+ * @return A new grid of synchrotron photons
+ ********************************************************************************************************************/
 SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& electrons);
 
-// Populates an existing photon grid with values based on shock and electron grid
+/********************************************************************************************************************
+ * @brief Populates an existing photon grid with values based on shock and electron grid
+ * @param photons The photon grid to populate
+ * @param shock The shock object containing physical properties
+ * @param electrons The electron grid providing energy distribution information
+ ********************************************************************************************************************/
 void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectronGrid const& electrons);
 
 /********************************************************************************************************************
- * FUNCTION PROTOTYPES: Synchrotron Update and Parameter Calculation
- * DESCRIPTION: Functions for updating electron grids and calculating synchrotron parameters.
+ * @defgroup SynchrotronUpdates Synchrotron Update and Parameter Calculation
+ * @brief Functions for updating electron grids and calculating synchrotron parameters.
  ********************************************************************************************************************/
-// Updates electron grid with new Y parameter values
+
+/********************************************************************************************************************
+ * @brief Updates electron grid with new Y parameter values
+ * @param e The electron grid to update
+ * @param shock The shock object containing physical properties
+ ********************************************************************************************************************/
 void update_electrons_4Y(SynElectronGrid& e, Shock const& shock);
 
-// Calculates cooling Lorentz factor based on comoving time, magnetic field, and IC parameters
+/********************************************************************************************************************
+ * @brief Calculates cooling Lorentz factor based on comoving time, magnetic field, and IC parameters
+ * @param t_com Comoving time
+ * @param B Magnetic field
+ * @param Ys Inverse Compton Y parameters
+ * @param p Power-law index for electron energy distribution
+ * @return The cooling Lorentz factor
+ ********************************************************************************************************************/
 Real compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p);
 
-// Determines the peak Lorentz factor based on absorption, minimum, and cooling factors
+/********************************************************************************************************************
+ * @brief Determines the peak Lorentz factor based on absorption, minimum, and cooling factors
+ * @param gamma_a Self-absorption Lorentz factor
+ * @param gamma_m Minimum electron Lorentz factor
+ * @param gamma_c Cooling electron Lorentz factor
+ * @return The peak Lorentz factor
+ ********************************************************************************************************************/
 Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c);
 
-// Calculates synchrotron frequency for a given Lorentz factor and magnetic field
+/********************************************************************************************************************
+ * @brief Calculates synchrotron frequency for a given Lorentz factor and magnetic field
+ * @param gamma Electron Lorentz factor
+ * @param B Magnetic field
+ * @return The synchrotron frequency
+ ********************************************************************************************************************/
 Real compute_syn_freq(Real gamma, Real B);

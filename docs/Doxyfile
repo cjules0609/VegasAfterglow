@@ -3,7 +3,7 @@
 # Project information
 PROJECT_NAME           = "VegasAfterglow"
 PROJECT_BRIEF          = "A high-performance C++ framework for modeling gamma-ray burst afterglows"
-PROJECT_LOGO           = "../logo.svg"
+PROJECT_LOGO           = "../assets/logo.svg"
 OUTPUT_DIRECTORY       = doxygen
 
 # Input settings

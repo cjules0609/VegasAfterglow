@@ -12,6 +12,12 @@
 
 #include "macros.h"
 
+/********************************************************************************************************************
+ * @brief Writes a 1D array to a CSV file.
+ * @param filename Base filename without extension
+ * @param array The array to write
+ * @param unit Unit conversion factor to apply to each value
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, Array const& array, Real unit) {
     std::ofstream file(filename + ".csv");
     for (size_t i = 0; i < array.size(); ++i) {
@@ -19,6 +25,12 @@ void write_csv(std::string const& filename, Array const& array, Real unit) {
     }
 }
 
+/********************************************************************************************************************
+ * @brief Writes a 2D grid to a CSV file.
+ * @param filename Base filename without extension
+ * @param grid The 2D grid to write
+ * @param unit Unit conversion factor to apply to each value
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, MeshGrid const& grid, Real unit) {
     std::ofstream file(filename + ".csv");
     auto shape = grid.shape();
@@ -31,6 +43,12 @@ void write_csv(std::string const& filename, MeshGrid const& grid, Real unit) {
     }
 }
 
+/********************************************************************************************************************
+ * @brief Writes a 3D grid to a CSV file in a flattened format.
+ * @param filename Base filename without extension
+ * @param grid3d The 3D grid to write
+ * @param unit Unit conversion factor to apply to each value
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit) {
     std::ofstream file(filename + ".csv");
     if (!file) {
@@ -49,6 +67,11 @@ void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit)
 
 #ifdef ZLIB_FOUND
 // === Coord Output ===
+/********************************************************************************************************************
+ * @brief Writes coordinate system data to NPZ file.
+ * @param filename Base filename without extension
+ * @param coord The coordinate object containing t_src, theta, and phi data
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, Coord const& coord) {
     xt::dump_npz(filename + ".npz", "t_src", xt::eval(coord.t / unit::sec), false, false);
     xt::dump_npz(filename + ".npz", "theta", coord.theta, false, true);
@@ -56,6 +79,11 @@ void write_npz(std::string const& filename, Coord const& coord) {
 }
 
 // === SynPhotonGrid Output ===
+/********************************************************************************************************************
+ * @brief Writes synchrotron photon grid data to NPZ file.
+ * @param filename Base filename without extension
+ * @param ph The synchrotron photon grid to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
     auto shape = ph.shape();
     xt::xarray<Real> nu_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
@@ -82,6 +110,11 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
 }
 
 // === SynElectronGrid Output ===
+/********************************************************************************************************************
+ * @brief Writes synchrotron electron grid data to NPZ file.
+ * @param filename Base filename without extension
+ * @param e The synchrotron electron grid to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, SynElectronGrid const& e) {
     auto shape = e.shape();
     xt::xarray<Real> gamma_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
@@ -108,6 +141,11 @@ void write_npz(std::string const& filename, SynElectronGrid const& e) {
 }
 
 // === Shock Output ===
+/********************************************************************************************************************
+ * @brief Writes shock evolution data to NPZ file.
+ * @param filename Base filename without extension
+ * @param shock The shock object containing the evolution data
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "Gamma", shock.Gamma, false, false);
     xt::dump_npz(filename + ".npz", "Gamma_rel", shock.Gamma_rel, false, true);

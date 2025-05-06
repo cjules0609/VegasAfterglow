@@ -3,36 +3,10 @@ requires = [
   "setuptools>=42",
   "wheel",
   "scikit-build>=0.13.0",
-  "numpy>=1.17.3",
-  "cmake>=3.22",
   "pybind11>=2.6.0",    # we'll use pybind11.setup_helpers in setup.py
   "ninja",
 ]
 build-backend = "setuptools.build_meta"
-
-[project]
-name = "VegasAfterglow"
-version = "0.1.1"
-description = "A high-performance C++ framework for modeling gamma-ray burst afterglows with Python bindings"
-authors = [
-    {name = "VegasAfterglow Team", email = "example@example.com"}
-]
-readme = "README.md"
-requires-python = ">=3.8"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=6.0",
-    "pytest-cov>=2.12.0",
-    "black>=21.5b2",
-    "isort>=5.9.1",
-    "flake8>=3.9.2",
-]
-docs = [
-    "sphinx>=4.0.0",
-    "sphinx-rtd-theme>=1.0.0",
-    "breathe>=4.33.0",
-]
 
 [tool.cibuildwheel]
 environment = { PIP_NO_COMPILE = "1", CMAKE_GENERATOR = "Ninja" }

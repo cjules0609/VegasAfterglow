@@ -10,10 +10,11 @@
 
 #include "macros.h"
 /********************************************************************************************************************
- * STRUCT: ReverseState
- * DESCRIPTION: Represents the state variables for the reverse shock simulation. It defines a state vector
- *              containing properties like shell width, mass, radius, time, and energy. The struct dynamically
- *              adapts its size based on template parameters to include mass/energy injection capabilities.
+ * @struct ReverseState
+ * @brief Represents the state variables for the reverse shock simulation.
+ * @details It defines a state vector containing properties like shell width, mass, radius, time, and energy.
+ *          The struct dynamically adapts its size based on template parameters to include mass/energy
+ *          injection capabilities.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct ReverseState {
@@ -38,11 +39,10 @@ struct ReverseState {
 };
 
 /********************************************************************************************************************
- * CLASS: FRShockEqn
- * DESCRIPTION: Represents the reverse shock (or forward-reverse shock) equation for a given Jet and medium.
- *              It defines a state vector (an array of 8 Reals) and overloads operator() to compute the
- *              derivatives of the state with respect to radius r. It also declares a helper function to compute
- *              the derivative of N3 (number per solid angle) with respect to t.
+ * @class FRShockEqn
+ * @brief Represents the reverse shock (or forward-reverse shock) equation for a given Jet and medium.
+ * @details It defines a state vector (an array of 8 Reals) and overloads operator() to compute the
+ *          derivatives of the state with respect to radius r. 
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 class FRShockEqn {

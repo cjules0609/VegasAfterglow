@@ -11,6 +11,12 @@
 
 #include "shock.h"
 
+/********************************************************************************************************************
+ * @struct ForwardState
+ * @brief State vector structure for forward shock calculations.
+ * @details Template structure that defines the state vector for forward shock calculations, adapting its size
+ *          based on whether the Ejecta class supports mass and energy injection methods.
+ ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct ForwardState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>::value;    // whether Ejecta class has dmdt method
@@ -39,11 +45,11 @@ struct ForwardState {
 };
 
 /********************************************************************************************************************
- * CLASS: ForwardShockEqn
- * DESCRIPTION: Represents the forward shock equation for a given jet and medium. It defines a state vector
- *              (with variable size based on template parameters) and overloads operator() to compute the derivatives
- *              of the state with respect to t. It also declares helper functions for the derivatives.
- *              This class implements the physical equations governing the forward shock evolution.
+ * @class ForwardShockEqn
+ * @brief Represents the forward shock equation for a given jet and medium.
+ * @details It defines a state vector (with variable size based on template parameters) and overloads operator()
+ *          to compute the derivatives of the state with respect to t. It also declares helper functions for the
+ *          derivatives. This class implements the physical equations governing the forward shock evolution.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 class ForwardShockEqn {

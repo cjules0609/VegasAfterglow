@@ -101,18 +101,22 @@ constexpr bool HasU_v = HasU<T>::value;
 void print_array(Array const& arr);
 
 /********************************************************************************************************************
- * FUNCTION TYPE DEFINITIONS
- * DESCRIPTION: Defines convenient aliases for unary, binary, and ternary functions operating on Reals.
- *              These function types are used throughout the codebase for various mathematical operations
- *              and physical calculations.
+ * @defgroup FunctionTypes Function Type Definitions
+ * @brief Defines convenient aliases for unary, binary, and ternary functions operating on Reals.
+ * @details These function types are used throughout the codebase for various mathematical operations
+ *          and physical calculations.
  ********************************************************************************************************************/
-using UnaryFunc = std::function<Real(Real)>;                // Function taking one Real argument
-using BinaryFunc = std::function<Real(Real, Real)>;         // Function taking two Real arguments
-using TernaryFunc = std::function<Real(Real, Real, Real)>;  // Function taking three Real arguments
+
+/// Function taking one Real argument
+using UnaryFunc = std::function<Real(Real)>;
+/// Function taking two Real arguments
+using BinaryFunc = std::function<Real(Real, Real)>;
+/// Function taking three Real arguments
+using TernaryFunc = std::function<Real(Real, Real, Real)>;
 
 /********************************************************************************************************************
- * NAMESPACE: func
- * DESCRIPTION: Contains inline constexpr lambda functions that return constant values.
+ * @namespace func
+ * @brief Contains inline constexpr lambda functions that return constant values.
  ********************************************************************************************************************/
 namespace func {
     // Always returns 0 regardless of the input.
@@ -124,27 +128,107 @@ namespace func {
 }  // namespace func
 
 /********************************************************************************************************************
- * FUNCTION: Basic Math Functions                                                                                   *
- * DESCRIPTION: Inline functions for specific power calculations, a step function, and unit conversion.             *
+ * @defgroup BasicMath Basic Math Functions
+ * @brief Inline functions for specific power calculations, a step function, and unit conversion.
+ ********************************************************************************************************************/
+
+/********************************************************************************************************************
+ * @brief Computes a^(5/2)
+ * @param a The base value
+ * @return a^(5/2)
  ********************************************************************************************************************/
 inline Real pow52(Real a) { return std::sqrt(a * a * a * a * a); }
+
+/********************************************************************************************************************
+ * @brief Computes a^(4/3)
+ * @param a The base value
+ * @return a^(4/3)
+ ********************************************************************************************************************/
 inline Real pow43(Real a) { return std::cbrt(a * a * a * a); }
+
+/********************************************************************************************************************
+ * @brief Computes a^(2/3)
+ * @param a The base value
+ * @return a^(2/3)
+ ********************************************************************************************************************/
 inline Real pow23(Real a) { return std::cbrt(a * a); }
+
+/********************************************************************************************************************
+ * @brief Step function that returns 1 if x > 0, otherwise 0
+ * @param x Input value
+ * @return 1 if x > 0, otherwise 0
+ ********************************************************************************************************************/
 inline Real stepFunc(Real x) { return x > 0 ? 1 : 0; }
+
+/********************************************************************************************************************
+ * @brief Converts electron volt (eV) to frequency (Hz)
+ * @param eV Energy in electron volts
+ * @return Frequency in Hertz
+ ********************************************************************************************************************/
 inline Real eVtoHz(Real eV) { return eV / con::h; }
 
 /********************************************************************************************************************
- * FUNCTION: Fast Math & Interpolation Prototypes                                                                   *
- * DESCRIPTION: Prototypes for fast power, logarithm, and various interpolation functions.                          *
+ * @defgroup Interpolation Interpolation Functions
+ * @brief Functions for interpolating values between points in arrays.
+ ********************************************************************************************************************/
+
+/********************************************************************************************************************
+ * @brief General interpolation function
+ * @param x0 X-value at which to interpolate
+ * @param x Array of x-coordinates
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate for x0 < min(x)
+ * @param hi_extrap Whether to extrapolate for x0 > max(x)
+ * @return Interpolated y-value at x0
  ********************************************************************************************************************/
 Real interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+
+/********************************************************************************************************************
+ * @brief Interpolation for equally spaced x-values
+ * @param x0 X-value at which to interpolate
+ * @param x Array of equally spaced x-coordinates
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate for x0 < min(x)
+ * @param hi_extrap Whether to extrapolate for x0 > max(x)
+ * @return Interpolated y-value at x0
+ ********************************************************************************************************************/
 Real eq_space_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+
+/********************************************************************************************************************
+ * @brief Log-log interpolation (both x and y are in log space)
+ * @param x0 X-value at which to interpolate
+ * @param x Array of x-coordinates
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate for x0 < min(x)
+ * @param hi_extrap Whether to extrapolate for x0 > max(x)
+ * @return Interpolated y-value at x0
+ ********************************************************************************************************************/
 Real loglog_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
+
+/********************************************************************************************************************
+ * @brief Log-log interpolation for equally spaced x-values in log space
+ * @param x0 X-value at which to interpolate
+ * @param x Array of equally spaced x-coordinates in log space
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate for x0 < min(x)
+ * @param hi_extrap Whether to extrapolate for x0 > max(x)
+ * @return Interpolated y-value at x0
+ ********************************************************************************************************************/
 Real eq_space_loglog_interp(Real x0, Array const& x, Array const& y, bool lo_extrap = false, bool hi_extrap = false);
 
 /********************************************************************************************************************
- * FUNCTION: Root Finding (Bisection Method)                                                                        *
- * DESCRIPTION: Template function to find the root of a function using the bisection method.                        *
+ * @defgroup RootFinding Root Finding Methods
+ * @brief Functions for finding roots of equations.
+ ********************************************************************************************************************/
+
+/********************************************************************************************************************
+ * @brief Finds the root of a function using the bisection method
+ * @tparam Fun Type of the function
+ * @param f Function whose root we want to find
+ * @param low Lower bound of the search interval
+ * @param high Upper bound of the search interval
+ * @param eps Desired accuracy (default: 1e-6)
+ * @return Approximation of the root
  ********************************************************************************************************************/
 template <typename Fun>
 auto root_bisect(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) eps = 1e-6) -> decltype(f(0)) {
@@ -160,33 +244,69 @@ auto root_bisect(Fun f, decltype(f(0)) low, decltype(f(0)) high, decltype(f(0)) 
 }
 
 /********************************************************************************************************************
- * FUNCTION: Utility Templates                                                                                      *
- * DESCRIPTION: Template functions for computing the minimum and maximum of provided values.                        *
+ * @defgroup UtilityTemplates Utility Templates
+ * @brief Template functions for common operations.
+ ********************************************************************************************************************/
+
+/********************************************************************************************************************
+ * @brief Returns the value of a single parameter
+ * @tparam T Type of the value
+ * @param value The value to return
+ * @return The input value
  ********************************************************************************************************************/
 template <typename T>
 T min(T value) {
     return value;
 }
 
+/********************************************************************************************************************
+ * @brief Returns the minimum of multiple values
+ * @tparam T Type of the first value
+ * @tparam Args Types of the remaining values
+ * @param first First value
+ * @param args Remaining values
+ * @return The minimum value
+ ********************************************************************************************************************/
 template <typename T, typename... Args>
 T min(T first, Args... args) {
     return std::min(first, std::min(args...));
 }
 
+/********************************************************************************************************************
+ * @brief Returns the value of a single parameter
+ * @tparam T Type of the value
+ * @param value The value to return
+ * @return The input value
+ ********************************************************************************************************************/
 template <typename T>
 T max(T value) {
     return value;
 }
 
+/********************************************************************************************************************
+ * @brief Returns the maximum of multiple values
+ * @tparam T Type of the first value
+ * @tparam Args Types of the remaining values
+ * @param first First value
+ * @param args Remaining values
+ * @return The maximum value
+ ********************************************************************************************************************/
 template <typename T, typename... Args>
 T max(T first, Args... args) {
     return std::max(first, std::max(args...));
 }
 
 /********************************************************************************************************************
- * FUNCTION: Fast Exponential and Logarithm Functions                                                               *
- * DESCRIPTION: Inline functions that provide fast approximations of exponential and logarithm functions using      *
- *              alternative methods when EXTREME_SPEED is defined.                                                  *
+ * @defgroup FastMath Fast Math Functions
+ * @brief Optimized versions of common mathematical functions.
+ * @details These functions provide fast approximations of exponential and logarithm functions using
+ *          alternative methods when EXTREME_SPEED is defined.
+ ********************************************************************************************************************/
+
+/********************************************************************************************************************
+ * @brief Fast approximation of the exponential function
+ * @param x The exponent
+ * @return e^x
  ********************************************************************************************************************/
 inline Real fast_exp(Real x) {
 #ifdef EXTREME_SPEED
@@ -211,6 +331,11 @@ inline Real fast_exp(Real x) {
 #endif
 }
 
+/********************************************************************************************************************
+ * @brief Fast approximation of the natural logarithm
+ * @param x The input value
+ * @return ln(x)
+ ********************************************************************************************************************/
 inline double fast_log(double x) {
 #ifdef EXTREME_SPEED
     if (x <= 0.) return -std::numeric_limits<double>::infinity();
@@ -230,6 +355,11 @@ inline double fast_log(double x) {
 #endif
 }
 
+/********************************************************************************************************************
+ * @brief Fast approximation of the base-2 logarithm
+ * @param val The input value
+ * @return log2(val)
+ ********************************************************************************************************************/
 inline double fast_log2(double val) {
 #ifdef EXTREME_SPEED
     int64_t* const exp_ptr = reinterpret_cast<int64_t*>(&val);
@@ -261,6 +391,11 @@ inline double fast_log2(double val) {
 #endif
 }
 
+/********************************************************************************************************************
+ * @brief Fast approximation of 2 raised to a power
+ * @param x The exponent
+ * @return 2^x
+ ********************************************************************************************************************/
 inline double fast_exp2(double x) {
 #ifdef EXTREME_SPEED
     int int_part = (int)x;
@@ -285,4 +420,10 @@ inline double fast_exp2(double x) {
 #endif
 }
 
+/********************************************************************************************************************
+ * @brief Fast approximation of a raised to the power of b
+ * @param a The base
+ * @param b The exponent
+ * @return a^b
+ ********************************************************************************************************************/
 inline Real fast_pow(Real a, Real b) { return fast_exp2(b * fast_log2(a)); }

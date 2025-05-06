@@ -13,6 +13,10 @@
 
 #include "macros.h"
 
+/********************************************************************************************************************
+ * @brief Prints the elements of an array to standard output.
+ * @param arr The array to print
+ ********************************************************************************************************************/
 void print_array(Array const& arr) {
     for (auto const& a : arr) {
         std::cout << a << " ";
@@ -21,8 +25,13 @@ void print_array(Array const& arr) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: Point Interpolation Utility Functions
- * DESCRIPTION: Provides basic point-wise interpolation functions used by the higher-level interpolation routines.
+ * @brief Point-wise linear interpolation between two points.
+ * @param x0 First x-coordinate
+ * @param x1 Second x-coordinate
+ * @param y0 First y-coordinate
+ * @param y1 Second y-coordinate
+ * @param xi The x-value at which to interpolate
+ * @return The interpolated y-value
  ********************************************************************************************************************/
 Real point_interp(Real x0, Real x1, Real y0, Real y1, Real xi) {
     if (x0 == x1) return y0;
@@ -30,6 +39,16 @@ Real point_interp(Real x0, Real x1, Real y0, Real y1, Real xi) {
     return y0 + slope * (xi - x0);
 }
 
+/********************************************************************************************************************
+ * @brief Point-wise logarithmic interpolation between two points.
+ * @details Performs linear interpolation in log-log space.
+ * @param x0 First x-coordinate
+ * @param x1 Second x-coordinate
+ * @param y0 First y-coordinate
+ * @param y1 Second y-coordinate
+ * @param xi The x-value at which to interpolate
+ * @return The interpolated y-value
+ ********************************************************************************************************************/
 Real point_loglog_interp(Real x0, Real x1, Real y0, Real y1, Real xi) {
     if (y0 == 0 || y1 == 0) return 0;
     if (x0 == x1) return y0;
@@ -42,8 +61,14 @@ Real point_loglog_interp(Real x0, Real x1, Real y0, Real y1, Real xi) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: Linear Interpolation Functions
- * DESCRIPTION: Implements linear interpolation (with and without the assumption of equally spaced x values).
+ * @brief Linear interpolation for arbitrary x-values.
+ * @details Finds the appropriate interval for interpolation and uses point_interp.
+ * @param xi The x-value at which to interpolate
+ * @param x Array of x-coordinates (must be monotonically increasing)
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate below the minimum x-value
+ * @param hi_extrap Whether to extrapolate above the maximum x-value
+ * @return The interpolated y-value
  ********************************************************************************************************************/
 Real interp(Real xi, Array const& x, Array const& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
@@ -66,6 +91,16 @@ Real interp(Real xi, Array const& x, Array const& y, bool lo_extrap, bool hi_ext
     }
 }
 
+/********************************************************************************************************************
+ * @brief Linear interpolation for equally spaced x-values.
+ * @details Optimized version that avoids search when x-values are equally spaced.
+ * @param xi The x-value at which to interpolate
+ * @param x Array of x-coordinates (must be equally spaced)
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate below the minimum x-value
+ * @param hi_extrap Whether to extrapolate above the maximum x-value
+ * @return The interpolated y-value
+ ********************************************************************************************************************/
 Real eq_space_interp(Real xi, Array const& x, Array const& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
         std::cout << "incorrect array size for interpolation!\n";
@@ -89,9 +124,14 @@ Real eq_space_interp(Real xi, Array const& x, Array const& y, bool lo_extrap, bo
 }
 
 /********************************************************************************************************************
- * FUNCTION: Log-Log Interpolation Functions
- * DESCRIPTION: Implements log–log interpolation (with and without the assumption of equally spaced x values in log
- *space).
+ * @brief Logarithmic interpolation for arbitrary x-values.
+ * @details Performs interpolation in log-log space for arbitrary x-values.
+ * @param xi The x-value at which to interpolate
+ * @param x Array of x-coordinates (must be monotonically increasing)
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate below the minimum x-value
+ * @param hi_extrap Whether to extrapolate above the maximum x-value
+ * @return The interpolated y-value
  ********************************************************************************************************************/
 Real loglog_interp(Real xi, const Array& x, const Array& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
@@ -114,6 +154,16 @@ Real loglog_interp(Real xi, const Array& x, const Array& y, bool lo_extrap, bool
     }
 }
 
+/********************************************************************************************************************
+ * @brief Logarithmic interpolation for equally spaced x-values in log space.
+ * @details Optimized version that avoids search when x-values are equally spaced in log space.
+ * @param xi The x-value at which to interpolate
+ * @param x Array of x-coordinates (must be equally spaced in log space)
+ * @param y Array of y-coordinates
+ * @param lo_extrap Whether to extrapolate below the minimum x-value
+ * @param hi_extrap Whether to extrapolate above the maximum x-value
+ * @return The interpolated y-value
+ ********************************************************************************************************************/
 Real eq_space_loglog_interp(Real xi, const Array& x, const Array& y, bool lo_extrap, bool hi_extrap) {
     if (x.size() < 2 || y.size() < 2 || x.size() != y.size()) {
         std::cout << "incorrect array size for interpolation!\n";

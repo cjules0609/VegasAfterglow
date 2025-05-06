@@ -15,33 +15,46 @@
 #include "utilities.h"
 
 /********************************************************************************************************************
- * INLINE FUNCTION: order
- * DESCRIPTION: Returns true if the three arguments are in strictly increasing order.
+ * @brief Returns true if the three arguments are in strictly increasing order.
+ * @param a First value
+ * @param b Middle value
+ * @param c Last value
+ * @return True if a < b < c, false otherwise
  ********************************************************************************************************************/
 inline bool order(Real a, Real b, Real c) { return a < b && b < c; }
 
 /********************************************************************************************************************
- * METHOD: ICPhoton::I_nu
- * DESCRIPTION: Computes the photon intensity at frequency nu using logarithmic-logarithmic interpolation
- *              (specifically, loglogInterpEqSpaced) on the IC photon spectrum data.
+ * @brief Computes the photon intensity at frequency nu.
+ * @details Uses logarithmic-logarithmic interpolation (specifically, loglogInterpEqSpaced)
+ *          on the IC photon spectrum data.
+ * @param nu The frequency at which to compute the intensity
+ * @return The photon intensity at the specified frequency
  ********************************************************************************************************************/
 Real ICPhoton::I_nu(Real nu) const { return eq_space_loglog_interp(nu, this->nu_IC_, this->j_nu_, true, true); }
 
 /********************************************************************************************************************
- * INLINE FUNCTION: eta_rad
- * DESCRIPTION: Computes the radiative efficiency parameter (ηₑ) given minimum electron Lorentz factors.
- *              If gamma_c is less than gamma_m, it returns 1; otherwise, it returns (gamma_c/gamma_m)^(2-p).
+ * @brief Computes the radiative efficiency parameter (ηₑ) given minimum electron Lorentz factors.
+ * @details If gamma_c is less than gamma_m, it returns 1; otherwise, it returns (gamma_c/gamma_m)^(2-p).
+ * @param gamma_m Minimum electron Lorentz factor
+ * @param gamma_c Cooling electron Lorentz factor
+ * @param p Electron distribution power-law index
+ * @return The radiative efficiency parameter
  ********************************************************************************************************************/
 inline Real eta_rad(Real gamma_m, Real gamma_c, Real p) {
     return gamma_c < gamma_m ? 1 : std::pow(gamma_c / gamma_m, (2 - p));
 }
 
 /********************************************************************************************************************
- * FUNCTION: effectiveYThomson
- * DESCRIPTION: Computes the effective Compton Y parameter in the Thomson regime.
- *              It iteratively solves for Y until convergence using the relation:
- *                  Y0 = (sqrt(1+4b) - 1)/2,
- *              where b = (ηₑ * eps_e / eps_B). The electron cooling parameters are updated during each iteration.
+ * @brief Computes the effective Compton Y parameter in the Thomson regime.
+ * @details Iteratively solves for Y until convergence using the relation:
+ *          Y0 = (sqrt(1+4b) - 1)/2, where b = (ηₑ * eps_e / eps_B).
+ *          The electron cooling parameters are updated during each iteration.
+ * @param B Magnetic field strength
+ * @param t_com Comoving time
+ * @param eps_e Electron energy fraction
+ * @param eps_B Magnetic energy fraction
+ * @param e Synchrotron electron properties
+ * @return The effective Thomson Y parameter
  ********************************************************************************************************************/
 Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons const& e) {
     Real eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
@@ -59,10 +72,12 @@ Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
 }
 
 /********************************************************************************************************************
- * FUNCTION: genICPhotons
- * DESCRIPTION: Generates a grid of ICPhoton objects (ICPhotonGrid) from the provided SynElectronGrid and
- *              SynPhotonGrid. For each grid cell, it calls the gen() method of the ICPhoton to compute the IC
- *              photon spectrum based on the local electron and synchrotron photon properties.
+ * @brief Generates a grid of ICPhoton objects from the provided electron and photon grids.
+ * @details For each grid cell, it calls the gen() method of the ICPhoton to compute the IC
+ *          photon spectrum based on the local electron and synchrotron photon properties.
+ * @param e The synchrotron electron grid
+ * @param ph The synchrotron photon grid
+ * @return Grid of inverse Compton photon objects
  ********************************************************************************************************************/
 ICPhotonGrid gen_IC_photons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
     size_t phi_size = e.shape()[0];
@@ -82,11 +97,12 @@ ICPhotonGrid gen_IC_photons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: eCoolingThomson
- * DESCRIPTION: Applies electron cooling in the Thomson regime.
- *              For each cell in the SynElectronGrid, it computes the effective Y parameter using effectiveYThomson,
- *              clears the current inverse Compton Y parameters (Ys), and stores the computed Y_T.
- *              Finally, it updates the electrons based on the new Y parameter.
+ * @brief Applies electron cooling in the Thomson regime.
+ * @details For each cell in the electron grid, computes the effective Y parameter,
+ *          updates the inverse Compton Y parameters, and adjusts the electron properties.
+ * @param e Synchrotron electron grid to update
+ * @param ph Synchrotron photon grid
+ * @param shock The shock object containing evolution data
  ********************************************************************************************************************/
 void Thomson_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
     size_t phi_size = e.shape()[0];
@@ -107,10 +123,12 @@ void Thomson_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& s
 }
 
 /********************************************************************************************************************
- * FUNCTION: eCoolingKleinNishina
- * DESCRIPTION: Applies electron cooling in the Klein-Nishina regime.
- *              Similar to eCoolingThomson, but for each cell, it creates an InverseComptonY object with additional
- *              parameters from the synchrotron photon grid.
+ * @brief Applies electron cooling in the Klein-Nishina regime.
+ * @details Similar to Thomson_cooling, but creates InverseComptonY objects with additional
+ *          parameters from the synchrotron photon grid to handle Klein-Nishina effects.
+ * @param e Synchrotron electron grid to update
+ * @param ph Synchrotron photon grid
+ * @param shock The shock object containing evolution data
  ********************************************************************************************************************/
 void KN_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
     size_t phi_size = e.shape()[0];

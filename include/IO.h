@@ -18,36 +18,87 @@
 #include "shock.h"
 #include "synchrotron.h"
 /********************************************************************************************************************
- * FUNCTION PROTOTYPES: Output and Printing Functions
- * DESCRIPTION: These function prototypes declare various utility routines for printing and outputting data.
- *              They include functions to print a 1D Array to the console and to output different types of grids
- *              (SynPhotonGrid, SynElectronGrid, PromptPhotonsGrid, Shock, Coord, MeshGrid3d, MeshGrid, and Array)
- *              to a file, optionally with a specified unit.
+ * @defgroup IO_Functions Output and Printing Functions
+ * @brief Functions for printing and outputting simulation data to files.
+ * @details These functions handle output of various data types to files, including 1D arrays, grids, and
+ *          different model components like SynPhotonGrid, SynElectronGrid, Shock, etc.
  ********************************************************************************************************************/
-// Write Array to a CSV file with an optional unit for value scaling
+
+/********************************************************************************************************************
+ * @brief Write Array to a CSV file with an optional unit for value scaling
+ * @param filename The output filename
+ * @param array The array to write
+ * @param unit Optional scaling factor (default: 1.0)
+ ********************************************************************************************************************   /
 void write_csv(std::string const& filename, Array const& array, Real unit = 1.0);
-// Write MeshGrid to a CSV file with an optional unit for value scaling
+
+/********************************************************************************************************************
+ * @brief Write MeshGrid to a CSV file with an optional unit for value scaling
+ * @param filename The output filename
+ * @param grid The grid to write
+ * @param unit Optional scaling factor (default: 1.0)
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, MeshGrid const& grid, Real unit = 1.0);
-// Write MeshGrid3d to a CSV file with an optional unit for value scaling
+
+/********************************************************************************************************************
+ * @brief Write MeshGrid3d to a CSV file with an optional unit for value scaling
+ * @param filename The output filename
+ * @param grid3d The 3D grid to write
+ * @param unit Optional scaling factor (default: 1.0)
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit = 1.0);
 
 #ifdef ZLIB_FOUND
-// Write SynPhotonGrid to an NPZ file
+/********************************************************************************************************************
+ * @brief Write SynPhotonGrid to an NPZ file
+ * @param filename The output filename
+ * @param syn_ph The synchrotron photon grid to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, SynPhotonGrid const& syn_ph);
-// Write SynElectronGrid to an NPZ file
+
+/********************************************************************************************************************
+ * @brief Write SynElectronGrid to an NPZ file
+ * @param filename The output filename
+ * @param syn_e The synchrotron electron grid to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, SynElectronGrid const& syn_e);
-// Write Shock to an NPZ file
+
+/********************************************************************************************************************
+ * @brief Write Shock to an NPZ file
+ * @param filename The output filename
+ * @param shock The shock object to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, Shock const& shock);
-// Write Coord to an NPZ file
+
+/********************************************************************************************************************
+ * @brief Write Coord to an NPZ file
+ * @param filename The output filename
+ * @param coord The coordinate object to write
+ ********************************************************************************************************************/
 void write_npz(std::string const& filename, Coord const& coord);
 
-// Write an array to an NPZ file with an optional unit for value scaling
+/********************************************************************************************************************
+ * @brief Write an array to an NPZ file with an optional unit for value scaling
+ * @tparam T Type of the array
+ * @param filename The output filename
+ * @param array The array to write
+ * @param unit Optional scaling factor (default: 1.0)
+ ********************************************************************************************************************/
 template <typename T>
 void write_npz(std::string const& filename, const T& array, Real unit = 1.0) {
     xt::dump_npz(filename + ".npz", "array", xt::eval(array / unit), false, false);
 }
 
-// Helper recursive function for writing multiple arrays to a single NPZ file
+/********************************************************************************************************************
+ * @brief Helper recursive function for writing multiple arrays to a single NPZ file
+ * @tparam T Type of the current array
+ * @tparam Rest Types of the rest of the arguments
+ * @param filename The output filename
+ * @param first Boolean indicating if this is the first array being written
+ * @param name Name for the current array
+ * @param array The current array to write
+ * @param rest Rest of the arguments (name-array pairs)
+ ********************************************************************************************************************/
 template <typename T, typename... Rest>
 void write_npz_recursive(std::string const& filename, bool first, std::string const& name, const T& array,
                          const Rest&... rest) {
@@ -59,8 +110,13 @@ void write_npz_recursive(std::string const& filename, bool first, std::string co
     }
 }
 
-// Write multiple named arrays to a single NPZ file
-// Usage: write_npz("filename", "name1", array1, "name2", array2, ...)
+/********************************************************************************************************************
+ * @brief Write multiple named arrays to a single NPZ file
+ * @tparam Args Types of the arguments (alternating string names and arrays)
+ * @param filename The output filename
+ * @param args Variable arguments consisting of name-array pairs
+ * @note Usage: write_npz("filename", "name1", array1, "name2", array2, ...)
+ ********************************************************************************************************************/
 template <typename... Args>
 void write_npz(std::string const& filename, Args const&... args) {
     static_assert(sizeof...(args) % 2 == 0, "Arguments must be pairs: name1, array1, name2, array2, ...");
@@ -69,7 +125,13 @@ void write_npz(std::string const& filename, Args const&... args) {
 }
 #endif
 
-// Write an array to an NPY file with an optional unit for value scaling
+/********************************************************************************************************************
+ * @brief Write an array to an NPY file with an optional unit for value scaling
+ * @tparam T Type of the array
+ * @param filename The output filename
+ * @param array The array to write
+ * @param unit Optional scaling factor (default: 1.0)
+ ********************************************************************************************************************/
 template <typename T>
 void write_npy(std::string const& filename, const T& array, Real unit = 1.0) {
     xt::dump_npy(filename + ".npy", xt::eval(array / unit));

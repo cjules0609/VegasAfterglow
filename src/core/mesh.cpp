@@ -13,9 +13,13 @@
 #include "macros.h"
 
 /********************************************************************************************************************
- * FUNCTION: uniform_cos
- * DESCRIPTION: Creates and returns an Array of 'num' values uniformly spaced in cosine between angles 'start' and
- *'end'.
+ * @brief Creates and returns an Array of 'num' values uniformly spaced in cosine between angles 'start' and 'end'.
+ * @details First generates a linearly spaced array in cosine space, then converts back to angles by taking
+ *          the arccosine.
+ * @param start The starting angle in radians
+ * @param end The ending angle in radians
+ * @param num The number of values to generate
+ * @return Array of angles with uniform cosine spacing
  ********************************************************************************************************************/
 Array uniform_cos(Real start, Real end, size_t num) {
     // First generate a linearly spaced array in cosine space.
@@ -28,9 +32,13 @@ Array uniform_cos(Real start, Real end, size_t num) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: uniform_sin
- * DESCRIPTION: Creates and returns an Array of 'num' values uniformly spaced in sine between angles 'start' and
- *'end'.
+ * @brief Creates and returns an Array of 'num' values uniformly spaced in sine between angles 'start' and 'end'.
+ * @details First generates a linearly spaced array in sine space, then converts back to angles by taking
+ *          the arcsine.
+ * @param start The starting angle in radians
+ * @param end The ending angle in radians
+ * @param num The number of values to generate
+ * @return Array of angles with uniform sine spacing
  ********************************************************************************************************************/
 Array uniform_sin(Real start, Real end, size_t num) {
     // First generate a linearly spaced array in sine space.
@@ -43,9 +51,10 @@ Array uniform_sin(Real start, Real end, size_t num) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: is_linear_scale
- * DESCRIPTION: Checks if the values in the given Array are approximately linearly spaced within the specified
- *tolerance.
+ * @brief Checks if the values in the given Array are approximately linearly spaced within the specified tolerance.
+ * @param arr The array to check
+ * @param tolerance Maximum allowed deviation from linearity
+ * @return True if array elements are linearly spaced, false otherwise
  ********************************************************************************************************************/
 bool is_linear_scale(Array const& arr, Real tolerance) {
     if (arr.size() < 2) return false;  // At least two elements are needed.
@@ -60,9 +69,12 @@ bool is_linear_scale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: is_log_scale
- * DESCRIPTION: Checks if the values in the given Array are approximately logarithmically spaced (constant ratio)
- *              within the specified tolerance.
+ * @brief Checks if the values in the given Array are approximately logarithmically spaced within the specified
+ *tolerance.
+ * @details Tests if the ratio between consecutive elements is approximately constant.
+ * @param arr The array to check
+ * @param tolerance Maximum allowed deviation from constant ratio
+ * @return True if array elements are logarithmically spaced, false otherwise
  ********************************************************************************************************************/
 bool is_log_scale(Array const& arr, Real tolerance) {
     if (arr.size() < 2) return false;  // At least two elements are needed.
@@ -77,8 +89,9 @@ bool is_log_scale(Array const& arr, Real tolerance) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: boundary_to_center
- * DESCRIPTION: Converts a boundary array to center values by averaging adjacent boundaries.
+ * @brief Converts a boundary array to center values by averaging adjacent boundaries.
+ * @param boundary Array of boundary values
+ * @return Array of center values computed as the average of adjacent boundaries
  ********************************************************************************************************************/
 Array boundary_to_center(Array const& boundary) {
     Array center({boundary.size() - 1}, 0);
@@ -89,8 +102,9 @@ Array boundary_to_center(Array const& boundary) {
 }
 
 /********************************************************************************************************************
- * FUNCTION: boundary_to_center_log
- * DESCRIPTION: Converts a boundary array to center values in logarithmic space using the geometric mean.
+ * @brief Converts a boundary array to center values in logarithmic space using the geometric mean.
+ * @param boundary Array of boundary values
+ * @return Array of center values computed as the geometric mean of adjacent boundaries
  ********************************************************************************************************************/
 Array boundary_to_center_log(Array const& boundary) {
     Array center({boundary.size() - 1}, 0);

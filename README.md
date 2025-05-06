@@ -72,10 +72,10 @@ VegasAfterglow requires the following to build:
 
 > **Note for Python Users**: If you install via pip (recommended), you generally do not need to install these C++ tools manually. This section is primarily for users building the C++ library directly or installing the Python package from the source code.
 
-- **C++20 compatible compiler**:
-  - **Linux**: GCC 10+ or Clang 10+
-  - **macOS**: Apple Clang 12+ (with Xcode 12+) or GCC 10+ (via Homebrew)
-  - **Windows**: MSVC 19.27+ (Visual Studio 2019 16.7+) or MinGW-w64 with GCC 10+
+- **C++17 compatible compiler**:
+  - **Linux**: GCC 7+ or Clang 5+
+  - **macOS**: Apple Clang 10+ (with Xcode 10+) or GCC 7+ (via Homebrew)
+  - **Windows**: MSVC 19.14+ (Visual Studio 2017 15.7+) or MinGW-w64 with GCC 7+
   
 - **Build tools**:
   - Make (GNU Make 4.0+ recommended) [if you want to compile & run the C++ code]
@@ -486,7 +486,7 @@ To use VegasAfterglow directly from C++, you will typically perform the followin
 
 Compile your C++ application, linking against the VegasAfterglow library you built:
 ```bash
-g++ -std=c++20 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
+g++ -std=c++17 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
 ```
 Replace `/path/to/VegasAfterglow/` with the actual path to your VegasAfterglow installation.
 

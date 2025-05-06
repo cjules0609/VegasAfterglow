@@ -11,8 +11,8 @@
 #include "shock.h"
 
 /********************************************************************************************************************
- * CLASS: SimpleState
- * DESCRIPTION: Represents the state vector for the simple shock equation.
+ * @struct SimpleState
+ * @brief Represents the state vector for the simple shock equation.
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct SimpleState {
@@ -41,11 +41,11 @@ struct SimpleState {
 };
 
 /********************************************************************************************************************
- * CLASS: SimpleShockEqn
- * DESCRIPTION: Represents the forward shock equation for a given Jet. It defines a state vector
- *              and overloads operator() to compute the derivatives of the state with
- *              respect to time t. It also declares helper functions for the derivatives. Simple version from
- *              Huang et al. 2000
+ * @class SimpleShockEqn
+ * @brief Represents the forward shock equation for a given Jet.
+ * @details It defines a state vector and overloads operator() to compute the derivatives of the state with
+ *          respect to time t. It also declares helper functions for the derivatives. Simple version from
+ *          Huang et al. 2000
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 class SimpleShockEqn {

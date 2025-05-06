@@ -68,6 +68,8 @@
         font-size="85"
         text-anchor="middle"
         fill="#39A275"
+        stroke="black"
+        stroke-width="0.6"
         filter="url(#text-glow)">
     VegasAfterglow
   </text>
