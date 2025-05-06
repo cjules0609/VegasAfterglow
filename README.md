@@ -19,7 +19,6 @@
 
 - [Features](#features)
 - [Performance Highlights](#performance-highlights)
-- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
@@ -66,46 +65,25 @@ This level of performance is achieved through meticulous algorithm design, exten
 
 ---
 
-## Prerequisites
-
-VegasAfterglow requires the following to build: 
-
-> **Note for Python Users**: If you install via pip (recommended), you generally do not need to install these C++ tools manually. This section is primarily for users building the C++ library directly or installing the Python package from the source code.
-
-- **C++17 compatible compiler**:
-  - **Linux**: GCC 7+ or Clang 5+
-  - **macOS**: Apple Clang 10+ (with Xcode 10+) or GCC 7+ (via Homebrew)
-  - **Windows**: MSVC 19.14+ (Visual Studio 2017 15.7+) or MinGW-w64 with GCC 7+
-  
-- **Build tools**:
-  - Make (GNU Make 4.0+ recommended) [if you want to compile & run the C++ code]
-
----
-
 ## Installation
 
 VegasAfterglow is available as a Python package with C++ source code also provided for direct use.
 
 ### Python Installation
 
-0. Install [Python](https://www.python.org/downloads/) (if it's not already installed). We recommend using the latest version, but version 3.8 or higher is required.
-
-1. Choose one of the options below to install VegasAfterglow
-
-<details open>
-<summary><b>Option 1: Install from PyPI (Recommended)</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
-The simplest way to install VegasAfterglow is from PyPI:
+To install VegasAfterglow using pip:
 
 ```bash
 pip install VegasAfterglow
 ```
-</details>
+
+This is the recommended method for most users. VegasAfterglow requires Python 3.8 or higher.
 
 <details>
-<summary><b>Option 2: Install from Source</b> <i>(click to expand/collapse)</i></summary>
+<summary><b>Alternative: Install from Source</b> <i>(click to expand/collapse)</i></summary>
 <br>
+
+For cases where pip installation is not viable or when the development version is required:
 
 1. Clone this repository:
 ```bash
@@ -117,17 +95,19 @@ git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 cd VegasAfterglow
 pip install .
 ```
+
+Standard development environments typically include the necessary prerequisites (C++17 compatible compiler). For build-related issues, refer to the prerequisites section in [C++ Installation](#c-installation).
 </details>
 
 ### C++ Installation
 
-For advanced users who want to compile and use the C++ library directly:
+For advanced users who need to compile and use the C++ library directly:
 
 <details>
 <summary><b>Instructions for C++ Installation</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-1. Clone the repository (if you haven't already):
+1. Clone the repository (if not previously done):
 ```bash
 git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 cd VegasAfterglow
@@ -138,12 +118,27 @@ cd VegasAfterglow
 make lib
 ```
 
-This allows you to write your own C++ problem generator and use the provided VegasAfterglow interfaces. See more details in the [Creating Custom Problem Generators with C++](#creating-custom-problem-generators-with-c) section, or review the example problem generator under `tests/demo/`.
-
 3. (Optional) Compile and run tests:
 ```bash
 make tests
 ```
+
+Upon successful compilation, you can create custom C++ problem generators using the VegasAfterglow interfaces. For implementation details, refer to the [Creating Custom Problem Generators with C++](#creating-custom-problem-generators-with-c) section or examine the example problem generators in `tests/demo/`.
+
+<details>
+<summary><b>Build Prerequisites</b> <i>(click to expand for dependency information)</i></summary>
+<br>
+
+The following development tools are required:
+
+- **C++17 compatible compiler**:
+  - **Linux**: GCC 7+ or Clang 5+
+  - **macOS**: Apple Clang 10+ (with Xcode 10+) or GCC 7+ (via Homebrew)
+  - **Windows**: MSVC 19.14+ (Visual Studio 2017 15.7+) or MinGW-w64 with GCC 7+
+  
+- **Build tools**:
+  - Make (GNU Make 4.0+ recommended)
+</details>
 </details>
 
 ---
