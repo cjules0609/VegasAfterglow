@@ -55,13 +55,13 @@ package_data = {
 
 setup(
     name="VegasAfterglow",
-    version="0.1.1",
+    version="0.1.2",
     description="MCMC tools for astrophysics",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="Yihan Wang, Connery Chen, Bing Zhang",
 
-    license="MIT",                         # SPDX expression only
+    license="MIT",                    
     data_files=[
         ("", ["LICENSE"]),
         ("assets", [os.path.join("assets", f) for f in os.listdir("assets") if not f.startswith(".")]),
