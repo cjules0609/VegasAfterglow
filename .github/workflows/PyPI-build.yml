@@ -65,7 +65,7 @@ jobs:
       - name: Gather wheels
         run: |
           mkdir -p dist
-          mv wheelhouse/*.whl dist/
+          find wheelhouse -type f -name '*.whl' -exec mv '{}' dist/ \;
 
       - name: Build source distribution
         run: |
