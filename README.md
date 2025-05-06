@@ -1,4 +1,4 @@
-# VegasAfterglow
+# VegasAfterglow (under construction, stay tuned!)
 
 <img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="250"/>
 
