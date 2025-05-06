@@ -36,8 +36,10 @@ jobs:
 
       - name: Build wheels
         env:
-          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
-          CIBW_SKIP: "*-win32* *_i686*"
+          CIBW_BUILD:        "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP:         "*-win32* *_i686*"
+          CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
+          CIBW_ARCHS_MACOS:   "x86_64 arm64"
         run: |
           cibuildwheel --platform ${{ matrix.platform }} --output-dir wheelhouse
 
@@ -45,6 +47,7 @@ jobs:
         with:
           name: wheels-${{ matrix.platform }}
           path: wheelhouse/
+          if-no-files-found: warn
 
   publish:
     name: Publish to PyPI
