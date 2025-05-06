@@ -85,7 +85,7 @@ VegasAfterglow is available as a Python package with C++ source code also provid
 The simplest way to install VegasAfterglow is from PyPI:
 
 ```bash
-pip install vegasafterglow
+pip install VegasAfterglow
 ```
 
 #### Option 2: Install from Source

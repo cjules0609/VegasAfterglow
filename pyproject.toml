@@ -2,11 +2,20 @@
 requires = [
   "setuptools>=61",     # or bump to 68+ if you want PEP621 support, but not required here
   "wheel",
-  "pybind11>=2.6.0",    # we’ll use pybind11.setup_helpers in setup.py
+  "pybind11>=2.6.0",    # we'll use pybind11.setup_helpers in setup.py
   "ninja",
 ]
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 environment = { PIP_NO_COMPILE = "1", CMAKE_GENERATOR = "Ninja" }
-test-command = "python -c \"import VegasAfterglow; print('OK')\""
+test-command = "python -c \"import VegasAfterglow; from VegasAfterglow import ObsData, Setups, Fitter; print('OK')\""
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["pymodule"]
+
+[tool.setuptools.package-data]
+"VegasAfterglow" = ["*.py"]

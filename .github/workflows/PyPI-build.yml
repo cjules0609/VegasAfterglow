@@ -30,6 +30,9 @@ jobs:
           # Optimize build speed
           CIBW_ENVIRONMENT: "MAKEFLAGS='-j$(nproc)' CMAKE_BUILD_PARALLEL_LEVEL=$(nproc) SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rm -rf {package}/build"
+          # Verify package contains all necessary files
+          CIBW_TEST_REQUIRES: "numpy pandas"
+          CIBW_TEST_COMMAND: "python -c \"import VegasAfterglow; from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('Package imports correctly')\""
 
       - uses: actions/upload-artifact@v4
         with:
@@ -57,6 +60,9 @@ jobs:
           # Optimize build speed
           CIBW_ENVIRONMENT: "MAKEFLAGS='-j3' CMAKE_BUILD_PARALLEL_LEVEL=3 SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rm -rf {package}/build"
+          # Verify package contains all necessary files
+          CIBW_TEST_REQUIRES: "numpy pandas"
+          CIBW_TEST_COMMAND: "python -c \"import VegasAfterglow; from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('Package imports correctly')\""
 
       - uses: actions/upload-artifact@v4
         with:
@@ -84,6 +90,9 @@ jobs:
           # Optimize build speed
           CIBW_ENVIRONMENT: "CMAKE_BUILD_PARALLEL_LEVEL=4 SETUPTOOLS_ENABLE_FEATURES=legacy-editable"
           CIBW_BEFORE_BUILD: "pip install ninja && rd /s /q {package}\\build 2>nul || echo No build directory"
+          # Verify package contains all necessary files
+          CIBW_TEST_REQUIRES: "numpy pandas"
+          CIBW_TEST_COMMAND: "python -c \"import VegasAfterglow; from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('Package imports correctly')\""
 
       - uses: actions/upload-artifact@v4
         with:
@@ -117,6 +126,15 @@ jobs:
         run: |
           python -m pip install build
           python -m build --sdist --outdir dist/
+
+      # Verify source distribution includes all necessary files
+      - name: Check source distribution
+        run: |
+          mkdir -p sdist_test
+          cd sdist_test
+          python -m pip install ../dist/*.tar.gz
+          python -c "import VegasAfterglow; from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('Source package imports correctly')"
+          cd ..
 
       - name: Upload to PyPI
         run: |

@@ -49,6 +49,11 @@ ext_modules = [
     )
 ]
 
+# Ensure Python module files are included
+package_data = {
+    "VegasAfterglow": ["*.py"],
+}
+
 setup(
     name="VegasAfterglow",
     version="0.1.0",
@@ -76,8 +81,9 @@ setup(
 
     packages=find_packages(where="pymodule"),
     package_dir={"": "pymodule"},
+    package_data=package_data,
+    include_package_data=True,
 
     ext_modules=ext_modules,
     zip_safe=False,
-    include_package_data=True,
     )
