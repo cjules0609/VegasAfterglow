@@ -43,11 +43,15 @@ jobs:
         run: |
           cibuildwheel --platform ${{ matrix.platform }} --output-dir wheelhouse
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform }}
+          name: wheels-${{ matrix.os }}
           path: wheelhouse/
           if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
+          include-hidden-files: false
 
   publish:
     name: Publish to PyPI
