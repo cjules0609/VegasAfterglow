@@ -28,28 +28,28 @@
 
 ## Features
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="300"/>
+<h3 align="center">Shock Dynamics & Evolution</h3>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="370"/>
 
-**Shock Dynamics & Evolution:**
 *   **Forward and Reverse Shock Modeling:** Simulates both shock components with arbitrary magnetization levels.
 *   **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
-*   **Ambient Medium:** Supports various ambient medium profiles including uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
+*   **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
 *   **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
 
 <br clear="left"/>
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="300"/>
+<h3 align="center">Jet Structure & Geometry</h3>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="370"/>
 
-**Jet Structure & Geometry:**
 *   **Structured Jet Profiles:** Allows user-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization.
 *   **Jet Spreading:** Includes lateral expansion dynamics for realistic jet evolution.
 *   **Non-Axisymmetric Jets:** Capable of modeling complex, non-axisymmetric jet structures.
 
 <br clear="left"/>
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="300"/>
+<h3 align="center">Radiation Mechanisms</h3>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="370"/>
 
-**Radiation Mechanisms:**
 *   **Synchrotron Radiation:** Calculates synchrotron emission from shocked electrons.
 *   **Synchrotron Self-Absorption (SSA):** Includes SSA effects, crucial at low frequencies.
 *   **Inverse Compton (IC) Scattering:** Models IC processes, including:
@@ -71,12 +71,6 @@ VegasAfterglow delivers exceptional computational performance through deep optim
     *   Approximately **10 seconds** for on-axis structured jet scenarios.
     *   Approximately **30 seconds** for more complex off-axis scenarios.
 *   **Optimized for Interactive Analysis:** Facilitates comprehensive Bayesian inference on standard laptop hardware in seconds to minutes, rather than hours or days, allowing for rapid iteration through different physical models and scenarios.
-
-<div align="center" style="margin-top: 20px;">
-  <!-- MCMC Efficiency Visualization -->
-  <img src="assets/mcmc_scaling.svg" alt="MCMC Scaling Performance" width="70%"/>
-  <p align="center"><i>MCMC computational scaling with model complexity and data points</i></p>
-</div>
 
 This level of performance is achieved through meticulous algorithm design, extensive use of vectorization, and careful memory management, making VegasAfterglow highly suitable for both detailed analysis of individual GRB events and large-scale population studies.
 

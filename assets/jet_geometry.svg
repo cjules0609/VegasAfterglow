@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="500" height="350" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background -->
-    <rect x="0" y="0" width="500" height="350" fill="#111122"/>
-    
-    <!-- Title -->
-    <text x="250" y="40" font-family="Arial" font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Jet Structure &amp; Geometry Features</text>
+<svg width="500" height="250" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background - removing solid background for transparency -->
     
     <!-- 1. NON-AXISYMMETRIC JETS SECTION (Left) - HELICAL SPIRAL STRUCTURE -->
-    <g transform="translate(100, 275) scale(1.8)">
+    <g transform="translate(100, 215) scale(1.8)">
         <!-- Section Title -->
         <text x="0" y="-105" font-family="Arial" font-size="8" fill="#AAAAFF" text-anchor="middle">Non-Axisymmetric Jets</text>
         
@@ -101,7 +97,7 @@
     </g>
     
     <!-- 2. STRUCTURED JET PROFILES SECTION (Middle) -->
-    <g transform="translate(250, 275) scale(1.8)">
+    <g transform="translate(250, 215) scale(1.8)">
         <!-- Section Title -->
         <text x="0" y="-105" font-family="Arial" font-size="8" fill="#AAAAFF" text-anchor="middle">Structured Jet Profiles</text>
         
@@ -132,7 +128,7 @@
     </g>
     
     <!-- 3. JET SPREADING SECTION (Right) -->
-    <g transform="translate(400, 275) scale(1.8)">
+    <g transform="translate(400, 215) scale(1.8)">
         <!-- Section Title -->
         <text x="0" y="-105" font-family="Arial" font-size="8" fill="#AAAAFF" text-anchor="middle">Jet Spreading</text>
         
@@ -166,8 +162,4 @@
             <animate attributeName="opacity" values="0.0;1.0;0.0" dur="4s" begin="2s" repeatCount="indefinite"/>
         </path>
     </g>
-    
-    <!-- Connecting decorative lines -->
-    <path d="M170,275 L194,275" stroke="#444455" stroke-width="1" stroke-dasharray="4,2" fill="none"/>
-    <path d="M306,275 L330,275" stroke="#444455" stroke-width="1" stroke-dasharray="4,2" fill="none"/>
 </svg> 

@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="500" height="350" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background -->
-    <rect x="0" y="0" width="500" height="350" fill="#111122"/>
-    
-    <!-- Title -->
-    <text x="250" y="35" font-family="Arial" font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Shock Dynamics &amp; Evolution</text>
+<svg width="500" height="250" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background - removing solid background for transparency -->
+
     
     <!-- SECTION 1: FORWARD & REVERSE SHOCK MODELING -->
-    <g transform="translate(275, 215)">
+    <g transform="translate(275, 115)">
         <!-- Section Title -->
         <text x="0" y="-85" font-family="Arial" font-size="12" fill="#AAAAFF" text-anchor="middle">Forward &amp; Reverse Shocks</text>
         
@@ -48,7 +45,7 @@
     </g>
     
     <!-- SECTION 2: AMBIENT MEDIUM PROFILES -->
-    <g transform="translate(100, 215)">
+    <g transform="translate(100, 115)">
         <!-- Section Title -->
         <text x="0" y="-85" font-family="Arial" font-size="12" fill="#AAAAFF" text-anchor="middle">Ambient Medium Profiles</text>
         
@@ -109,7 +106,7 @@
     </g>
     
     <!-- SECTION 3: ENERGY & MASS INJECTION -->
-    <g transform="translate(425, 215)">
+    <g transform="translate(425, 115)">
         <!-- Section Title -->
         <text x="0" y="-85" font-family="Arial" font-size="12" fill="#AAAAFF" text-anchor="middle">Energy &amp; Mass Injection</text>
         
@@ -183,8 +180,4 @@
         <!-- Blast wave -->
         <circle cx="0" cy="0" r="42" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="3,2" opacity="0.5"/>
     </g>
-    
-    <!-- Connecting lines between sections -->
-    <path d="M150,215 L225,215" stroke="#444455" stroke-width="1" stroke-dasharray="4,2" fill="none"/>
-    <path d="M325,215 L375,215" stroke="#444455" stroke-width="1" stroke-dasharray="4,2" fill="none"/>
 </svg>

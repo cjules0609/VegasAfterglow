@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="500" height="350" viewBox="0 0 500 350" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background -->
-    <rect x="0" y="0" width="500" height="350" fill="#111122"/>
+<svg width="450" height="350" viewBox="0 0 450 350" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background - removing solid background for transparency -->
     
     <!-- Definitions -->
     <defs>
@@ -34,11 +33,8 @@
         </pattern>
     </defs>
     
-    <!-- Title -->
-    <text x="250" y="25" font-family="Arial" font-size="16" fill="#FFFFFF" text-anchor="middle" font-weight="bold">Synchrotron and Inverse Compton Processes</text>
-    
     <!-- Shock front -->
-    <g transform="translate(100, 200)">
+    <g transform="translate(100, 180)">
         <rect x="0" y="-150" width="15" height="300" fill="#FF5500" opacity="0.7">
             <animate attributeName="opacity" values="0.5;0.9;0.5" dur="3s" repeatCount="indefinite"/>
         </rect>
