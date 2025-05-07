@@ -12,6 +12,10 @@ elseif(MSVC)
   add_link_options(/LTCG)
 endif()
 
+add_compile_definitions(
+  NO_XTENSOR_IO
+)
+
 find_package(pybind11 CONFIG REQUIRED)
 
 
