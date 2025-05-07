@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.15)
 project(VegasAfterglow LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-O3 -flto -DNDEBUG -ffast-math -pipe)
 elseif(MSVC)
-  add_compile_options(/O2 /DNDEBUG /fp:fast /MP /GL)
+  add_compile_options(/O2 /DNDEBUG /fp:fast /MP /GL /std:c++20)
   add_link_options(/LTCG)
 endif()
 

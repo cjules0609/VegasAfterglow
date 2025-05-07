@@ -2,7 +2,7 @@
 
 <img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="250"/>
 
-[![C++ Version](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17) 
+[![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20) 
 [![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/) 
 [![Build Status](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml/badge.svg)](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml) 
 [![License](https://img.shields.io/badge/License-BSD--3--Clause-green.svg)](LICENSE) 
@@ -114,7 +114,7 @@ cd VegasAfterglow
 pip install .
 ```
 
-Standard development environments typically include the necessary prerequisites (C++17 compatible compiler). For build-related issues, refer to the prerequisites section in [C++ Installation](#c-installation).
+Standard development environments typically include the necessary prerequisites (C++20 compatible compiler). For build-related issues, refer to the prerequisites section in [C++ Installation](#c-installation).
 </details>
 
 ### C++ Installation
@@ -149,10 +149,10 @@ Upon successful compilation, you can create custom C++ problem generators using 
 
 The following development tools are required:
 
-- **C++17 compatible compiler**:
-  - **Linux**: GCC 7+ or Clang 5+
-  - **macOS**: Apple Clang 10+ (with Xcode 10+) or GCC 7+ (via Homebrew)
-  - **Windows**: MSVC 19.14+ (Visual Studio 2017 15.7+) or MinGW-w64 with GCC 7+
+- **C++20 compatible compiler**:
+  - **Linux**: GCC 10+ or Clang 13+
+  - **macOS**: Apple Clang 13+ (with Xcode 13+) or GCC 10+ (via Homebrew)
+  - **Windows**: MSVC 19.29+ (Visual Studio 2019 16.10+) or MinGW-w64 with GCC 10+
   
 - **Build tools**:
   - Make (GNU Make 4.0+ recommended)
