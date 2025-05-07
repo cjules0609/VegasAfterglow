@@ -73,10 +73,10 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 
 - **Ultra-fast Model Evaluation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
 
-- **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps in record time on an 8-core Apple M2 chip:
+- **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra in record time on an 8-core Apple M2 chip:
   - ~10 seconds for on-axis structured jet scenarios
   - ~30 seconds for off-axis modeling scenarios
-
+  
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
 <br clear="right"/>

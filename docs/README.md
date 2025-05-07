@@ -1,52 +1,108 @@
-# VegasAfterglow Documentation
+# Documentation for VegasAfterglow
 
 This directory contains the documentation for the VegasAfterglow project.
 
 ## Building the Documentation
 
-To build the documentation locally, you need to have the following dependencies installed:
+### Prerequisites
 
-- Python 3.7+
-- Sphinx
-- sphinx_rtd_theme
-- breathe
-- Doxygen
+- Python 3.9 or later
+- Doxygen (for C++ API documentation)
 - Graphviz (for diagrams)
+- Sphinx and related packages
 
-### Installing Dependencies
+### Install Dependencies
 
 ```bash
-# Python dependencies
-pip install sphinx sphinx_rtd_theme breathe
-
-# On Ubuntu/Debian
-sudo apt-get install doxygen graphviz
-
-# On macOS
-brew install doxygen graphviz
+pip install sphinx sphinx-rtd-theme breathe
 ```
 
-### Building
+### Build Process
+
+You can build the documentation using the provided script:
 
 ```bash
 cd docs
-make all
+chmod +x build_docs.sh
+./build_docs.sh
 ```
 
-This will:
-1. Run Doxygen to generate XML documentation from the C++ source code
-2. Run Sphinx to generate HTML documentation, incorporating both the C++ API documentation (via Breathe) and the Python API documentation
-
-The generated documentation will be available in the `build/html/` directory.
+The built documentation will be in the `build/html` directory.
 
 ## Documentation Structure
 
-- `source/` - Contains Sphinx RST files
-- `Doxyfile` - Doxygen configuration
-- `Makefile` - Build script for documentation
+- `source/` - Contains the RST files for Sphinx
+- `doxygen/` - Output directory for Doxygen (generated)
+- `build/` - Output directory for Sphinx (generated)
+- `Doxyfile` - Configuration for Doxygen
+- `source/conf.py` - Configuration for Sphinx
 
-## Online Documentation
+## Automatic Deployment
 
-The latest documentation is automatically built and deployed to GitHub Pages on each push to the main branch:
+The documentation is automatically built and deployed to the GitHub Wiki whenever changes are pushed to the `main` branch and affect files in the `docs/`, `include/`, `src/`, or `pybind/` directories.
 
-https://yourusername.github.io/VegasAfterglow/ 
+### Manual Deployment
+
+To manually trigger the documentation build and deployment, you can run:
+
+```bash
+gh workflow run docs.yml
+```
+
+## Documentation Guidelines
+
+### C++ Documentation
+
+Use Doxygen-style comments for C++ code:
+
+```cpp
+/**
+ * @brief Brief description of the function/class
+ * @details Detailed description
+ * 
+ * @param param1 Description of first parameter
+ * @param param2 Description of second parameter
+ * @return Description of return value
+ */
+```
+
+### Python Documentation
+
+Use Google-style docstrings for Python code:
+
+```python
+def function(param1, param2):
+    """Brief description of the function.
+    
+    Detailed description of the function.
+    
+    Args:
+        param1: Description of first parameter
+        param2: Description of second parameter
+        
+    Returns:
+        Description of return value
+    """
+```
+
+### Template and Inline Functions
+
+For template and inline functions, ensure you document both template parameters and function parameters:
+
+```cpp
+/**
+ * @brief Brief description of the template function
+ * @details Detailed description
+ *
+ * @tparam T Description of template parameter
+ * @param param1 Description of first parameter
+ * @return Description of return value
+ */
+template<typename T>
+inline T function(T param1) { return param1; }
+```
+
+## Customizing Documentation
+
+- Edit `source/conf.py` to modify Sphinx configuration
+- Edit `Doxyfile` to modify Doxygen configuration 

@@ -27,10 +27,6 @@ class Shock {
     // Constructor: Initialize with grid dimensions and energy fractions
     Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
     Shock() noexcept = default;
-    Shock(Shock const& other) noexcept = default;
-    Shock(Shock&& other) noexcept = default;
-    Shock& operator=(Shock&& other) noexcept = default;
-    Shock& operator=(Shock const& other) noexcept = default;
 
     MeshGrid3d t_comv;          // Comoving time
     MeshGrid3d r;               // Radius
