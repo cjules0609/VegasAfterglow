@@ -74,17 +74,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::call_guard<py::gil_scoped_release>());
 
     py::class_<Emission>(m, "Emission")
-        .def(py::init<double, const std::vector<double>&>(), py::arg("nu"), py::arg("t"))
-        .def(py::init<const std::vector<double>&, double>(), py::arg("nu"), py::arg("t"))
-        .def("generate", &Emission::generate, py::arg("params"), py::arg("config"),
-            py::call_guard<py::gil_scoped_release>())
-        .def_property_readonly("f_nu", [](const Emission& em) {
-            return std::vector<double>(em.F_nu.begin(), em.F_nu.end());
-        })
-        .def_property_readonly("t", [](const Emission& em) {
-            return std::vector<double>(em.t.begin(), em.t.end());
-        })
-        .def_property_readonly("nu", [](const Emission& em) {
-            return std::vector<double>(em.nu.begin(), em.nu.end());
-        });
+        .def(py::init<const Params&, const ConfigParams&>())
+        .def("generate_lc", &Emission::generate_lc, py::arg("nu"), py::arg("t"))
+        .def("generate_spec", &Emission::generate_spec, py::arg("nu"), py::arg("t"));
+
 }
