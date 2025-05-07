@@ -32,24 +32,21 @@ jobs:
           cache: pip
 
       - name: Build wheels
-        # use the official action
         uses: pypa/cibuildwheel@v2.16.2
+        env:
+          CIBW_PLATFORM: ${{ matrix.platform }}
+          # Build settings
+          CIBW_BUILD: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "*-win32* *_i686* *musllinux*"
+          CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+          # C++20 settings (simplified)
+          CMAKE_ARGS: "-DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+          # Build dependencies 
+          CIBW_BEFORE_BUILD: pip install -U pip wheel scikit-build-core>=0.4.3 pybind11>=2.6.0
+          CIBW_TEST_COMMAND: python -c "import VegasAfterglow; print('OK')"
         with:
-          platform: ${{ matrix.platform }}
           output-dir: wheelhouse
-          # which interpreters
-          build: "cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*"
-          # skip truly unsupported arches/platforms
-          skip: "*-win32* *_i686* *musllinux*"
-          # force both AMD64 & ARM64 on Windows, Intel & ARM on macOS
-          archs-windows: "AMD64 ARM64"
-          archs-macos:   "x86_64 arm64"
-          # enable GCC-11 on manylinux2014 for C++20
-          before-build: |
-            if [ "$CIBW_PLATFORM" = "linux" ]; then
-              source /opt/rh/devtoolset-11/enable
-            fi
-          test-command: python -c "import VegasAfterglow; print('OK')"
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
