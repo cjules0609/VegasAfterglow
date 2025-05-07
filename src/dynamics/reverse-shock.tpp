@@ -27,7 +27,7 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
       deps0_dt(ejecta.eps_k(phi, theta) / ejecta.T0),
       dm0_dt(deps0_dt / (Gamma4 * con::c2)),
       u4(std::sqrt(Gamma4 * Gamma4 - 1) * con::c) {
-    if constexpr (HasSigma<Ejecta>::value) {
+    if constexpr (HasSigma<Ejecta>) {
         dm0_dt /= 1 + ejecta.sigma0(phi, theta);
     }
 }
@@ -385,7 +385,7 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
 
     Real m_swept = compute_swept_mass(eqn_rvs, state_rvs);
 
-    if constexpr (HasU<FState>::value) {
+    if constexpr (HasU<FState>) {
         state_fwd.u = (gamma2 - 1) * m_swept * con::c2;
     }
 

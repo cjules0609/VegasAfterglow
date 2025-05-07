@@ -355,7 +355,7 @@ Real compute_dec_time(Eqn const& eqn, Real t_max) {
 
     Real m_shell = e_k / (gamma * con::c2);
 
-    if constexpr (HasSigma<decltype(eqn.ejecta)>::value) {
+    if constexpr (HasSigma<decltype(eqn.ejecta)>) {
         m_shell /= 1 + eqn.ejecta.sigma0(eqn.phi, eqn.theta0);
     }
 

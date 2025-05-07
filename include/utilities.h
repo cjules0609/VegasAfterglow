@@ -16,7 +16,7 @@
 class Empty {};
 
 // c++20 concept
-/*template <typename T>
+template <typename T>
 concept HasDmdt = requires(T t) {
     { t.dm_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
 };
@@ -39,8 +39,8 @@ concept HasU = requires(T t) {
 template <typename T>
 concept HasMass = requires(T t) {
     { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
-};*/
-
+};
+/*
 template <typename, typename = void>
 struct HasDmdt : std::false_type {};
 
@@ -82,7 +82,7 @@ template <typename T>
 struct HasU<T, std::void_t<decltype(std::declval<T>().u)>> : std::is_same<decltype(std::declval<T>().u), Real> {};
 
 template <typename T>
-constexpr bool HasU_v = HasU<T>::value;
+constexpr bool HasU_v = HasU<T>::value;*/
 
 #define MAKE_THIS_ODEINT_STATE(classname, data, array_size)                  \
     using array_type = std::array<Real, array_size>;                         \

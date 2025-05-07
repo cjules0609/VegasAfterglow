@@ -19,8 +19,8 @@
  ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 struct ForwardState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>::value;    // whether Ejecta class has dmdt method
-    static constexpr bool energy_inject = HasDedt<Ejecta>::value;  // whether Ejecta class has dedt method
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;    // whether Ejecta class has dmdt method
+    static constexpr bool energy_inject = HasDedt<Ejecta>;  // whether Ejecta class has dedt method
     // use least fixed array size for integrator efficiency
     static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
