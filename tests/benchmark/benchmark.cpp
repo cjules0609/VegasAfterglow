@@ -11,7 +11,7 @@ void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_
 
     Real lumi_dist = 1.23e26 * unit::cm;
 
-    Array t_obs = xt::logspace(std::log10(1e3 * unit::sec), std::log10(1e7 * unit::sec), 30);
+    Array t_obs = xt::logspace(std::log10(1e3 * unit::sec), std::log10(1e7 * unit::sec), 230);
 
     ISM medium(n_ism);
 
@@ -62,8 +62,9 @@ int main() {
     for (auto r : resolu) {
         tests(r, r, r, n_ism, eps_e, eps_B, p, 1e52 * unit::erg, Gamma0, 0.1, 0.3, true);
     }
+    return 0;
 
-    size_t benchmark_resolu[] = {24, 32};
+    size_t benchmark_resolu[] = {24, 32, 64, 128};
 
     for (auto r : benchmark_resolu) {
         std::ofstream file("benchmark" + std::to_string(r) + "-" + std::to_string(r) + "-" + std::to_string(r) +

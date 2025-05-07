@@ -29,7 +29,7 @@
 ## Features
 
 <h3 align="center">Shock Dynamics & Evolution</h3>
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="370"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="350"/>
 
 *   **Forward and Reverse Shock Modeling:** Simulates both shock components with arbitrary magnetization levels.
 *   **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
@@ -39,22 +39,22 @@
 <br clear="left"/>
 
 <h3 align="center">Jet Structure & Geometry</h3>
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="370"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="350"/>
 
 *   **Structured Jet Profiles:** Allows user-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization.
-*   **Jet Spreading:** Includes lateral expansion dynamics for realistic jet evolution.
+*   **Jet Spreading:** Includes lateral expansion dynamics for realistic jet evolution (experimental).
 *   **Non-Axisymmetric Jets:** Capable of modeling complex, non-axisymmetric jet structures.
 
 <br clear="left"/>
 
 <h3 align="center">Radiation Mechanisms</h3>
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="370"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="350"/>
 
 *   **Synchrotron Radiation:** Calculates synchrotron emission from shocked electrons.
 *   **Synchrotron Self-Absorption (SSA):** Includes SSA effects, crucial at low frequencies.
 *   **Inverse Compton (IC) Scattering:** Models IC processes, including:
     *   Synchrotron Self-Compton (SSC) from both forward and reverse shocks.
-    *   Pairwise IC between forward and reverse shock electron and photon populations.
+    *   Pairwise IC between forward and reverse shock electron and photon populations (experimental).
     *   Includes Klein-Nishina corrections for accurate high-energy IC cooling and emission.
 
 <br clear="left"/>
@@ -63,16 +63,24 @@
 
 ## Performance Highlights
 
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/convergence_plot.png" width="300"/>
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-*   **Ultra-fast Model Evaluation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately **0.6 milliseconds** on an Apple M2 chip.
-*   **Rapid MCMC Exploration:** Enables comprehensive parameter estimation (e.g., 10,000 MCMC steps for 8 parameters against 20 data points) in:
-    *   Approximately **10 seconds** for on-axis structured jet scenarios.
-    *   Approximately **30 seconds** for more complex off-axis scenarios.
-*   **Optimized for Interactive Analysis:** Facilitates comprehensive Bayesian inference on standard laptop hardware in seconds to minutes, rather than hours or days, allowing for rapid iteration through different physical models and scenarios.
+* **Ultra-fast Model Evaluation**  
+  Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately `0.6 milliseconds` on an Apple M2 chip.
 
-This level of performance is achieved through meticulous algorithm design, extensive use of vectorization, and careful memory management, making VegasAfterglow highly suitable for both detailed analysis of individual GRB events and large-scale population studies.
+* **Rapid MCMC Exploration**  
+  Enables parameter estimation with 10,000 MCMC steps in record time:
+  * ~`10 seconds` for standard on-axis structured jet scenarios
+  * ~`30 seconds` for more complex off-axis modeling scenarios
+
+* **Optimized for Interactive Analysis**  
+  Facilitates comprehensive Bayesian inference on standard laptop hardware in seconds to minutes, rather than hours or days, allowing for rapid iteration through different physical models and scenarios.
+
+This level of performance is achieved through optimized algorithm, and efficient memory access patterns, making VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
+
+<br clear="left"/>
 
 ---
 
