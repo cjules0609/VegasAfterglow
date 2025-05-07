@@ -95,7 +95,7 @@ jobs:
           # Create footer
           cat > wiki_content/_Footer.md << 'EOL'
           ---
-          Documentation generated automatically from the [VegasAfterglow repository](https://github.com/YihanWangAstro/VegasAfterglow).
+          Documentation generated automatically from the [VegasAfterglow repository](https://github.com/YihanWangAstro/Afterglow).
           EOL
       
       - name: Push to Wiki
