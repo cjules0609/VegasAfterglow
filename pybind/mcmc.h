@@ -14,7 +14,7 @@
 #include "macros.h"
 #include "mesh.h"
 #include "utilities.h"
-#include "setup.h"
+#include "struct.h"
 
 struct LightCurveData {
     double nu{0};

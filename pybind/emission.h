@@ -4,7 +4,7 @@
 #include "macros.h"
 #include "mesh.h"
 #include "utilities.h"
-#include "setup.h"
+#include "struct.h"
 
 class Emission {
 public:
