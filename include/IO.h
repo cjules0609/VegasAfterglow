@@ -8,10 +8,7 @@
 #pragma once
 
 #include <string>
-
-#ifdef ZLIB_FOUND
 #include "xtensor-io/xnpz.hpp"
-#endif
 
 #include "mesh.h"
 #include "prompt.h"

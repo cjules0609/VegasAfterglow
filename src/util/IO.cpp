@@ -65,7 +65,6 @@ void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit)
     }
 }
 
-#ifdef ZLIB_FOUND
 // === Coord Output ===
 /********************************************************************************************************************
  * @brief Writes coordinate system data to NPZ file.
@@ -155,4 +154,3 @@ void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
     xt::dump_npz(filename + ".npz", "column_num_den", xt::eval(shock.column_num_den * unit::cm2), false, true);
 }
-#endif
