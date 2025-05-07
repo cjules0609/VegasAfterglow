@@ -43,6 +43,13 @@ jobs:
           chmod +x build_docs.sh
           ./build_docs.sh
           
+      - name: Ensure logo files are copied
+        run: |
+          # Make sure logos are explicitly copied to both _static and _images directories
+          cp logo.svg docs/build/html/_static/
+          cp logo.svg docs/build/html/_images/ || mkdir -p docs/build/html/_images && cp logo.svg docs/build/html/_images/
+          cp logo_small.svg docs/build/html/_static/ || echo "No small logo found"
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
