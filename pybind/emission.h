@@ -10,8 +10,9 @@ class Emission {
 public:
     Emission(const Params& param, const ConfigParams& config);
 
-    std::vector<Real> generate_lc(Real nu, const std::vector<Real>& t);
-    std::vector<Real> generate_spec(const std::vector<Real>& nu, Real t);
+    std::vector<Real> lc(Real nu, const std::vector<Real>& t);
+    std::vector<Real> lc_r(Real nu, const std::vector<Real>& t);
+    std::vector<Real> spec(const std::vector<Real>& nu, Real t);
 
     Array t;
     Array nu;
@@ -29,4 +30,6 @@ private:
 
     SynElectronGrid electrons;
     SynPhotonGrid photons;
+    SynElectronGrid electrons_r;
+    SynPhotonGrid photons_r;
 };

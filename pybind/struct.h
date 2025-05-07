@@ -12,11 +12,15 @@ struct Params {
     double theta_v{0};
     double theta_w{con::pi / 2};
     double p{2.3};
+    double p_r{p};
     double eps_e{0.1};
     double eps_B{0.01};
+    double eps_e_r{eps_e};
+    double eps_B_r{eps_B};
     double n_ism{1};
     double A_star{0.01};
     double xi{1};
+    double xi_r{xi};
     double k_jet{2};
 };
 
