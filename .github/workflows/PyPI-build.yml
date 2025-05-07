@@ -33,7 +33,7 @@ jobs:
 
       - name: Build wheels
         # use the official action
-        uses: cibuildwheel/action@v2
+        uses: pypa/cibuildwheel@v2.16.2
         with:
           platform: ${{ matrix.platform }}
           output-dir: wheelhouse
