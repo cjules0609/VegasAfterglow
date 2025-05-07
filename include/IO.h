@@ -13,7 +13,11 @@
 #include "prompt.h"
 #include "shock.h"
 #include "synchrotron.h"
+
+#ifndef NO_XTENSOR_IO
 #include "xtensor-io/xnpz.hpp"
+#endif
+
 /********************************************************************************************************************
  * @defgroup IO_Functions Output and Printing Functions
  * @brief Functions for printing and outputting simulation data to files.
@@ -26,7 +30,7 @@
  * @param filename The output filename
  * @param array The array to write
  * @param unit Optional scaling factor (default: 1.0)
- ******************************************************************************************************************** /
+ ********************************************************************************************************************/
 void write_csv(std::string const& filename, Array const& array, Real unit = 1.0);
 
 /********************************************************************************************************************
@@ -45,6 +49,7 @@ void write_csv(std::string const& filename, MeshGrid const& grid, Real unit = 1.
  ********************************************************************************************************************/
 void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit = 1.0);
 
+#ifndef NO_XTENSOR_IO
 /********************************************************************************************************************
  * @brief Write SynPhotonGrid to an NPZ file
  * @param filename The output filename
@@ -119,6 +124,7 @@ void write_npz(std::string const& filename, Args const&... args) {
 
     write_npz_recursive(filename, true, args...);
 }
+#endif
 
 /********************************************************************************************************************
  * @brief Write an array to an NPY file with an optional unit for value scaling

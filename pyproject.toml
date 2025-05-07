@@ -28,9 +28,9 @@ license = {text = "BSD-3-Clause"}
 wheel.packages = ["VegasAfterglow"]
 wheel.license-files = ["LICENSE"]
 cmake.version = ">=3.15.0"
-cmake.args = ["-DCMAKE_POSITION_INDEPENDENT_CODE=ON"]
+cmake.args = ["-DCMAKE_POSITION_INDEPENDENT_CODE=ON", "-DNO_XTENSOR_IO"]
 cmake.build-type = "Release"
-build.verbose = true 
+build.verbose = false
 
 sdist.include = [
   "LICENSE",
@@ -44,5 +44,5 @@ sdist.include = [
 ]
 
 [tool.cibuildwheel]
-test-command = "python -c \"import VegasAfterglow; print('OK')\""
+test-command = "python -c \"from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('OK')\""
 build-verbosity = 1

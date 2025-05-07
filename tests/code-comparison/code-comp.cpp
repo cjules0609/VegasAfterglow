@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 
-#include "IO.h"
 #include "afterglow.h"
 #include "json.hpp"
 void lc_gen(std::string folder_name, bool out = false) {

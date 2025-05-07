@@ -1,4 +1,4 @@
-#include "IO.h"
+
 #include "afterglow.h"
 void test_reverse_shock(double xi, double sigma) {
     Real E_iso = 1e51 * unit::erg;

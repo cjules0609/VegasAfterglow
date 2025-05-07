@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <fstream>
 
-#include "IO.h"
 #include "afterglow.h"
 
 void tests(size_t r_num, size_t theta_num, size_t phi_num, Real n_ism, Real eps_e, Real eps_B, Real p, Real E_iso,
