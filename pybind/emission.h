@@ -8,16 +8,25 @@
 
 class Emission {
 public:
-    Emission(Real nu, const std::vector<Real>& t);
-    Emission(const std::vector<Real>& nu, Real t);
+    Emission(const Params& param, const ConfigParams& config);
 
-    void generate(const Params& param, const ConfigParams& config);
+    std::vector<Real> generate_lc(Real nu, const std::vector<Real>& t);
+    std::vector<Real> generate_spec(const std::vector<Real>& nu, Real t);
 
-    // Vectors
     Array t;
     Array nu;
-
-    // Result
     Array F_nu;
-};
 
+    Ejecta jet;
+    Medium medium;
+    Observer obs;
+
+private:
+    Params param;
+    ConfigParams config;
+
+    void observe(const Params& param, const ConfigParams& config, const Array& t);
+
+    SynElectronGrid electrons;
+    SynPhotonGrid photons;
+};
