@@ -29,6 +29,7 @@ Emission::Emission(const Params& param, const ConfigParams& config) {
         std::cerr << "Unknown jet structure: " << config.jet << std::endl;
         return;
     }
+    jet.spreading = config.spreading;
 }
 
 void Emission::observe(const Params& param, const ConfigParams& config, const Array& t) {
