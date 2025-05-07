@@ -34,23 +34,34 @@ Emission::Emission(const Params& param, const ConfigParams& config) {
 
 void Emission::observe(const Params& param, const ConfigParams& config, const Array& t) {
     auto coord = auto_grid(jet, t, param.theta_w, param.theta_v, config.z, config.phi_grid, config.theta_grid, config.t_grid);
-    auto shock = generate_fwd_shock(coord, medium, jet, param.eps_e, param.eps_B, config.rtol);
-    
-    obs.observe(coord, shock, config.lumi_dist * unit::cm, config.z);
+    // auto shock = generate_fwd_shock(coord, medium, jet, param.eps_e, param.eps_B, config.rtol);
+    auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, param.eps_e, param.eps_B, param.eps_e_r, param.eps_B_r);
 
-    electrons = generate_syn_electrons(shock, param.p, param.xi);
-    photons = generate_syn_photons(shock, electrons);
+    obs.observe(coord, f_shock, config.lumi_dist * unit::cm, config.z);
+    obs.observe(coord, r_shock, config.lumi_dist * unit::cm, config.z);
+
+    electrons = generate_syn_electrons(f_shock, param.p, param.xi);
+    photons = generate_syn_photons(f_shock, electrons);
+
+    electrons_r = generate_syn_electrons(r_shock, param.p_r, param.xi_r);
+    photons_r = generate_syn_photons(r_shock, electrons);
 }
 
-std::vector<Real> Emission::generate_lc(Real nu, const std::vector<Real>& t) {
+std::vector<Real> Emission::lc(Real nu, const std::vector<Real>& t) {
     observe(param, config, xt::adapt(t) * unit::sec);  // Perform observation step
-    auto Fv_model_xt = obs.specific_flux(xt::adapt(t) * unit::sec, xt::adapt(std::vector<Real>{nu}) * unit::Hz, photons) / unit::Jy;
-    return std::vector<Real>(Fv_model_xt.begin(), Fv_model_xt.end());
+    auto Fv = obs.specific_flux(xt::adapt(t) * unit::sec, xt::adapt(std::vector<Real>{nu}) * unit::Hz, photons) / unit::Jy;
+    return std::vector<Real>(Fv.begin(), Fv.end());
 }
 
-std::vector<Real> Emission::generate_spec(const std::vector<Real>& nu, Real t) {
+std::vector<Real> Emission::lc_r(Real nu, const std::vector<Real>& t) {
+    observe(param, config, xt::adapt(t) * unit::sec);  // Perform observation step
+    auto Fv_r = obs.specific_flux(xt::adapt(t) * unit::sec, xt::adapt(std::vector<Real>{nu}) * unit::Hz, photons_r) / unit::Jy;
+    return std::vector<Real>(Fv_r.begin(), Fv_r.end());
+}
+
+std::vector<Real> Emission::spec(const std::vector<Real>& nu, Real t) {
     observe(param, config, xt::adapt(std::vector<Real>{t}) * unit::sec);  // Perform observation step
-    auto Fv_model_xt = obs.spectra(xt::adapt(nu) * unit::Hz, xt::adapt(std::vector<Real>{t}) * unit::sec, photons) / unit::Jy;
+    auto Fv = obs.spectra(xt::adapt(nu) * unit::Hz, xt::adapt(std::vector<Real>{t}) * unit::sec, photons) / unit::Jy;
     
-    return std::vector<Real>(Fv_model_xt.begin(), Fv_model_xt.end());
+    return std::vector<Real>(Fv.begin(), Fv.end());
 }

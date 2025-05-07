@@ -22,19 +22,26 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("theta_v", &Params::theta_v)
         .def_readwrite("theta_w", &Params::theta_w)
         .def_readwrite("p", &Params::p)
+        .def_readwrite("p_r", &Params::p_r)
         .def_readwrite("eps_e", &Params::eps_e)
         .def_readwrite("eps_B", &Params::eps_B)
+        .def_readwrite("eps_e_r", &Params::eps_e_r)
+        .def_readwrite("eps_B_r", &Params::eps_B_r)
         .def_readwrite("n_ism", &Params::n_ism)
         .def_readwrite("A_star", &Params::A_star)
         .def_readwrite("xi", &Params::xi)
+        .def_readwrite("xi_r", &Params::xi_r)
         .def_readwrite("k_jet", &Params::k_jet)
         .def("__repr__", [](const Params &p) {
             return "<Params E_iso=" + std::to_string(p.E_iso) + ", Gamma0=" + std::to_string(p.Gamma0) +
-                   ", theta_c=" + std::to_string(p.theta_c) + ", theta_v=" + std::to_string(p.theta_v) +
-                   ", theta_w=" + std::to_string(p.theta_w) + ", p=" + std::to_string(p.p) +
-                   ", eps_e=" + std::to_string(p.eps_e) + ", eps_B=" + std::to_string(p.eps_B) +
-                   ", n_ism=" + std::to_string(p.n_ism) + ", A_star=" + std::to_string(p.A_star) +
-                   ", xi=" + std::to_string(p.xi) + ", k_jet=" + std::to_string(p.k_jet) + ">";
+                ", theta_c=" + std::to_string(p.theta_c) + ", theta_v=" + std::to_string(p.theta_v) +
+                ", theta_w=" + std::to_string(p.theta_w) + 
+                ", p=" + std::to_string(p.p) + ", p_r=" + std::to_string(p.p_r) +
+                ", eps_e=" + std::to_string(p.eps_e) + ", eps_e_r=" + std::to_string(p.eps_e_r) +
+                ", eps_B=" + std::to_string(p.eps_B) + ", eps_B_r=" + std::to_string(p.eps_B_r) +
+                ", n_ism=" + std::to_string(p.n_ism) + ", A_star=" + std::to_string(p.A_star) +
+                ", xi=" + std::to_string(p.xi) + ", xi_r=" + std::to_string(p.xi_r) +
+                ", k_jet=" + std::to_string(p.k_jet) + ">";
         });
     // Parameters for modeling that are not used in the MCMC
     py::class_<ConfigParams>(m, "Setups")
@@ -76,7 +83,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     py::class_<Emission>(m, "Emission")
         .def(py::init<const Params&, const ConfigParams&>())
-        .def("generate_lc", &Emission::generate_lc, py::arg("nu"), py::arg("t"))
-        .def("generate_spec", &Emission::generate_spec, py::arg("nu"), py::arg("t"));
+        .def("lc", &Emission::lc, py::arg("nu"), py::arg("t"))
+        .def("lc_r", &Emission::lc_r, py::arg("nu"), py::arg("t"))
+        .def("spec", &Emission::spec, py::arg("nu"), py::arg("t"));
 
 }
