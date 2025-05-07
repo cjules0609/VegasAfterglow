@@ -64,7 +64,7 @@ int main() {
     }
     return 0;
 
-    size_t benchmark_resolu[] = {24, 32, 64, 128};
+    size_t benchmark_resolu[] = {16, 24, 32, 64, 128};
 
     for (auto r : benchmark_resolu) {
         std::ofstream file("benchmark" + std::to_string(r) + "-" + std::to_string(r) + "-" + std::to_string(r) +
