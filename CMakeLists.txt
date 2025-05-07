@@ -29,6 +29,14 @@ target_include_directories(VegasAfterglowC PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/external"
 )
 
+
+set_target_properties(VegasAfterglowC PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/VegasAfterglow"
+)
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
+
+# Install the module into the Python package directory
+install(TARGETS VegasAfterglowC DESTINATION VegasAfterglow)

@@ -30,9 +30,16 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install cibuildwheel
+      - name: Install build dependencies
         run: |
+          python -m pip install -U pip
           python -m pip install cibuildwheel
+
+      - name: Set up CMake and Ninja
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: 3.25.2
+          ninjaVersion: 1.11.1
 
       - name: Build wheels
         env:
@@ -40,8 +47,11 @@ jobs:
           CIBW_SKIP: "*-win32* *_i686* *musllinux*"
           CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_BEFORE_BUILD: "pip install -U pip setuptools cmake wheel pybind11"
+          CIBW_BEFORE_BUILD: "pip install -U pip wheel scikit-build-core>=0.4.3 pybind11>=2.6.0"
           CIBW_TEST_COMMAND: "python -c \"import VegasAfterglow; print('OK')\""
+          CIBW_BUILD_VERBOSITY: "1"
+          # Set up CMake extra args
+          CMAKE_ARGS: "-DCMAKE_BUILD_TYPE=Release"
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
@@ -73,7 +83,7 @@ jobs:
 
       - name: Build source distribution
         run: |
-          python -m pip install build
+          python -m pip install -U pip build scikit-build-core>=0.4.3 pybind11>=2.6.0
           python -m build --sdist
 
       - name: Publish to PyPI
