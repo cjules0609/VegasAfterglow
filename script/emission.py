@@ -4,15 +4,49 @@ import numpy as np
 
 Jy2cgs = 1e-23
 
+# Define some custom profiles f(theta) or f(theta, phi)
+def eps_k_profile(theta):
+    return 1e52 * np.exp(-theta**2 / (2 * 0.088**2))
+
+def Gamma0_profile(theta):
+    return 300 * np.exp(-theta**2 / (2 * 0.35**2))
+
+def rho_profile(theta, phi, r):
+    return 1e-20 / r / r / r
+
+def m_profile(r):
+    return 1e20 * r * r * r / 3
+
+# Initialize configuration
 config = Setups()
-config.medium = "ism"
-config.jet = "tophat"
+
+# Choose a default medium type (ism, wind)
+# config.medium = "ism"
+
+# or set a custom one:
+config.medium = "custom"
+config.rho_profile = rho_profile 
+config.m_profile = m_profile
+
+# Choose a default jet type (tophat, powerlaw, gaussian)
+config.jet = "gaussian"
+
+# or set a custom one:
+# config.jet = "custom"
+# config.eps_k_profile = eps_k_profile 
+# config.Gamma0_profile = Gamma0_profile 
+
+# Define arbitrary engine duration (if unset, while be calculated)
+# config.T0 = 10
+
+# Jet spreading
 config.spreading = False
 
+# Model parameters
 param = ModelParams()
 param.E_iso = 1e52
 param.theta_c = 0.2
-param.theta_v = 0.5
+param.theta_v = 0.8
 param.p = 2.2
 param.eps_e = 1e-2
 param.eps_B = 1e-4
@@ -45,7 +79,7 @@ ax[1].set_ylabel(r'$F$ [cgs]')
 
 ax[0].grid(True)
 ax[1].grid(True)
-plt.legend()
+ax[0].legend()
 
 plt.tight_layout()
 plt.savefig('emission.pdf')
