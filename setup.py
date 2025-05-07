@@ -56,15 +56,6 @@ class CMakeBuild(build_ext):
                 f"-DCMAKE_C_FLAGS=-march={host_arch}",
                 f"-DCMAKE_CXX_FLAGS=-march={host_arch}"
             ]
-        # ===============================
-
-        # Prefer Ninja if installed
-        try:
-            subprocess.check_output(["ninja", "--version"])
-            cmake_args += ["-G", "Ninja"]
-        except OSError:
-            pass
-
         # Configure
         subprocess.check_call(
             ["cmake", ext.sourcedir] + cmake_args,
@@ -82,8 +73,8 @@ setup(
     description="MCMC tools for astrophysics",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
+    packages=["VegasAfterglow"],
     package_dir={"VegasAfterglow": "pymodule"},
-    packages=find_packages(where="pymodule"),
     ext_modules=[CMakeExtension("VegasAfterglow.VegasAfterglowC")],
     cmdclass={"build_ext": CMakeBuild},
     install_requires=[

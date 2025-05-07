@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "IO.h"
 #include "forward-shock.hpp"
 #include "inverse-compton.h"
 #include "jet.h"

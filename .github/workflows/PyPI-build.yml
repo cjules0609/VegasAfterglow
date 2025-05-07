@@ -40,7 +40,7 @@ jobs:
           CIBW_SKIP: "*-win32* *_i686* *musllinux*"
           CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_BEFORE_BUILD: "pip install -U pip setuptools cmake wheel ninja pybind11"
+          CIBW_BEFORE_BUILD: "pip install -U pip setuptools cmake wheel pybind11"
           CIBW_TEST_COMMAND: "python -c \"import VegasAfterglow; print('OK')\""
         run: |
           python -m cibuildwheel --output-dir wheelhouse
