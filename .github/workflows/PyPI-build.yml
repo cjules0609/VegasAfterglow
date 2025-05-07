@@ -31,7 +31,8 @@ jobs:
           CIBW_SKIP: "*-win32* *_i686* *musllinux*"
           CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_BEFORE_BUILD: pip install -U pip wheel scikit-build-core>=0.4.3 pybind11>=2.6.0
+          CIBW_BEFORE_BUILD: >
+            python -m pip install wheel scikit-build-core>=0.4.3 pybind11>=2.6.0
           CIBW_TEST_COMMAND: python -c "from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('OK')"
 
       - name: Upload wheels
