@@ -1,7 +1,7 @@
 Welcome to VegasAfterglow
 =======================
 
-.. image:: ../../logo.svg
+.. image:: ../../assets/logo.svg
    :width: 300px
    :alt: VegasAfterglow Logo
    :align: center
