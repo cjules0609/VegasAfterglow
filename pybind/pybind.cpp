@@ -47,11 +47,12 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("phi_grid", &ConfigParams::phi_grid)
         .def_readwrite("theta_grid", &ConfigParams::theta_grid)
         .def_readwrite("rtol", &ConfigParams::rtol)
+        .def_readwrite("spreading", &ConfigParams::spreading)
         .def("__repr__", [](const ConfigParams &c) {
             return "<ConfigParams lumi_dist=" + std::to_string(c.lumi_dist) + ", z=" + std::to_string(c.z) +
                    ", medium='" + c.medium + "', jet='" + c.jet + "', t_grid_num=" + std::to_string(c.t_grid) +
                    ", phi_grid_num=" + std::to_string(c.phi_grid) + ", theta_grid_num=" + std::to_string(c.theta_grid) +
-                   ", rtol=" + std::to_string(c.rtol) + ">";
+                   ", rtol=" + std::to_string(c.rtol) + ", spreading=" + std::to_string(c.spreading) + ">";
         });
 
     // MultiBandData bindings

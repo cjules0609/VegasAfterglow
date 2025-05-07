@@ -7,6 +7,7 @@ Jy2cgs = 1e-23
 config = Setups()
 config.medium = "ism"
 config.jet = "tophat"
+config.spreading = False
 
 param = ModelParams()
 param.E_iso = 1e52

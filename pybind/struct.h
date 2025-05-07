@@ -29,4 +29,5 @@ struct ConfigParams {
     size_t phi_grid{24};
     size_t theta_grid{24};
     double rtol{1e-5};
+    bool spreading{false};
 };
