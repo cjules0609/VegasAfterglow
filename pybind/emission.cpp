@@ -8,6 +8,13 @@ Emission::Emission(const Params& param, const ConfigParams& config) {
         std::tie(medium.rho, medium.mass) = evn::ISM(param.n_ism / unit::cm3);
     } else if (config.medium == "wind") {
         std::tie(medium.rho, medium.mass) = evn::wind(param.A_star);
+    } else if (config.medium == "custom") {
+        if (!config.rho_profile || !config.m_profile) {
+            std::cerr << "Error: custom medium requires both rho_profile and m_profile to be set." << std::endl;
+            return;
+        }
+        medium.rho = config.rho_profile;
+        medium.mass = config.m_profile;
     } else {
         std::cerr << "Unknown medium: " << config.medium << std::endl;
         return;
@@ -25,10 +32,24 @@ Emission::Emission(const Params& param, const ConfigParams& config) {
     } else if (config.jet == "powerlaw") {
         jet.eps_k = math::powerlaw(param.theta_c, E_iso / (4 * con::pi), param.k_jet);
         jet.Gamma0 = math::powerlaw(param.theta_c, Gamma0, param.k_jet);
+    } else if (config.jet == "custom") {
+        if (!config.eps_k_profile || !config.Gamma0_profile) {
+            std::cerr << "Error: custom jet requires both eps_k_profile and Gamma0_profile to be set." << std::endl;
+            return;
+        }
+        jet.eps_k = config.eps_k_profile;
+        jet.Gamma0 = config.Gamma0_profile;
     } else {
         std::cerr << "Unknown jet structure: " << config.jet << std::endl;
         return;
     }
+
+    if (!config.T0.has_value()) {
+        jet.T0 = calc_engine_duration(E_iso, param.n_ism / unit::cm3, Gamma0, param.xi);
+    } else {
+        jet.T0 = config.T0.value() * unit::sec;
+    }
+
     jet.spreading = config.spreading;
 }
 

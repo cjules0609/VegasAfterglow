@@ -50,6 +50,76 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("z", &ConfigParams::z)
         .def_readwrite("medium", &ConfigParams::medium)
         .def_readwrite("jet", &ConfigParams::jet)
+        // Allow both f(theta, phi, r) and f(r) profiles
+        .def_property("rho_profile",
+            [](const ConfigParams &c) { return c.rho_profile; },
+            [](ConfigParams &c, py::function f) {
+                int nargs = f.attr("__code__").attr("co_argcount").cast<int>();
+                if (nargs == 3) {
+                    c.rho_profile = [f](double theta, double phi, double r) {
+                        return f(theta, phi, r).cast<double>() * unit::g / unit::cm3;
+                    };
+                } else if (nargs == 1) {
+                    c.rho_profile = [f](double /*theta*/, double /*phi*/, double r) {
+                        return f(r).cast<double>() * unit::g / unit::cm3;
+                    };
+                } else {
+                    throw std::invalid_argument("rho_profile must be of either f(r) or f(theta, phi, r)");
+                }
+            }
+        )
+        .def_property("m_profile",
+            [](const ConfigParams &c) { return c.m_profile; },
+            [](ConfigParams &c, py::function f) {
+                int nargs = f.attr("__code__").attr("co_argcount").cast<int>();
+                if (nargs == 3) {
+                    c.m_profile = [f](double theta, double phi, double r) {
+                        return f(theta, phi, r).cast<double>() * unit::g;
+                    };
+                } else if (nargs == 1) {
+                    c.m_profile = [f](double /*theta*/, double /*phi*/, double r) {
+                        return f(r).cast<double>() * unit::g;
+                    };
+                } else {
+                    throw std::invalid_argument("m_profile must of either f(r) or f(theta, phi, r)");
+                }
+            }
+        )
+        .def_property("eps_k_profile",
+            [](const ConfigParams &c) { return c.eps_k_profile; },
+            [](ConfigParams &c, py::function f) {
+                int nargs = f.attr("__code__").attr("co_argcount").cast<int>();
+                if (nargs == 2) {
+                    c.eps_k_profile = [f](double theta, double phi) {
+                        return f(theta, phi).cast<double>() * unit::erg;
+                    };
+                } else if (nargs == 1) {
+                    c.eps_k_profile = [f](double theta, double /*phi*/) {
+                        return f(theta).cast<double>() * unit::erg;
+                    };
+                } else {
+                    throw std::invalid_argument("eps_k_profile must take either 1 (theta) or 2 (theta, phi) arguments");
+                }
+            }
+        )
+        .def_property("Gamma0_profile",
+            [](const ConfigParams &c) { return c.Gamma0_profile; },
+            [](ConfigParams &c, py::function f) {
+                int nargs = f.attr("__code__").attr("co_argcount").cast<int>();
+                if (nargs == 2) {
+                    c.Gamma0_profile = [f](double theta, double phi) {
+                        return f(theta, phi).cast<double>();
+                    };
+                } else if (nargs == 1) {
+                    c.Gamma0_profile = [f](double theta, double /*phi*/) {
+                        return f(theta).cast<double>();
+                    };
+                } else {
+                    throw std::invalid_argument("Gamma0_profile must take either 1 (theta) or 2 (theta, phi) arguments");
+                }
+            }
+        )
+        .def_readwrite("T0", &ConfigParams::T0)
         .def_readwrite("t_grid", &ConfigParams::t_grid)
         .def_readwrite("phi_grid", &ConfigParams::phi_grid)
         .def_readwrite("theta_grid", &ConfigParams::theta_grid)

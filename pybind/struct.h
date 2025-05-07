@@ -29,6 +29,11 @@ struct ConfigParams {
     double z{0};
     std::string medium{"ism"};
     std::string jet{"tophat"};
+    std::function<double(double, double)> eps_k_profile;
+    std::function<double(double, double)> Gamma0_profile;
+    std::function<double(double, double, double)> rho_profile;
+    std::function<double(double, double, double)> m_profile; 
+    std::optional<double> T0{std::nullopt};
     size_t t_grid{24};
     size_t phi_grid{24};
     size_t theta_grid{24};
