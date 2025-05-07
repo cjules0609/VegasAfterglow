@@ -45,4 +45,4 @@ sdist.include = [
 
 [tool.cibuildwheel]
 test-command = "python -c \"from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale; print('OK')\""
-build-verbosity = 1
+build-verbosity = 0

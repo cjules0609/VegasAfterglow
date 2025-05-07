@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-O3 -flto -DNDEBUG -ffast-math -pipe)
+  add_compile_options(-O3 -flto -DNDEBUG -ffast-math -pipe -w)
 elseif(MSVC)
   add_compile_options(/O2 /DNDEBUG /fp:fast /MP /GL /std:c++20)
   add_link_options(/LTCG)
@@ -19,8 +19,6 @@ file(GLOB_RECURSE ALL_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/pybind/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
-
-list(FILTER ALL_SOURCES EXCLUDE REGEX "${CMAKE_CURRENT_SOURCE_DIR}/src/util/IO\\.cpp$")
 
 pybind11_add_module(VegasAfterglowC ${ALL_SOURCES})
 
