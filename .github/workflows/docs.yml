@@ -43,12 +43,21 @@ jobs:
           chmod +x build_docs.sh
           ./build_docs.sh
           
-      - name: Ensure logo files are copied
+      - name: Ensure assets are copied
         run: |
-          # Make sure logos are explicitly copied to both _static and _images directories
-          cp logo.svg docs/build/html/_static/
-          cp logo.svg docs/build/html/_images/ || mkdir -p docs/build/html/_images && cp logo.svg docs/build/html/_images/
-          cp logo_small.svg docs/build/html/_static/ || echo "No small logo found"
+          # Create directories for assets
+          mkdir -p docs/build/html/_static/assets
+          mkdir -p docs/build/html/_images
+          
+          # Copy assets from the root directory
+          cp -r assets/* docs/build/html/_static/assets/
+          cp -r assets/* docs/build/html/_images/
+          
+          # For debugging - list the directories to confirm files are copied
+          echo "Files in _static/assets:"
+          ls -la docs/build/html/_static/assets/
+          echo "Files in _images:"
+          ls -la docs/build/html/_images/
           
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

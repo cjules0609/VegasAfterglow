@@ -35,8 +35,8 @@ exclude_patterns = []
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_logo = '../assets/logo.svg'
-html_favicon = '../assets/logo.svg'  # Adding favicon to see if it helps with logo recognition
+html_logo = '_static/assets/logo.svg'
+html_favicon = '_static/assets/logo.svg'
 html_theme_options = {
     'logo_only': True,
     'display_version': True,  # Adding version display to make theme structure more standard
