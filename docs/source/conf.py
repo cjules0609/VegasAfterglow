@@ -49,6 +49,11 @@ html_css_files = [
     'css/custom.css',
 ]
 
+# GitHub Pages settings
+html_baseurl = 'https://yihanwangastro.github.io/Afterglow/docs/'
+html_use_index = True
+html_copy_source = False  # Don't copy rst files to the output
+
 # -- Breathe configuration ---------------------------------------------------
 breathe_projects = {
     "VegasAfterglow": "../doxygen/xml/"
