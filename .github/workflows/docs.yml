@@ -68,20 +68,20 @@ jobs:
           
           The complete documentation is published to GitHub Pages. Please visit:
           
-          **[Full Documentation Site](https://yihanwangastro.github.io/Afterglow/docs/)**
+          **[Full Documentation Site](https://yihanwangastro.github.io/VegasAfterglow/docs/)**
           
           ## Quick Links
           
-          * [C++ API Reference](https://yihanwangastro.github.io/Afterglow/docs/cpp_api.html)
-          * [Python API Reference](https://yihanwangastro.github.io/Afterglow/docs/python_api.html)
-          * [Installation Guide](https://yihanwangastro.github.io/Afterglow/docs/installation.html)
-          * [Quick Start Guide](https://yihanwangastro.github.io/Afterglow/docs/quickstart.html)
-          * [Examples](https://yihanwangastro.github.io/Afterglow/docs/examples.html)
-          * [Contributing Guide](https://yihanwangastro.github.io/Afterglow/docs/contributing.html)
+          * [C++ API Reference](https://yihanwangastro.github.io/VegasAfterglow/docs/cpp_api.html)
+          * [Python API Reference](https://yihanwangastro.github.io/VegasAfterglow/docs/python_api.html)
+          * [Installation Guide](https://yihanwangastro.github.io/VegasAfterglow/docs/installation.html)
+          * [Quick Start Guide](https://yihanwangastro.github.io/VegasAfterglow/docs/quickstart.html)
+          * [Examples](https://yihanwangastro.github.io/VegasAfterglow/docs/examples.html)
+          * [Contributing Guide](https://yihanwangastro.github.io/VegasAfterglow/docs/contributing.html)
           
           ## Building Documentation Locally
           
-          To build the documentation locally, please refer to the [docs/README.md](https://github.com/YihanWangAstro/Afterglow/blob/main/docs/README.md) file in the main repository.
+          To build the documentation locally, please refer to the [docs/README.md](https://github.com/YihanWangAstro/VegasAfterglow/blob/main/docs/README.md) file in the main repository.
           EOL
           
           # Create sidebar navigation
@@ -89,13 +89,13 @@ jobs:
           ## VegasAfterglow
           
           * [Home](Home)
-          * [Documentation Site](https://yihanwangastro.github.io/Afterglow/docs/)
+          * [Documentation Site](https://yihanwangastro.github.io/VegasAfterglow/docs/)
           EOL
           
           # Create footer
           cat > wiki_content/_Footer.md << 'EOL'
           ---
-          Documentation generated automatically from the [VegasAfterglow repository](https://github.com/YihanWangAstro/Afterglow).
+          Documentation generated automatically from the [VegasAfterglow repository](https://github.com/YihanWangAstro/VegasAfterglow).
           EOL
       
       - name: Push to Wiki

@@ -8,9 +8,9 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 
-project = 'Afterglow'
-copyright = '2024, Afterglow Team'
-author = 'Afterglow Team'
+project = 'VegasAfterglow'
+copyright = '2024, VegasAfterglow Team'
+author = 'VegasAfterglow Team'
 release = '0.1.0'  # Update this with your actual version
 
 # -- General configuration ---------------------------------------------------
@@ -50,15 +50,15 @@ html_css_files = [
 ]
 
 # GitHub Pages settings
-html_baseurl = 'https://yihanwangastro.github.io/Afterglow/docs/'
+html_baseurl = 'https://yihanwangastro.github.io/VegasAfterglow/docs/'
 html_use_index = True
 html_copy_source = False  # Don't copy rst files to the output
 
 # -- Breathe configuration ---------------------------------------------------
 breathe_projects = {
-    "Afterglow": "../doxygen/xml/"
+    "VegasAfterglow": "../doxygen/xml/"
 }
-breathe_default_project = "Afterglow"
+breathe_default_project = "VegasAfterglow"
 breathe_default_members = ('members', 'undoc-members', 'protected-members', 'private-members')
 breathe_show_include = False
 breathe_show_enumvalue_initializer = True
