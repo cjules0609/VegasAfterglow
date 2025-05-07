@@ -30,79 +30,56 @@
 
 <h3 align="center">Shock Dynamics & Evolution</h3>
 
-<div style="display: flex; align-items: flex-start; gap: 20px;">
-  <img src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="400"/>
-  
-  <div>
-    <ul>
-      <li><strong>Forward and Reverse Shock Modeling:</strong> Simulates both shocks with arbitrary magnetization levels.</li>
-      <li><strong>Relativistic and Non-Relativistic Regimes:</strong> Accurately models shock evolution across all velocity regimes.</li>
-      <li><strong>Ambient Medium:</strong> Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.</li>
-      <li><strong>Energy and Mass Injection:</strong> Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.</li>
-    </ul>
-  </div>
-</div>
+<img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="450"/>
+
+- **Forward and Reverse Shock Modeling:** Simulates both shocks with arbitrary magnetization levels.
+- **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
+- **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
+- **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
+
+<br clear="right"/>
 
 <h3 align="center">Jet Structure & Geometry</h3>
 
-<div style="display: flex; align-items: flex-start; gap: 20px;">
-  <img src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="400"/>
-  
-  <div>
-    <ul>
-      <li><strong>Structured Jet Profiles:</strong> Allows user-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization.</li>
-      <li><strong>Arbitrary Viewing Angles:</strong> Supports off-axis observers at any viewing angle relative to the jet axis.</li>
-      <li><strong>Jet Spreading:</strong> Includes lateral expansion dynamics for realistic jet evolution (experimental).</li>
-      <li><strong>Non-Axisymmetric Jets:</strong> Capable of modeling complex, non-axisymmetric jet structures.</li>
-    </ul>
-  </div>
-</div>
+<img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/jet_geometry.svg" width="450"/>
+
+- **Structured Jet Profiles:** Allows user-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization.
+- **Arbitrary Viewing Angles:** Supports off-axis observers at any viewing angle relative to the jet axis.
+- **Jet Spreading:** Includes lateral expansion dynamics for realistic jet evolution (experimental).
+- **Non-Axisymmetric Jets:** Capable of modeling complex, non-axisymmetric jet structures.
+
+<br clear="right"/>
 
 <h3 align="center">Radiation Mechanisms</h3>
 
-<div style="display: flex; align-items: flex-start; gap: 20px;">
-  <img src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="400"/>
+<img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/radiation_mechanisms.svg" width="450"/>
 
-  <div>
-    <ul>
-      <li><strong>Synchrotron Radiation:</strong> Calculates synchrotron emission from shocked electrons.</li>
-      <li><strong>Synchrotron Self-Absorption (SSA):</strong> Includes SSA effects, crucial at low frequencies.</li>
-      <li><strong>Inverse Compton (IC) Scattering:</strong> Models IC processes, including:
-        <ul>
-          <li>Synchrotron Self-Compton (SSC) from both forward and reverse shocks.</li>
-          <li>Pairwise IC between forward and reverse shock electron and photon populations (experimental).</li>
-          <li>Includes Klein-Nishina corrections for accurate high-energy IC cooling and emission.</li>
-        </ul>
-      </li>
-    </ul>
-  </div>
-</div>
+- **Synchrotron Radiation:** Calculates synchrotron emission from shocked electrons.
+- **Synchrotron Self-Absorption (SSA):** Includes SSA effects, crucial at low frequencies.
+- **Inverse Compton (IC) Scattering:** Models IC processes, including:
+  - Synchrotron Self-Compton (SSC) from both forward and reverse shocks.
+  - Pairwise IC between forward and reverse shock electron and photon populations (experimental).
+  - Includes Klein-Nishina corrections for accurate high-energy IC cooling and emission.
+
+<br clear="right"/>
 
 ---
 
 ## Performance Highlights
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/convergence_plot.png" width="300"/>
+<img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/convergence_plot.png" width="400"/>
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-<div style="display: flex; align-items: flex-start; gap: 20px;">
-  <div>
-    <ul>
-      <li><strong>Ultra-fast Model Evaluation:</strong> Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.</li>
-      <li><strong>Rapid MCMC Exploration:</strong> Enables parameter estimation with 10,000 MCMC steps in record time on an 8-core Apple M2 chip:
-        <ul>
-          <li>~10 seconds for on-axis structured jet scenarios</li>
-          <li>~30 seconds for off-axis modeling scenarios</li>
-        </ul>
-      </li>
-    </ul>
-  </div>
-</div>
+- **Ultra-fast Model Evaluation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
+
+- **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps in record time on an 8-core Apple M2 chip:
+  - ~10 seconds for on-axis structured jet scenarios
+  - ~30 seconds for off-axis modeling scenarios
 
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
-<br clear="left"/>
+<br clear="right"/>
 
 ---
 
