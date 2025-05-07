@@ -51,7 +51,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="VegasAfterglow",
-    version="0.1.2",
+    version="0.1.3",
     author="Yihan Wang",
     author_email="yihan.wang@example.com",
     description="MCMC tools for astrophysics",
