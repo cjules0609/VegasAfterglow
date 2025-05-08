@@ -10,13 +10,15 @@
 #include <cmath>
 
 #include "utilities.h"
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @class Ejecta
  * @brief Represents generic ejecta properties for a simulation.
  * @details Uses ternary functions (TernaryFunc) to accept user-defined ejecta that describes various quantities
  *          as functions of phi, theta, and time. This class encapsulates all the properties of the material
  *          ejected in a gamma-ray burst, including its energy, magnetization, and Lorentz factor profiles.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 class Ejecta {
    public:
     /// Initial energy per unit solid angle as a function of (phi, theta)
@@ -44,38 +46,46 @@ class Ejecta {
     bool spreading{false};
 };
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @class TophatJet
  * @brief Implements a tophat jet profile where properties are uniform within a core angle theta_c and zero outside.
  * @details This class provides a simple model for GRB jets with sharp edges, characterized by
  *          isotropic equivalent energy E_iso and initial Lorentz factor Gamma0 within the core angle.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 class TophatJet {
    public:
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Energy per solid angle as a function of phi and theta
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Energy per solid angle (eps_k_ if theta < theta_c_, 0 otherwise)
-     ********************************************************************************************************************/
-    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real eps_k(Real phi, Real theta) const noexcept { return theta < theta_c_ ? eps_k_ : 0; }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Initial Lorentz factor as a function of phi and theta
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Lorentz factor (Gamma0_ if theta < theta_c_, 1 otherwise)
-     ********************************************************************************************************************/
-    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -88,38 +98,46 @@ class TophatJet {
     Real const Gamma0_{1};   ///< Initial Lorentz factor within the core
 };
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @class GaussianJet
  * @brief Implements a Gaussian jet profile where properties follow a Gaussian distribution with angle.
  * @details This class provides a smooth model for GRB jets, characterized by core angle theta_c,
  *          isotropic equivalent energy E_iso, and initial Lorentz factor Gamma0 at the center.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 class GaussianJet {
    public:
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
         : norm_(-1 / (2 * theta_c * theta_c)), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Energy per solid angle as a function of phi and theta, with Gaussian falloff
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Energy per solid angle with Gaussian angular dependence
-     ********************************************************************************************************************/
-    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return eps_k_ * fast_exp(theta * theta * norm_); }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ * fast_exp(theta * theta * norm_); }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Initial Lorentz factor as a function of phi and theta, with Gaussian falloff
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Lorentz factor with Gaussian angular dependence
-     ********************************************************************************************************************/
-    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return Gamma0_ * fast_exp(theta * theta * norm_); }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_exp(theta * theta * norm_); }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -132,39 +150,47 @@ class GaussianJet {
     Real const Gamma0_{1};  ///< Peak Lorentz factor at center
 };
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @class PowerLawJet
  * @brief Implements a power-law jet profile where properties follow a power-law distribution with angle.
  * @details This class provides a model for GRB jets with a power-law decay, characterized by core angle theta_c,
  *          isotropic equivalent energy E_iso, initial Lorentz factor Gamma0, and power-law index k.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 class PowerLawJet {
    public:
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, initial Lorentz factor, and power-law index
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
      * @param k Power-law index
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
         : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Energy per solid angle as a function of phi and theta, with power-law falloff
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Energy per solid angle with power-law angular dependence
-     ********************************************************************************************************************/
-    inline Real eps_k(Real /*phi*/, Real theta) const noexcept { return eps_k_ * fast_pow(theta / theta_c_, -k_); }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ * fast_pow(theta / theta_c_, -k_); }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Initial Lorentz factor as a function of phi and theta, with power-law falloff
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle
      * @return Lorentz factor with power-law angular dependence
-     ********************************************************************************************************************/
-    inline Real Gamma0(Real /*phi*/, Real theta) const noexcept { return Gamma0_ * fast_pow(theta / theta_c_, -k_); }
+     * <!-- ************************************************************************************** -->
+     */
+    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_pow(theta / theta_c_, -k_); }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -178,118 +204,141 @@ class PowerLawJet {
     Real const k_{2};        ///< Power-law index for angular dependence
 };
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @namespace math
  * @brief Mathematical helper functions for constructing jet profiles.
  * @details Provides a collection of functions for combining functions, constructing various injection profiles
  *          (e.g., tophat, Gaussian, power-law), and computing integrals. These functions are used to create
  *          complex jet profiles by combining spatial and temporal dependencies.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 namespace math {
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Combines a spatial function and a temporal function into one function of (phi, theta, t)
      * @tparam F1 Type of the spatial function
      * @tparam F2 Type of the temporal function
      * @param f_spatial Function of (phi, theta)
      * @param f_temporal Function of time
      * @return Combined function where result is the product of both input functions
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename F1, typename F2>
     inline auto combine(F1 f_spatial, F2 f_temporal) noexcept {
         return [=](Real phi, Real theta, Real t) noexcept { return f_spatial(phi, theta) * f_temporal(t); };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Creates a time-independent function from a spatial function by ignoring the time parameter t
      * @tparam F1 Type of the spatial function
      * @param f_spatial Function of (phi, theta)
      * @return Function of (phi, theta, t) that ignores t and returns the result of f_spatial
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename F1>
     inline auto t_indep(F1 f_spatial) noexcept {
-        return [=](Real phi, Real theta, Real /*t*/) noexcept { return f_spatial(phi, theta); };
+        return [=](Real phi, Real theta, Real t) noexcept { return f_spatial(phi, theta); };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Returns a constant (isotropic) function with a fixed height
      * @param height The constant value to return
      * @return Function that returns the same value regardless of angles
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto isotropic(Real height) noexcept {
-        return [=](Real /*phi*/, Real /*theta*/) noexcept { return height; };
+        return [=](Real phi, Real theta) noexcept { return height; };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Returns a tophat function: constant within the core angle, zero outside
      * @param theta_c Core angle
      * @param hight Height (value inside the core)
      * @return Function implementing a tophat profile
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto tophat(Real theta_c, Real hight) noexcept {
-        return [=](Real /*phi*/, Real theta) noexcept { return theta < theta_c ? hight : 0; };
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight : 0; };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Returns a Gaussian profile function for jet properties
      * @param theta_c Core angle (standard deviation of the Gaussian)
      * @param height Peak height at center
      * @return Function implementing a Gaussian profile
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto gaussian(Real theta_c, Real height) noexcept {
         Real spread = 2 * theta_c * theta_c;
-        return [=](Real /*phi*/, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Returns a power-law profile function for jet properties
      * @param theta_c Core angle
      * @param height Height at center
      * @param k Power-law index
      * @return Function implementing a power-law profile
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto powerlaw(Real theta_c, Real height, Real k) noexcept {
-        return [=](Real /*phi*/, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
+        return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Creates a constant injection profile: returns 1 regardless of time
      * @return Function that always returns 1
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto const_injection() noexcept {
-        return [=](Real /*t*/) noexcept { return 1.; };
+        return [=](Real t) noexcept { return 1.; };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Creates a step injection profile: returns 1 if t > t0, else 0
      * @param t0 Step time
      * @return Function implementing a step function
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto step_injection(Real t0) noexcept {
         return [=](Real t) noexcept { return t > t0 ? 1. : 0.; };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Creates a square injection profile: returns 1 if t is between t0 and t1, else 0
      * @param t0 Start time
      * @param t1 End time
      * @return Function implementing a square wave
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto square_injection(Real t0, Real t1) noexcept {
         return [=](Real t) noexcept { return t > t0 && t < t1 ? 1. : 0.; };
     }
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Creates a power-law injection profile: decaying with power-law index q
      * @param t0 Reference time
      * @param q Power-law decay index
      * @return Function implementing a power-law decay
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     inline auto powerlaw_injection(Real t0, Real q) noexcept {
         return [=](Real t) noexcept { return fast_pow(1 + t / t0, -q); };
     }
 }  // namespace math
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Creates a Lorentz factor distribution using the Liang & Ghirlanda (2010) prescription
  * @tparam F Type of the energy function
  * @param energy_func Function that computes energy as a function of (phi, theta, t)
@@ -304,7 +353,8 @@ namespace math {
  *              u = (e / e_max)^idx * gamma_max
  *              return sqrt(1 + u^2)
  *          This creates a power-law relationship between the energy and Lorentz factor of the jet.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename F>
 auto LiangGhirlanda2010(F energy_func, Real e_max, Real gamma_max, Real idx) {
     return [=](Real phi, Real theta) noexcept {

@@ -16,45 +16,34 @@
 #include "shock.h"
 #include "synchrotron.h"
 #include "utilities.h"
-/********************************************************************************************************************
+
+/**
+ * <!-- ************************************************************************************** -->
  * @defgroup IC_Calculation Inverse Compton Calculation Constants and Functions
  * @brief Constants and inline functions for inverse Compton photon calculations
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 
 /// A constant used in the IC photon calculation, defined as √2/3.
 inline const Real IC_x0 = std::sqrt(2) / 3;
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Computes the Compton scattering cross-section as a function of frequency (nu).
  * @param nu The frequency at which to compute the cross-section
  * @return For x = (h * nu) / (me * c²) <= 1, returns the Thomson cross-section (con::sigmaT), otherwise 0
- ********************************************************************************************************************/
-inline Real compton_sigma(Real nu) {
-    Real x = con::h * nu / (con::me * con::c2);
-    if (x <= 1) {
-        return con::sigmaT;
-    } else {
-        return 0;
-    }
-    /*
-    if (x < 1e-2) {
-         return con::sigmaT * (1 - 2 * x);
-     } else if (x > 1e2) {
-         return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
-     } else {
-         return 0.75 * con::sigmaT *
-                ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-                 (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
-     }
-    */
-}
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compton_sigma(Real nu);
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @struct IntegratorGrid
  * @brief Defines a grid for numerical integration in log-space.
  * @details Given minimum and maximum values for x and y, it computes logarithmically spaced bins (x_bin and y_bin)
  *          and then determines center values (x and y) from those bins.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 struct IntegratorGrid {
     /**
      * @brief Constructor: Initializes the grid with given x and y boundaries.
@@ -85,12 +74,14 @@ struct IntegratorGrid {
     std::array<std::array<Real, num>, num> I0{{{0}}};  ///< 2D array to store computed intermediate values.
 };
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @struct ICPhoton
  * @brief Represents a single inverse Compton (IC) photon.
  * @details Contains methods to compute the photon intensity I_nu and to generate an IC photon spectrum based
  *          on electron and synchrotron photon properties.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 struct ICPhoton {
    public:
     /// Default constructor
@@ -99,14 +90,17 @@ struct ICPhoton {
     /// Resolution of the computed IC spectrum.
     static constexpr size_t spectrum_resol{50};
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Returns the photon intensity at frequency nu.
      * @param nu The frequency at which to compute the intensity
      * @return The intensity at the given frequency
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     Real I_nu(Real nu) const;
 
-    /********************************************************************************************************************   
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Generates the IC photon spectrum from the given electron and photon data.
      * @tparam Electrons Type of the electron distribution
      * @tparam Photons Type of the photon distribution
@@ -118,7 +112,8 @@ struct ICPhoton {
      *          - Fill in an IntegratorGrid with computed synchrotron intensity and electron column density.
      *          - Compute a 2D array I0 representing differential contributions.
      *          - Finally, integrate over the grid to populate the IC photon spectrum (j_nu_).
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename Electrons, typename Photons>
     void gen(Electrons const& e, Photons const& ph) {
         // Real gamma_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
@@ -183,31 +178,39 @@ struct ICPhoton {
 /// @brief Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
 using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @defgroup IC_Functions IC Photon and Electron Cooling Functions
  * @brief Functions to create and generate IC photon grids, and apply electron cooling mechanisms.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Creates and generates an IC photon grid from electron and photon distributions
  * @param electron The electron grid
  * @param photon The photon grid
  * @return A 3D grid of IC photons
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 ICPhotonGrid gen_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Applies Thomson cooling to electrons based on photon distribution
  * @param electron The electron grid to be modified
  * @param photon The photon grid
  * @param shock The shock properties
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Applies Klein-Nishina cooling to electrons based on photon distribution
  * @param electron The electron grid to be modified
  * @param photon The photon grid
  * @param shock The shock properties
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 void KN_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);

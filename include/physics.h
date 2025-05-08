@@ -12,132 +12,209 @@
 #include "macros.h"
 #include "medium.h"
 #include "mesh.h"
-/********************************************************************************************************************
- * @defgroup ShockDistances Cosmological and Shock Distance Calculations
- * @brief Functions for calculating characteristic distances in shock evolution
- ********************************************************************************************************************/
 
-/********************************************************************************************************************
- * @brief Computes the deceleration radius, maximum of thin and thick shell cases
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the deceleration radius of the shock.
+ * @details For a given isotropic energy E_iso, ISM density n_ism, initial Lorentz factor Gamma0,
+ *          and engine duration, the deceleration radius is the maximum of the thin shell and thick shell
+ *          deceleration radii.
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param Gamma0 Initial Lorentz factor
  * @param engine_dura Engine duration
- * @return Deceleration radius
- ********************************************************************************************************************/
+ * @return The deceleration radius
+ * <!-- ************************************************************************************** -->
+ */
 Real dec_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
 
-/********************************************************************************************************************
- * @brief Computes deceleration radius for the thin shell case
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the deceleration radius for the thin shell case.
+ * @details Uses the formula: R_dec = [3E_iso / (4π n_ism mp c^2 Gamma0^2)]^(1/3)
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param Gamma0 Initial Lorentz factor
- * @return Thin shell deceleration radius
- ********************************************************************************************************************/
+ * @return The thin shell deceleration radius
+ * <!-- ************************************************************************************** -->
+ */
 Real thin_shell_dec_radius(Real E_iso, Real n_ism, Real Gamma0);
 
-/********************************************************************************************************************
- * @brief Computes deceleration radius for the thick shell case
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the deceleration radius for the thick shell case.
+ * @details Uses the formula: R_dec = [3 E_iso engine_dura c / (4π n_ism mp c^2)]^(1/4)
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param engine_dura Engine duration
- * @return Thick shell deceleration radius
- ********************************************************************************************************************/
+ * @return The thick shell deceleration radius
+ * <!-- ************************************************************************************** -->
+ */
 Real thick_shell_dec_radius(Real E_iso, Real n_ism, Real engine_dura);
 
-/********************************************************************************************************************
- * @brief Computes the radius at which shell spreading becomes significant
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the radius at which shell spreading becomes significant.
+ * @details Uses the formula: R_spread = Gamma0^2 * c * engine_dura
  * @param Gamma0 Initial Lorentz factor
  * @param engine_dura Engine duration
- * @return Shell spreading radius
- ********************************************************************************************************************/
+ * @return The shell spreading radius
+ * <!-- ************************************************************************************** -->
+ */
 Real shell_spreading_radius(Real Gamma0, Real engine_dura);
 
-/********************************************************************************************************************
- * @brief Computes the radius at which reverse shock transitions
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the radius at which the reverse shock transitions.
+ * @details Based on the Sedov length, engine duration, and initial Lorentz factor.
+ *          Uses the formula: R_RS = (SedovLength^(1.5)) / (sqrt(c * engine_dura) * Gamma0^2)
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param Gamma0 Initial Lorentz factor
  * @param engine_dura Engine duration
- * @return Reverse shock transition radius
- ********************************************************************************************************************/
+ * @return The reverse shock transition radius
+ * <!-- ************************************************************************************** -->
+ */
 Real RS_transition_radius(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
 
-/********************************************************************************************************************
- * @brief Computes the shell thickness parameter (xi), characterizing shell geometry
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the dimensionless parameter (ξ) that characterizes the shell geometry.
+ * @details This parameter helps determine whether the shell behaves as thick or thin.
+ *          Uses the formula: ξ = sqrt(Sedov_length / shell_width) * Gamma0^(-4/3)
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param Gamma0 Initial Lorentz factor
  * @param engine_dura Engine duration
- * @return Shell thickness parameter
- ********************************************************************************************************************/
+ * @return The shell thickness parameter ξ
+ * <!-- ************************************************************************************** -->
+ */
 Real shell_thickness_param(Real E_iso, Real n_ism, Real Gamma0, Real engine_dura);
 
-/********************************************************************************************************************
- * @brief Calculates engine duration based on other physical parameters and shell geometry
- * @param E_iso Isotropic equivalent energy
- * @param n_ism ISM number density
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Calculates the engine duration needed to achieve a specific shell thickness parameter.
+ * @details Uses the formula: T_engine = Sedov_l / (ξ^2 * Gamma0^(8/3) * c)
+ * @param E_iso Isotropic energy
+ * @param n_ism ISM density
  * @param Gamma0 Initial Lorentz factor
- * @param xi Shell thickness parameter
- * @return Engine duration
- ********************************************************************************************************************/
+ * @param xi Target shell thickness parameter
+ * @return The required engine duration
+ * <!-- ************************************************************************************** -->
+ */
 Real calc_engine_duration(Real E_iso, Real n_ism, Real Gamma0, Real xi);
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @defgroup GammaConversions Gamma Conversion and Adiabatic Index Functions
  * @brief Helper functions for Lorentz factor conversions and adiabatic index calculations
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Converts Lorentz factor (gamma) to velocity fraction (beta)
  * @param gamma Lorentz factor
  * @return Velocity fraction (beta = v/c)
- ********************************************************************************************************************/
-inline Real gamma_to_beta(Real gamma) {
-    return std::sqrt(1 - 1 / (gamma * gamma));  // Convert Lorentz factor to velocity fraction (beta).
-}
+ * <!-- ************************************************************************************** -->
+ */
+inline Real gamma_to_beta(Real gamma) { return std::sqrt(1 - 1 / (gamma * gamma)); }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Computes adiabatic index as a function of Lorentz factor
  * @param gamma Lorentz factor
  * @return Adiabatic index
- ********************************************************************************************************************/
-inline Real adiabatic_idx(Real gamma) {
-    return (4 * gamma + 1) / (3 * gamma);  // Compute adiabatic index.
-}
+ * <!-- ************************************************************************************** -->
+ */
+inline Real adiabatic_idx(Real gamma) { return (4 * gamma + 1) / (3 * gamma); }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Computes the Sedov length—a characteristic scale for blast wave deceleration
  * @param E_iso Isotropic equivalent energy
  * @param n_ism ISM number density
  * @return Sedov length
  * @details The Sedov length is a characteristic scale defined as the cube root of (E_iso / (ρc²)),
  *          where ρ is the ambient medium mass density
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 inline Real sedov_length(Real E_iso, Real n_ism) {
-    // return std::cbrt(E_iso / (n_ism * con::mp * con::c2));
     return std::cbrt(E_iso / (4 * con::pi / 3 * n_ism * con::mp * con::c2));
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Returns the radius at which the reverse shock crosses, defined as the thick shell deceleration radius
  * @param E_iso Isotropic equivalent energy
  * @param n_ism ISM number density
  * @param engine_dura Engine duration
  * @return Reverse shock crossing radius
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 inline Real RS_crossing_radius(Real E_iso, Real n_ism, Real engine_dura) {
     Real l = sedov_length(E_iso, n_ism);
     return std::sqrt(std::sqrt(l * l * l * con::c * engine_dura));
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Determines the edge of the jet based on a given gamma cut-off using binary search
  * @tparam Ejecta Type of the jet/ejecta class
  * @param jet The jet/ejecta object
  * @param gamma_cut Lorentz factor cutoff value
  * @return Angle (in radians) at which the jet's Lorentz factor drops to gamma_cut
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
+template <typename Ejecta>
+Real find_jet_edge(Ejecta const& jet, Real gamma_cut);
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Determines the edge of the jet where the spreading is strongest
+ * @tparam Ejecta Type of the jet/ejecta class
+ * @tparam Medium Type of the ambient medium
+ * @param jet The jet/ejecta object
+ * @param medium The ambient medium object
+ * @param phi Azimuthal angle
+ * @param theta_min Minimum polar angle to consider
+ * @param theta_max Maximum polar angle to consider
+ * @param t0 Initial time
+ * @return Angle (in radians) where the spreading is strongest
+ * @details The spreading strength is measured by the derivative of the pressure with respect to theta,
+ *          which is proportional to d((Gamma-1)Gamma rho)/dtheta
+ * <!-- ************************************************************************************** -->
+ */
+template <typename Ejecta, typename Medium>
+Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0);
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Constructs a coordinate grid (Coord) for shock evolution
+ * @tparam Ejecta Type of the jet/ejecta class
+ * @param jet The jet/ejecta object
+ * @param t_obs Array of observation times
+ * @param theta_cut Maximum theta value to include
+ * @param theta_view Viewing angle
+ * @param z Redshift
+ * @param phi_num Number of grid points in phi (default: 32)
+ * @param theta_num Number of grid points in theta (default: 32)
+ * @param t_num Number of grid points in time (default: 32)
+ * @param is_axisymmetric Whether the jet is axisymmetric (default: true)
+ * @return A Coord object with the constructed grid
+ * @details The grid is based on the observation times (t_obs), maximum theta value (theta_cut), and
+ *          specified numbers of grid points in phi, theta, and t. The radial grid is logarithmically
+ *          spaced between t_min and t_max, and the theta grid is generated linearly.
+ * <!-- ************************************************************************************** -->
+ */
+template <typename Ejecta>
+Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, size_t phi_num = 32,
+                size_t theta_num = 32, size_t t_num = 32, bool is_axisymmetric = true);
+
+//========================================================================================================
+//                                  template function implementation
+//========================================================================================================
+
 template <typename Ejecta>
 Real find_jet_edge(Ejecta const& jet, Real gamma_cut) {
     if (jet.Gamma0(0, con::pi / 2) >= gamma_cut) {
@@ -157,20 +234,6 @@ Real find_jet_edge(Ejecta const& jet, Real gamma_cut) {
     return low;
 }
 
-/********************************************************************************************************************
- * @brief Determines the edge of the jet where the spreading is strongest
- * @tparam Ejecta Type of the jet/ejecta class
- * @tparam Medium Type of the ambient medium
- * @param jet The jet/ejecta object
- * @param medium The ambient medium object
- * @param phi Azimuthal angle
- * @param theta_min Minimum polar angle to consider
- * @param theta_max Maximum polar angle to consider
- * @param t0 Initial time
- * @return Angle (in radians) where the spreading is strongest
- * @details The spreading strength is measured by the derivative of the pressure with respect to theta,
- *          which is proportional to d((Gamma-1)Gamma rho)/dtheta
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0) {
     Real step = (theta_max - theta_min) / 256;
@@ -200,26 +263,9 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
     return theta_s;
 }
 
-/********************************************************************************************************************
- * @brief Constructs a coordinate grid (Coord) for shock evolution
- * @tparam Ejecta Type of the jet/ejecta class
- * @param jet The jet/ejecta object
- * @param t_obs Array of observation times
- * @param theta_cut Maximum theta value to include
- * @param theta_view Viewing angle
- * @param z Redshift
- * @param phi_num Number of grid points in phi (default: 32)
- * @param theta_num Number of grid points in theta (default: 32)
- * @param t_num Number of grid points in time (default: 32)
- * @param is_axisymmetric Whether the jet is axisymmetric (default: true)
- * @return A Coord object with the constructed grid
- * @details The grid is based on the observation times (t_obs), maximum theta value (theta_cut), and
- *          specified numbers of grid points in phi, theta, and t. The radial grid is logarithmically
- *          spaced between t_min and t_max, and the theta grid is generated linearly.
- ********************************************************************************************************************/
 template <typename Ejecta>
-Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, size_t phi_num = 32,
-                size_t theta_num = 32, size_t t_num = 32, bool is_axisymmetric = true) {
+Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, size_t phi_num,
+                size_t theta_num, size_t t_num, bool is_axisymmetric) {
     Coord coord;
     coord.theta_view = theta_view;
     coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.

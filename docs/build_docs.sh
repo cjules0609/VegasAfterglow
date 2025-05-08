@@ -8,7 +8,11 @@ PROJECT_ROOT=$(dirname "$DOCS_DIR")
 echo "=== Cleaning existing build files ==="
 rm -rf doxygen build
 
-echo "=== Running Doxygen to generate XML ==="
+# Create directory structure
+mkdir -p source/_static/css
+mkdir -p doxygen
+
+echo "=== Running Doxygen to generate XML for Breathe ==="
 doxygen Doxyfile
 
 # Verify XML files exist
@@ -17,16 +21,41 @@ if [ ! -f "doxygen/xml/index.xml" ]; then
     exit 1
 fi
 
-echo "=== Debug: Listing top-level XML files ==="
-ls -la doxygen/xml/
-
-echo "=== Debug: Verify key class files ==="
+echo "=== Debug: Listing some key XML files ==="
+ls -la doxygen/xml/index.xml
 ls -la doxygen/xml/class_gaussian_jet.xml || echo "GaussianJet XML missing!"
 ls -la doxygen/xml/class_tophat_jet.xml || echo "TophatJet XML missing!"
 
-echo "=== Running Sphinx to generate HTML (verbose mode) ==="
-sphinx-build -b html -v source build/html
+# Create a simple custom CSS file
+cat > source/_static/css/custom.css << EOF
+/* Basic styling for C++ documentation */
+dl.cpp.function {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f7f7f7;
+}
+
+dl.cpp.class {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+EOF
+
+echo "=== Building Sphinx documentation ==="
+sphinx-build -b html source build/html
+
+# Copy Doxygen HTML for reference
+echo "=== Adding source code browsing capability ==="
+cp -r doxygen/html build/html/doxygen
 
 echo "=== Documentation build complete ==="
 echo "HTML documentation is in build/html"
-echo "Doxygen XML is in doxygen/xml" 
+echo ""
+echo "You can view the documentation by opening:"
+echo "file://$DOCS_DIR/build/html/index.html"
+echo ""
+echo "Opening documentation in browser..."
+open build/html/index.html 

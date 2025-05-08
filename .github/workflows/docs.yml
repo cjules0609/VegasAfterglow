@@ -43,28 +43,6 @@ jobs:
           chmod +x build_docs.sh
           ./build_docs.sh
           
-      - name: Ensure assets are copied
-        run: |
-          # Create directories for assets
-          mkdir -p docs/build/html/_static/assets
-          mkdir -p docs/build/html/_images
-          
-          # Copy assets from the root directory
-          cp -r assets/* docs/build/html/_static/assets/
-          cp -r assets/* docs/build/html/_images/
-          
-          # Create symlinks for logo.svg at the _static root to satisfy template references
-          cp docs/build/html/_static/assets/logo.svg docs/build/html/_static/logo.svg
-          cp docs/build/html/_static/assets/logo_small.svg docs/build/html/_static/logo_small.svg 2>/dev/null || echo "No logo_small.svg found"
-          
-          # For debugging - list the directories to confirm files are copied
-          echo "Files in _static/assets:"
-          ls -la docs/build/html/_static/assets/
-          echo "Files in _static (root):"
-          ls -la docs/build/html/_static/*.svg || echo "No SVG files found"
-          echo "Files in _images:"
-          ls -la docs/build/html/_images/
-          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

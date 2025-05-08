@@ -15,14 +15,16 @@
 #include "macros.h"
 #include "mesh.h"
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @class Observer
  * @brief Represents an observer in the GRB afterglow simulation.
  * @details This class handles the calculation of observed quantities such as specific flux, integrated flux,
  *          and spectra. It accounts for relativistic effects (Doppler boosting), cosmological effects (redshift),
  *          and geometric effects (solid angle). The observer can be placed at any viewing angle relative to the
  *          jet axis.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 class Observer {
    public:
     /// Default constructor
@@ -31,86 +33,116 @@ class Observer {
     /// Grid of observation times
     MeshGrid3d time;
 
-    /********************************************************************************************************************
-     * @brief Main observation function that sets up the observer's view of the simulation
-     * @param coord Coordinate grid
-     * @param shock Shock object containing evolution data
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Sets up the Observer for flux calculation.
+     * @details Initializes the observation time and Doppler factor grids, as well as the emission surface.
+     * @param coord Coordinate grid containing angular information
+     * @param shock Shock object containing the evolution data
      * @param luminosity_dist Luminosity distance to the source
      * @param redshift Redshift of the source
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     void observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
-    /********************************************************************************************************************
-     * @brief Configures observer to observe at specific time points
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Sets up the Observer for flux calculation at specific observation times.
+     * @details Similar to observe(), but also marks required grid points for the given observation times.
      * @param t_obs Array of observation times
-     * @param coord Coordinate grid
-     * @param shock Shock object containing evolution data
+     * @param coord Coordinate grid containing angular information
+     * @param shock Shock object containing the evolution data (modified to mark required points)
      * @param luminosity_dist Luminosity distance to the source
      * @param redshift Redshift of the source
-     * @details This specialized method can offer a performance boost by focusing computation on specific times
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     void observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the specific flux at a single observed frequency
      * @tparam PhotonGrid Types of photon grid objects
      * @param t_obs Array of observation times
      * @param nu_obs Observed frequency
      * @param photons Parameter pack of photon grid objects
+     * @details Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the
+     *          specific flux over the observation times.
      * @return Array of specific flux values at each observation time
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the specific flux at multiple observed frequencies
      * @tparam PhotonGrid Types of photon grid objects
      * @param t_obs Array of observation times
      * @param nu_obs Array of observed frequencies
      * @param photons Parameter pack of photon grid objects
      * @return 2D grid of specific flux values (frequency × time)
-     ********************************************************************************************************************/
+     * @details Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
+     *          the specific flux for each frequency and assembling the results into a grid. This method accounts for
+     *          relativistic beaming and cosmological effects.
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the integrated flux over a frequency band
      * @tparam PhotonGrid Types of photon grid objects
      * @param t_obs Array of observation times
      * @param band_freq Array of frequency band boundaries
      * @param photons Parameter pack of photon grid objects
+     * @details Computes the integrated flux over a frequency band specified by band_freq.
+     *          It converts band boundaries to center frequencies, computes the specific flux at each frequency,
+     *          and integrates (sums) the flux contributions weighted by the frequency bin widths.
      * @return Array of integrated flux values at each observation time
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the spectrum at multiple observation times
      * @tparam PhotonGrid Types of photon grid objects
      * @param freqs Array of frequencies
      * @param t_obs Array of observation times
      * @param photons Parameter pack of photon grid objects
+     * @details Returns the spectra (as a MeshGrid) for multiple observation times by computing the specific flux
+     *          for each frequency and transposing the result to get freq × time format.
      * @return 2D grid of spectra (frequency × time)
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the spectrum at a single observation time
      * @tparam PhotonGrid Types of photon grid objects
      * @param freqs Array of frequencies
      * @param t_obs Single observation time
      * @param photons Parameter pack of photon grid objects
+     * @details Returns the spectrum (as an Array) at a single observation time by computing the specific flux
+     *          for each frequency in the given array.
      * @return Array containing the spectrum at the given time
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
 
-    /********************************************************************************************************************
-     * @brief Updates the required grid points for observation
-     * @param required Grid of flags indicating required points
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Updates the required grid points for observation.
+     * @details Identifies grid points needed for interpolation at requested observation times.
+     * @param required Mask grid to mark required points (modified in-place)
      * @param t_obs Array of observation times
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     void update_required(MaskGrid& required, Array const& t_obs);
 
    private:
@@ -127,33 +159,47 @@ class Observer {
     size_t theta_grid{0};    ///< Number of theta grid points
     size_t t_grid{0};        ///< Number of time grid points
 
-    /********************************************************************************************************************
-     * @brief Builds the observation time, doppler, and surface grids
-     * @param coord Coordinate grid
-     * @param shock Shock object containing evolution data
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Builds the time grid and related structures for observation.
+     * @details Initializes grid dimensions based on the shock evolution data and sets up arrays for
+     *          time, Doppler factor, and emission surface.
+     * @param coord Coordinate grid containing angular information
+     * @param shock Shock object containing the evolution data
      * @param luminosity_dist Luminosity distance to the source
      * @param redshift Redshift of the source
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     void build_time_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift);
 
-    /********************************************************************************************************************
-     * @brief Calculates the observation time grid based on Lorentz factor and engine time
-     * @param coord Coordinate grid
-     * @param shock Shock object containing evolution data
-     ********************************************************************************************************************/
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the observation time grid and Doppler factor grid.
+     * @details For each grid point, computes the Doppler factor based on the Lorentz factor and
+     *          calculates the observed time taking redshift into account.
+     * @param coord Coordinate grid containing angular information
+     * @param shock Shock object containing the evolution data
+     * <!-- ************************************************************************************** -->
+     */
     void calc_t_obs(Coord const& coord, Shock const& shock);
 
-    /********************************************************************************************************************
-     * @brief Calculates the effective emission surface for each grid point
-     * @param coord Coordinate grid
-     * @param shock Shock object containing evolution data
-     ********************************************************************************************************************/
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the effective emission surface for each grid point.
+     * @details Computes the observe frame effective emission surface as the product of the differential
+     *          cosine of theta and either 2π (if the effective phi size is 1) or the differential phi value.
+     * @param coord Coordinate grid containing angular information
+     * @param shock Shock object containing the evolution data
+     * <!-- ************************************************************************************** -->
+     */
     void calc_emission_surface(Coord const& coord, Shock const& shock);
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @struct InterpState
      * @brief Helper structure for logarithmic interpolation state
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     struct InterpState {
         Real slope{0};      ///< Slope for logarithmic interpolation
         Real lg2_I_lo{0};   ///< Lower boundary of specific intensity (log2 scale)
@@ -161,7 +207,8 @@ class Observer {
         size_t last_hi{0};  ///< Index for the upper boundary in the grid
     };
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Interpolates the luminosity using the observation time (t_obs) in logarithmic space
      * @param state The interpolation state
      * @param i Phi grid index
@@ -169,10 +216,12 @@ class Observer {
      * @param k Time grid index
      * @param t_obs Observation time (in log2 scale)
      * @return The interpolated luminosity value
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     Real interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real t_obs) const noexcept;
 
-    /********************************************************************************************************************
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Validates and sets the interpolation boundaries
      * @tparam PhotonGrid Types of photon grid objects
      * @param state The interpolation state to update
@@ -181,46 +230,39 @@ class Observer {
      * @param k Time grid index
      * @param log2_nu Log2 of the observed frequency
      * @param photons Parameter pack of photon grid objects
+     * @details Attempts to set the lower and upper boundary values for logarithmic interpolation.
+     *          It updates the internal boundary members for:
+     *            - Logarithmic observation time (t_obs_lo, log_t_ratio)
+     *            - Logarithmic luminosity (L_lo, L_hi)
+     *          The boundaries are set using data from the provided grids and the photon grids.
+     *          Returns true if both lower and upper boundaries are finite such that interpolation can proceed
      * @return True if both lower and upper boundaries are valid for interpolation, false otherwise
-     * @details Updates the internal boundary members for logarithmic interpolation:
-     *          - Logarithmic observation time (t_obs_lo, log_t_ratio)
-     *          - Logarithmic luminosity (L_lo, L_hi)
-     ********************************************************************************************************************/
+     * <!-- ************************************************************************************** -->
+     */
     template <typename... PhotonGrid>
     bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu,
                         PhotonGrid const&... photons) noexcept;
 };
 
-/********************************************************************************************************************
+//========================================================================================================
+//                                  template function implementation
+//========================================================================================================
+
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Helper function that advances an iterator through an array until the value exceeds the target
  * @param value Target value to exceed
  * @param arr Array to iterate through
  * @param it Iterator position (updated by this function)
  * @details Used for efficiently finding the appropriate position in a sorted array without binary search.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
     while (it < arr.size() && arr(it) < value) {
         it++;
     }
 }
 
-/********************************************************************************************************************
- * @brief Set boundaries for logarithmic interpolation of specific flux
- * @tparam PhotonGrid Types of photon grid objects
- * @param state InterpState object to hold boundaries
- * @param i Phi grid index
- * @param j Theta grid index
- * @param k Time grid index
- * @param lg2_nu_obs Log2 of observed frequency
- * @param photons Parameter pack of photon grid objects
- * @return True if boundaries are valid for interpolation, false otherwise
- * @details Attempts to set the lower and upper boundary values for logarithmic interpolation.
- *          It updates the internal boundary members for:
- *            - Logarithmic observation time (t_obs_lo, log_t_ratio)
- *            - Logarithmic luminosity (L_lo, L_hi)
- *          The boundaries are set using data from the provided grids and the photon grids.
- *          Returns true if both lower and upper boundaries are finite such that interpolation can proceed.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
                               PhotonGrid const&... photons) noexcept {
@@ -251,17 +293,6 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
     return true;
 }
 
-/********************************************************************************************************************
- * @brief Compute specific flux for multiple observed frequencies
- * @tparam PhotonGrid Types of photon grid objects
- * @param t_obs Array of observation times
- * @param nu_obs Array of observed frequencies
- * @param photons Parameter pack of photon grid objects
- * @return 2D grid of specific flux values (frequency × time)
- * @details Returns the specific flux (as a MeshGrid) for multiple observed frequencies (nu_obs) by computing
- *          the specific flux for each frequency and assembling the results into a grid. This method accounts for
- *          relativistic beaming and cosmological effects.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
     size_t t_obs_len = t_obs.size();
@@ -306,62 +337,21 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
     return F_nu;
 }
 
-/********************************************************************************************************************
- * @brief Compute specific flux for a single observed frequency
- * @tparam PhotonGrid Types of photon grid objects
- * @param t_obs Array of observation times
- * @param nu_obs Single observed frequency
- * @param photons Parameter pack of photon grid objects
- * @return Array of specific flux values at each observation time
- * @details Returns the specific flux (as an Array) for a single observed frequency (nu_obs) by computing the
- *          specific flux over the observation times.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
     return xt::view(specific_flux(t_obs, Array({nu_obs}), photons...), 0);
 }
 
-/********************************************************************************************************************
- * @brief Compute spectrum at a single observation time
- * @tparam PhotonGrid Types of photon grid objects
- * @param freqs Array of frequencies
- * @param t_obs Single observation time
- * @param photons Parameter pack of photon grid objects
- * @return Array containing the spectrum at the given time
- * @details Returns the spectrum (as an Array) at a single observation time by computing the specific flux
- *          for each frequency in the given array.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons) {
     return xt::view(spectra(freqs, Array({t_obs}), photons...), 0);
 }
 
-/********************************************************************************************************************
- * @brief Compute spectra at multiple observation times
- * @tparam PhotonGrid Types of photon grid objects
- * @param freqs Array of frequencies
- * @param t_obs Array of observation times
- * @param photons Parameter pack of photon grid objects
- * @return 2D grid of spectra (frequency × time)
- * @details Returns the spectra (as a MeshGrid) for multiple observation times by computing the specific flux
- *          for each frequency and transposing the result to get freq × time format.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
     return xt::transpose(specific_flux(t_obs, freqs, photons...));
 }
 
-/********************************************************************************************************************
- * @brief Compute integrated flux over a frequency band
- * @tparam PhotonGrid Types of photon grid objects
- * @param t_obs Array of observation times
- * @param band_freq Array of frequency band boundaries
- * @param photons Parameter pack of photon grid objects
- * @return Array of integrated flux values at each observation time
- * @details Computes the integrated flux over a frequency band specified by band_freq.
- *          It converts band boundaries to center frequencies, computes the specific flux at each frequency,
- *          and integrates (sums) the flux contributions weighted by the frequency bin widths.
- ********************************************************************************************************************/
 template <typename... PhotonGrid>
 Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
     Array nu_obs = boundary_to_center_log(band_freq);
