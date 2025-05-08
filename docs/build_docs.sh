@@ -52,10 +52,4 @@ echo "=== Adding source code browsing capability ==="
 cp -r doxygen/html build/html/doxygen
 
 echo "=== Documentation build complete ==="
-echo "HTML documentation is in build/html"
-echo ""
-echo "You can view the documentation by opening:"
-echo "file://$DOCS_DIR/build/html/index.html"
-echo ""
-echo "Opening documentation in browser..."
-open build/html/index.html 
+
