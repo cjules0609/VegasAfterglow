@@ -19,10 +19,11 @@ class Medium {
    public:
     /// Density function that returns the mass density at a given position (phi, theta, r)
     /// The function is initialized to zero by default
-    TernaryFunc rho{func::zero_3d};  ///< density(phi, theta, r)
+    TernaryFunc rho{func::zero_3d};
 
-    /// Mass function that returns the integrated mass within a radius r at position (phi, theta)
-    TernaryFunc mass{func::zero_3d};  ///< mass(phi, theta, r)
+    /// Mass function that returns the integrated mass per solid angle within a radius r at position (phi, theta, r).
+    /// please make sure this is consistent with the density function, where m = \int rho * r^2 dr
+    TernaryFunc mass{func::zero_3d};
 };
 
 /**
@@ -56,7 +57,7 @@ class ISM {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Return integrated mass within radius r (proportional to r^3)
+     * @brief Return integrated mass per solid angle within radius r (proportional to r^3)
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle (unused)
      * @param r Radial distance
@@ -100,7 +101,7 @@ class Wind {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Return integrated mass within radius r (proportional to r)
+     * @brief Return integrated mass per solid angle within radius r (proportional to r)
      * @param phi Azimuthal angle (unused)
      * @param theta Polar angle (unused)
      * @param r Radial distance

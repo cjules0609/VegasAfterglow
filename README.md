@@ -1,6 +1,6 @@
 # VegasAfterglow (under construction, stay tuned!)
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="250"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="270"/>
 
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20) 
 [![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/) 
@@ -71,9 +71,9 @@
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-- **Ultra-fast Model Evaluation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
+- **Ultra-fast Light Curve Computation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
 
-- **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra in record time on an 8-core Apple M2 chip:
+- **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~10 seconds for on-axis structured jet scenarios
   - ~30 seconds for off-axis modeling scenarios
   

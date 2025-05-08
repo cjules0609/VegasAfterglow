@@ -50,18 +50,6 @@ Replace `/path/to/VegasAfterglow/` with the actual path to your VegasAfterglow i
 C++ API Documentation
 -------------------
 
-Core Classes
----------
-
-.. doxygenclass:: Medium
-   :members:
-   :undoc-members:
-   :allow-dot-graphs:
-
-.. doxygenclass:: Ejecta
-   :members:
-   :undoc-members:
-   :allow-dot-graphs:
 Jet Models
 ---------
 
@@ -80,6 +68,11 @@ Jet Models
    :undoc-members:
    :allow-dot-graphs:
 
+.. doxygenclass:: Ejecta
+   :members:
+   :undoc-members:
+   :allow-dot-graphs:
+
 Ambient Medium
 ------------
 
@@ -89,6 +82,11 @@ Ambient Medium
    :allow-dot-graphs:
 
 .. doxygenclass:: Wind
+   :members:
+   :undoc-members:
+   :allow-dot-graphs:
+
+.. doxygenclass:: Medium
    :members:
    :undoc-members:
    :allow-dot-graphs:
