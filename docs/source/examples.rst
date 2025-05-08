@@ -6,10 +6,10 @@ Examples
    :depth: 2
 
 Basic Usage
-----------
+-----------
 
 Setting up a simple afterglow model
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -45,10 +45,10 @@ Setting up a simple afterglow model
     plt.show()
 
 Structured Jet Models
-------------------
+---------------------
 
 Gaussian Jet
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -71,7 +71,7 @@ Gaussian Jet
     results_gaussian = model.calculate_light_curves(times, frequencies)
 
 Power-Law Jet
-^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -92,10 +92,10 @@ Power-Law Jet
     results_powerlaw = model.calculate_light_curves(times, frequencies)
 
 Ambient Media Models
------------------
+--------------------
 
 Wind Medium
-^^^^^^^^^^
+^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -111,7 +111,7 @@ Wind Medium
     results_wind = model.calculate_light_curves(times, frequencies)
 
 User-Defined Medium
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -138,10 +138,10 @@ User-Defined Medium
     results_custom = model.calculate_light_curves(times, frequencies)
 
 Radiation Processes
-----------------
+-------------------
 
 Synchrotron Self-Compton
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^    
 
 .. code-block:: python
 
@@ -179,10 +179,10 @@ Synchrotron Self-Compton
     plt.show()
 
 Advanced Features
----------------
+-----------------
 
 Reverse Shock
-^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -220,7 +220,7 @@ Reverse Shock
     plt.show()
 
 MCMC Parameter Fitting
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -263,7 +263,7 @@ MCMC Parameter Fitting
     fitter.plot_corner()
 
 Parameter Study
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -293,9 +293,9 @@ Parameter Study
     plt.show()
 
 Sample Scripts
-------------
+--------------
 
-The repository includes several example scripts in the `scripts/` directory:
+The repository includes several example scripts in the ``scripts`` directory:
 
 1. **Basic light curve fitting**: ``scripts/fit_lc.py``
 2. **MCMC parameter estimation**: ``scripts/mcmc.py``

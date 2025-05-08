@@ -6,6 +6,34 @@
 # -- Project information -----------------------------------------------------
 import os
 import sys
+from unittest.mock import MagicMock
+
+# Mock C++ extension modules for documentation building
+class BetterMock(MagicMock):
+    # Add a proper __all__ attribute
+    __all__ = ['ModelParams', 'Setups', 'ObsData', 'VegasMC']
+    
+    # Add documentation strings
+    @classmethod
+    def __getattr__(cls, name):
+        mock = MagicMock()
+        # Add docstrings to make autodoc happy
+        mock.__doc__ = f"Mocked {name} class for documentation."
+        # Make the signature inspection work better
+        if name == '__init__':
+            mock.__signature__ = None
+        return mock
+
+# Create fake module structure
+systems_mock = type('VegasAfterglowC', (), {
+    '__all__': ['ModelParams', 'Setups', 'ObsData', 'VegasMC'],
+    'ModelParams': type('ModelParams', (), {'__doc__': 'ModelParams class documentation.'}),
+    'Setups': type('Setups', (), {'__doc__': 'Setups class documentation.'}),
+    'ObsData': type('ObsData', (), {'__doc__': 'ObsData class documentation.'}),
+    'VegasMC': type('VegasMC', (), {'__doc__': 'VegasMC class documentation.'})
+})
+
+sys.modules['VegasAfterglow.VegasAfterglowC'] = systems_mock
 sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'VegasAfterglow'
@@ -55,7 +83,6 @@ html_logo = '../../assets/logo.svg'
 html_favicon = '../../assets/logo.svg'
 html_theme_options = {
     'logo_only': True,
-    'display_version': True,  # Adding version display to make theme structure more standard
     'prev_next_buttons_location': 'bottom',
     'style_external_links': True,
     'navigation_depth': 4,
@@ -71,16 +98,13 @@ html_css_files = [
 html_js_files = [
     'js/custom.js',
 ]
-html_add_permalinks = None    # older Sphinx
-html_permalinks     = "" 
+#html_add_permalinks = None    # older Sphinx
+#html_permalinks     = "" 
 # Add syntax highlighting style
 pygments_style = 'sphinx'
 
 # GitHub Pages settings
 html_baseurl = 'https://yihanwangastro.github.io/VegasAfterglow/docs/'
-html_add_permalinks   = None      # older Sphinx
-html_permalinks       = ""        # newer Sphinx – no ¶
-html_permalinks_icon  = ""        # RTD-theme uses a chain icon by default
 
 # Create a custom javascript file for source code toggling
 import os
