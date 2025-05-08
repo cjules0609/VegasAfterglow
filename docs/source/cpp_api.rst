@@ -8,81 +8,68 @@ C++ API Reference
 Overview
 -------
 
-VegasAfterglow's C++ core provides high-performance computation capabilities for GRB afterglow modeling. This section documents the C++ API for advanced users and developers who want to work directly with the C++ library.
+VegasAfterglow's C++ core provides high-performance computation capabilities for GRB afterglow modeling. This section documents the C++ API for advanced users and developers who want to work directly with the C++ library. The library requires a C++20 compatible compiler.
 
 Key Components
 -------------
 
 The C++ API is organized into several core components:
 
-* **Jet Models**: Implementations of different jet structure models (TophatJet, GaussianJet, PowerLawJet)
-* **Ambient Medium**: Classes for modeling the circumburst environment (ISM, Wind)
-* **Radiation Processes**: Components for calculating synchrotron and inverse Compton emission
-* **Dynamics**: Classes for evolving the blast wave and calculating shock parameters
-* **Utilities**: Helper functions and mathematical tools
+* **Jet Models**: Implementations of different jet structure models (top-hat, Gaussian, power-law, and user-defined)
+* **Ambient Medium**: Classes for modeling the circumburst environment (ISM, wind, and user-defined)
+* **Radiation Processes**: Components for synchrotron emission, synchrotron self-absorption, and inverse Compton (with Klein-Nishina corrections)
+* **Shock Dynamics**: Forward and reverse shock physics with accurate evolution across relativistic and non-relativistic regimes
+* **Observer Effects**: Classes for handling off-axis viewing angles and relativistic beaming
+* **Utilities**: Helper functions and mathematical tools for GRB afterglow calculations
+
+Using the C++ API
+---------------
+
+After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
+
+Including Headers
+^^^^^^^^^^^^^^^
+
+To use VegasAfterglow directly from C++, include the main header:
+
+.. code-block:: cpp
+
+    #include "afterglow.h"              // Main header for afterglow models
+
+Building Custom Applications
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compile your C++ application, linking against the VegasAfterglow library:
+
+.. code-block:: bash
+
+    g++ -std=c++20 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
+
+Replace `/path/to/VegasAfterglow/` with the actual path to your VegasAfterglow installation.
 
 C++ API Documentation
 -------------------
-
-Namespaces
----------
-
-.. doxygennamespace:: con
-   :project: VegasAfterglow
-   :members:
-   :outline:
-
-.. doxygennamespace:: math
-   :project: VegasAfterglow
-   :members:
-   :outline:
-
-.. doxygennamespace:: evn
-   :project: VegasAfterglow
-   :members:
-   :outline:
-
-Core Classes
----------
-
-.. doxygenclass:: Medium
-   :project: VegasAfterglow
-   :members:
-   :protected-members:
-   :private-members:
-   :undoc-members:
-
-.. doxygenclass:: Ejecta
-   :project: VegasAfterglow
-   :members:
-   :protected-members:
-   :private-members:
-   :undoc-members:
 
 Jet Models
 ---------
 
 .. doxygenclass:: TophatJet
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
    :allow-dot-graphs:
 
 .. doxygenclass:: GaussianJet
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
    :allow-dot-graphs:
 
 .. doxygenclass:: PowerLawJet
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
+   :undoc-members:
+   :allow-dot-graphs:
+
+.. doxygenclass:: Ejecta
+   :members:
    :undoc-members:
    :allow-dot-graphs:
 
@@ -90,90 +77,86 @@ Ambient Medium
 ------------
 
 .. doxygenclass:: ISM
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenclass:: Wind
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
+
+.. doxygenclass:: Medium
+   :members:
+   :undoc-members:
+   :allow-dot-graphs:
 
 Radiation Processes
 -----------------
 
 .. doxygenstruct:: SynPhotons
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenstruct:: SynElectrons
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenstruct:: InverseComptonY
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 Shock Dynamics
 ------------
 
 .. doxygenclass:: Shock
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenclass:: SimpleShockEqn
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenclass:: ForwardShockEqn
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 .. doxygenclass:: FRShockEqn
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
 
 Physics and Utilities
 ------------------
 
 .. doxygenclass:: Observer
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:   
 
 .. doxygenclass:: Coord
-   :project: VegasAfterglow
    :members:
-   :protected-members:
-   :private-members:
    :undoc-members:
+   :allow-dot-graphs:
+
+Performance Considerations
+-----------------------
+
+VegasAfterglow's C++ core is designed for exceptional computational performance:
+
+* **Memory Access Patterns**: Carefully optimized to minimize cache misses
+* **SIMD Optimizations**: Takes advantage of vectorization where possible
+* **Multi-threading**: Core algorithms designed for parallel execution
+* **Avoiding Allocations**: Minimal heap allocations in critical computation paths
+* **Computational Approximations**: Efficient numerical approximations for complex computations
+
+These optimizations enable the generation of a 30-point single-frequency light curve in approximately 0.6 milliseconds on an Apple M2 chip with a single core, and full MCMC parameter estimation with 10,000 steps in seconds to minutes on standard laptop hardware.
 
 Documenting C++ Code
 ------------------
@@ -235,20 +218,89 @@ For template functions, make sure to document both the template parameters and t
 Inline Function Documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For inline functions, maintain the same documentation standard as regular functions:
+For inline functions, use specialized documentation to explain why the function is inline and include important implementation details:
 
 .. code-block:: cpp
 
-    /********************************************************************************************************************
+    /**
      * @brief Compute the square of a value
-     * @details This inline function efficiently computes the square of any numeric value.
+     * @inlinefunc Performance-critical function used in inner loops
      *
      * @param x The value to square
      * @return The squared value
-     ********************************************************************************************************************/
+     * 
+     * @inline_details
+     * Uses direct multiplication instead of std::pow for better performance.
+     * Handles both positive and negative inputs correctly.
+     */
     inline double square(double x) {
         return x * x;
     }
+
+C++20 Attribute Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For functions with C++20 attributes, use the specialized tags:
+
+.. code-block:: cpp
+
+    /**
+     * @brief Calculate the inverse of a value
+     * @nodiscard
+     * @constexpr
+     * 
+     * @param value The input value (must not be zero)
+     * @return The inverse of the input value (1/value)
+     * @throws std::invalid_argument if value is zero
+     */
+    [[nodiscard]] constexpr double inverse(double value) {
+        if (value == 0) throw std::invalid_argument("Cannot take inverse of zero");
+        return 1.0 / value;
+    }
+
+Special Member Function Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For special member functions, use the dedicated aliases:
+
+.. code-block:: cpp
+
+    /**
+     * @defaultctor
+     * Initializes with default empty state.
+     */
+    JetModel();
+    
+    /**
+     * @copyctor
+     * @param other The jet model to copy
+     */
+    JetModel(const JetModel& other);
+    
+    /**
+     * @moveassign
+     * @param other The jet model to move from
+     * @return Reference to this object
+     */
+    JetModel& operator=(JetModel&& other) noexcept;
+
+Private Member Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Even though private members won't appear in the public API documentation, they should be properly documented in the code for maintainability:
+
+.. code-block:: cpp
+
+    private:
+        /**
+         * @brief Calculate internal jet dynamics
+         * 
+         * @param time Current simulation time
+         * @return Energy distribution at current time
+         */
+        double calculateDynamics(double time);
+        
+        double energy_; ///< Internal energy storage
 
 Example Class
 ^^^^^^^^^^^
@@ -281,10 +333,29 @@ Here's an example of a well-documented class:
          ********************************************************************************************************************/
         Real eps_k(Real phi, Real theta) const noexcept;
         
-    private:
-        Real const norm_{0};    ///< Normalization factor for Gaussian distribution
-        Real const eps_k_{0};   ///< Peak energy per solid angle at center
-        Real const Gamma0_{1};  ///< Peak Lorentz factor at center
+        /**
+         * @brief Get the core angle of the jet
+         * @nodiscard
+         * @return Core angle in radians
+         */
+        [[nodiscard]] inline Real getTheta_c() const noexcept;
+        
+        /**
+         * @brief Get the isotropic equivalent energy
+         * @nodiscard
+         * @return Energy in ergs
+         */
+        [[nodiscard]] inline Real getE_iso() const noexcept;
+        
+        /**
+         * @brief Get the initial Lorentz factor
+         * @nodiscard
+         * @return Lorentz factor at jet core
+         */
+        [[nodiscard]] inline Real getGamma0() const noexcept;
     };
 
-For more details on Doxygen commands, see the :doc:`contributing` page. 
+    // Implementation of inline methods would be in the .cpp file or in a separate
+    // inline header file, and should not appear in the API documentation.
+
+For more details on Doxygen commands, see the :doc:`contributing` page.

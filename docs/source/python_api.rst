@@ -15,101 +15,78 @@ Key Components
 
 The Python API is organized into several core components:
 
-* **Model Creation**: Classes for defining GRB afterglow models
-* **Jet Models**: Classes for different jet structure profiles (TophatJet, GaussianJet, PowerLawJet)
-* **Ambient Media**: Classes for defining the circumburst environment (ISM, Wind)
-* **Radiation Processes**: Components for calculating emission mechanisms (Synchrotron, SynchrotronSelfCompton)
-* **Shock Dynamics**: Forward and reverse shock physics
-* **Data Fitting**: Tools for comparing models with observational data using MCMC methods
-* **Results Processing**: Classes for handling and visualizing simulation results
+* **Data Representation**: Classes for handling observational data and model parameters
+* **MCMC Framework**: Tools for parameter fitting and posterior exploration
+* **Model Configuration**: Classes for setting up the physical model
+* **Results Processing**: Tools for handling simulation outputs
 
 Core Classes
------
-
-.. autoclass:: VegasAfterglow.Model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.Observer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Jet Models
----------
-
-.. autoclass:: VegasAfterglow.TophatJet
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.GaussianJet
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.PowerLawJet
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Ambient Media
-------------
-
-.. autoclass:: VegasAfterglow.ISM
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.Wind
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.UserDefinedMedium
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Radiation Processes
------------------
-
-.. autoclass:: VegasAfterglow.Synchrotron
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.SynchrotronSelfCompton
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Shock Dynamics
-------------
-
-.. autoclass:: VegasAfterglow.ForwardShock
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.ReverseShock
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Data Fitting
 -----------
+
+ObsData
+^^^^^^^
 
 .. autoclass:: VegasAfterglow.ObsData
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: VegasAfterglow.Fitter
+The `ObsData` class is used to store and manage observational data, including light curves and spectra. It provides methods to add observational data from various sources.
+
+Example:
+
+.. code-block:: python
+
+    from VegasAfterglow import ObsData
+    
+    # Create an instance to store observational data
+    data = ObsData()
+    
+    # Add light curve data
+    data.add_light_curve(nu_cgs=4.84e14, t_cgs=time_data, Fnu_cgs=flux_data, Fnu_err=flux_error)
+    
+    # Add spectrum data
+    data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_error)
+
+Setups
+^^^^^^
+
+.. autoclass:: VegasAfterglow.Setups
    :members:
    :undoc-members:
    :show-inheritance:
+
+The `Setups` class defines global properties and environment settings for the model. These settings remain fixed during the MCMC process.
+
+Example:
+
+.. code-block:: python
+
+    from VegasAfterglow import Setups
+    
+    # Create configuration
+    cfg = Setups()
+    
+    # Source properties
+    cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]  
+    cfg.z = 1.58               # Redshift
+    
+    # Physical model configuration
+    cfg.medium = "wind"        # Ambient medium: "wind", "ISM", or "user"
+    cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat", or "user"
+
+ModelParams
+^^^^^^^^^^
+
+.. autoclass:: VegasAfterglow.ModelParams
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+The `ModelParams` class stores the physical parameters that define the GRB afterglow model. These parameters are varied during the MCMC fitting process.
+
+ParamDef and Scale
+^^^^^^^^^^^^^^^^^
 
 .. autoclass:: VegasAfterglow.ParamDef
    :members:
@@ -121,41 +98,78 @@ Data Fitting
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: VegasAfterglow.Setups
+These classes are used to define parameters for MCMC exploration, including their name, initial value, prior range, and sampling scale:
+
+Example:
+
+.. code-block:: python
+
+    from VegasAfterglow import ParamDef, Scale
+    
+    mc_params = [
+        ParamDef("E_iso",    1e52,  1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
+        ParamDef("Gamma0",     30,     5,  1000,  Scale.LOG),       # Lorentz factor at the core
+        ParamDef("theta_c",   0.2,   0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
+        ParamDef("theta_v",   0.,  None,  None,   Scale.FIXED),     # Viewing angle [rad]
+        ParamDef("p",         2.5,     2,     3,  Scale.LINEAR),    # Shocked electron power law index
+        ParamDef("eps_e",     0.1,  1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
+        ParamDef("eps_B",    1e-2,  1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
+        ParamDef("A_star",   0.01,  1e-3,     1,  Scale.LOG),       # Wind parameter
+    ]
+
+Fitter
+^^^^^^
+
+.. autoclass:: VegasAfterglow.Fitter
    :members:
    :undoc-members:
    :show-inheritance:
 
-Results
-------
+The `Fitter` class provides a high-level interface for MCMC fitting of GRB afterglow models to observational data.
 
-.. autoclass:: VegasAfterglow.SimulationResults
+Example:
+
+.. code-block:: python
+
+    from VegasAfterglow import Fitter
+    
+    # Create the fitter object
+    fitter = Fitter(data, cfg)
+    
+    # Run the MCMC fitting
+    result = fitter.fit(
+        param_defs=mc_params,          # Parameter definitions
+        resolution=(24, 24, 24),       # Grid resolution (phi, theta, time)
+        total_steps=10000,             # Total number of MCMC steps
+        burn_frac=0.3,                 # Fraction of steps to discard as burn-in
+        thin=1                         # Thinning factor
+    )
+    
+    # Generate light curves with best-fit parameters
+    lc_best = fitter.light_curves(result.best_params, t_out, bands)
+    
+    # Generate spectra with best-fit parameters
+    spec_best = fitter.spectra(result.best_params, nu_out, times)
+
+FitResult
+^^^^^^^^^
+
+.. autoclass:: VegasAfterglow.FitResult
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: VegasAfterglow.LightCurve
+The `FitResult` class stores the results of an MCMC fit, including the posterior samples, log probabilities, and best-fit parameters.
+
+VegasMC
+^^^^^^^
+
+.. autoclass:: VegasAfterglow.VegasMC
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. autoclass:: VegasAfterglow.Spectrum
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Utilities
--------
-
-.. autoclass:: VegasAfterglow.Constants
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: VegasAfterglow.Units
-   :members:
-   :undoc-members:
-   :show-inheritance:
+The `VegasMC` class is the core calculator for MCMC sampling, providing efficient computation of model likelihood based on the specified parameters.
 
 Documenting Python Code
 ---------------------
@@ -201,43 +215,30 @@ Here's an example of a well-documented class:
 
 .. code-block:: python
 
-    class GaussianJet:
+    class ParamDef:
         """
-        A class representing a structured jet model with Gaussian profile.
-
-        This class implements a jet with angular structure, where the energy
-        and Lorentz factor follow a Gaussian profile with angle from the jet axis.
-
+        Single-parameter definition for MCMC.
+        
+        This class defines a parameter to be used in MCMC fitting, including
+        its name, initial value, prior range, and sampling scale.
+        
         Parameters
         ----------
-        core_energy : float
-            The isotropic-equivalent energy in the jet core (ergs)
-        core_lorentz : float
-            The initial bulk Lorentz factor in the jet core
-        theta_core : float
-            The angular size of the jet core (radians)
-        viewer_angle : float, optional
-            The viewing angle relative to the jet axis (radians)
-
-        Attributes
-        ----------
-        theta_core : float
-            Core angle of the jet (radians)
+        name : str
+            The parameter name
+        init : float
+            Initial value for the parameter
+        lower : float, optional
+            Lower bound for the parameter (not needed for FIXED scale)
+        upper : float, optional
+            Upper bound for the parameter (not needed for FIXED scale)
+        scale : Scale, optional
+            Sampling scale (LINEAR, LOG, or FIXED), default is LINEAR
+            
+        Notes
+        -----
+        When scale=LOG, we sample log10(x), then transform via 10**v.
+        When scale=FIXED, the parameter never appears in the sampler.
         """
-
-        def get_energy_at_angle(self, theta):
-            """
-            Get the energy at a specific angle.
-
-            Parameters
-            ----------
-            theta : float
-                Angle from the jet axis (radians)
-
-            Returns
-            -------
-            float
-                Energy at the specified angle (ergs)
-            """
 
 For more details on NumPy-style docstrings, see the :doc:`contributing` page. 

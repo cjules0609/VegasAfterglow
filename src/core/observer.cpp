@@ -13,28 +13,11 @@
 #include "physics.h"
 #include "utilities.h"
 
-/********************************************************************************************************************
- * @brief Interpolates the luminosity at a given observation time in log-space.
- * @details Uses linear interpolation in log2-space between grid points and returns the result in linear space.
- * @param state The interpolation state containing slope and intensity values
- * @param i Index for phi dimension
- * @param j Index for theta dimension
- * @param k Index for time dimension
- * @param lg2_t_obs Log2 of the observation time
- * @return Interpolated luminosity value
- ********************************************************************************************************************/
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real lg2_t_obs) const noexcept {
     Real dlg2_t = lg2_t_obs - lg2_t(i, j, k);
     return fast_exp2(lg2_surface(i, j, k) + state.lg2_I_lo + dlg2_t * state.slope);
 }
 
-/********************************************************************************************************************
- * @brief Calculates the effective emission surface for each grid point.
- * @details Computes the observe frame effective emission surface as the product of the differential
- *          cosine of theta and either 2π (if the effective phi size is 1) or the differential phi value.
- * @param coord Coordinate grid containing angular information
- * @param shock Shock object containing the evolution data
- ********************************************************************************************************************/
 void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
     Array dphi({eff_phi_grid}, 0);
 
@@ -82,13 +65,6 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
     }
 }
 
-/********************************************************************************************************************
- * @brief Calculates the observation time grid and Doppler factor grid.
- * @details For each grid point, computes the Doppler factor based on the Lorentz factor and
- *          calculates the observed time taking redshift into account.
- * @param coord Coordinate grid containing angular information
- * @param shock Shock object containing the evolution data
- ********************************************************************************************************************/
 void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
     Real cos_obs = std::cos(coord.theta_view);
     Real sin_obs = std::sin(coord.theta_view);
@@ -129,12 +105,6 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
     lg2_t = xt::log2(time);
 }
 
-/********************************************************************************************************************
- * @brief Updates the required grid points for observation.
- * @details Identifies grid points needed for interpolation at requested observation times.
- * @param required Mask grid to mark required points (modified in-place)
- * @param t_obs Array of observation times
- ********************************************************************************************************************/
 void Observer::update_required(MaskGrid& required, Array const& t_obs) {
     size_t t_obs_size = t_obs.size();
     Array log2_t_obs = xt::log2(t_obs);
@@ -160,15 +130,6 @@ void Observer::update_required(MaskGrid& required, Array const& t_obs) {
     }
 }
 
-/********************************************************************************************************************
- * @brief Builds the time grid and related structures for observation.
- * @details Initializes grid dimensions based on the shock evolution data and sets up arrays for
- *          time, Doppler factor, and emission surface.
- * @param coord Coordinate grid containing angular information
- * @param shock Shock object containing the evolution data
- * @param luminosity_dist Luminosity distance to the source
- * @param redshift Redshift of the source
- ********************************************************************************************************************/
 void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
@@ -195,28 +156,11 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     calc_t_obs(coord, shock);
 }
 
-/********************************************************************************************************************
- * @brief Sets up the Observer for flux calculation.
- * @details Initializes the observation time and Doppler factor grids, as well as the emission surface.
- * @param coord Coordinate grid containing angular information
- * @param shock Shock object containing the evolution data
- * @param luminosity_dist Luminosity distance to the source
- * @param redshift Redshift of the source
- ********************************************************************************************************************/
 void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
     calc_emission_surface(coord, shock);
 }
 
-/********************************************************************************************************************
- * @brief Sets up the Observer for flux calculation at specific observation times.
- * @details Similar to observe(), but also marks required grid points for the given observation times.
- * @param t_obs Array of observation times
- * @param coord Coordinate grid containing angular information
- * @param shock Shock object containing the evolution data (modified to mark required points)
- * @param luminosity_dist Luminosity distance to the source
- * @param redshift Redshift of the source
- ********************************************************************************************************************/
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
     xt::view(shock.required, xt::all(), xt::all(), xt::all()) = 0;

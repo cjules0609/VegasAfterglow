@@ -6,16 +6,7 @@
 //                            |___/                                            |___/
 
 #include "shock.h"
-/********************************************************************************************************************
- * @brief Constructs a Shock object with the given grid dimensions and energy fractions.
- * @details Initializes various 3D grids for storing physical properties of the shock, including comoving time,
- *          radius, Lorentz factors, magnetic fields, and downstream densities.
- * @param phi_size Number of grid points in phi direction
- * @param theta_size Number of grid points in theta direction
- * @param t_size Number of grid points in time direction
- * @param eps_e Electron energy fraction
- * @param eps_B Magnetic energy fraction
- ********************************************************************************************************************/
+
 Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B)
     : t_comv({phi_size, theta_size, t_size}, 0),          // Initialize comoving time grid with 0
       r({phi_size, theta_size, t_size}, 0),               // Initialize radius grid with 0
@@ -32,12 +23,6 @@ Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real
       theta_size(theta_size),                             // Store theta grid size
       t_size(t_size) {}
 
-/********************************************************************************************************************
- * @brief Resizes all grid components of the Shock object to new dimensions.
- * @param phi_size New number of grid points in phi direction
- * @param theta_size New number of grid points in theta direction
- * @param t_size New number of grid points in time direction
- ********************************************************************************************************************/
 void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
     this->phi_size = phi_size;
     this->theta_size = theta_size;
@@ -55,12 +40,6 @@ void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
     required.fill(1);
 }
 
-/********************************************************************************************************************
- * @brief Computes the downstream fluid velocity for a given relative Lorentz factor and magnetization.
- * @param gamma_rel Relative Lorentz factor between upstream and downstream regions
- * @param sigma Magnetization parameter (magnetic to kinetic energy ratio)
- * @return The downstream four-velocity in the shock frame
- ********************************************************************************************************************/
 Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
     Real ad_idx = adiabatic_idx(gamma_rel);
     Real gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
@@ -97,12 +76,6 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
     }
 }
 
-/********************************************************************************************************************
- * @brief Computes the ratio of upstream to downstream four-velocity across the shock front.
- * @param gamma_rel Relative Lorentz factor between upstream and downstream regions
- * @param sigma Magnetization parameter (magnetic to kinetic energy ratio)
- * @return The ratio of upstream to downstream four-velocity
- ********************************************************************************************************************/
 Real compute_4vel_jump(Real gamma_rel, Real sigma) {
     Real u_down_s_ = compute_downstr_4vel(gamma_rel, sigma);
     Real u_up_s_ = compute_upstr_4vel(u_down_s_, gamma_rel);

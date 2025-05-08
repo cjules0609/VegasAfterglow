@@ -8,16 +8,6 @@
 #include "forward-shock.hpp"
 #include "simple-shock.hpp"
 
-/********************************************************************************************************************
- * @brief ForwardShockEqn constructor
- * @details Initializes the forward shock equation with the given medium, ejecta, and parameters.
- * @param medium The medium through which the shock propagates
- * @param ejecta The ejecta driving the shock
- * @param phi Azimuthal angle
- * @param theta Polar angle
- * @param eps_e Electron energy fraction
- * @param theta_s Critical angle for jet spreading
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta,
                                                  Real eps_e, Real theta_s)
@@ -35,13 +25,6 @@ ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta co
     }
 }
 
-/********************************************************************************************************************
- * @brief Computes the derivatives of the state variables with respect to engine time t.
- * @details Implements the system of ODEs that describe the evolution of the forward shock.
- * @param state Current state of the system
- * @param diff Output derivatives to be populated
- * @param t Current time
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) const noexcept {
     Real beta = gamma_to_beta(state.Gamma);
@@ -72,16 +55,6 @@ void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff
     diff.u = dU_dt(m_swept, dm_dt_swpt, state, diff, ad_idx);
 }
 
-/********************************************************************************************************************
- * @brief Computes the derivative of Gamma with respect to engine time t.
- * @details Calculates the rate of change of the Lorentz factor based on various physical factors.
- * @param m_swept Total swept-up mass
- * @param dm_dt_swept Rate of swept-up mass
- * @param state Current state of the system
- * @param diff Current derivatives
- * @param ad_idx Adiabatic index
- * @return The time derivative of Gamma
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real ForwardShockEqn<Ejecta, Medium>::dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
                                                 Real ad_idx) const noexcept {
@@ -121,17 +94,6 @@ Real ForwardShockEqn<Ejecta, Medium>::dGamma_dt(Real m_swept, Real dm_dt_swept, 
     return (a1 + a2) / (b1 + b2);
 }
 
-/********************************************************************************************************************
- * @brief Computes the derivative of internal energy with respect to time t.
- * @details Calculates the rate of change of the internal energy density considering adiabatic expansion
- *          and energy injection from newly swept-up material.
- * @param m_swept Total swept-up mass
- * @param dm_dt_swept Rate of swept-up mass
- * @param state Current state of the system
- * @param diff Current derivatives
- * @param ad_idx Adiabatic index
- * @return The time derivative of internal energy
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real ForwardShockEqn<Ejecta, Medium>::dU_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
                                             Real ad_idx) const noexcept {
@@ -146,12 +108,6 @@ Real ForwardShockEqn<Ejecta, Medium>::dU_dt(Real m_swept, Real dm_dt_swept, Stat
     return (1 - eps_e) * (state.Gamma - 1) * con::c2 * dm_dt_swept - (ad_idx - 1) * dlnVdt * state.u;
 }
 
-/********************************************************************************************************************
- * @brief Set the initial conditions for the forward shock ODE solver.
- * @details Computes the initial state of the shock based on the ejecta properties and ambient medium.
- * @param state State vector to initialize
- * @param t0 Initial time
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void ForwardShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
     state.Gamma = ejecta.Gamma0(phi, theta0);
@@ -174,16 +130,6 @@ void ForwardShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) cons
     state.u = (state.Gamma - 1) * medium.mass(phi, theta0, state.r) * con::c2;
 }
 
-/********************************************************************************************************************
- * @brief Updates the forward shock state at a grid point using the current ODE solution.
- * @details Computes physical quantities for the shock state and updates the shock object.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param k Grid index for time
- * @param eqn The equation system containing physical parameters
- * @param state Current state of the system
- * @param shock Shock object to update
- ********************************************************************************************************************/
 template <typename Eqn, typename State>
 void save_fwd_shock_state(size_t i, size_t j, size_t k, Eqn const& eqn, State const& state, Shock& shock) {
     // Calculate number density of the ambient medium at current position
@@ -198,16 +144,6 @@ void save_fwd_shock_state(size_t i, size_t j, size_t k, Eqn const& eqn, State co
     save_shock_state(shock, i, j, k, state, state.Gamma, gamma1, m2 / con::mp, n1, sigma1);
 }
 
-/********************************************************************************************************************
- * @brief Solves the forward shock ODE at a grid point as a function of time.
- * @details Uses an adaptive step size ODE solver to evolve the shock state through time.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param t View of time points at which to evaluate the solution
- * @param shock Shock object to store the results
- * @param eqn The equation system defining the ODE
- * @param rtol Relative tolerance for the ODE solver
- ********************************************************************************************************************/
 template <typename FwdEqn, typename View>
 void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEqn const& eqn, double rtol) {
     using namespace boost::numeric::odeint;
@@ -245,26 +181,9 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
     }
 }
 
-/********************************************************************************************************************
- * @brief Function templates for shock generation
- * @details Declares interfaces to generate forward shocks (2D and 3D) and forward/reverse shock pairs.
- ********************************************************************************************************************/
-using ShockPair = std::pair<Shock, Shock>;
-
-/********************************************************************************************************************
- * @brief Generates a forward shock model for given coordinates, medium, and jet parameters.
- * @details Creates a Shock object and solves the shock evolution for each grid point.
- * @param coord Coordinate system definition
- * @param medium The medium through which the shock propagates
- * @param jet The jet (ejecta) driving the shock
- * @param eps_e Electron energy fraction
- * @param eps_B Magnetic energy fraction
- * @param rtol Relative tolerance for the ODE solver (default: 1e-5)
- * @return A Shock object containing the evolution data
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
-                         Real rtol = 1e-5) {
+                         Real rtol) {
     auto [phi_size, theta_size, t_size] = coord.shape();  // Unpack coordinate dimensions
     size_t phi_size_needed = coord.t.shape()[0];
     Shock shock(phi_size_needed, theta_size, t_size, eps_e, eps_B);

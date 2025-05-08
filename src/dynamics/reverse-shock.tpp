@@ -7,15 +7,32 @@
 
 #include "reverse-shock.hpp"
 #include "shock.h"
-/********************************************************************************************************************
- * @brief Constructor for the FRShockEqn class.
- * @details Initializes the forward-reverse shock equation with the given medium, ejecta, and parameters.
- * @param medium The medium through which the shock propagates
- * @param ejecta The ejecta driving the shock
- * @param phi Azimuthal angle
- * @param theta Polar angle
- * @param eps_e Electron energy fraction
- ********************************************************************************************************************/
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
+ * @brief Computes the rate of change of shocked ejecta mass per solid angle.
+ * @param width Width of the shocked region
+ * @param m4 Mass per solid angle in region 4 (unshocked ejecta)
+ * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
+ * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
+ * @param sigma Magnetization parameter
+ * @return The rate of change of mass in region 3
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real sigma) {
+    if (gamma3 == gamma4) {
+        return 0.;
+    }
+    Real beta3 = gamma_to_beta(gamma3);
+    Real beta4 = gamma_to_beta(gamma4);
+    Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
+    Real ratio_u = compute_4vel_jump(gamma34, sigma);
+    Real column_den3 = m4 * ratio_u / width;
+    Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
+    return column_den3 * gamma3 * dxdt;
+}
+
 template <typename Ejecta, typename Medium>
 FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e)
     : medium(medium),
@@ -32,13 +49,6 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
     }
 }
 
-/********************************************************************************************************************
- * @brief Implements the reverse shock ODE system.
- * @details Computes the derivatives of state variables with respect to time.
- * @param state Current state of the system
- * @param diff Output derivatives to be populated
- * @param t Current time
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
     Real Gamma3 = 1;
@@ -74,13 +84,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     diff.theta = 0;  // no lateral spreading
 }
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T);
-/********************************************************************************************************************
- * @brief Set the initial conditions for the reverse shock ODE.
- * @details Sets up initial state values and determines if the shock has already crossed.
- * @param state State vector to initialize
- * @param t0 Initial time
- * @return True if the shock has already crossed at the initial time, false otherwise
- ********************************************************************************************************************/
+
 template <typename Ejecta, typename Medium>
 bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
     Real beta4 = gamma_to_beta(Gamma4);
@@ -118,12 +122,6 @@ bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
     return crossed;
 }
 
-/********************************************************************************************************************
- * @brief Calculates the energy and mass injection rates at time t.
- * @details Returns a pair containing energy injection rate and mass injection rate.
- * @param t Current time
- * @return A pair {energy_rate, mass_rate} with injection rates at time t
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 std::pair<Real, Real> FRShockEqn<Ejecta, Medium>::get_injection_rate(Real t) const {
     Real deps_shell_dt = 0;
@@ -145,24 +143,12 @@ std::pair<Real, Real> FRShockEqn<Ejecta, Medium>::get_injection_rate(Real t) con
     return {deps_shell_dt, dm_shell_dt};
 }
 
-/********************************************************************************************************************
- * @brief Checks if the ejecta is still injecting mass or energy at time t.
- * @details Returns true if either energy or mass is being injected.
- * @param t Current time
- * @return Boolean indicating if injection is happening at time t
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 bool FRShockEqn<Ejecta, Medium>::is_injecting(Real t) const {
     auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
     return deps_shell_dt > 0 || dm_shell_dt > 0;
 }
 
-/********************************************************************************************************************
- * @brief Computes the Lorentz factor (Gamma3) during shock crossing.
- * @details Uses energy conservation to determine the appropriate Gamma3 value.
- * @param state Current state of the system
- * @return The computed Lorentz factor for region 3 (shocked ejecta)
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) const {
     Real m2 = compute_swept_mass(*this, state);
@@ -185,12 +171,6 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
     return root_bisect(func, 1, Gamma4, r_tol);
 }
 
-/********************************************************************************************************************
- * @brief Sets constants at the shock crossing point for later calculations.
- * @details Stores key parameters and switches the ODE from crossing to crossed state.
- * @param state State at shock crossing
- * @param B Magnetic field at shock crossing
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
     this->r_x = state.r;
@@ -211,14 +191,17 @@ void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
     this->crossed = true;
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Calculates the power-law index for post-crossing four-velocity evolution.
  * @details The index transitions from g_low=1.5 for low relative Lorentz factors to g_high=3.5
  *          for high relative Lorentz factors (Blandford-McKee limit).
  * @param gamma_rel Relative Lorentz factor
  * @param k Medium power law index (default: 0)
  * @return The power-law index for velocity evolution
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
     constexpr Real g_low = 1.5;   // k is the medium power law index
     constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
@@ -226,13 +209,6 @@ inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
     return g_low + (g_high - g_low) * p / (1 + p);
 }
 
-/********************************************************************************************************************
- * @brief Computes the Lorentz factor for region 3 after shock crossing.
- * @details Uses a power-law profile that applies both in relativistic and Newtonian regimes.
- * @param gamma_rel Relative Lorentz factor
- * @param r Current radius
- * @return The Lorentz factor for region 3 post-crossing
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma3(Real gamma_rel, Real r) const {
     Real g = get_post_cross_g(gamma_rel);
@@ -240,12 +216,6 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma3(Real gamma_rel, Real r) 
     return std::sqrt(u * u + 1);
 }
 
-/********************************************************************************************************************
- * @brief Computes the relative Lorentz factor after shock crossing.
- * @details Uses adiabatic expansion to determine the relative Lorentz factor.
- * @param state Current state of the system
- * @return The relative Lorentz factor post-crossing
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma_rel(State const& state) const {
     Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
@@ -253,12 +223,6 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma_rel(State const& state) c
     return p3_norm / ((gamma_hat_x - 1) * n3_norm) + 1;
 }
 
-/********************************************************************************************************************
- * @brief Computes the magnetic field after shock crossing.
- * @details Calculates magnetic field based on pressure and energy conservation.
- * @param state Current state of the system
- * @return Magnetic field strength in the shocked region
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossed_B(State const& state) const {
     Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
@@ -266,12 +230,6 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossed_B(State const& state) const {
     return std::sqrt(p3_norm / e_mag_const);
 }
 
-/********************************************************************************************************************
- * @brief Calculates the magnetization parameter of the shell.
- * @details Sigma is defined as (ε/Γmc²) - 1, where ε is the energy per solid angle.
- * @param state Current state of the system
- * @return The magnetization parameter of the shell
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_shell_sigma(State const& state) const {
     return std::max(0.0, state.eps_shell / (Gamma4 * state.m_shell * con::c2) - 1);
@@ -281,7 +239,9 @@ Real FRShockEqn<Ejecta, Medium>::compute_shell_sigma(State const& state) const {
 // Helper functions
 //---------------------------------------------------------------------------------------------------------------------
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Calculates the initial shocked mass m3 at time t0.
  * @details Ensures energy conservation at the initial time.
  * @param eqn The equation system containing medium and ejecta parameters
@@ -289,7 +249,8 @@ Real FRShockEqn<Ejecta, Medium>::compute_shell_sigma(State const& state) const {
  * @param Gamma4 Lorentz factor of the unshocked ejecta
  * @param t0 Initial time
  * @return A tuple containing {crossed, initial_m3} where crossed indicates if shock has crossed
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename Eqn, typename State>
 inline auto solve_init_m3(Eqn const& eqn, State const& state, Real Gamma4, Real t0) {
     Real E_iso = eqn.ejecta.eps_k(eqn.phi, eqn.theta0) * 4 * con::pi;
@@ -326,14 +287,17 @@ inline auto solve_init_m3(Eqn const& eqn, State const& state, Real Gamma4, Real 
     }
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Calculates the comoving shell width at initial radius.
  * @details Accounts for both pure injection phase and shell spreading phase.
  * @param Gamma4 Lorentz factor of the unshocked ejecta
  * @param t0 Initial time
  * @param T Engine duration
  * @return The comoving shell width
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T) {
     Real beta4 = gamma_to_beta(Gamma4);
     if (t0 < T) {  // pure injection
@@ -345,7 +309,9 @@ inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T) {
 }
 // inline Real initShellWidth(Real gamma, Real T, Real r) { return r / gamma / std::sqrt(3); }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Updates the post-shock crossing state at a grid point.
  * @details Stores computed values in the shock object for the given grid indices.
  * @param i Grid index for phi
@@ -354,7 +320,8 @@ inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T) {
  * @param eqn The equation system containing parameters
  * @param state Current state of the system
  * @param shock Shock object to update
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename Eqn, typename State>
 inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, State const& state, Shock& shock) {
     size_t k0 = shock.injection_idx(i, j);
@@ -368,14 +335,17 @@ inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, 
     shock.B(i, j, k) = eqn.compute_crossed_B(state);
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Sets the initial condition for forward shock based on the reverse shock state.
  * @details Used at the crossing point to maintain consistency between forward and reverse shocks.
  * @param eqn_rvs The reverse shock equation system
  * @param state_fwd Forward shock state to initialize
  * @param state_rvs Reverse shock state at crossing
  * @param gamma2 Lorentz factor of region 2 (shocked medium)
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename Eqn, typename FState, typename RState>
 void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState const& state_rvs, Real gamma2) {
     state_fwd.r = state_rvs.r;
@@ -398,7 +368,9 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
     }
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Saves the state of both forward and reverse shocks at a grid point.
  * @details Updates shock properties for both shocks and checks if crossing is complete.
  * @param i Grid index for phi
@@ -410,7 +382,8 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
  * @param shock_fwd Forward shock object to update
  * @param shock_rvs Reverse shock object to update
  * @return True if the shock has crossed and there's no more injection
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename Eqn, typename State>
 bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State const& state, Real t, Shock& shock_fwd,
                            Shock& shock_rvs) {
@@ -430,7 +403,9 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
     return state.m3 >= state.m_shell && !eqn_rvs.is_injecting(t);
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Handles low Gamma scenario by stopping both shocks.
  * @details Sets appropriate values when Lorentz factor drops below threshold.
  * @param i Grid index for phi
@@ -440,7 +415,8 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
  * @param state_fwd Forward shock state
  * @param state_rvs Reverse shock state
  * @return True if stopping condition was applied
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename FState, typename RState>
 bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, FState const& state_fwd,
                          RState const& state_rvs) {
@@ -452,7 +428,9 @@ bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs,
     return false;
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Solves forward/reverse shock until crossing occurs.
  * @details Advances the ODE solver and saves shock states at each time step.
  * @param i Grid index for phi
@@ -464,7 +442,8 @@ bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs,
  * @param shock_fwd Forward shock object
  * @param shock_rvs Reverse shock object
  * @return Index where shock crossing occurs
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename View, typename RState, typename REqn, typename Stepper>
 size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs, REqn& eqn_rvs, RState& state_rvs,
                          Shock& shock_fwd, Shock& shock_rvs) {
@@ -492,7 +471,9 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs
     return k0;
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Solves shock after crossing using the provided update function.
  * @details Advances the ODE solver and saves shock states at each time step.
  * @param i Grid index for phi
@@ -504,7 +485,8 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs
  * @param state Current state
  * @param shock Shock object to update
  * @param update Function to update shock state
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename UpdateFunc, typename Stepper, typename Eqn, typename State, typename View>
 void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& stepper, Eqn& eqn, State& state,
                       Shock& shock, UpdateFunc update) {
@@ -521,7 +503,9 @@ void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& ste
     }
 }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
  * @brief Solves the reverse/forward shock ODE at a grid point.
  * @details Manages the evolution of both shocks before and after crossing.
  * @param i Grid index for phi
@@ -532,7 +516,8 @@ void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& ste
  * @param eqn_fwd Forward shock equation system
  * @param eqn_rvs Reverse shock equation system
  * @param rtol Relative tolerance for ODE solver
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 template <typename FwdEqn, typename RvsEqn, typename View>
 void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, FwdEqn const& eqn_fwd,
                            RvsEqn& eqn_rvs, Real rtol = 1e-6) {
@@ -571,22 +556,9 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
                      save_crossed_RS_state<RvsEqn, typename RvsEqn::State>);
 }
 
-/********************************************************************************************************************
- * @brief Generates a pair of forward and reverse shocks.
- * @details Creates two Shock objects and solves the shock evolution for each grid point.
- * @param coord Coordinate system definition
- * @param medium The medium through which the shock propagates
- * @param jet The jet (ejecta) driving the shock
- * @param eps_e_f Electron energy fraction for forward shock
- * @param eps_B_f Magnetic energy fraction for forward shock
- * @param eps_e_r Electron energy fraction for reverse shock
- * @param eps_B_r Magnetic energy fraction for reverse shock
- * @param rtol Relative tolerance for ODE solver
- * @return A pair of Shock objects {forward_shock, reverse_shock}
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol = 1e-5) {
+                              Real eps_e_r, Real eps_B_r, Real rtol) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = coord.t.shape()[0];
     Shock f_shock(phi_size_needed, theta_size, t_size, eps_e_f, eps_B_f);

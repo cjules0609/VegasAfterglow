@@ -8,13 +8,15 @@
 #pragma once
 #include <limits>
 #include <numeric>
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @namespace con
  * @brief Physical and astronomical constants used throughout the simulation.
  * @details Contains constant definitions used throughout the simulation. These constants define unit
  *          conversions (e.g., seconds, centimeters, grams), physical constants (e.g., speed of light, masses,
  *          Planck's constant), energy units, and cosmological parameters.
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 
 /// Type alias for floating-point precision used throughout the code
 using Real = double;
@@ -25,11 +27,13 @@ constexpr Real operator"" _r(long double x) { return static_cast<Real>(x); }
 /// Literal operator for converting integer literals to Real
 constexpr Real operator"" _r(unsigned long long x) { return static_cast<Real>(x); }
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @namespace unit
  * @brief Unit conversion constants
  * @details Contains physical unit conversion factors normalized to the internal code units
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 namespace unit {
     constexpr Real len = 1.5e13;                         ///< Length unit in cm
     constexpr Real cm = 1 / len;                         ///< Centimeter in code units
@@ -66,11 +70,13 @@ namespace unit {
     constexpr Real Gyr = 1e9 * yr;                       ///< Billion years in code units
 }  // namespace unit
 
-/********************************************************************************************************************
+/**
+ * <!-- ************************************************************************************** -->
  * @namespace con
  * @brief Physical and astronomical constants
  * @details Contains fundamental physical constants and cosmological parameters
- ********************************************************************************************************************/
+ * <!-- ************************************************************************************** -->
+ */
 namespace con {
     constexpr Real c = 1;                                 ///< Speed of light (normalized to 1 in code units)
     constexpr Real c2 = c * c;                            ///< Speed of light squared

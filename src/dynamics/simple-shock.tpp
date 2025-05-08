@@ -6,17 +6,7 @@
 //                            |___/                                            |___/
 
 #include "simple-shock.hpp"
-/********************************************************************************************************************
- * @brief Initializes a SimpleShockEqn object with medium, ejecta, and other parameters.
- * @details Creates a new shock equation object with references to the medium and ejecta
- *          along with the angular coordinates and energy fraction.
- * @param medium The medium through which the shock propagates
- * @param ejecta The ejecta driving the shock
- * @param phi Azimuthal angle
- * @param theta Polar angle
- * @param eps_e Electron energy fraction
- * @param theta_s Critical angle for jet spreading
- ********************************************************************************************************************/
+
 template <typename Ejecta, typename Medium>
 SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta,
                                                Real eps_e, Real theta_s)
@@ -34,13 +24,6 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
     }
 }
 
-/********************************************************************************************************************
- * @brief Computes the derivatives of the state variables with respect to engine time t.
- * @details Implements the system of ODEs for the simple shock model.
- * @param state Current state of the system
- * @param diff Output derivatives to be populated
- * @param t Current time
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) const noexcept {
     Real beta = gamma_to_beta(state.Gamma);
@@ -68,14 +51,6 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
     diff.Gamma = dGamma_dt(dm_dt_swept, state, diff);
 }
 
-/********************************************************************************************************************
- * @brief Computes the derivative of Gamma with respect to engine time t.
- * @details Calculates the rate of change of the Lorentz factor based on swept-up mass and energy injection.
- * @param dm_dt_swept Rate of swept-up mass
- * @param state Current state of the system
- * @param diff Current derivatives
- * @return The time derivative of Gamma
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 Real SimpleShockEqn<Ejecta, Medium>::dGamma_dt(Real dm_dt_swept, State const& state, State const& diff) const noexcept {
     Real m_swept = compute_swept_mass(*this, state);
@@ -101,12 +76,6 @@ Real SimpleShockEqn<Ejecta, Medium>::dGamma_dt(Real dm_dt_swept, State const& st
     return a1 / (m_shell + eps_e * m_swept + 2 * (1 - eps_e) * state.Gamma * m_swept);
 }
 
-/********************************************************************************************************************
- * @brief Initializes the state vector at time t0.
- * @details Sets appropriate initial values based on ejecta and medium properties.
- * @param state State vector to initialize
- * @param t0 Initial time
- ********************************************************************************************************************/
 template <typename Ejecta, typename Medium>
 void SimpleShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
     state.Gamma = ejecta.Gamma0(phi, theta0);

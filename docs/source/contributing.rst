@@ -39,12 +39,13 @@ Coding Standards
 C++ Code
 ^^^^^^^^
 
-* Follow modern C++17 practices
+* Follow modern C++20 practices
 * Use appropriate type safety features
 * Write clear, well-commented code
 * Avoid raw pointers, prefer smart pointers
 * Keep functions small and focused on a single task
 * Use meaningful variable and function names
+* Leverage C++20 features when appropriate (concepts, ranges, etc.)
 
 Python Code
 ^^^^^^^^^^
@@ -53,6 +54,7 @@ Python Code
 * Use type hints for function signatures
 * Keep functions small and focused
 * Document all functions, classes, and modules with docstrings
+* Support Python 3.8 and higher
 
 Documentation Guidelines
 ----------------------
@@ -186,6 +188,16 @@ Pull Request Process
 4. Submit a pull request to the main repository
 5. Your pull request will be reviewed by the maintainers
 
+Issues and Feedback
+-----------------
+
+If you encounter any issues, have questions about the code, or want to request new features:
+
+1. **GitHub Issues** - The most straightforward and fastest way to get help:
+   - Open an issue at https://github.com/YihanWangAstro/VegasAfterglow/issues
+   - You can report bugs, suggest features, or ask questions
+   - This allows other users to see the problem/solution as well
+
 Code of Conduct
 -------------
 
@@ -194,4 +206,4 @@ Please be respectful and considerate of others when contributing to this project
 License
 ------
 
-By contributing to this project, you agree that your contributions will be licensed under the project's MIT License. 
+By contributing to this project, you agree that your contributions will be licensed under the project's BSD-3-Clause License. 

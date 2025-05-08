@@ -11,24 +11,21 @@ VegasAfterglow is a high-performance C++ framework for modeling gamma-ray burst 
 Overview
 --------
 
-VegasAfterglow provides a state-of-the-art computational framework for simulating the multi-wavelength 
-emission from gamma-ray burst (GRB) afterglows. It combines the performance benefits of C++ with the 
-ease of use of Python, making it suitable for both rapid analysis and detailed modeling of complex 
-relativistic outflows and their interaction with the surrounding medium.
+VegasAfterglow is a high-performance C++ framework designed for comprehensive modeling of gamma-ray burst (GRB) afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations. A user-friendly Python wrapper is provided to streamline integration into scientific data analysis workflows.
 
 Key Features
 -----------
 
-* **Multiple Jet Models**: Support for top-hat, Gaussian, and power-law structured jets
-* **Diverse Ambient Media**: Models for uniform ISM and stellar wind environments
-* **Advanced Radiation Processes**: Synchrotron emission and synchrotron self-Compton
-* **Shock Dynamics**: Forward and reverse shock physics with relativistic hydrodynamics
-* **High Performance**: Optimized C++ core for fast computations of afterglow emission
-* **Python Integration**: Intuitive Python API for easy model setup and analysis
-* **Modular Design**: Customizable components for jets, ambient media, and radiation processes
-* **Flexible I/O**: Support for various data formats and visualization tools
-* **Parameter Fitting**: Tools for comparing models with observational data using MCMC methods
-* **Cross-platform**: Works on Linux, macOS, and Windows
+* **Shock Dynamics & Evolution**: Forward and reverse shock modeling with arbitrary magnetization levels; accurate modeling across relativistic and non-relativistic regimes.
+* **Ambient Medium**: Support for uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
+* **Energy and Mass Injection**: Support for user-defined profiles for continuous energy and/or mass injection into the blast wave.
+* **Jet Structure & Geometry**: User-defined angular profiles for energy distribution, initial Lorentz factor, and magnetization; support for off-axis observers at any viewing angle.
+* **Jet Spreading**: Lateral expansion dynamics for realistic jet evolution (experimental).
+* **Non-Axisymmetric Jets**: Modeling of complex, non-axisymmetric jet structures.
+* **Radiation Mechanisms**: Synchrotron radiation, Synchrotron Self-Absorption (SSA), and Inverse Compton (IC) including Synchrotron Self-Compton (SSC) with Klein-Nishina corrections.
+* **High Performance**: Ultra-fast model evaluation, with a 30-point single-frequency light curve (forward shock & synchrotron only) generated in ~0.6 milliseconds on an Apple M2 chip.
+* **Rapid MCMC Exploration**: Parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength in ~10-30 seconds on an 8-core Apple M2 chip.
+* **Cross-platform**: Works on Linux, macOS, and Windows with C++20 compatible compilers.
 
 .. toctree::
    :maxdepth: 2
@@ -39,7 +36,7 @@ Key Features
    python_api
    cpp_api
    examples
-   test_class
+   implementation_docs
    documentation_guide
    contributing
    api/modules
