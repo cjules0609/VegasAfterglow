@@ -8,6 +8,7 @@
 [![License](https://img.shields.io/badge/License-BSD--3--Clause-green.svg)](LICENSE) 
 [![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg)]() 
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/) 
+[![Documentation](https://img.shields.io/badge/Documentation-Online-brightgreen.svg)](https://yihanwangastro.github.io/VegasAfterglow/docs/index.html)
 
 **VegasAfterglow** is a high-performance C++ framework designed for the comprehensive modeling of gamma-ray burst (GRB) afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations. A user-friendly Python wrapper is provided to streamline integration into scientific data analysis workflows.
 
@@ -21,6 +22,7 @@
 - [Performance Highlights](#performance-highlights)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -397,60 +399,27 @@ plot_trace(result.samples, result.labels)
 
 ---
 
-## Advanced Usage: C++ Interface
+## Documentation
 
-<details>
-<summary><b>Creating Custom Problem Generators with C++</b> <i>(for advanced users)</i></summary>
-<br>
+Comprehensive documentation is available at **[Documentation](https://yihanwangastro.github.io/VegasAfterglow/docs/index.html)** including:
 
-After compiling the library, you can create custom applications that use VegasAfterglow's core functionality:
+- **Installation Guide**: Detailed instructions for setting up VegasAfterglow
+- **Examples**: Practical examples showing common use cases
+- **Python API Reference**: Complete documentation of the Python interface
+- **C++ API Reference**: Detailed documentation of C++ classes and functions
+- **Contributing Guide**: Information for developers who wish to contribute
 
-<details>
-<summary><b>Working with the C++ API</b> <i>(click to expand/collapse)</i></summary>
-<br>
-
-To use VegasAfterglow directly from C++, you will typically perform the following steps:
-
-### 1. Include necessary headers
-
-```cpp
-#include "afterglow.h"              // Afterglow models
-```
-
-### 2. Define your problem configuration
-
-```cpp
-// Example configuration code will be added in future documentation
-```
-
-### 3. Compute radiation and create light curves/spectra
-
-```cpp
-// Example light curve calculation code will be added in future documentation
-```
-
-### 4. Building Custom Applications
-
-Compile your C++ application, linking against the VegasAfterglow library you built:
-```bash
-g++ -std=c++17 -I/path/to/VegasAfterglow/include -L/path/to/VegasAfterglow/lib -o my_program my_program.cpp -lvegasafterglow
-```
-Replace `/path/to/VegasAfterglow/` with the actual path to your VegasAfterglow installation.
-
-### 5. Example Problem Generators
-
-The repository includes several example problem generators in the `tests/demo/` directory that demonstrate different use cases. These are the best resources for understanding direct C++ API usage.
-</details>
-</details>
+The documentation is regularly updated with the latest features and improvements.
 
 ---
+
 
 ## Contributing
 
 If you encounter any issues, have questions about the code, or want to request new features:
 
 1. **GitHub Issues** - The most straightforward and fastest way to get help:
-   - Open an issue at [https://github.com/YihanWangAstro/VegasAfterglow/issues](https://github.com/YihanWangAstro/VegasAfterglow/issues)
+   - Open an issue at [Issues](https://github.com/YihanWangAstro/VegasAfterglow/issues)
    - You can report bugs, suggest features, or ask questions
    - This allows other users to see the problem/solution as well
    - Can be done anonymously if preferred
@@ -467,6 +436,20 @@ We value all contributions and aim to respond to issues promptly.
 ## License
 
 VegasAfterglow is released under the **BSD-3-Clause License**.
+
+The BSD 3-Clause License is a permissive open source license that allows you to:
+
+- Freely use, modify, and distribute the software in source and binary forms
+- Use the software for commercial purposes
+- Integrate the software into proprietary applications
+
+**Requirements:**
+- You must include the original copyright notice and the license text
+- You cannot use the names of the authors or contributors to endorse derived products
+- The license provides no warranty or liability protection
+
+For the full license text, see the [LICENSE](LICENSE) file in the repository.
+
 
 ---
 

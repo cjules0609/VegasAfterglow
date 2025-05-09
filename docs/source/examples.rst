@@ -295,15 +295,12 @@ Parameter Study
 Sample Scripts
 --------------
 
-The repository includes several example scripts in the ``scripts`` directory:
+The repository includes several example scripts in the ``script`` directory:
 
-1. **Basic light curve fitting**: ``scripts/fit_lc.py``
-2. **MCMC parameter estimation**: ``scripts/mcmc.py``
-3. **Structured jet modeling**: ``scripts/structured_jet.py``
-4. **Kilonova afterglow**: ``scripts/kilonova.py``
+1. **MCMC parameter estimation**: ``script/mcmc.py``
 
 You can run these examples directly:
 
 .. code-block:: bash
 
-    python scripts/structured_jet.py 
+    python script/mcmc.py 

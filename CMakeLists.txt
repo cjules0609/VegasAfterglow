@@ -16,8 +16,8 @@ add_compile_definitions(
   NO_XTENSOR_IO
 )
 
+find_package(Python REQUIRED COMPONENTS Interpreter Development NumPy)
 find_package(pybind11 CONFIG REQUIRED)
-
 
 file(GLOB_RECURSE ALL_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/pybind/*.cpp"
@@ -25,6 +25,8 @@ file(GLOB_RECURSE ALL_SOURCES
 )
 
 pybind11_add_module(VegasAfterglowC ${ALL_SOURCES})
+
+target_link_libraries(VegasAfterglowC PUBLIC pybind11::module Python::NumPy)
 
 target_include_directories(VegasAfterglowC PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"

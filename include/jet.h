@@ -21,6 +21,24 @@
  */
 class Ejecta {
    public:
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
+     * @param eps_k Energy per unit solid angle as a function of (phi, theta)
+     * @param Gamma0 Lorentz factor as a function of (phi, theta)
+     * @param sigma0 Magnetization parameter as a function of (phi, theta)
+     * @param deps_dt Energy injection rate per solid angle as a function of (phi, theta, t)
+     * @param dm_dt Mass injection rate per unit solid angle as a function of (phi, theta, t)
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
+     * <!-- ************************************************************************************** -->
+     */
+    Ejecta(BinaryFunc eps_k, BinaryFunc Gamma0, BinaryFunc sigma0 = func::zero_2d, TernaryFunc deps_dt = func::zero_3d,
+           TernaryFunc dm_dt = func::zero_3d, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : eps_k(eps_k), Gamma0(Gamma0), sigma0(sigma0), deps_dt(deps_dt), dm_dt(dm_dt), T0(T0), spreading(spreading) {}
+
+    Ejecta() = default;
+
     /// Initial energy per unit solid angle as a function of (phi, theta)
     BinaryFunc eps_k{func::zero_2d};
 
@@ -62,10 +80,12 @@ class TophatJet {
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
-        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    TophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), T0(T0), spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -87,10 +107,8 @@ class TophatJet {
      */
     inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
-    /// Duration of the ejecta in seconds
-    Real T0{1 * unit::sec};
-    /// Flag indicating if the ejecta spreads laterally during evolution
-    bool spreading{false};
+    Real T0{1 * unit::sec};  ///< Duration of the ejecta in seconds
+    bool spreading{false};   ///< Flag indicating if the ejecta spreads laterally during evolution
 
    private:
     Real const theta_c_{0};  ///< Core angle of the jet
@@ -114,10 +132,16 @@ class GaussianJet {
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
-        : norm_(-1 / (2 * theta_c * theta_c)), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    GaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : norm_(-1 / (2 * theta_c * theta_c)),
+          eps_k_(E_iso / (4 * con::pi)),
+          Gamma0_(Gamma0),
+          T0(T0),
+          spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -167,10 +191,12 @@ class PowerLawJet {
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
      * @param k Power-law index
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
-        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
+    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k), T0(T0), spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->

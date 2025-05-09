@@ -59,7 +59,11 @@ Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     return Y0;
 }
 
-Real ICPhoton::I_nu(Real nu) const { return eq_space_loglog_interp(nu, this->nu_IC_, this->j_nu_, true, true); }
+Real ICPhoton::compute_I_nu(Real nu) const { return eq_space_loglog_interp(nu, this->nu_IC_, this->j_nu_, true, true); }
+
+Real ICPhoton::compute_log2_I_nu(Real log2_nu) const {
+    return 0;  // TODO
+}
 
 Real compton_sigma(Real nu) {
     Real x = con::h * nu / (con::me * con::c2);

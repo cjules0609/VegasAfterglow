@@ -97,7 +97,16 @@ struct ICPhoton {
      * @return The intensity at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real I_nu(Real nu) const;
+    Real compute_I_nu(Real nu) const;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Computes the base-2 logarithm of the synchrotron intensity at a given frequency.
+     * @param log2_nu The base-2 logarithm of the frequency
+     * @return The base-2 logarithm of the synchrotron intensity at the given frequency
+     * <!-- ************************************************************************************** -->
+     */
+    Real compute_log2_I_nu(Real log2_nu) const;
 
     /**
      * <!-- ************************************************************************************** -->

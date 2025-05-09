@@ -17,6 +17,17 @@
  */
 class Medium {
    public:
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Constructor: Initialize with density function and mass function
+     * @param rho Density function
+     * @param mass Mass function
+     * <!-- ************************************************************************************** -->
+     */
+    Medium(TernaryFunc rho, TernaryFunc mass) noexcept : rho(rho), mass(mass) {}
+
+    Medium() = default;
+
     /// Density function that returns the mass density at a given position (phi, theta, r)
     /// The function is initialized to zero by default
     TernaryFunc rho{func::zero_3d};

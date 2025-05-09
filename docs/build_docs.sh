@@ -27,22 +27,8 @@ ls -la doxygen/xml/class_gaussian_jet.xml || echo "GaussianJet XML missing!"
 ls -la doxygen/xml/class_tophat_jet.xml || echo "TophatJet XML missing!"
 
 # Create a simple custom CSS file
-cat > source/_static/css/custom.css << EOF
-/* Basic styling for C++ documentation */
-dl.cpp.function {
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #f7f7f7;
-}
-
-dl.cpp.class {
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #eee;
-    border-radius: 5px;
-}
-EOF
+#cat > source/_static/css/custom.css << EOF
+#EOF
 
 echo "=== Building Sphinx documentation ==="
 sphinx-build -b html source build/html

@@ -12,6 +12,8 @@
 #include <iostream>
 #include <numeric>
 
+#include "pybind.h"
+
 template <typename Array>
 void sort_synchronized(Array& a, Array& b, Array& c) {
     std::size_t N = a.size();
@@ -67,14 +69,14 @@ double MultiBandData::estimate_chi2() const {
     return chi_square;
 }
 
-void MultiBandData::add_light_curve(double nu, List const& t, List const& Fv_obs, List const& Fv_err) {
+void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err) {
     assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
     LightCurveData data;
 
     data.nu = nu * unit::Hz;
-    data.t = xt::eval(xt::adapt(t));
-    data.Fv_obs = xt::eval(xt::adapt(Fv_obs));
-    data.Fv_err = xt::eval(xt::adapt(Fv_err));
+    data.t = t;
+    data.Fv_obs = Fv_obs;
+    data.Fv_err = Fv_err;
     data.Fv_model = xt::zeros_like(data.Fv_obs);
 
     sort_synchronized(data.t, data.Fv_obs, data.Fv_err);
@@ -92,14 +94,14 @@ void MultiBandData::add_light_curve(double nu, List const& t, List const& Fv_obs
     light_curve.push_back(std::move(data));
 }
 
-void MultiBandData::add_spectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err) {
+void MultiBandData::add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err) {
     assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
     SpectrumData data;
 
     data.t = t * unit::sec;
-    data.nu = xt::eval(xt::adapt(nu));
-    data.Fv_obs = xt::eval(xt::adapt(Fv_obs));
-    data.Fv_err = xt::eval(xt::adapt(Fv_err));
+    data.nu = nu;
+    data.Fv_obs = Fv_obs;
+    data.Fv_err = Fv_err;
 
     sort_synchronized(data.nu, data.Fv_obs, data.Fv_err);
 
@@ -226,43 +228,33 @@ double MultiBandModel::estimate_chi2(Params const& param) {
     return obs_data.estimate_chi2();
 }
 
-std::vector<std::vector<double>> convert_to_std_vector(MeshGrid const& grid) {
-    std::vector<std::vector<double>> out;
-    out.reserve(grid.shape()[0]);
-
-    for (size_t i = 0; i < grid.shape()[0]; ++i) {
-        std::vector<double> row;
-        row.reserve(grid.shape()[1]);
-        for (size_t j = 0; j < grid.shape()[1]; ++j) {
-            row.push_back(grid(i, j) / unit::flux_den_cgs);
-        }
-        out.push_back(std::move(row));
-    }
-    return out;
-}
-
-auto MultiBandModel::light_curves(Params const& param, List const& t, List const& nu) -> Grid {
+auto MultiBandModel::light_curves(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
     Observer obs;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
 
-    Array t_bins = xt::adapt(t) * unit::sec;
+    Array t_bins = t * unit::sec;
+
     build_system(param, t_bins, obs, electrons, photons);
-    auto nu_bins = xt::adapt(nu) * unit::Hz;
+    Array nu_bins = nu * unit::Hz;
     auto F_nu = obs.specific_flux(t_bins, nu_bins, photons);
 
-    return convert_to_std_vector(F_nu);
+    // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
+    pybind11::gil_scoped_acquire acquire;
+    return F_nu / unit::flux_den_cgs;
 }
 
-auto MultiBandModel::spectra(Params const& param, List const& nu, List const& t) -> Grid {
+auto MultiBandModel::spectra(Params const& param, PyArray const& nu, PyArray const& t) -> PyGrid {
     Observer obs;
     SynElectronGrid electrons;
     SynPhotonGrid photons;
 
-    Array t_bins = xt::adapt(t) * unit::sec;
+    Array t_bins = t * unit::sec;
     build_system(param, t_bins, obs, electrons, photons);
-    auto nu_bins = xt::adapt(nu) * unit::Hz;
+    Array nu_bins = nu * unit::Hz;
     auto F_nu = obs.spectra(nu_bins, t_bins, photons);
 
-    return convert_to_std_vector(F_nu);
+    // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
+    pybind11::gil_scoped_acquire acquire;
+    return F_nu / unit::flux_den_cgs;
 }

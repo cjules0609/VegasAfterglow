@@ -5,13 +5,62 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#define FORCE_IMPORT_ARRAY  // numpy C api loading, must before any xtensor-python headers
+#include "pybind.h"
 
 #include "mcmc.h"
+#include "pymodel.h"
 
-namespace py = pybind11;
 PYBIND11_MODULE(VegasAfterglowC, m) {
+    xt::import_numpy();
+    // Jet bindings
+    py::object zero2d_fn = py::cpp_function(func::zero_2d);
+    py::object zero3d_fn = py::cpp_function(func::zero_3d);
+
+    //========================================================================================================
+    //                                 Model bindings
+    //========================================================================================================
+    m.def("TophatJet", &PyTophatJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+
+    m.def("GaussianJet", &PyGaussianJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+
+    m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+
+    py::class_<Ejecta>(m, "Ejecta")
+        .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("eps_k"),
+             py::arg("Gamma0"), py::arg("sigma0") = zero2d_fn, py::arg("deps_dt") = zero3d_fn,
+             py::arg("dm_dt") = zero3d_fn, py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+
+    // Medium bindings
+    m.def("ISM", &PyISM, py::arg("n_ism"));
+
+    m.def("Wind", &PyWind, py::arg("A_star"));
+
+    py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc, TernaryFunc>(), py::arg("rho"), py::arg("mass"));
+
+    // Observer bindings
+    py::class_<PyObserver>(m, "Observer")
+        .def(py::init<Real, Real, Real, Real>(), py::arg("lumi_dist"), py::arg("z"), py::arg("theta_obs"),
+             py::arg("phi_obs") = 0);
+
+    // Radiation bindings
+    py::class_<PyRadiation>(m, "Radiation")
+        .def(py::init<Real, Real, Real, Real, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
+             py::arg("xi_e") = 1, py::arg("SSC") = false, py::arg("Klein_Nishina") = true);
+
+    // Model bindings
+    py::class_<PyModel>(m, "Model")
+        .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>>(), py::arg("jet"),
+             py::arg("medium"), py::arg("observer"), py::arg("forward_rad"), py::arg("reverse_rad") = py::none())
+        .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
+        .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));
+
+    //========================================================================================================
+    //                                 MCMC bindings
+    //========================================================================================================
     // Parameters for MCMC modeling
     py::class_<Params>(m, "ModelParams")
         .def(py::init<>())

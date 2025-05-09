@@ -13,6 +13,7 @@
 #include "afterglow.h"
 #include "macros.h"
 #include "mesh.h"
+#include "pybind.h"
 #include "utilities.h"
 struct LightCurveData {
     double nu{0};
@@ -35,14 +36,13 @@ struct SpectrumData {
 };
 
 struct MultiBandData {
-    using List = std::vector<double>;
-
     std::vector<LightCurveData> light_curve;
     std::vector<SpectrumData> spectrum;
 
     double estimate_chi2() const;
-    void add_light_curve(double nu, List const& t, List const& Fv_obs, List const& Fv_err);
-    void add_spectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err);
+
+    void add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err);
+    void add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err);
 };
 
 struct Params {
@@ -72,23 +72,18 @@ struct ConfigParams {
 };
 
 struct MultiBandModel {
-    using List = std::vector<double>;
-    using Grid = std::vector<std::vector<double>>;
     MultiBandModel() = delete;
     MultiBandModel(MultiBandData const& data);
 
     void configure(ConfigParams const& param);
     double estimate_chi2(Params const& param);
-    Grid light_curves(Params const& param, List const& t, List const& nu);
-    Grid spectra(Params const& param, List const& nu, List const& t);
+    PyGrid light_curves(Params const& param, PyArray const& t, PyArray const& nu);
+    PyGrid spectra(Params const& param, PyArray const& nu, PyArray const& t);
 
    private:
     void build_system(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
                       SynPhotonGrid& photons);
     MultiBandData obs_data;
     ConfigParams config;
-    // SynElectronGrid electrons;
-    // SynPhotonGrid photons;
-    // Observer obs;
     Array t_eval;
 };
