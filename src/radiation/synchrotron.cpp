@@ -755,7 +755,7 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
                 e.gamma_m = compute_syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
-                if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
+                /*if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
                     f = std::min(fast_pow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
                     e.gamma_m = gamma_syn_limit;
                 }

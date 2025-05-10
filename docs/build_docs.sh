@@ -10,7 +10,12 @@ rm -rf doxygen build
 
 # Create directory structure
 mkdir -p source/_static/css
+mkdir -p source/_static/images
 mkdir -p doxygen
+
+echo "=== Copying assets for documentation ==="
+# Copy images from assets directory
+cp -v "$PROJECT_ROOT/assets/"*.png source/_static/images/
 
 echo "=== Running Doxygen to generate XML for Breathe ==="
 doxygen Doxyfile

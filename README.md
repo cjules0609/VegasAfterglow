@@ -165,13 +165,139 @@ The following development tools are required:
 
 ## Usage
 
+### Quick Start
+
+We provide a basic example notebook (`script/quick.ipynb`) that demonstrates how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data.
+
+The example below walks through the main components needed to model a GRB afterglow, from setting up the physical parameters to producing light curves and spectra.
+
+<details>
+<summary><b>Model Setup</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+First, let's set up the physical components of our afterglow model, including the environment, jet, observer, and radiation parameters:
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from VegasAfterglow import ISM, TophatJet, Observer, Radiation, Model
+
+# 1. Define the circumburst environment (constant density ISM)
+medium = ISM(n_ism=1)
+
+# 2. Configure the jet structure (top-hat with opening angle, energy, and Lorentz factor)
+jet = TophatJet(theta_c=0.1, E_iso=1e52, Gamma0=300)
+
+# 3. Set observer parameters (distance, redshift, viewing angle)
+obs = Observer(lumi_dist=1e26, z=0.1, theta_obs=0)
+
+# 4. Define radiation microphysics parameters
+rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
+
+# 5. Combine all components into a complete afterglow model
+model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad)
+```
+</details>
+
+<details>
+<summary><b>Light Curve Calculation</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+Now, let's compute and plot multi-wavelength light curves to see how the afterglow evolves over time:
+
+```python
+# 1. Create logarithmic time array from 10² to 10⁸ seconds (100s to ~3yrs)
+times = np.logspace(2, 8, 200)  
+
+# 2. Define observing frequencies (radio, optical, X-ray bands in Hz)
+bands = np.array([1e9, 1e14, 1e17])  
+
+# 3. Calculate the afterglow emission at each time and frequency
+results = model.specific_flux(times, bands)
+
+# 4. Visualize the multi-wavelength light curves
+plt.figure(figsize=(4.8, 3.6),dpi=200)
+
+# 5. Plot each frequency band 
+for i, nu in enumerate(bands):
+    exp = int(np.floor(np.log10(nu)))
+    base = nu / 10**exp
+    plt.loglog(times, results['syn'][i,:], label=fr'${base:.1f} \times 10^{{{exp}}}$ Hz')
+
+def add_note(plt):
+    plt.annotate('jet break',xy=(3e4, 1e-26), xytext=(3e3, 5e-28), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu_m=\nu_a$',xy=(3e5, 3e-25), xytext=(5.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu=\nu_m$',xy=(6e5, 1e-25), xytext=(5.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu=\nu_a$',xy=(4e6, 6e-26), xytext=(5e6, 1e-24), arrowprops=dict(arrowstyle='->'))
+
+add_note(plt)   
+plt.xlabel('Time (s)')
+plt.ylabel('Flux Density (erg/cm²/s/Hz)')
+plt.legend()
+plt.title('Light Curves')
+plt.savefig('assets/quick-lc.png',dpi=300)
+```
+
+<div align="center">
+<img src="assets/quick-lc.png" alt="Afterglow Light Curves" width="600"/>
+
+Running the light curve script will produce this figure showing the afterglow evolution across different frequencies.
+</div>
+</details>
+
+<details>
+<summary><b>Spectral Analysis</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+We can also examine how the broadband spectrum evolves at different times after the burst:
+
+```python
+# 1. Define broad frequency range (10⁵ to 10²² Hz) 
+frequencies = np.logspace(5, 22, 200)  
+
+# 2. Select specific time epochs for spectral snapshots 
+epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
+
+# 3. Calculate spectra at each epoch
+results = model.spectra(frequencies, epochs)
+
+
+# 4. Plot broadband spectra at each epoch
+plt.figure(figsize=(4.8, 3.6),dpi=200)
+colors = plt.cm.viridis(np.linspace(0,1,len(epochs)))
+
+for i, t in enumerate(epochs):
+    exp = int(np.floor(np.log10(t)))
+    base = t / 10**exp
+    plt.loglog(frequencies, results['syn'][i,:], color=colors[i], label=fr'${base:.1f} \times 10^{{{exp}}}$ s')
+
+# 5. Add vertical lines marking the bands from the light curve plot
+for i, band in enumerate(bands):
+    exp = int(np.floor(np.log10(band)))
+    base = band / 10**exp
+    plt.axvline(band,ls='--',color='C'+str(i))
+
+plt.xlabel('frequency (Hz)')
+plt.ylabel('flux density (erg/cm²/s/Hz)')
+plt.legend(ncol=2)
+plt.title('Synchrotron Spectra')
+plt.savefig('assets/quick-spec.png',dpi=300)
+```
+
+<div align="center">
+<img src="assets/quick-spec.png" alt="Broadband Spectra" width="600"/>
+
+The spectral analysis code will generate this visualization showing spectra at different times, with vertical lines indicating the frequencies calculated in the light curve example.
+</div>
+</details>
+
+These examples demonstrate the core functionality of VegasAfterglow for modeling GRB afterglows. The code is designed to be highly efficient, allowing for rapid exploration of parameter space and comparison with observational data.
+
+### MCMC Parameter Fitting
+
 We provide an example MCMC notebook (`script/mcmc.ipynb`) for fitting afterglow light curves and spectra to user-provided data. To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
 
 The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
-
-### MCMC Parameter Fitting with VegasAfterglow
-
-This section shows how to use the MCMC module to explore parameter space and determine posterior distributions for GRB afterglow models.
 
 <details>
 <summary><b>1. Preparing Data and Configuring the Model</b> <i>(click to expand/collapse)</i></summary>
@@ -412,7 +538,6 @@ Comprehensive documentation is available at **[Documentation](https://yihanwanga
 The documentation is regularly updated with the latest features and improvements.
 
 ---
-
 
 ## Contributing
 

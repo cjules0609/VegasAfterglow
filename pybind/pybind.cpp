@@ -53,8 +53,11 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     // Model bindings
     py::class_<PyModel>(m, "Model")
-        .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>>(), py::arg("jet"),
-             py::arg("medium"), py::arg("observer"), py::arg("forward_rad"), py::arg("reverse_rad") = py::none())
+        .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>,
+                      std::tuple<size_t, size_t, size_t>, Real>(),
+             py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
+             py::arg("reverse_rad") = py::none(), py::arg("grid_size") = std::make_tuple(64, 64, 64),
+             py::arg("rtol") = 1e-5)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
         .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));
 

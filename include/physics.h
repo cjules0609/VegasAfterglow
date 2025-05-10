@@ -270,9 +270,12 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     coord.theta_view = theta_view;
     coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
     Real jet_edge = find_jet_edge(jet, con::Gamma_cut);  // Determine the jet edge angle.
+    Real theta_min = 0;
+    Real theta_max = std::min(jet_edge, theta_cut);
     // Array theta = uniform_cos(0, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly in
     // cosine.
-    coord.theta = xt::linspace(1e-4_r, std::min(jet_edge, theta_cut), theta_num);  // Generate theta grid uniformly
+    coord.theta = xt::linspace(theta_min, theta_max, theta_num);  // Generate theta grid uniformly
+    // coord.theta = xt::acos(xt::linspace(std::cos(theta_max), std::cos(theta_min), theta_num));
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
