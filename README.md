@@ -167,7 +167,9 @@ The following development tools are required:
 
 ### Quick Start
 
-We provide a basic example notebook (`script/quick.ipynb`) that demonstrates how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data.
+We provide a basic example notebook (`script/quick.ipynb`) that demonstrates how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
+
+To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original. 
 
 The example below walks through the main components needed to model a GRB afterglow, from setting up the physical parameters to producing light curves and spectra.
 
@@ -295,15 +297,17 @@ These examples demonstrate the core functionality of VegasAfterglow for modeling
 
 ### MCMC Parameter Fitting
 
-We provide an example MCMC notebook (`script/mcmc.ipynb`) for fitting afterglow light curves and spectra to user-provided data. To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
-
-The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
+We provide an example MCMC notebook (`script/mcmc.ipynb`) for fitting afterglow light curves and spectra to user-provided data. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
 
 <details>
 <summary><b>1. Preparing Data and Configuring the Model</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
 ```python
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import corner
 from VegasAfterglow import ObsData, Setups, Fitter, ParamDef, Scale
 ```
 
@@ -330,19 +334,19 @@ data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spe
 
 ```python
 # Method 2: Load from CSV files
-import pandas as pd
 
+data = ObsData()
 # Define your bands and files
-bands = [2.4e17, 4.84e14]  # Example: X-ray, optical R-band
-lc_files = ["data/ep.csv", "data/r.csv"]
+bands = [2.4e17, 4.84e14, 1.4e14]  # Example: X-ray, optical R-band
+lc_files = ["data/ep.csv", "data/r.csv", "data/vt-r.csv"]
 
 # Load light curves from files
 for nu, fname in zip(bands, lc_files):
     df = pd.read_csv(fname)
     data.add_light_curve(nu_cgs=nu, t_cgs=df["t"], Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
 
-times = [3000,6000] # Example: time in seconds
-spec_files = ["data/spec_1.csv", "data/spec_2.csv"]
+times = [3000] # Example: time in seconds
+spec_files = ["data/ep-spec.csv"]
 
 # Load spectra from files
 for t, fname in zip(times, spec_files):
@@ -422,16 +426,16 @@ result = fitter.fit(
 ```
 
 The `result` object contains:
-- `samples`: The MCMC chain samples (posterior distribution)
-- `labels`: Parameter names
-- `best_params`: Maximum likelihood parameter values
+    - `samples`: The MCMC chain samples (posterior distribution)
+    - `labels`: Parameter names
+    - `best_params`: Maximum likelihood parameter values
 </details>
 
 <details>
 <summary><b>3. Analyzing Results and Generating Predictions</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-Examine the posterior distribution to understand parameter constraints:
+Check the best-fit parameters and their uncertainties:
 
 ```python
 # Print best-fit parameters (maximum likelihood)
@@ -450,12 +454,12 @@ for i, name in enumerate(result.labels):
     print(f"  {name}: {medians[i]:.4f} (+{upper[i]-medians[i]:.4f}, -{medians[i]-lower[i]:.4f})")
 ```
 
-Use samples from the posterior to generate model predictions with uncertainties:
+Use the best-fit parameters to generate model predictions
 
 ```python
 # Define time and frequency ranges for predictions
 t_out = np.logspace(2, 9, 150)
-bands = [2.4e17, 4.84e14] 
+bands = [2.4e17, 4.84e14, 1.4e14] 
 
 # Generate light curves with the best-fit model
 lc_best = fitter.light_curves(result.best_params, t_out, bands)
@@ -464,15 +468,47 @@ nu_out = np.logspace(6, 20, 150)
 times = [3000]
 # Generate model spectra at the specified times using the best-fit parameters
 spec_best = fitter.spectra(result.best_params, nu_out, times)
+```
 
-# Now you can plot the best-fit model and the uncertainty envelope
+Now you can plot the best-fit model:
+
+```python
+def draw_bestfit(t, lc_fit, nu, spec_fit):
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4.5, 7.5))
+    
+    # Plot light curves
+    shifts = [1, 1, 200]
+    colors = ['blue', 'orange', 'green']
+    
+    for i in range(len(lc_files)):
+        df = pd.read_csv(lc_files[i])
+        ax1.errorbar(df["t"], df["Fv_obs"] * shifts[i], df["Fv_err"] * shifts[i], 
+                    fmt='o', color=colors[i], label=lc_files[i])
+        ax1.plot(t, np.array(lc_fit[i]) * shifts[i], color=colors[i], lw=1)
+
+    # Plot spectra
+    for i in range(len(spec_files)):
+        df = pd.read_csv(spec_files[i])
+        ax2.errorbar(df["nu"], df["Fv_obs"] * shifts[i], df["Fv_err"] * shifts[i], 
+                    fmt='o', color=colors[i], label=spec_files[i])
+        ax2.plot(nu, np.array(spec_fit[0]) * shifts[i], color=colors[i], lw=1)
+
+    # Configure axes
+    for ax, xlabel, ylabel in [(ax1, 't [s]', r'$F_\nu$ [erg/cm$^2$/s/Hz]'),
+                              (ax2, r'$\nu$ [Hz]', r'$F_\nu$ [erg/cm$^2$/s/Hz]')]:
+        ax.set_xscale('log'); ax.set_yscale('log')
+        ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
+        ax.legend()
+
+    plt.tight_layout()
+
+draw_bestfit(t_out, lc_best, nu_out, spec_best)
 ```
 
 Corner plots are essential for visualizing parameter correlations and posterior distributions:
 
 ```python
-import corner
-
 def plot_corner(flat_chain, labels, filename="corner_plot.png"):
     fig = corner.corner(
         flat_chain,
@@ -484,6 +520,7 @@ def plot_corner(flat_chain, labels, filename="corner_plot.png"):
         truths=np.median(flat_chain, axis=0),  # Show median values
         truth_color='red',
         bins=30,
+        smooth=1,
         fill_contours=True,
         levels=[0.16, 0.5, 0.68],  # 1σ and 2σ contours
         color='k'
@@ -494,33 +531,6 @@ def plot_corner(flat_chain, labels, filename="corner_plot.png"):
 flat_chain = result.samples.reshape(-1, result.samples.shape[-1])
 plot_corner(flat_chain, result.labels)
 ```
-
-Trace plots help verify MCMC convergence:
-
-```python
-def plot_trace(chain, labels, filename="trace_plot.png"):
-    nsteps, nwalkers, ndim = chain.shape
-    fig, axes = plt.subplots(ndim, figsize=(10, 2.5 * ndim), sharex=True)
-
-    for i in range(ndim):
-        for j in range(nwalkers):
-            axes[i].plot(chain[:, j, i], alpha=0.5, lw=0.5)
-        axes[i].set_ylabel(labels[i])
-        
-    axes[-1].set_xlabel("Step")
-    plt.tight_layout()
-    plt.savefig(filename, dpi=300)
-
-# Create the trace plot
-plot_trace(result.samples, result.labels)
-```
-
-**Best Practices for Posterior Exploration:**
-1. **Prior Ranges**: Set physically meaningful prior ranges based on theoretical constraints
-2. **Convergence Testing**: Check convergence using trace plots and autocorrelation metrics
-3. **Parameter Correlations**: Use corner plots to identify degeneracies and correlations
-4. **Model Comparison**: Compare different physical models (e.g., wind vs. ISM)
-5. **Physical Interpretation**: Connect parameter constraints with physical processes in GRB afterglows
 </details>
 
 ---
