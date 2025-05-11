@@ -599,36 +599,28 @@ Real compute_gamma_c(Real t_com, Real B, InverseComptonY const& Ys, Real p) {
  * @param I_syn_peak Peak synchrotron intensity
  * @param gamma_m Minimum electron Lorentz factor
  * @param gamma_c Cooling electron Lorentz factor
+ * @param p Power-law index of electron distribution
  * @return Self-absorption Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c) {
+Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Real p) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
     Real nu_peak = compute_syn_freq(gamma_peak, B);
-    Real ad_idx = adiabatic_idx(Gamma_rel);
 
-    Real kT = (gamma_peak - 1) * (con::me * con::c2) * (ad_idx - 1);
-    // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3)
+    Real kT = (gamma_peak - 1) * (con::me * con::c2) * 2. / 3;
+    // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3) // first assume nu_a is in the 1/3 segment
     Real nu_a = fast_pow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
 
-    // nu_peak is not real peak, peak at nu_a; kT = (gamma_a-1) * me *c^2*(ad_idx-1), I_syn = I_peak;
     // strong absorption
-    if (nu_a > nu_peak) {
-        nu_a = fast_pow(
-            I_syn_peak / (2 * con::me * (ad_idx - 1) * std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B)),
-            0.4);
-        /* Real gamma_a = syn_gamma(nu_a, B);
-        if (gamma_a > 10) {
-            return gamma_a;
-        } else {
-            double nu_max = syn_nu(10, B);
-            double nu_min = syn_nu(1, B);
-            Real C0 = std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B);
-            Real C1 = I_syn_peak / (2 * con::me * (ad_idx - 1));
-            nu_a = rootBisection([=](Real x) -> Real { return C0 * x * x * x * x * x - x * x * x * x - C1; },
-                                 std::sqrt(nu_min), std::sqrt(nu_max), 1e-3);
-            nu_a *= nu_a;
-        }*/
+    if (nu_a > nu_peak) {  // nu_a is not in the 1/3 segment
+        Real nu_c = compute_syn_freq(gamma_c, B);
+        Real factor = I_syn_peak / (4. / 3 * con::me * std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B));
+        if (nu_a < nu_c) {  // medium absorption, nu_a is in the -(p-1)/2 segment
+            Real nu_m = compute_syn_freq(gamma_m, B);
+            nu_a = fast_pow(factor, 2 / (p + 4)) * fast_pow(nu_m, (p - 1) / (p + 4));
+        } else {  // strong absorption, electron pile-up, nu_a reaches I_syn_peak
+            nu_a = fast_pow(factor, 0.4);
+        }
     }
     return compute_syn_gamma(nu_a, B) + 1;
 }
@@ -677,7 +669,7 @@ void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
                     electron.gamma_M = electron.gamma_c;
                 }
                 electron.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c);
+                    compute_syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c, p);
                 electron.regime = determine_regime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
                 electron.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, electron.gamma_c, p);
             }
@@ -722,7 +714,7 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
                     e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
-                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
+                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c, p);
                 e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
                 e.p = p;
             }
@@ -767,7 +759,7 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
                     e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
                     e.gamma_M = e.gamma_c;
                 }
-                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c);
+                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c, p);
                 e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
                 e.p = p;
             }
