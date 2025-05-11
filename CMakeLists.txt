@@ -16,7 +16,7 @@ add_compile_definitions(
   NO_XTENSOR_IO
 )
 
-find_package(Python REQUIRED COMPONENTS Interpreter Development NumPy)
+find_package(Python COMPONENTS Interpreter Development.Module NumPy REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
 file(GLOB_RECURSE ALL_SOURCES
