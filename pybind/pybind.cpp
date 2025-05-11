@@ -53,10 +53,10 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     // Model bindings
     py::class_<PyModel>(m, "Model")
-        .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>,
-                      std::tuple<size_t, size_t, size_t>, Real>(),
+        .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
+                      Real>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
-             py::arg("reverse_rad") = py::none(), py::arg("grid_size") = std::make_tuple(64, 64, 64),
+             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.25, 1., 3.),
              py::arg("rtol") = 1e-5)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
         .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));
@@ -94,14 +94,14 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("z", &ConfigParams::z)
         .def_readwrite("medium", &ConfigParams::medium)
         .def_readwrite("jet", &ConfigParams::jet)
-        .def_readwrite("t_grid", &ConfigParams::t_grid)
-        .def_readwrite("phi_grid", &ConfigParams::phi_grid)
-        .def_readwrite("theta_grid", &ConfigParams::theta_grid)
+        .def_readwrite("t_resol", &ConfigParams::t_resol)
+        .def_readwrite("phi_resol", &ConfigParams::phi_resol)
+        .def_readwrite("theta_resol", &ConfigParams::theta_resol)
         .def_readwrite("rtol", &ConfigParams::rtol)
         .def("__repr__", [](const ConfigParams &c) {
             return "<ConfigParams lumi_dist=" + std::to_string(c.lumi_dist) + ", z=" + std::to_string(c.z) +
-                   ", medium='" + c.medium + "', jet='" + c.jet + "', t_grid_num=" + std::to_string(c.t_grid) +
-                   ", phi_grid_num=" + std::to_string(c.phi_grid) + ", theta_grid_num=" + std::to_string(c.theta_grid) +
+                   ", medium='" + c.medium + "', jet='" + c.jet + "', t_resol=" + std::to_string(c.t_resol) +
+                   ", phi_resol=" + std::to_string(c.phi_resol) + ", theta_resol=" + std::to_string(c.theta_resol) +
                    ", rtol=" + std::to_string(c.rtol) + ">";
         });
 

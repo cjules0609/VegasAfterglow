@@ -2,12 +2,12 @@
 
 <img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="270"/>
 
-[![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20) 
-[![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/) 
-[![Build Status](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml/badge.svg)](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml) 
-[![License](https://img.shields.io/badge/License-BSD--3--Clause-green.svg)](LICENSE) 
-[![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg)]() 
-[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/) 
+[![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/)
+[![Build Status](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml/badge.svg)](https://github.com/YihanWangAstro/VegasAfterglow/actions/workflows/PyPI-build.yml)
+[![License](https://img.shields.io/badge/License-BSD--3--Clause-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-lightgrey.svg)]()
+[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![Documentation](https://img.shields.io/badge/Documentation-Online-brightgreen.svg)](https://yihanwangastro.github.io/VegasAfterglow/docs/index.html)
 
 **VegasAfterglow** is a high-performance C++ framework designed for the comprehensive modeling of gamma-ray burst (GRB) afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations. A user-friendly Python wrapper is provided to streamline integration into scientific data analysis workflows.
@@ -76,8 +76,8 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 - **Ultra-fast Light Curve Computation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
-  - ~10 seconds for on-axis structured jet scenarios
-  - ~30 seconds for off-axis modeling scenarios
+  - ~20 seconds for on-axis structured jet scenarios
+  - ~2 minutes for off-axis modeling scenarios
   
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
@@ -106,11 +106,13 @@ This is the recommended method for most users. VegasAfterglow requires Python 3.
 For cases where pip installation is not viable or when the development version is required:
 
 1. Clone this repository:
+
 ```bash
 git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 ```
 
 2. Navigate to the directory and install the Python package:
+
 ```bash
 cd VegasAfterglow
 pip install .
@@ -128,17 +130,20 @@ For advanced users who need to compile and use the C++ library directly:
 <br>
 
 1. Clone the repository (if not previously done):
+
 ```bash
 git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 cd VegasAfterglow
 ```
 
 2. Compile the static library:
+
 ```bash
 make lib
 ```
 
 3. (Optional) Compile and run tests:
+
 ```bash
 make tests
 ```
@@ -158,6 +163,7 @@ The following development tools are required:
   
 - **Build tools**:
   - Make (GNU Make 4.0+ recommended)
+
 </details>
 </details>
 
@@ -167,9 +173,11 @@ The following development tools are required:
 
 ### Quick Start
 
-We provide a basic example notebook (`script/quick.ipynb`) that demonstrates how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
+We provide a basic example scripts (`script/quick.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
 
-To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original. 
+To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
+
+### Light Curve & Spectrum Calculation
 
 The example below walks through the main components needed to model a GRB afterglow, from setting up the physical parameters to producing light curves and spectra.
 
@@ -199,6 +207,7 @@ rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
 # 5. Combine all components into a complete afterglow model
 model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad)
 ```
+
 </details>
 
 <details>
@@ -248,7 +257,7 @@ Running the light curve script will produce this figure showing the afterglow ev
 </details>
 
 <details>
-<summary><b>Spectral Analysis</b> <i>(click to expand/collapse)</i></summary>
+<summary><b>Spectrum Analysis</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
 We can also examine how the broadband spectrum evolves at different times after the burst:
@@ -297,7 +306,7 @@ These examples demonstrate the core functionality of VegasAfterglow for modeling
 
 ### MCMC Parameter Fitting
 
-We provide an example MCMC notebook (`script/mcmc.ipynb`) for fitting afterglow light curves and spectra to user-provided data. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
+We provide some example data files in the `data` folder. Remember to keep your copy in the same directory as the original to ensure all data paths work correctly.
 
 <details>
 <summary><b>1. Preparing Data and Configuring the Model</b> <i>(click to expand/collapse)</i></summary>
@@ -368,11 +377,6 @@ cfg.z = 1.58               # Redshift
 # Physical model configuration
 cfg.medium = "wind"        # Ambient medium: "wind", "ISM" (Interstellar Medium) or "user" (user-defined)
 cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
-
-# Optional: Advanced grid settings. Default (24, 24, 24) is optimized to converge for most cases.
-# cfg.phi_num = 24         # Number of grid points in phi direction
-# cfg.theta_num = 24       # Number of grid points in theta direction
-# cfg.t_num = 24           # Number of time grid points
 ```
 
 These settings affect how the model is calculated but are not varied during the MCMC process.
@@ -389,7 +393,7 @@ mc_params = [
     ParamDef("E_iso",    1e52,  1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
     ParamDef("Gamma0",     30,     5,  1000,  Scale.LOG),       # Lorentz factor at the core
     ParamDef("theta_c",   0.2,   0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
-    ParamDef("theta_v",   0.,  None,  None,   Scale.FIXED),     # Viewing angle [rad]
+    ParamDef("theta_v",    0.,  None,  None,  Scale.FIXED),     # Viewing angle [rad]
     ParamDef("p",         2.5,     2,     3,  Scale.LINEAR),    # Shocked electron power law index
     ParamDef("eps_e",     0.1,  1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
     ParamDef("eps_B",    1e-2,  1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
@@ -399,13 +403,15 @@ mc_params = [
 ```
 
 **Scale Types:**
+
 - `Scale.LOG`: Sample in logarithmic space (log10) - ideal for parameters spanning multiple orders of magnitude
 - `Scale.LINEAR`: Sample in linear space - appropriate for parameters with narrower ranges
 - `Scale.FIXED`: Keep parameter fixed at the initial value - use for parameters you don't want to vary
 
 **Parameter Choices:**
 The parameters you include depend on your model configuration:
-- For "wind" medium: use `A_star` parameter 
+
+- For "wind" medium: use `A_star` parameter
 - For "ISM" medium: use `n_ism` parameter instead
 - Different jet structures may require different parameters
 
@@ -418,7 +424,6 @@ fitter = Fitter(data, cfg)
 # Run the MCMC fitting
 result = fitter.fit(
     param_defs=mc_params,          # Parameter definitions
-    resolution=(24, 24, 24),       # Grid resolution (phi, theta, time)
     total_steps=10000,             # Total number of MCMC steps
     burn_frac=0.3,                 # Fraction of steps to discard as burn-in
     thin=1                         # Thinning factor
@@ -531,6 +536,7 @@ def plot_corner(flat_chain, labels, filename="corner_plot.png"):
 flat_chain = result.samples.reshape(-1, result.samples.shape[-1])
 plot_corner(flat_chain, result.labels)
 ```
+
 </details>
 
 ---
@@ -579,12 +585,12 @@ The BSD 3-Clause License is a permissive open source license that allows you to:
 - Integrate the software into proprietary applications
 
 **Requirements:**
+
 - You must include the original copyright notice and the license text
 - You cannot use the names of the authors or contributors to endorse derived products
 - The license provides no warranty or liability protection
 
 For the full license text, see the [LICENSE](LICENSE) file in the repository.
-
 
 ---
 
@@ -592,7 +598,4 @@ For the full license text, see the [LICENSE](LICENSE) file in the repository.
 
 If you use VegasAfterglow in your research, please cite the relevant paper(s):
 
-
 If you use specific modules or features that are described in other publications, please cite those as well according to standard academic practice.
-
-

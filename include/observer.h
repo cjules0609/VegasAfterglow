@@ -318,7 +318,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                         continue;
                     } else {
                         if (set_boundaries(state, i, j, k, lg2_nu[l], photons...)) {
-                            for (; t_idx < t_obs_len && lg2_t_obs(t_idx) < lg2_t_hi; t_idx++) {
+                            for (; t_idx < t_obs_len && lg2_t_obs(t_idx) <= lg2_t_hi; t_idx++) {
                                 F_nu(l, t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                             }
                         } else {

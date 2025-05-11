@@ -120,7 +120,7 @@ void Observer::update_required(MaskGrid& required, Array const& t_obs) {
                 Real const t_lo = lg2_t(i, j, k);
                 Real const t_hi = lg2_t(i, j, k + 1);
 
-                if (t_lo <= log2_t_obs(t_idx) && log2_t_obs(t_idx) < t_hi) {
+                if (t_lo < log2_t_obs(t_idx) && log2_t_obs(t_idx) <= t_hi) {
                     required(i_eff, j, k) = 1;
                     required(i_eff, j, k + 1) = 1;
                 }

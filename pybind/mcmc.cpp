@@ -194,11 +194,11 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
         std::cerr << "Error: Unknown jet type" << std::endl;
     }
 
-    size_t t_num = config.t_grid;
-    size_t theta_num = config.theta_grid;
-    size_t phi_num = config.phi_grid;
+    Real t_resol = config.t_resol;
+    Real theta_resol = config.theta_resol;
+    Real phi_resol = config.phi_resol;
 
-    auto coord = auto_grid(jet, t_eval, theta_w, theta_v, z, phi_num, theta_num, t_num);
+    auto coord = auto_grid(jet, t_eval, theta_w, theta_v, z, phi_resol, theta_resol, t_resol);
 
     auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
 

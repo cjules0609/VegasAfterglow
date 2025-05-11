@@ -136,15 +136,15 @@ class PyModel {
      */
     PyModel(Ejecta jet, Medium medium, PyObserver observer, PyRadiation fwd_rad,
             std::optional<PyRadiation> rvs_rad = std::nullopt,
-            std::tuple<size_t, size_t, size_t> grid_size = std::make_tuple(128, 128, 128), Real rtol = 1e-5)
+            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.2, 2., 10.), Real rtol = 1e-5)
         : jet(jet),
           medium(medium),
           obs_setup(observer),
           fwd_rad(fwd_rad),
           rvs_rad_opt(rvs_rad),
-          phi_num(std::get<0>(grid_size)),
-          theta_num(std::get<1>(grid_size)),
-          t_num(std::get<2>(grid_size)),
+          phi_resol(std::get<0>(resolutions)),
+          theta_resol(std::get<1>(resolutions)),
+          t_resol(std::get<2>(resolutions)),
           rtol(rtol) {}
 
     /**
@@ -197,9 +197,9 @@ class PyModel {
     PyRadiation fwd_rad;                     ///< Forward shock radiation parameters
     std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
     Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
-    size_t phi_num{128};                     ///< Number of azimuthal grid points
-    size_t theta_num{128};                   ///< Number of polar grid points
-    size_t t_num{128};                       ///< Number of time grid points
+    Real phi_resol{0.5};                     ///< Azimuthal resolution: number of points per degree
+    Real theta_resol{1};                     ///< Polar resolution: number of points per degree
+    Real t_resol{5};                         ///< Time resolution: number of points per decade
     Real rtol{1e-5};                         ///< Relative tolerance
     bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet
 };

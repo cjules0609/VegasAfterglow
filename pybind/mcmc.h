@@ -65,9 +65,9 @@ struct ConfigParams {
     double z{0};
     std::string medium{"ism"};
     std::string jet{"tophat"};
-    size_t t_grid{24};
-    size_t phi_grid{24};
-    size_t theta_grid{24};
+    Real phi_resol{0.25};
+    Real theta_resol{1};
+    Real t_resol{3};
     double rtol{1e-5};
 };
 

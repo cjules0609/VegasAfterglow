@@ -78,12 +78,12 @@ class MultiThreadEmcee:
         self,
         data: ObsData,
         base_cfg: Setups,
-        resolution: Tuple[int, int, int] = (24, 24, 24),
+        resolution: Tuple[float, float, float] = (0.1, 1, 3),
         total_steps: int = 10_000,
         burn_frac: float = 0.2,
         thin: int = 1,
         moves: Optional[Sequence[Tuple[emcee.moves.Move, float]]] = None,
-        refine_steps: int = 1_000
+        refine_steps: int = 200
     ) -> FitResult:
         """
         Run coarse MCMC + optional stretch-move refinement at higher resolution.
@@ -124,7 +124,7 @@ class MultiThreadEmcee:
 
         # 7) refine at high resolution
         logger.info("🔬 Refining MAP with stretch move for %d steps", refine_steps)
-        cfg_high = self._make_cfg(base_cfg, 64, 64, 64)
+        cfg_high = self._make_cfg(base_cfg, 0.25, 2, 5)
         high_log_prob = _log_prob(data, cfg_high, self.to_params, self.pl, self.pu, self.model_cls)
 
         pos_refine = best_theta + 0.1 * spread * np.random.randn(self.nwalkers, self.ndim)
@@ -153,7 +153,7 @@ class MultiThreadEmcee:
             labels      = self.labels
         )
 
-    def _make_cfg(self, base_cfg: Setups, r: int, theta: int, phi: int) -> Setups:
+    def _make_cfg(self, base_cfg: Setups, phi: float, theta: float, t: float) -> Setups:
         """
         Create a shallow copy of base_cfg and override its grid resolution.
         """
@@ -164,9 +164,9 @@ class MultiThreadEmcee:
                     setattr(cfg, attr, getattr(base_cfg, attr))
                 except Exception:
                     pass
-        cfg.t_grid     = int(r)
-        cfg.theta_grid = int(theta)
-        cfg.phi_grid   = int(phi)
+        cfg.t_resol     = t
+        cfg.theta_resol = theta
+        cfg.phi_resol   = phi
         return cfg
 
     @staticmethod

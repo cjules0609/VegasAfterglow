@@ -72,8 +72,8 @@ void PyModel::specific_flux_for(Shock const& shock, Coord const& coord, Array co
 }
 
 auto PyModel::specific_flux_(Array const& t_obs, Array const& nu_obs) -> FluxDict {
-    Coord coord =
-        auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_num, theta_num, t_num, axisymmetric);
+    Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
+                            t_resol, axisymmetric);
 
     FluxDict flux_dict;
 

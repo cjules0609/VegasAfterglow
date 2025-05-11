@@ -53,11 +53,7 @@ void lc_gen(std::string folder_name, bool out = false) {
     }
     jet.spreading = false;
 
-    size_t t_num = 32;
-    size_t theta_num = 32;
-    size_t phi_num = 32;
-
-    Coord coord = auto_grid(jet, t_bins, theta_w, theta_view, z, phi_num, theta_num, t_num);
+    Coord coord = auto_grid(jet, t_bins, theta_w, theta_view, z);
 
     // solve dynamics
     Shock f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);

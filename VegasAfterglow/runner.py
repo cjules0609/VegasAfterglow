@@ -30,7 +30,7 @@ class Fitter:
     def fit(
         self,
         param_defs: Sequence[ParamDef],
-        resolution: Tuple[int, int, int] = (24, 24, 24),
+        resolution: Tuple[float, float, float] = (0.1, 1, 3),
         total_steps: int = 10_000,
         burn_frac: float = 0.3,
         thin: int = 1
@@ -64,7 +64,7 @@ class Fitter:
             *(
                 (
                     pd.name,
-                    (np.log10(pd.init) if pd.scale is Scale.LOG else pd.init),
+                    (np.log10(pd.init)  if pd.scale is Scale.LOG else pd.init),
                     (np.log10(pd.lower) if pd.scale is Scale.LOG else pd.lower),
                     (np.log10(pd.upper) if pd.scale is Scale.LOG else pd.upper),
                 )
@@ -112,7 +112,7 @@ class Fitter:
         )
         return result
     
-    def _with_resolution(self, resolution: Tuple[int, int, int]) -> Setups:
+    def _with_resolution(self, resolution: Tuple[float, float, float]) -> Setups:
         """
         Clone self.config (without pickle) and override t/theta/phi grids.
         """
@@ -127,7 +127,7 @@ class Fitter:
                 except Exception:
                     pass
         # override grids
-        cfg.t_grid, cfg.theta_grid, cfg.phi_grid = resolution
+        cfg.phi_resol, cfg.theta_resol, cfg.t_resol = resolution
         return cfg
     
     def light_curves(
@@ -135,7 +135,7 @@ class Fitter:
         best_params: np.ndarray,
         t: np.ndarray,
         nu: np.ndarray,
-        resolution: Optional[Tuple[int, int, int]] = (64, 64, 64)
+        resolution: Optional[Tuple[float, float, float]] = (0.25, 1, 3)
     ) -> np.ndarray:
         """
         Compute light curves at the best-fit parameters.
@@ -169,7 +169,7 @@ class Fitter:
         best_params: np.ndarray,
         nu: np.ndarray,
         t: np.ndarray,
-        resolution: Optional[Tuple[int, int, int]] = (64, 64, 64)
+        resolution: Optional[Tuple[float, float, float]] = (0.25, 1, 3)
     ) -> np.ndarray:
         """
         Compute spectra at the best-fit parameters.
