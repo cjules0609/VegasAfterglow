@@ -105,15 +105,15 @@ class PyRadiation {
      * @param SSC Whether to include SSC (Synchrotron Self-Compton)
      * @param Klein_Nishina Whether to use Klein-Nishina cross-section for IC scattering
      */
-    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e, bool SSC = false, bool Klein_Nishina = true)
-        : eps_e(eps_e), eps_B(eps_B), p(p), xi_e(xi_e), SSC(SSC), Klein_Nishina(Klein_Nishina) {}
+    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e, bool SSC = false, bool KN = false)
+        : eps_e(eps_e), eps_B(eps_B), p(p), xi_e(xi_e), SSC(SSC), KN(KN) {}
 
-    Real eps_e{1e-1};          ///< Fraction of shock energy in electrons
-    Real eps_B{1e-2};          ///< Fraction of shock energy in magnetic field
-    Real p{2.3};               ///< Electron energy spectral index
-    Real xi_e{1};              ///< Fraction of electrons accelerated
-    bool SSC{false};           ///< Whether to include SSC
-    bool Klein_Nishina{true};  ///< Whether to use Klein-Nishina cross-section
+    Real eps_e{1e-1};  ///< Fraction of shock energy in electrons
+    Real eps_B{1e-2};  ///< Fraction of shock energy in magnetic field
+    Real p{2.3};       ///< Electron energy spectral index
+    Real xi_e{1};      ///< Fraction of electrons accelerated
+    bool SSC{false};   ///< Whether to include SSC
+    bool KN{false};    ///< Whether to include KN
 };
 
 /**
@@ -136,7 +136,7 @@ class PyModel {
      */
     PyModel(Ejecta jet, Medium medium, PyObserver observer, PyRadiation fwd_rad,
             std::optional<PyRadiation> rvs_rad = std::nullopt,
-            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.2, 2., 10.), Real rtol = 1e-5)
+            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 2., 5.), Real rtol = 1e-5)
         : jet(jet),
           medium(medium),
           obs_setup(observer),
@@ -197,8 +197,8 @@ class PyModel {
     PyRadiation fwd_rad;                     ///< Forward shock radiation parameters
     std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
     Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
-    Real phi_resol{0.5};                     ///< Azimuthal resolution: number of points per degree
-    Real theta_resol{1};                     ///< Polar resolution: number of points per degree
+    Real phi_resol{0.3};                     ///< Azimuthal resolution: number of points per degree
+    Real theta_resol{2};                     ///< Polar resolution: number of points per degree
     Real t_resol{5};                         ///< Time resolution: number of points per decade
     Real rtol{1e-5};                         ///< Relative tolerance
     bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet

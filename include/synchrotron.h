@@ -355,3 +355,4 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c);
  * <!-- ************************************************************************************** -->
  */
 Real compute_syn_freq(Real gamma, Real B);
+

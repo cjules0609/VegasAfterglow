@@ -103,30 +103,13 @@ Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
     }
 }
 
-Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) {
-    /*Real Y_tilt = 0;
-    for (auto& Y : Ys) {
-        Y_tilt += Y.Y_T;  // Sum each object's Y_T
-    }
-    return Y_tilt;*/
-    return Ys.Y_T;
-}
+Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) { return Ys.Y_T; }
 
 Real InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p) {
-    /*Real Y_tilt = 0;
-    for (auto& Y : Ys) {
-        Y_tilt += Y.as_gamma(gamma, p);  // Sum effective Y parameters based on gamma
-    }
-    return Y_tilt;*/
     return Ys.compute_val_at_gamma(gamma, p);
 }
 
 Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p) {
-    /* Real Y_tilt = 0;
-     for (auto& Y : Ys) {
-         Y_tilt += Y.as_nu(nu, p);  // Sum effective Y parameters based on frequency
-     }
-     return Y_tilt;*/
     return Ys.compute_val_at_nu(nu, p);
 }
 

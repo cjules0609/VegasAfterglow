@@ -49,14 +49,14 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Radiation bindings
     py::class_<PyRadiation>(m, "Radiation")
         .def(py::init<Real, Real, Real, Real, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
-             py::arg("xi_e") = 1, py::arg("SSC") = false, py::arg("Klein_Nishina") = true);
+             py::arg("xi_e") = 1, py::arg("SSC") = false, py::arg("KN") = false);
 
     // Model bindings
     py::class_<PyModel>(m, "Model")
         .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
                       Real>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
-             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.25, 1., 3.),
+             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 2., 5.),
              py::arg("rtol") = 1e-5)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
         .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));

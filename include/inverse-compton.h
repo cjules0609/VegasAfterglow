@@ -64,7 +64,7 @@ struct IntegratorGrid {
     Real x_max;                                        ///< Maximum x-value.
     Real y_min;                                        ///< Minimum y-value.
     Real y_max;                                        ///< Maximum y-value.
-    static constexpr size_t num{80};                   ///< Number of bins.
+    static constexpr size_t num{32};                   ///< Number of bins.
     std::array<Real, num + 1> x_bin{0};                ///< Bin edges for x.
     std::array<Real, num + 1> y_bin{0};                ///< Bin edges for y.
     std::array<Real, num> x{0};                        ///< Center values for x.
@@ -124,15 +124,15 @@ struct ICPhoton {
      * <!-- ************************************************************************************** -->
      */
     template <typename Electrons, typename Photons>
-    void gen(Electrons const& e, Photons const& ph) {
+    void gen(Electrons const& e, Photons const& ph, bool KN = true) {
         // Real gamma_min = min(e.gamma_m, e.gamma_c, e.gamma_a);
         Real nu_ph_min = min(ph.nu_m, ph.nu_c, ph.nu_a);
 
-        Real nu0_max = ph.nu_M * 10;
+        Real nu0_max = ph.nu_M * 5;
         Real nu0_min = nu_ph_min / 1e5;
 
         Real gamma_min = std::min(std::min(e.gamma_m, e.gamma_c), e.gamma_a);
-        Real gamma_max = e.gamma_M * 10;
+        Real gamma_max = e.gamma_M * 5;
 
         // Construct an integration grid in nu0 and gamma.
         IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
@@ -152,7 +152,11 @@ struct ICPhoton {
                 Real dgamma = grid.y_bin[j + 1] - grid.y_bin[j];
                 Real dS = std::fabs(dnu * dgamma);
                 Real f = 4 * gamma_ * gamma_ * nu0_ * nu0_;
-                grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * compton_sigma(nu0_ / gamma_);
+                if (KN) {
+                    grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * compton_sigma(nu0_ / gamma_);
+                } else {
+                    grid.I0[i][j] = grid.ns[j] * grid.j_syn[i] * dS / f * con::sigmaT;
+                }
             }
         }
 
@@ -170,17 +174,22 @@ struct ICPhoton {
                 Real nu0_ = grid.x[i];
                 for (size_t j = 0; j < grid.num; ++j) {
                     Real gamma_ = grid.y[j];
-                    if (nu0_ <= nu_IC_[k] && nu_IC_[k] <= 4 * gamma_ * gamma_ * nu0_ * IC_x0) {
+                    if (nu_IC_[k] <= 4 * gamma_ * gamma_ * nu0_ * IC_x0) {
                         j_nu_[k] += grid.I0[i][j] * nu_IC_[k];
                     }
                 }
             }
         }
+        // Compute the base-2 logarithm of the IC photon spectrum intensity and frequency grid.
+        log2_j_nu_ = xt::log2(j_nu_);
+        log2_nu_IC_ = xt::log2(nu_IC_);
     };
 
    private:
-    Array j_nu_;   ///< IC photon spectrum intensity array.
-    Array nu_IC_;  ///< Frequency grid for the IC photon spectrum.
+    Array j_nu_;        ///< IC photon spectrum intensity array.
+    Array nu_IC_;       ///< Frequency grid for the IC photon spectrum.
+    Array log2_j_nu_;   ///< Base-2 logarithm of the IC photon spectrum intensity array.
+    Array log2_nu_IC_;  ///< Base-2 logarithm of the frequency grid for the IC photon spectrum.
 };
 
 /// @typedef ICPhotonGrid
@@ -202,7 +211,7 @@ using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
  * @return A 3D grid of IC photons
  * <!-- ************************************************************************************** -->
  */
-ICPhotonGrid gen_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const& photon);
+ICPhotonGrid gen_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const& photon, bool KN = true);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -212,7 +221,7 @@ ICPhotonGrid gen_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const
  * @param shock The shock properties
  * <!-- ************************************************************************************** -->
  */
-void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
+void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid& photon, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -222,4 +231,4 @@ void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Sho
  * @param shock The shock properties
  * <!-- ************************************************************************************** -->
  */
-void KN_cooling(SynElectronGrid& electron, SynPhotonGrid const& photon, Shock const& shock);
+void KN_cooling(SynElectronGrid& electron, SynPhotonGrid& photon, Shock const& shock);
