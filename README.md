@@ -173,7 +173,7 @@ The following development tools are required:
 
 ### Quick Start
 
-We provide a basic example scripts (`script/quick.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
+We provide basic example scripts (`script/quick.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
 
 To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
 
@@ -237,9 +237,8 @@ for i, nu in enumerate(bands):
 
 def add_note(plt):
     plt.annotate('jet break',xy=(3e4, 1e-26), xytext=(3e3, 5e-28), arrowprops=dict(arrowstyle='->'))
-    plt.annotate(r'$\nu_m=\nu_a$',xy=(3e5, 3e-25), xytext=(5.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
-    plt.annotate(r'$\nu=\nu_m$',xy=(6e5, 1e-25), xytext=(5.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
-    plt.annotate(r'$\nu=\nu_a$',xy=(4e6, 6e-26), xytext=(5e6, 1e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu_m=\nu_a$',xy=(6e5, 3e-25), xytext=(7.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu=\nu_a$',xy=(1.5e6, 4e-25), xytext=(7.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
 
 add_note(plt)   
 plt.xlabel('Time (s)')
@@ -431,9 +430,11 @@ result = fitter.fit(
 ```
 
 The `result` object contains:
-    - `samples`: The MCMC chain samples (posterior distribution)
-    - `labels`: Parameter names
-    - `best_params`: Maximum likelihood parameter values
+
+- `samples`: The MCMC chain samples (posterior distribution)
+- `labels`: Parameter names
+- `best_params`: Maximum likelihood parameter values
+
 </details>
 
 <details>
