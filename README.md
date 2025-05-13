@@ -97,7 +97,7 @@ To install VegasAfterglow using pip:
 pip install VegasAfterglow
 ```
 
-This is the recommended method for most users. VegasAfterglow requires Python 3.8 or higher.
+This is the recommended method for most users. VegasAfterglow requires Python 3.7 or higher.
 
 <details>
 <summary><b>Alternative: Install from Source</b> <i>(click to expand/collapse)</i></summary>
@@ -576,6 +576,8 @@ We value all contributions and aim to respond to issues promptly.
 ---
 
 ## License
+
+Copyright © 2023-2025 Yihan Wang, Bing Zhang, and Connery Chen. All rights reserved.
 
 VegasAfterglow is released under the **BSD-3-Clause License**.
 

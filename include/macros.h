@@ -82,6 +82,8 @@ namespace con {
     constexpr Real c2 = c * c;                            ///< Speed of light squared
     constexpr Real mp = 1.67e-24 * unit::g;               ///< Proton mass in code units
     constexpr Real me = mp / 1836;                        ///< Electron mass in code units
+    constexpr Real mec2 = me * c2;                        ///< Electron rest energy in code units
+    constexpr Real mpc2 = mp * c2;                        ///< Proton rest energy in code units
     constexpr Real h = 6.63e-27 * unit::erg * unit::sec;  ///< Planck constant in code units
     constexpr Real e = 4.8e-10 / 4.472136e16 / 5.809475e19 / unit::sec;  ///< Elementary charge in code units
     constexpr Real e2 = e * e;                                           ///< Elementary charge squared

@@ -48,8 +48,8 @@ Medium PyWind(Real A_star) {
     return medium;
 }
 
-void PyModel::specific_flux_for(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
-                                Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix) {
+void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
+                                    Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
     auto syn_e = generate_syn_electrons(shock, rad.p, rad.xi_e);
@@ -63,7 +63,7 @@ void PyModel::specific_flux_for(Shock const& shock, Coord const& coord, Array co
             Thomson_cooling(syn_e, syn_ph, shock);
         }
 
-        auto IC_ph = gen_IC_photons(syn_e, syn_ph, rad.KN);
+        auto IC_ph = generate_IC_photons(syn_e, syn_ph, rad.KN);
 
         flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
     }
@@ -71,28 +71,28 @@ void PyModel::specific_flux_for(Shock const& shock, Coord const& coord, Array co
     flux_dict["syn" + suffix] = obs.specific_flux(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
 }
 
-auto PyModel::specific_flux_(Array const& t_obs, Array const& nu_obs) -> FluxDict {
+auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs) -> FluxDict {
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
     FluxDict flux_dict;
 
-    Observer obs;
+    Observer observer;
 
     if (!rvs_rad_opt) {
-        auto f_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.eps_e, fwd_rad.eps_B, rtol);
+        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.eps_e, fwd_rad.eps_B, rtol);
 
-        specific_flux_for(f_shock, coord, t_obs, nu_obs, obs, fwd_rad, flux_dict, "");
+        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
 
         return flux_dict;
     } else {
         auto rvs_rad = *rvs_rad_opt;
-        auto [f_shock, r_shock] =
+        auto [fwd_shock, rvs_shock] =
             generate_shock_pair(coord, medium, jet, fwd_rad.eps_e, fwd_rad.eps_B, rvs_rad.eps_e, rvs_rad.eps_B, rtol);
 
-        specific_flux_for(f_shock, coord, t_obs, nu_obs, obs, fwd_rad, flux_dict, "");
+        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
 
-        specific_flux_for(r_shock, coord, t_obs, nu_obs, obs, rvs_rad, flux_dict, "_rvs");
+        single_shock_emission(rvs_shock, coord, t_obs, nu_obs, observer, rvs_rad, flux_dict, "_rvs");
 
         return flux_dict;
     }
@@ -102,14 +102,14 @@ auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> FluxDict {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
 
-    return specific_flux_(t_obs, nu_obs);
+    return compute_specific_flux(t_obs, nu_obs);
 }
 
 auto PyModel::spectra(PyArray const& nu, PyArray const& t) -> FluxDict {
     Array nu_obs = nu * unit::Hz;
     Array t_obs = t * unit::sec;
 
-    FluxDict flux_dict = specific_flux_(t_obs, nu_obs);
+    FluxDict flux_dict = compute_specific_flux(t_obs, nu_obs);
 
     for (auto const& [key, value] : flux_dict) {
         flux_dict[key] = xt::transpose(value);

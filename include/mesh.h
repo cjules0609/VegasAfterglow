@@ -11,12 +11,12 @@
 
 #include "macros.h"
 #include "xtensor/containers/xadapt.hpp"
+#include "xtensor/containers/xfixed.hpp"
 #include "xtensor/containers/xtensor.hpp"
 #include "xtensor/core/xmath.hpp"
 #include "xtensor/core/xnoalias.hpp"
 #include "xtensor/io/xnpy.hpp"
 #include "xtensor/views/xview.hpp"
-
 /**
  * <!-- ************************************************************************************** -->
  * @defgroup Mesh_Utilities Array and Grid Utilities
@@ -149,24 +149,6 @@ Array boundary_to_center_log(Array const& boundary);
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
-template <typename Arr>
-void logspace(Real start, Real end, Arr& result) {
-    size_t num = result.size();
-    Real log_start = start;
-    Real log_end = end;
-
-    // Calculate step size in log space
-    Real step = (log_end - log_start) / (num - 1);
-    if (num == 1) {
-        step = 0;  // Handle single-point array case
-    }
-
-    // Fill array with logarithmically spaced values
-    for (size_t i = 0; i < num; i++) {
-        result[i] = std::pow(10, log_start + i * step);
-    }
-}
-
 template <typename Arr1, typename Arr2>
 void boundary_to_center(Arr1 const& boundary, Arr2& center) {
     for (size_t i = 0; i < center.size(); ++i) {

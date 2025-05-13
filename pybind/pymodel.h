@@ -174,7 +174,7 @@ class PyModel {
      * @param nu Observer frequency array [internal units]
      * @return FluxDict Dictionary with flux components
      */
-    FluxDict specific_flux_(Array const& t, Array const& nu);
+    FluxDict compute_specific_flux(Array const& t, Array const& nu);
 
     /**
      * @brief Helper method to calculate flux for a given shock
@@ -188,8 +188,8 @@ class PyModel {
      * @param flux_dict Output flux dictionary
      * @param suffix Key suffix for flux components
      */
-    void specific_flux_for(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
-                           PyRadiation rad, FluxDict& flux_dict, std::string suffix);
+    void single_shock_emission(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
+                               PyRadiation rad, FluxDict& flux_dict, std::string suffix);
 
     Ejecta jet;                              ///< Jet model
     Medium medium;                           ///< Circumburst medium
