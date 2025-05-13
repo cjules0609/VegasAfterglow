@@ -69,7 +69,7 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
                 nu_m(i, j, k) = ph(i, j, k).nu_m / unit::Hz;
                 nu_c(i, j, k) = ph(i, j, k).nu_c / unit::Hz;
                 nu_M(i, j, k) = ph(i, j, k).nu_M / unit::Hz;
-                I_nu_peak(i, j, k) = ph(i, j, k).e->I_nu_peak / (unit::erg / unit::cm2 / unit::sec / unit::Hz);
+                I_nu_peak(i, j, k) = ph(i, j, k).elec->I_nu_peak / (unit::erg / unit::cm2 / unit::sec / unit::Hz);
             }
 
     xt::dump_npz(filename + ".npz", "nu_a", nu_a, false, false);

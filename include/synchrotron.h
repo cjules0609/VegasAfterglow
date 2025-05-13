@@ -167,12 +167,12 @@ struct SynPhotons {
     Real nu_a{0};  ///< Self-absorption frequency
     Real nu_M{0};  ///< Maximum photon frequency
 
-    Real log2_I_nu_peak{0};          ///< Log2 of peak intensity (for computational efficiency)
-    Real log2_nu_m{0};               ///< Log2 of nu_m
-    Real log2_nu_c{0};               ///< Log2 of nu_c
-    Real log2_nu_a{0};               ///< Log2 of nu_a
-    Real log2_nu_M{0};               ///< Log2 of nu_M
-    const SynElectrons* e{nullptr};  ///< Pointer to the associated SynElectrons
+    Real log2_I_nu_peak{0};             ///< Log2 of peak intensity (for computational efficiency)
+    Real log2_nu_m{0};                  ///< Log2 of nu_m
+    Real log2_nu_c{0};                  ///< Log2 of nu_c
+    Real log2_nu_a{0};                  ///< Log2 of nu_a
+    Real log2_nu_M{0};                  ///< Log2 of nu_M
+    const SynElectrons* elec{nullptr};  ///< Pointer to the associated SynElectrons
 
     /**
      * <!-- ************************************************************************************** -->
@@ -314,11 +314,11 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
  * @brief Updates electron properties throughout the grid based on shock parameters and IC Y values.
  * @details Recalculates gamma_M, gamma_c, gamma_a, regime, and Y_c parameters for each grid cell.
  *          Handles both freshly-shocked and adiabatic cooling regions.
- * @param e Synchrotron electron grid to update
+ * @param electrons Synchrotron electron grid to update
  * @param shock The shock object containing evolution data
  * <!-- ************************************************************************************** -->
  */
-void update_electrons_4Y(SynElectronGrid& e, Shock const& shock);
+void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -355,4 +355,3 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c);
  * <!-- ************************************************************************************** -->
  */
 Real compute_syn_freq(Real gamma, Real B);
-

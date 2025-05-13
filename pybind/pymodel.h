@@ -102,18 +102,21 @@ class PyRadiation {
      * @param eps_B Fraction of shock energy in magnetic field
      * @param p Electron energy spectral index
      * @param xi_e Fraction of electrons accelerated
+     * @param IC_cooling Whether to include IC cooling
      * @param SSC Whether to include SSC (Synchrotron Self-Compton)
      * @param Klein_Nishina Whether to use Klein-Nishina cross-section for IC scattering
      */
-    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e, bool SSC = false, bool KN = false)
-        : eps_e(eps_e), eps_B(eps_B), p(p), xi_e(xi_e), SSC(SSC), KN(KN) {}
+    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e = 1, bool IC_cooling = false, bool SSC = false,
+                bool KN = false)
+        : eps_e(eps_e), eps_B(eps_B), p(p), xi_e(xi_e), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
 
-    Real eps_e{1e-1};  ///< Fraction of shock energy in electrons
-    Real eps_B{1e-2};  ///< Fraction of shock energy in magnetic field
-    Real p{2.3};       ///< Electron energy spectral index
-    Real xi_e{1};      ///< Fraction of electrons accelerated
-    bool SSC{false};   ///< Whether to include SSC
-    bool KN{false};    ///< Whether to include KN
+    Real eps_e{1e-1};        ///< Fraction of shock energy in electrons
+    Real eps_B{1e-2};        ///< Fraction of shock energy in magnetic field
+    Real p{2.3};             ///< Electron energy spectral index
+    Real xi_e{1};            ///< Fraction of electrons accelerated
+    bool IC_cooling{false};  ///< Whether to include IC cooling
+    bool SSC{false};         ///< Whether to include SSC
+    bool KN{false};          ///< Whether to include KN
 };
 
 /**
@@ -136,7 +139,8 @@ class PyModel {
      */
     PyModel(Ejecta jet, Medium medium, PyObserver observer, PyRadiation fwd_rad,
             std::optional<PyRadiation> rvs_rad = std::nullopt,
-            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 2., 5.), Real rtol = 1e-5)
+            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 2., 5.), Real rtol = 1e-5,
+            bool axisymmetric = true)
         : jet(jet),
           medium(medium),
           obs_setup(observer),
@@ -145,7 +149,8 @@ class PyModel {
           phi_resol(std::get<0>(resolutions)),
           theta_resol(std::get<1>(resolutions)),
           t_resol(std::get<2>(resolutions)),
-          rtol(rtol) {}
+          rtol(rtol),
+          axisymmetric(axisymmetric) {}
 
     /**
      * @brief Calculate specific flux at given times and frequencies

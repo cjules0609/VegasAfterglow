@@ -56,13 +56,15 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
 
     auto syn_ph = generate_syn_photons(shock, syn_e);
 
-    if (rad.SSC) {
+    if (rad.IC_cooling || rad.SSC) {
         if (rad.KN) {
             KN_cooling(syn_e, syn_ph, shock);
         } else {
             Thomson_cooling(syn_e, syn_ph, shock);
         }
+    }
 
+    if (rad.SSC) {
         auto IC_ph = generate_IC_photons(syn_e, syn_ph, rad.KN);
 
         flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;

@@ -222,10 +222,10 @@ Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
 
 Real SynPhotons::compute_I_nu(Real nu) const {
     if (nu < nu_c) {
-        return e->I_nu_peak * compute_spectrum(nu);  // Below cooling frequency, simple scaling
+        return elec->I_nu_peak * compute_spectrum(nu);  // Below cooling frequency, simple scaling
     } else {
-        return e->I_nu_peak * compute_spectrum(nu) * (1 + e->Y_c) /
-               (1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, nu, e->p));
+        return elec->I_nu_peak * compute_spectrum(nu) * (1 + elec->Y_c) /
+               (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, nu, elec->p));
     }
 }
 
@@ -233,15 +233,15 @@ Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
     if (log2_nu < log2_nu_c) {
         return log2_I_nu_peak + compute_log2_spectrum(log2_nu);  // Below cooling frequency, simple scaling
     } else {
-        return log2_I_nu_peak + compute_log2_spectrum(log2_nu) + fast_log2(1 + e->Y_c) -
-               fast_log2(1 + InverseComptonY::compute_Y_tilt_at_nu(e->Ys, std::exp2(log2_nu), e->p));
+        return log2_I_nu_peak + compute_log2_spectrum(log2_nu) + fast_log2(1 + elec->Y_c) -
+               fast_log2(1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, std::exp2(log2_nu), elec->p));
     }
 }
 
 void SynPhotons::update_constant() {
     // Update constants based on spectral parameters
-    Real p = e->p;
-    if (e->regime == 1) {
+    Real p = elec->p;
+    if (elec->regime == 1) {
         // a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
         C1_ = std::cbrt(nu_a / nu_m);
@@ -251,7 +251,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = -fast_log2(nu_m) / 3;
         log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
         log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
-    } else if (e->regime == 2) {
+    } else if (elec->regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
@@ -263,7 +263,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = (p - 1) / 2 * fast_log2(nu_m / nu_a) - 2.5 * fast_log2(nu_a);
         log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
         log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
-    } else if (e->regime == 3) {
+    } else if (elec->regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
         C1_ = std::cbrt(nu_a / nu_c);
@@ -273,7 +273,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = -fast_log2(nu_c) / 3;
         log2_C3_ = fast_log2(nu_c) / 2;
         log2_C4_ = fast_log2(nu_c / nu_m) / 2 + p / 2 * fast_log2(nu_m);
-    } else if (e->regime == 4) {
+    } else if (elec->regime == 4) {
         // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
         // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
         C1_ = std::sqrt(nu_a / nu_m);
@@ -282,7 +282,7 @@ void SynPhotons::update_constant() {
         log2_C1_ = -2 * fast_log2(nu_a);
         log2_C2_ = fast_log2(C2_) + fast_log2(nu_a) / 2;
         log2_C3_ = fast_log2(C2_) + fast_log2(nu_a / nu_m) / 2 + p / 2 * fast_log2(nu_m);
-    } else if (e->regime == 5 || e->regime == 6) {
+    } else if (elec->regime == 5 || elec->regime == 6) {
         // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for
         // regime 4 R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
         C1_ = std::sqrt(nu_c / nu_a) / 3;
@@ -296,8 +296,8 @@ void SynPhotons::update_constant() {
 }
 
 Real SynPhotons::compute_spectrum(Real nu) const {
-    Real p = e->p;
-    switch (e->regime) {
+    Real p = elec->p;
+    switch (elec->regime) {
         case 1:
             if (nu <= nu_a) {
                 return C1_ * (nu / nu_a) * (nu / nu_a);
@@ -371,8 +371,8 @@ Real SynPhotons::compute_spectrum(Real nu) const {
 }
 
 Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
-    Real p = e->p;
-    switch (e->regime) {
+    Real p = elec->p;
+    switch (elec->regime) {
         case 1:
             if (log2_nu <= log2_nu_a) {
                 return log2_C1_ + 2 * log2_nu;
@@ -627,7 +627,7 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
  */
 Real compute_gamma_peak(SynElectrons const& e) { return compute_gamma_peak(e.gamma_a, e.gamma_m, e.gamma_c); }
 
-void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
+void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     for (size_t i = 0; i < phi_size; ++i) {
@@ -640,21 +640,20 @@ void update_electrons_4Y(SynElectronGrid& e, Shock const& shock) {
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
-                Real p = e(i, j, k).p;
-                auto& Ys = e(i, j, k).Ys;
-                auto& electron = e(i, j, k);
+                Real p = electrons(i, j, k).p;
+                auto& Ys = electrons(i, j, k).Ys;
+                auto& elec = electrons(i, j, k);
 
-                electron.gamma_M = compute_syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
+                elec.gamma_M = compute_syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
                 if (k <= k_inj) {
-                    electron.gamma_c = compute_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
+                    elec.gamma_c = compute_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    electron.gamma_c = e(i, j, k_inj).gamma_c * electron.gamma_m / e(i, j, k_inj).gamma_m;
-                    electron.gamma_M = electron.gamma_c;
+                    elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
+                    elec.gamma_M = elec.gamma_c;
                 }
-                electron.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, electron.I_nu_peak, electron.gamma_m, electron.gamma_c, p);
-                electron.regime = determine_regime(electron.gamma_a, electron.gamma_c, electron.gamma_m);
-                electron.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, electron.gamma_c, p);
+                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
+                elec.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, elec.gamma_c, p);
             }
         }
     }
@@ -679,27 +678,27 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
                 Real B = shock.B(i, j, k);
                 Real Sigma = shock.column_num_den(i, j, k);
 
-                auto& e = electrons(i, j, k);
+                auto& elec = electrons(i, j, k);
 
-                e.gamma_M = compute_syn_gamma_M(B, electrons(i, j, k).Ys, p);
-                e.gamma_m = compute_syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
+                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, p);
+                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
-                if (1 < e.gamma_m && e.gamma_m < gamma_cyclotron) {
-                    f = std::min(fast_pow((gamma_cyclotron - 1) / (e.gamma_m - 1), 1 - p), 1_r);
-                    e.gamma_m = gamma_cyclotron;
+                if (1 < elec.gamma_m && elec.gamma_m < gamma_cyclotron) {
+                    f = std::min(fast_pow((gamma_cyclotron - 1) / (elec.gamma_m - 1), 1 - p), 1_r);
+                    elec.gamma_m = gamma_cyclotron;
                 }
-                e.column_num_den = Sigma * f * xi;
-                e.I_nu_peak = compute_syn_peak_power(B, p) * e.column_num_den / (4 * con::pi);
+                elec.column_num_den = Sigma * f * xi;
+                elec.I_nu_peak = compute_syn_peak_power(B, p) * elec.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
+                    elec.gamma_c = compute_gamma_c(t_com, B, elec.Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
-                    e.gamma_M = e.gamma_c;
+                    elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
+                    elec.gamma_M = elec.gamma_c;
                 }
-                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c, p);
-                e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
-                e.p = p;
+                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
+                elec.p = p;
             }
         }
     }
@@ -724,87 +723,91 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
                 Real B = shock.B(i, j, k);
                 Real Sigma = shock.column_num_den(i, j, k);
 
-                auto& e = electrons(i, j, k);
+                auto& elec = electrons(i, j, k);
 
-                e.gamma_M = compute_syn_gamma_M(B, electrons(i, j, k).Ys, p);
-                e.gamma_m = compute_syn_gamma_m(Gamma_rel, e.gamma_M, shock.eps_e, p, xi);
+                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, p);
+                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, shock.eps_e, p, xi);
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f = 1.;
-                if (1 < e.gamma_m && e.gamma_m < gamma_syn_limit) {
-                    f = std::min(fast_pow((gamma_syn_limit - 1) / (e.gamma_m - 1), 1 - p), 1_r);
-                    e.gamma_m = gamma_syn_limit;
+                if (1 < elec.gamma_m && elec.gamma_m < gamma_syn_limit) {
+                    f = std::min(fast_pow((gamma_syn_limit - 1) / (elec.gamma_m - 1), 1 - p), 1_r);
+                    elec.gamma_m = gamma_syn_limit;
                 }
-                e.column_num_den = Sigma * f * xi;
-                e.I_nu_peak = compute_syn_peak_power(B, p) * e.column_num_den / (4 * con::pi);
+                elec.column_num_den = Sigma * f * xi;
+                elec.I_nu_peak = compute_syn_peak_power(B, p) * elec.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    e.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
+                    elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
                 } else {  // no shocked electron injection, just adiabatic cooling
-                    e.gamma_c = electrons(i, j, k_inj).gamma_c * e.gamma_m / electrons(i, j, k_inj).gamma_m;
-                    e.gamma_M = e.gamma_c;
+                    elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
+                    elec.gamma_M = elec.gamma_c;
                 }
-                e.gamma_a = compute_syn_gamma_a(Gamma_rel, B, e.I_nu_peak, e.gamma_m, e.gamma_c, p);
-                e.regime = determine_regime(e.gamma_a, e.gamma_c, e.gamma_m);
-                e.p = p;
+                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
+                elec.p = p;
             }
         }
     }
 }
 
-SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& e) {
+SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& electrons) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    SynPhotonGrid ph({phi_size, theta_size, t_size});
+    SynPhotonGrid photons({phi_size, theta_size, t_size});
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                ph(i, j, k).e = &(e(i, j, k));
+                auto& ph = photons(i, j, k);
+                auto& elec = electrons(i, j, k);
+                ph.elec = &elec;
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real B = shock.B(i, j, k);
 
-                ph(i, j, k).nu_M = compute_syn_freq(e(i, j, k).gamma_M, B);
-                ph(i, j, k).nu_m = compute_syn_freq(e(i, j, k).gamma_m, B);
-                ph(i, j, k).nu_c = compute_syn_freq(e(i, j, k).gamma_c, B);
-                ph(i, j, k).nu_a = compute_syn_freq(e(i, j, k).gamma_a, B);
+                ph.nu_M = compute_syn_freq(elec.gamma_M, B);
+                ph.nu_m = compute_syn_freq(elec.gamma_m, B);
+                ph.nu_c = compute_syn_freq(elec.gamma_c, B);
+                ph.nu_a = compute_syn_freq(elec.gamma_a, B);
 
-                ph(i, j, k).log2_I_nu_peak = fast_log2(e(i, j, k).I_nu_peak);
-                ph(i, j, k).log2_nu_m = fast_log2(ph(i, j, k).nu_m);
-                ph(i, j, k).log2_nu_c = fast_log2(ph(i, j, k).nu_c);
-                ph(i, j, k).log2_nu_a = fast_log2(ph(i, j, k).nu_a);
-                ph(i, j, k).log2_nu_M = fast_log2(ph(i, j, k).nu_M);
-                ph(i, j, k).update_constant();
+                ph.log2_I_nu_peak = fast_log2(elec.I_nu_peak);
+                ph.log2_nu_m = fast_log2(ph.nu_m);
+                ph.log2_nu_c = fast_log2(ph.nu_c);
+                ph.log2_nu_a = fast_log2(ph.nu_a);
+                ph.log2_nu_M = fast_log2(ph.nu_M);
+                ph.update_constant();
             }
         }
     }
-    return ph;
+    return photons;
 }
 
-void generate_syn_photons(SynPhotonGrid& ph, Shock const& shock, SynElectronGrid const& e) {
+void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectronGrid const& electrons) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    ph.resize({phi_size, theta_size, t_size});
+    photons.resize({phi_size, theta_size, t_size});
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                ph(i, j, k).e = &(e(i, j, k));
+                auto& ph = photons(i, j, k);
+                auto& elec = electrons(i, j, k);
+                ph.elec = &elec;
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
                 Real B = shock.B(i, j, k);
 
-                ph(i, j, k).nu_M = compute_syn_freq(e(i, j, k).gamma_M, B);
-                ph(i, j, k).nu_m = compute_syn_freq(e(i, j, k).gamma_m, B);
-                ph(i, j, k).nu_c = compute_syn_freq(e(i, j, k).gamma_c, B);
-                ph(i, j, k).nu_a = compute_syn_freq(e(i, j, k).gamma_a, B);
+                ph.nu_M = compute_syn_freq(elec.gamma_M, B);
+                ph.nu_m = compute_syn_freq(elec.gamma_m, B);
+                ph.nu_c = compute_syn_freq(elec.gamma_c, B);
+                ph.nu_a = compute_syn_freq(elec.gamma_a, B);
 
-                ph(i, j, k).log2_I_nu_peak = fast_log2(e(i, j, k).I_nu_peak);
-                ph(i, j, k).log2_nu_m = fast_log2(ph(i, j, k).nu_m);
-                ph(i, j, k).log2_nu_c = fast_log2(ph(i, j, k).nu_c);
-                ph(i, j, k).log2_nu_a = fast_log2(ph(i, j, k).nu_a);
-                ph(i, j, k).log2_nu_M = fast_log2(ph(i, j, k).nu_M);
-                ph(i, j, k).update_constant();
+                ph.log2_I_nu_peak = fast_log2(elec.I_nu_peak);
+                ph.log2_nu_m = fast_log2(ph.nu_m);
+                ph.log2_nu_c = fast_log2(ph.nu_c);
+                ph.log2_nu_a = fast_log2(ph.nu_a);
+                ph.log2_nu_M = fast_log2(ph.nu_M);
+                ph.update_constant();
             }
         }
     }

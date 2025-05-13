@@ -30,9 +30,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
           py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
 
     py::class_<Ejecta>(m, "Ejecta")
-        .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("eps_k"),
-             py::arg("Gamma0"), py::arg("sigma0") = zero2d_fn, py::arg("deps_dt") = zero3d_fn,
-             py::arg("dm_dt") = zero3d_fn, py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+        .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("energy"),
+             py::arg("lorentz"), py::arg("magnetization"), py::arg("energy_injection") = zero3d_fn,
+             py::arg("mass_injection") = zero3d_fn, py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
 
     // Medium bindings
     m.def("ISM", &PyISM, py::arg("n_ism"));
@@ -48,16 +48,16 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     // Radiation bindings
     py::class_<PyRadiation>(m, "Radiation")
-        .def(py::init<Real, Real, Real, Real, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
-             py::arg("xi_e") = 1, py::arg("SSC") = false, py::arg("KN") = false);
+        .def(py::init<Real, Real, Real, Real, bool, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
+             py::arg("xi_e") = 1, py::arg("IC_cooling") = false, py::arg("SSC") = false, py::arg("KN") = false);
 
     // Model bindings
     py::class_<PyModel>(m, "Model")
         .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
-                      Real>(),
+                      Real, bool>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
              py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 2., 5.),
-             py::arg("rtol") = 1e-5)
+             py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
         .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));
 

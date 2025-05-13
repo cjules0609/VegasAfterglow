@@ -148,55 +148,56 @@ Real compton_cross_section(Real nu) {
     */
 }
 
-ICPhotonGrid generate_IC_photons(SynElectronGrid const& e, SynPhotonGrid const& ph, bool KN) noexcept {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t t_size = e.shape()[2];
+ICPhotonGrid generate_IC_photons(SynElectronGrid const& electrons, SynPhotonGrid const& photons, bool KN) noexcept {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t t_size = electrons.shape()[2];
     ICPhotonGrid IC_ph({phi_size, theta_size, t_size});
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
                 // Generate the IC photon spectrum for each grid cell.
-                IC_ph(i, j, k).compute_IC_spectrum(e(i, j, k), ph(i, j, k), KN);
+                IC_ph(i, j, k).compute_IC_spectrum(electrons(i, j, k), photons(i, j, k), KN);
             }
         }
     }
     return IC_ph;
 }
 
-void Thomson_cooling(SynElectronGrid& e, SynPhotonGrid& ph, Shock const& shock) {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t t_size = e.shape()[2];
+void Thomson_cooling(SynElectronGrid& electrons, SynPhotonGrid& photons, Shock const& shock) {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t t_size = electrons.shape()[2];
 
     for (size_t i = 0; i < phi_size; i++) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                Real Y_T =
-                    compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
-                e(i, j, k).Ys = InverseComptonY(Y_T);
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B,
+                                             electrons(i, j, k));
+                electrons(i, j, k).Ys = InverseComptonY(Y_T);
             }
         }
     }
-    update_electrons_4Y(e, shock);
-    generate_syn_photons(ph, shock, e);
+    update_electrons_4Y(electrons, shock);
+    generate_syn_photons(photons, shock, electrons);
 }
 
-void KN_cooling(SynElectronGrid& e, SynPhotonGrid& ph, Shock const& shock) {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t r_size = e.shape()[2];
+void KN_cooling(SynElectronGrid& electrons, SynPhotonGrid& photons, Shock const& shock) {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t r_size = electrons.shape()[2];
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
-                Real Y_T =
-                    compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B,
+                                             electrons(i, j, k));
                 // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
-                e(i, j, k).Ys = InverseComptonY(ph(i, j, k).nu_m, ph(i, j, k).nu_c, shock.B(i, j, k), Y_T);
+                electrons(i, j, k).Ys =
+                    InverseComptonY(photons(i, j, k).nu_m, photons(i, j, k).nu_c, shock.B(i, j, k), Y_T);
             }
         }
     }
-    update_electrons_4Y(e, shock);
-    generate_syn_photons(ph, shock, e);
+    update_electrons_4Y(electrons, shock);
+    generate_syn_photons(photons, shock, electrons);
 }
