@@ -306,7 +306,7 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
 
     Real jet_edge = find_jet_edge(jet, con::Gamma_cut);  // Determine the jet edge angle.
-    Real theta_min = 0;
+    Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
     size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 24);
     coord.theta = adaptive_theta_grid(jet, theta_min, theta_max, theta_view, theta_num);  //

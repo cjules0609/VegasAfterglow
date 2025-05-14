@@ -163,9 +163,9 @@ inline Real compute_dr_dt(Real beta) { return (beta * con::c) / (1 - beta); }
 inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
     constexpr Real Q = 2.82842712475;
     Real u2 = Gamma * Gamma - 1;
-    Real ratio = u2 / (Q * Q * theta_s * theta_s);
+    Real ratio = std::sqrt(u2 / (Q * Q * theta_s * theta_s));
     Real x = theta / theta_s;
-    Real f = 1 / (1 + ratio) * x;
+    Real f = 1 / (1 + ratio);
     return drdt / (2 * Gamma * r) * std::sqrt((2 * u2 + 3) / (4 * u2 + 3)) * f;
 }
 
@@ -375,6 +375,7 @@ void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
     Real pB_downstr = pB_upstr * ratio_u * ratio_u;
     Real n_downstr = n_upstr * ratio_u;
     Real e_th = compute_downstr_eth(Gamma_rel, n_downstr);
+
     shock.t_comv(i, j, k) = state.t_comv;
     shock.r(i, j, k) = state.r;
     shock.theta(i, j, k) = state.theta;

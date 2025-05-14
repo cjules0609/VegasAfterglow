@@ -2,7 +2,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Callable, Any, Optional
 from enum import Enum
-from .VegasAfterglowC import ModelParams, Setups, ObsData, VegasMC, Ejecta, Wind, Medium, ISM, TophatJet, GaussianJet, PowerLawJet, Radiation, Observer, Model
+from .VegasAfterglowC import ModelParams, Setups, ObsData, VegasMC, Ejecta, Wind, Medium, ISM, TophatJet, GaussianJet, PowerLawJet, Radiation, Observer, Model, Magnetar
 
 @dataclass
 class FitResult:

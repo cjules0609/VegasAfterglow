@@ -18,27 +18,27 @@ class Empty {};
 // c++20 concept
 template <typename T>
 concept HasDmdt = requires(T t) {
-    { t.dm_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.dm_dt(0.0, 0.0, 0.0) };
 };
 
 template <typename T>
 concept HasDedt = requires(T t) {
-    { t.deps_dt(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.deps_dt(0.0, 0.0, 0.0) };
 };
 
 template <typename T>
 concept HasSigma = requires(T t) {
-    { t.sigma0(0.0, 0.0) } -> std::same_as<Real>;
+    { t.sigma0(0.0, 0.0) };
 };
 
 template <typename T>
 concept HasU = requires(T t) {
-    { t.u } -> std::same_as<Real>;
+    { t.u };
 };
 
 template <typename T>
 concept HasMass = requires(T t) {
-    { t.mass(0.0, 0.0, 0.0) } -> std::same_as<Real>;
+    { t.mass(0.0, 0.0, 0.0) };
 };
 /*
 template <typename, typename = void>

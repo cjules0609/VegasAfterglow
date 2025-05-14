@@ -20,14 +20,17 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     //========================================================================================================
     //                                 Model bindings
     //========================================================================================================
+
+    m.def("Magnetar", &PyMagnetar, py::arg("L_0"), py::arg("t_0"));
+
     m.def("TophatJet", &PyTophatJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
-          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec, py::arg("energy_injection") = zero3d_fn);
 
     m.def("GaussianJet", &PyGaussianJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
-          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec, py::arg("energy_injection") = zero3d_fn);
 
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
-          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec);
+          py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec, py::arg("energy_injection") = zero3d_fn);
 
     py::class_<Ejecta>(m, "Ejecta")
         .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("energy"),

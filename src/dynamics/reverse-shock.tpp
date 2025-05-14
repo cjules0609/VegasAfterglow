@@ -167,7 +167,7 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
 
         return eps2 + eps3;
     };
-    constexpr Real r_tol = 1e-3;
+    constexpr Real r_tol = 1e-4;
     return root_bisect(func, 1, Gamma4, r_tol);
 }
 
@@ -567,7 +567,7 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
         Real theta_s =
             jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
-            // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi(i), coord.theta(j), eps_e);
+            // auto eqn_f = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_f, theta_s);
             auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_f, theta_s);
             auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_r);
             // Solve the forward-reverse shock shell

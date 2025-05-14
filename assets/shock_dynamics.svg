@@ -2,7 +2,6 @@
 <svg width="500" height="250" viewBox="0 0 500 250" xmlns="http://www.w3.org/2000/svg">
     <!-- Background - removing solid background for transparency -->
 
-    
     <!-- SECTION 1: FORWARD & REVERSE SHOCK MODELING -->
     <g transform="translate(275, 115)">
         <!-- Section Title -->

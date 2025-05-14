@@ -664,7 +664,7 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
 
     SynElectronGrid electrons({phi_size, theta_size, t_size});
 
-    constexpr Real gamma_cyclotron = 3;
+    constexpr Real gamma_cyclotron = 2;
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
@@ -709,7 +709,7 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
     auto [phi_size, theta_size, t_size] = shock.shape();
 
     electrons.resize({phi_size, theta_size, t_size});
-    constexpr Real gamma_syn_limit = 3;
+    constexpr Real gamma_syn_limit = 2;
 
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {

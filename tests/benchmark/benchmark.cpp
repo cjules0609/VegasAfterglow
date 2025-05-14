@@ -12,7 +12,7 @@ void tests(Real phi_resol, Real theta_resol, Real t_resol, Real n_ism, Real eps_
 
     Real lumi_dist = 1.23e26 * unit::cm;
 
-    size_t t_num = 30;
+    size_t t_num = 100;
 
     if (verbose) {
         t_num = 100;

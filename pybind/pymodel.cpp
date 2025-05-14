@@ -9,28 +9,32 @@
 
 #include "afterglow.h"
 
-Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0) {
+Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, TernaryFunc energy_injection) {
     Ejecta jet;
     jet.eps_k = math::tophat(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
+    jet.deps_dt = energy_injection;
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;
 }
 
-Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0) {
+Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, TernaryFunc energy_injection) {
     Ejecta jet;
     jet.eps_k = math::gaussian(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+    jet.deps_dt = energy_injection;
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;
 }
 
-Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real T0) {
+Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real T0,
+                     TernaryFunc energy_injection) {
     Ejecta jet;
     jet.eps_k = math::powerlaw(theta_c, E_iso * unit::erg / (4 * con::pi), k);
     jet.Gamma0 = math::powerlaw(theta_c, Gamma0, k);
+    jet.deps_dt = energy_injection;
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;
@@ -56,7 +60,7 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
 
     auto syn_ph = generate_syn_photons(shock, syn_e);
 
-    if (rad.IC_cooling || rad.SSC) {
+    if (rad.IC_cooling) {
         if (rad.KN) {
             KN_cooling(syn_e, syn_ph, shock);
         } else {

@@ -67,7 +67,7 @@ struct IntegratorGrid {
         boundary_to_center(gamma_edge, gamma);  // Compute center values for gamma.
     }
 
-    static constexpr size_t num{64};    ///< Number of bins.
+    static constexpr size_t num{128};   ///< Number of bins.
     StackArray<num + 1> nu_edge{0};     ///< Bin edges for nu.
     StackArray<num + 1> gamma_edge{0};  ///< Bin edges for gamma.
     StackArray<num> nu{0};              ///< Center values for nu.
@@ -75,6 +75,42 @@ struct IntegratorGrid {
     StackArray<num> I_nu_syn{0};        ///< Synchrotron intensity at each nu center.
     StackArray<num> column_den{0};      ///< Number density at each gamma center.
     StackMesh<num, num> I0{{{0}}};      ///< 2D array to store computed intermediate values.
+};
+
+struct IntegratorGridDynamic {
+    /**
+     * @brief Constructor: Initializes the grid with given nu and gamma boundaries.
+     * @param nu_min Minimum nu-value
+     * @param nu_max Maximum nu-value
+     * @param gamma_min Minimum gamma-value
+     * @param gamma_max Maximum gamma-value
+     */
+    IntegratorGridDynamic(Real nu_min, Real nu_max, Real gamma_min, Real gamma_max) {
+        Real log_nu_min = std::log10(nu_min);
+        Real log_nu_max = std::log10(nu_max);
+        num = static_cast<size_t>(std::ceil((log_nu_max - log_nu_min) * ppd));
+        // Generate logarithmically spaced bin edges for nu.
+        nu_edge = xt::logspace(log_nu_min, log_nu_max, num + 1);
+        // Generate logarithmically spaced bin edges for gamma.
+        gamma_edge = xt::logspace(std::log10(gamma_min), std::log10(gamma_max), num + 1);
+        nu = xt::zeros<Real>({num});
+        gamma = xt::zeros<Real>({num});
+        boundary_to_center(nu_edge, nu);        // Compute center values for nu.
+        boundary_to_center(gamma_edge, gamma);  // Compute center values for gamma.
+        I_nu_syn = xt::zeros<Real>({num});
+        column_den = xt::zeros<Real>({num});
+        I0 = xt::zeros<Real>({num, num});
+    }
+
+    constexpr static Real ppd = 5;
+    size_t num;
+    Array nu_edge;     ///< Bin edges for nu.
+    Array gamma_edge;  ///< Bin edges for gamma.
+    Array nu;          ///< Center values for nu.
+    Array gamma;       ///< Center values for gamma.
+    Array I_nu_syn;    ///< Synchrotron intensity at each nu center.
+    Array column_den;  ///< Number density at each gamma center.
+    MeshGrid I0;       ///< 2D array to store computed intermediate values.
 };
 
 /**
@@ -181,6 +217,13 @@ struct ICPhoton {
      * <!-- ************************************************************************************** -->
      */
     void integrate_IC_spectrum(IntegratorGrid const& grid) noexcept;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Remove the zero tail of the IC photon spectrum.
+     * <!-- ************************************************************************************** -->
+     */
+    void remove_zero_tail() noexcept;
 };
 
 /// @typedef ICPhotonGrid
@@ -242,6 +285,8 @@ void ICPhoton::compute_IC_spectrum(Electrons const& electrons, Photons const& ph
 
     // Perform final integration
     integrate_IC_spectrum(grid);
+
+    remove_zero_tail();
 
     // Convert to log space for interpolation
     log2_I_nu_ = xt::log2(I_nu_IC_);

@@ -139,7 +139,6 @@ void save_fwd_shock_state(size_t i, size_t j, size_t k, Eqn const& eqn, State co
     // Set constant parameters for the unshocked medium
     constexpr Real gamma1 = 1;  // Lorentz factor of unshocked medium (at rest)
     constexpr Real sigma1 = 0;  // Magnetization of unshocked medium
-
     // Update the shock state with calculated values
     save_shock_state(shock, i, j, k, state, state.Gamma, gamma1, m2 / con::mp, n1, sigma1);
 }
@@ -192,9 +191,9 @@ Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const&
         Real theta_s =
             jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
-            // auto eqn = ForwardShockEqn(medium, jet, coord.phi[i], coord.theta[j], eps_e, theta_s);
+            // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            //  Solve the shock shell for this theta slice
+            //   Solve the shock shell for this theta slice
             grid_solve_fwd_shock(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }

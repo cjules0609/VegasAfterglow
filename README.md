@@ -30,7 +30,7 @@
 
 ## Features
 
-<h3 align="center">Shock Dynamics & Evolution</h3>
+<h3 align="center">Shock Dynamics</h3>
 
 <img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="450"/>
 
@@ -73,7 +73,7 @@
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-- **Ultra-fast Light Curve Computation:** Generates a 30-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.6 milliseconds on an Apple M2 chip with a single core.
+- **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.9 milliseconds on an Apple M2 chip with a single core.
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~20 seconds for on-axis structured jet scenarios
@@ -576,8 +576,6 @@ We value all contributions and aim to respond to issues promptly.
 ---
 
 ## License
-
-Copyright © 2023-2025 Yihan Wang, Bing Zhang, and Connery Chen. All rights reserved.
 
 VegasAfterglow is released under the **BSD-3-Clause License**.
 

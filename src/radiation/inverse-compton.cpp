@@ -24,15 +24,14 @@ void ICPhoton::fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept {
             Real dS = std::fabs(dnu * dgamma);
             Real gamma_nu = grid.nu(i) * grid.gamma(j);
             Real factor = 4 * gamma_nu * gamma_nu;
-            grid.I0(i, j) = KN && (grid.nu(i) / grid.gamma(j) * (con::h / con::mec2) > 1)
+            /*grid.I0(i, j) = (KN && (gamma_nu * (con::h / con::mec2) > 1))
                                 ? 0
-                                : grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * con::sigmaT;
-            /*if (KN) {
-                grid.I0(i, j) = grid.column_den(j) * grid.I_nu_syn(i) * dS / factor *
-                                compton_cross_section(grid.nu(i) / grid.gamma(j));
+                                : grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * con::sigmaT;*/
+            if (KN) {
+                grid.I0(i, j) = grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * compton_cross_section(gamma_nu);
             } else {
                 grid.I0(i, j) = grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * con::sigmaT;
-            }*/
+            }
         }
     }
 }
@@ -65,6 +64,17 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
     }
 }
 
+void ICPhoton::remove_zero_tail() noexcept {
+    size_t idx = I_nu_IC_.size();
+    for (size_t i = I_nu_IC_.size() - 1; i >= 0; --i) {
+        if (I_nu_IC_(i) != 0) {
+            idx = i;
+            break;
+        }
+    }
+    nu_IC_ = xt::view(nu_IC_, xt::range(0, idx + 1));
+    I_nu_IC_ = xt::view(I_nu_IC_, xt::range(0, idx + 1));
+}
 /**
  * <!-- ************************************************************************************** -->
  * @internal
@@ -77,7 +87,7 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
  * <!-- ************************************************************************************** -->
  */
 inline Real eta_rad(Real gamma_m, Real gamma_c, Real p) {
-    return gamma_c < gamma_m ? 1 : std::pow(gamma_c / gamma_m, (2 - p));
+    return gamma_c < gamma_m ? 1 : fast_pow(gamma_c / gamma_m, (2 - p));
 }
 
 /**
@@ -100,7 +110,7 @@ Real compute_Thomson_Y(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     Real b = eta_e * eps_e / eps_B;
     Real Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
     Real Y1 = 2 * Y0;
-    for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
+    for (; std::fabs((Y1 - Y0) / Y0) > 1e-4;) {
         Y1 = Y0;
         Real gamma_c = compute_gamma_c(t_com, B, e.Ys, e.p);
         eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
@@ -130,22 +140,23 @@ Real ICPhoton::compute_log2_I_nu(Real log2_nu) const noexcept {
 
 Real compton_cross_section(Real nu) {
     Real x = con::h / (con::me * con::c2) * nu;
-    if (x <= 1) {
+    /*if (x <= 1) {
         return con::sigmaT;
     } else {
         return 0;
-    }
-    /*
+    }*/
+
     if (x < 1e-2) {
-         return con::sigmaT * (1 - 2 * x);
-     } else if (x > 1e2) {
-         return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
-     } else {
-         return 0.75 * con::sigmaT *
-                ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-                 (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
-     }
-    */
+        return con::sigmaT * (1 - 2 * x);
+    } else if (x > 1e2) {
+        return 3. / 8 * con::sigmaT * (log(2 * x) + 0.5) / x;
+    } else {
+        Real log_term = log(1 + 2 * x);
+        Real term1 = 1 + 2 * x;
+        return 0.75 * con::sigmaT *
+               ((1 + x) / (x * x * x) * (2 * x * (1 + x) / term1 - log_term) + log_term / (2 * x) -
+                (1 + 3 * x) / (term1 * term1));
+    }
 }
 
 ICPhotonGrid generate_IC_photons(SynElectronGrid const& electrons, SynPhotonGrid const& photons, bool KN) noexcept {

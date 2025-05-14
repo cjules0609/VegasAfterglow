@@ -16,6 +16,38 @@
 #include "pybind.h"
 
 /**
+ * @brief Magnetar model class
+ *
+ * This class represents a magnetar model with a given luminosity and time scale.
+ * The operator() function returns the magnetar luminosity as a function of time.
+ */
+struct PyMagnetar {
+    /**
+     * @brief Construct a new PyMagnetar object
+     *
+     * @param L_0 Luminosity at t = t_0 [erg/s]
+     * @param t_0 Time at which luminosity is L_0 [s]
+     */
+    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * con::erg / con::sec), t_0(t_0 * con::sec) {}
+
+    /**
+     * @brief Operator function for the magnetar model
+     *
+     * @param phi Azimuthal angle
+     * @param theta Polar angle
+     * @param t Time
+     * @return Luminosity
+     */
+    Real operator()(Real phi, Real theta, Real t) const {
+        Real tt = 1 + t / t_0;
+        return L_0 / (tt * tt);
+    }
+
+    Real L_0;
+    Real t_0;
+};
+
+/**
  * @brief Creates a top-hat jet model where energy and Lorentz factor are constant within theta_c
  *
  * @param theta_c Core angle of the jet [radians]
@@ -23,9 +55,11 @@
  * @param Gamma0 Initial Lorentz factor
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
+ * @param energy_injection Function for energy injection
  * @return Ejecta Configured jet with top-hat profile
  */
-Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec);
+Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
+                   TernaryFunc energy_injection = zero3d_fn);
 
 /**
  * @brief Creates a Gaussian jet model where energy and Lorentz factor follow Gaussian distribution
@@ -35,9 +69,11 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false
  * @param Gamma0 Initial Lorentz factor at the center
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
+ * @param energy_injection Function for energy injection
  * @return Ejecta Configured jet with Gaussian profile
  */
-Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec);
+Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
+                     TernaryFunc energy_injection = zero3d_fn);
 
 /**
  * @brief Creates a power-law jet model where energy and Lorentz factor follow power-law distribution
@@ -48,9 +84,11 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = fal
  * @param k Power-law index
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
+ * @param energy_injection Function for energy injection
  * @return Ejecta Configured jet with power-law profile
  */
-Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec);
+Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec,
+                     TernaryFunc energy_injection = zero3d_fn);
 
 /**
  * @brief Creates a constant density ISM (Interstellar Medium) environment
