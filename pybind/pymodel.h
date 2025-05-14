@@ -28,7 +28,7 @@ struct PyMagnetar {
      * @param L_0 Luminosity at t = t_0 [erg/s]
      * @param t_0 Time at which luminosity is L_0 [s]
      */
-    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * con::erg / con::sec), t_0(t_0 * con::sec) {}
+    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * unit::erg / unit::sec), t_0(t_0 * unit::sec) {}
 
     /**
      * @brief Operator function for the magnetar model
