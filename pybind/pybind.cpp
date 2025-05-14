@@ -20,8 +20,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     //========================================================================================================
     //                                 Model bindings
     //========================================================================================================
-
-    m.def("Magnetar", &PyMagnetar, py::arg("L_0"), py::arg("t_0"));
+    py::class_<PyMagnetar>(m, "Magnetar")
+        .def(py::init<Real, Real>(), py::arg("L0"), py::arg("t0"))
+        .def("__call__", &PyMagnetar::operator());
 
     m.def("TophatJet", &PyTophatJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
           py::arg("spreading") = false, py::arg("T0") = 1 * unit::sec, py::arg("energy_injection") = zero3d_fn);

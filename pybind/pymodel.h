@@ -59,7 +59,7 @@ struct PyMagnetar {
  * @return Ejecta Configured jet with top-hat profile
  */
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
-                   TernaryFunc energy_injection = zero3d_fn);
+                   TernaryFunc energy_injection = func::zero_3d);
 
 /**
  * @brief Creates a Gaussian jet model where energy and Lorentz factor follow Gaussian distribution
@@ -73,7 +73,7 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false
  * @return Ejecta Configured jet with Gaussian profile
  */
 Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
-                     TernaryFunc energy_injection = zero3d_fn);
+                     TernaryFunc energy_injection = func::zero_3d);
 
 /**
  * @brief Creates a power-law jet model where energy and Lorentz factor follow power-law distribution
@@ -88,7 +88,7 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = fal
  * @return Ejecta Configured jet with power-law profile
  */
 Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec,
-                     TernaryFunc energy_injection = zero3d_fn);
+                     TernaryFunc energy_injection = func::zero_3d);
 
 /**
  * @brief Creates a constant density ISM (Interstellar Medium) environment
