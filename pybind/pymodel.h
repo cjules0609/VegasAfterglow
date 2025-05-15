@@ -28,20 +28,7 @@ struct PyMagnetar {
      * @param L_0 Luminosity at t = t_0 [erg/s]
      * @param t_0 Time at which luminosity is L_0 [s]
      */
-    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * unit::erg / unit::sec), t_0(t_0 * unit::sec) {}
-
-    /**
-     * @brief Operator function for the magnetar model
-     *
-     * @param phi Azimuthal angle
-     * @param theta Polar angle
-     * @param t Time
-     * @return Luminosity
-     */
-    Real operator()(Real phi, Real theta, Real t) const {
-        Real tt = 1 + t / t_0;
-        return L_0 / (tt * tt);
-    }
+    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * unit::erg / (4 * con::pi * unit::sec)), t_0(t_0 * unit::sec) {}
 
     Real L_0;
     Real t_0;
@@ -55,11 +42,11 @@ struct PyMagnetar {
  * @param Gamma0 Initial Lorentz factor
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
- * @param energy_injection Function for energy injection
+ * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with top-hat profile
  */
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
-                   TernaryFunc energy_injection = func::zero_3d);
+                   std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
  * @brief Creates a Gaussian jet model where energy and Lorentz factor follow Gaussian distribution
@@ -69,11 +56,11 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false
  * @param Gamma0 Initial Lorentz factor at the center
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
- * @param energy_injection Function for energy injection
+ * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with Gaussian profile
  */
 Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
-                     TernaryFunc energy_injection = func::zero_3d);
+                     std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
  * @brief Creates a power-law jet model where energy and Lorentz factor follow power-law distribution
@@ -84,11 +71,11 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = fal
  * @param k Power-law index
  * @param spreading Whether to include jet lateral spreading
  * @param T0 Engine activity time [seconds]
- * @param energy_injection Function for energy injection
+ * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with power-law profile
  */
 Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec,
-                     TernaryFunc energy_injection = func::zero_3d);
+                     std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
  * @brief Creates a constant density ISM (Interstellar Medium) environment

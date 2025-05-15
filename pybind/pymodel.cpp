@@ -9,34 +9,68 @@
 
 #include "afterglow.h"
 
-Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, TernaryFunc energy_injection) {
+Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
     jet.eps_k = math::tophat(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
-    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
+
+    if (magnetar) {
+        jet.deps_dt = [=](Real phi, Real theta, Real t) {
+            if (theta <= theta_c) {
+                Real tt = 1 + t / magnetar->t_0;
+                return magnetar->L_0 / (tt * tt);
+            } else {
+                return 0.;
+            }
+        };
+    }
+
     return jet;
 }
 
-Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, TernaryFunc energy_injection) {
+Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0,
+                     std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
     jet.eps_k = math::gaussian(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
+
+    if (magnetar) {
+        jet.deps_dt = [=](Real phi, Real theta, Real t) {
+            if (theta <= theta_c) {
+                Real tt = 1 + t / magnetar->t_0;
+                return magnetar->L_0 / (tt * tt);
+            } else {
+                return 0.;
+            }
+        };
+    }
+
     return jet;
 }
 
 Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real T0,
-                     TernaryFunc energy_injection) {
+                     std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
     jet.eps_k = math::powerlaw(theta_c, E_iso * unit::erg / (4 * con::pi), k);
     jet.Gamma0 = math::powerlaw(theta_c, Gamma0, k);
-    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
+
+    if (magnetar) {
+        jet.deps_dt = [=](Real phi, Real theta, Real t) {
+            if (theta <= theta_c) {
+                Real tt = 1 + t / magnetar->t_0;
+                return magnetar->L_0 / (tt * tt);
+            } else {
+                return 0.;
+            }
+        };
+    }
+
     return jet;
 }
 
