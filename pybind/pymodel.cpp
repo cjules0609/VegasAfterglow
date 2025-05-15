@@ -13,7 +13,7 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T
     Ejecta jet;
     jet.eps_k = math::tophat(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
-    jet.deps_dt = energy_injection;
+    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;
@@ -23,7 +23,7 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
     Ejecta jet;
     jet.eps_k = math::gaussian(theta_c, E_iso * unit::erg / (4 * con::pi));
     jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-    jet.deps_dt = energy_injection;
+    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;
@@ -34,7 +34,7 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
     Ejecta jet;
     jet.eps_k = math::powerlaw(theta_c, E_iso * unit::erg / (4 * con::pi), k);
     jet.Gamma0 = math::powerlaw(theta_c, Gamma0, k);
-    jet.deps_dt = energy_injection;
+    jet.deps_dt = [=](Real phi, Real theta, Real t) { return theta <= theta_c ? energy_injection(phi, theta, t) : 0; };
     jet.spreading = spreading;
     jet.T0 = T0 * unit::sec;
     return jet;

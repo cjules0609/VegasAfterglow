@@ -12,11 +12,108 @@
 #include <vector>
 
 #include "macros.h"
-#include "medium.h"
 #include "mesh.h"
 #include "shock.h"
-#include "synchrotron.h"
 #include "utilities.h"
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @struct InverseComptonY
+ * @brief Handles Inverse Compton Y parameter calculations and related threshold values.
+ * <!-- ************************************************************************************** -->
+ */
+struct InverseComptonY {
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
+     * @details Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
+     * @param nu_m Characteristic frequency for minimum Lorentz factor
+     * @param nu_c Characteristic frequency for cooling Lorentz factor
+     * @param B Magnetic field strength
+     * @param Y_T Thomson Y parameter
+     * <!-- ************************************************************************************** -->
+     */
+    InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcept;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Simple constructor that initializes with only the Thomson Y parameter for special cases.
+     * @param Y_T Thomson Y parameter
+     * <!-- ************************************************************************************** -->
+     */
+    InverseComptonY(Real Y_T) noexcept;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Default constructor that initializes all member variables to zero.
+     * <!-- ************************************************************************************** -->
+     */
+    InverseComptonY() noexcept;
+
+    // Member variables
+    Real nu_hat_m{0};     ///< Frequency threshold for minimum electrons
+    Real nu_hat_c{0};     ///< Frequency threshold for cooling electrons
+    Real gamma_hat_m{0};  ///< Lorentz factor threshold for minimum energy electrons
+    Real gamma_hat_c{0};  ///< Lorentz factor threshold for cooling electrons
+    Real Y_T{0};          ///< Thomson scattering Y parameter
+    size_t regime{0};     ///< Indicator for the operating regime (1=fast IC cooling, 2=slow IC cooling, 3=special case)
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the effective Y parameter for a given frequency and spectral index.
+     * @details Different scaling relations apply depending on the cooling regime and frequency range.
+     * @param nu Frequency at which to compute the Y parameter
+     * @param p Spectral index of electron distribution
+     * @return The effective Y parameter at the given frequency
+     * <!-- ************************************************************************************** -->
+     */
+    Real compute_val_at_nu(Real nu, Real p) const;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the effective Y parameter for a given Lorentz factor and spectral index.
+     * @details Different scaling relations apply depending on the cooling regime and gamma value.
+     * @param gamma Electron Lorentz factor
+     * @param p Spectral index of electron distribution
+     * @return The effective Y parameter at the given gamma
+     * <!-- ************************************************************************************** -->
+     */
+    Real compute_val_at_gamma(Real gamma, Real p) const;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Returns the Thomson Y parameter from the provided InverseComptonY object.
+     * @details Previously supported summing Y parameters from multiple objects.
+     * @param Ys InverseComptonY object
+     * @return The Thomson Y parameter
+     * <!-- ************************************************************************************** -->
+     */
+    static Real compute_Y_Thompson(InverseComptonY const& Ys);  ///< Returns Y_T parameter
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the effective Y parameter at a specific Lorentz factor and spectral index.
+     * @details Previously supported summing contributions from multiple InverseComptonY objects.
+     * @param Ys InverseComptonY object
+     * @param gamma Electron Lorentz factor
+     * @param p Spectral index of electron distribution
+     * @return The effective Y parameter at the given gamma
+     * <!-- ************************************************************************************** -->
+     */
+    static Real compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p);
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the effective Y parameter at a specific frequency and spectral index.
+     * @details Previously supported summing contributions from multiple InverseComptonY objects.
+     * @param Ys InverseComptonY object
+     * @param nu Frequency at which to compute the Y parameter
+     * @param p Spectral index of electron distribution
+     * @return The effective Y parameter at the given frequency
+     * <!-- ************************************************************************************** -->
+     */
+    static Real compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p);
+};
 
 /**
  * <!-- ************************************************************************************** -->
@@ -32,7 +129,7 @@ inline const Real IC_x0 = std::sqrt(2) / 3;
  * <!-- ************************************************************************************** -->
  * @brief Computes the Compton scattering cross-section as a function of frequency (nu).
  * @param nu The frequency at which to compute the cross-section
- * @return For x = (h * nu) / (me * c²) <= 1, returns the Thomson cross-section (con::sigmaT), otherwise 0
+ * @return Compton cross-section
  * <!-- ************************************************************************************** -->
  */
 inline Real compton_cross_section(Real nu);
@@ -226,8 +323,16 @@ struct ICPhoton {
     void remove_zero_tail() noexcept;
 };
 
-/// @typedef ICPhotonGrid
-/// @brief Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
+class SynPhotons;
+class SynElectrons;
+
+/// Type alias for 3D grid of synchrotron photons
+using SynPhotonGrid = xt::xtensor<SynPhotons, 3>;
+
+/// Type alias for 3D grid of synchrotron electrons
+using SynElectronGrid = xt::xtensor<SynElectrons, 3>;
+
+/// Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
 using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
 
 /**
