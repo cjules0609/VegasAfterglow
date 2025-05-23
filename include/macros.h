@@ -56,7 +56,7 @@ namespace unit {
     constexpr Real flux_den_cgs = erg / cm2 / sec / Hz;  ///< Flux density in CGS units
     constexpr Real Jy = 1e-23 * erg / cm2 / sec / Hz;    ///< Jansky (radio flux density) in code units
     constexpr Real mJy = 1e-3 * Jy;                      ///< Milli-Jansky in code units
-    constexpr Real uJy = 1e-6 * mJy;                     ///< Micro-Jansky in code units
+    constexpr Real uJy = 1e-6 * Jy;                      ///< Micro-Jansky in code units
     constexpr Real m = 100 * cm;                         ///< Meter in code units
     constexpr Real km = 1000 * m;                        ///< Kilometer in code units
     constexpr Real au = 1.5e13 * cm;                     ///< Astronomical Unit in code units

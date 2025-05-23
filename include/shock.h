@@ -319,10 +319,11 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
  * @param N_downstr Downstream total number of shocked particles
  * @param n_upstr Upstream number density
  * @param sigma_upstr Upstream magnetization
+ * @return The total pressure in the downstream region
  * <!-- ************************************************************************************** -->
  */
 template <typename State>
-void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
+Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
                       Real Gamma_upstr, Real N_downstr, Real n_upstr, Real sigma_upstr);
 /**
  * <!-- ************************************************************************************** -->
@@ -367,9 +368,10 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
 }
 
 template <typename State>
-void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
+Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
                       Real Gamma_upstr, Real N_downstr, Real n_upstr, Real sigma_upstr) {
     Real Gamma_rel = compute_rel_Gamma(Gamma_upstr, Gamma_downstr);
+    Real ad_idx = adiabatic_idx(Gamma_rel);
     Real ratio_u = compute_4vel_jump(Gamma_rel, sigma_upstr);
     Real pB_upstr = compute_upstr_mag_p(n_upstr, sigma_upstr);
     Real pB_downstr = pB_upstr * ratio_u * ratio_u;
@@ -383,6 +385,7 @@ void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
     shock.Gamma_rel(i, j, k) = Gamma_rel;
     shock.B(i, j, k) = compute_comv_weibel_B(shock.eps_B, e_th) + std::sqrt(pB_downstr * 8 * con::pi);
     shock.column_num_den(i, j, k) = N_downstr / (state.r * state.r);
+    return (ad_idx - 1) * e_th + pB_downstr;
 }
 
 template <typename Eqn>

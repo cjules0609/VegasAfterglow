@@ -115,6 +115,7 @@ Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, R
 
 void ICPhoton::fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept {
     // For each (nu0, gamma) pair, compute differential contributions and fill in I0
+
     for (size_t i = 0; i < grid.num; ++i) {
         Real dnu = grid.nu_edge(i + 1) - grid.nu_edge(i);
         for (size_t j = 0; j < grid.num; ++j) {
@@ -122,14 +123,11 @@ void ICPhoton::fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept {
             Real dS = std::fabs(dnu * dgamma);
             Real gamma_nu = grid.nu(i) * grid.gamma(j);
             Real factor = 4 * gamma_nu * gamma_nu;
-            /*grid.I0(i, j) = (KN && (gamma_nu * (con::h / con::mec2) > 1))
-                                ? 0
-                                : grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * con::sigmaT;*/
-            if (KN) {
-                grid.I0(i, j) = grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * compton_cross_section(gamma_nu);
-            } else {
-                grid.I0(i, j) = grid.column_den(j) * grid.I_nu_syn(i) * dS / factor * con::sigmaT;
-            }
+
+            // Store cross-section based on KN regime
+            Real cross_section = KN ? compton_cross_section(gamma_nu) : con::sigmaT;
+
+            grid.I0(i, j) = grid.column_num_den(j) * grid.I_nu_syn(i) * dS / factor * cross_section;
         }
     }
 }
@@ -145,21 +143,22 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
     Real nu_max = 4 * gamma_max * gamma_max * nu0_max * IC_x0 * 0.999;
 
     nu_IC_ = xt::logspace(std::log10(nu_min), std::log10(nu_max), spectrum_resol);
-    I_nu_IC_ = xt::zeros<Real>({spectrum_resol});
 
-    // Integrate over the grid to compute the final IC photon spectrum
+    // Integrate over the grid to compute the final IC photon spectrum//TODO: Optimize this
     for (size_t i = 0; i < grid.num; ++i) {
         for (size_t j = 0; j < grid.num; ++j) {
-            Real max_freq = 4 * grid.gamma(j) * grid.gamma(j) * grid.nu(i) * IC_x0;
-            for (size_t k = 0; k < nu_IC_.size(); ++k) {
+            Real max_freq = 4 * IC_x0 * grid.gamma(j) * grid.gamma(j) * grid.nu(i);
+            for (size_t k = 0; k < spectrum_resol; ++k) {
                 if (nu_IC_(k) <= max_freq) {
-                    I_nu_IC_(k) += grid.I0(i, j) * nu_IC_(k);
+                    I_nu_IC_(k) += grid.I0(i, j);
                 } else {
                     break;
                 }
             }
         }
     }
+
+    I_nu_IC_ *= nu_IC_;
 }
 
 void ICPhoton::remove_zero_tail() noexcept {
@@ -173,6 +172,7 @@ void ICPhoton::remove_zero_tail() noexcept {
     nu_IC_ = xt::view(nu_IC_, xt::range(0, idx + 1));
     I_nu_IC_ = xt::view(I_nu_IC_, xt::range(0, idx + 1));
 }
+
 /**
  * <!-- ************************************************************************************** -->
  * @internal
@@ -223,15 +223,15 @@ Real ICPhoton::compute_I_nu(Real nu) const noexcept {
 }
 
 Real ICPhoton::compute_log2_I_nu(Real log2_nu) const noexcept {
-    Real dnu = log2_nu_IC_(1) - log2_nu_IC_(0);
-    size_t idx = static_cast<size_t>((log2_nu - log2_nu_IC_(0)) / dnu + 1);
+    Real dlog2_nu = log2_nu_IC_(1) - log2_nu_IC_(0);
+    size_t idx = static_cast<size_t>((log2_nu - log2_nu_IC_(0)) / dlog2_nu + 1);
     if (idx < 1) {
         idx = 1;
     } else if (idx > log2_nu_IC_.size() - 1) {
         idx = log2_nu_IC_.size() - 1;
     }
 
-    Real slope = (log2_I_nu_(idx) - log2_I_nu_(idx - 1)) / dnu;
+    Real slope = (log2_I_nu_(idx) - log2_I_nu_(idx - 1)) / dlog2_nu;
 
     return log2_I_nu_(idx - 1) + slope * (log2_nu - log2_nu_IC_(idx - 1));
 }

@@ -18,7 +18,7 @@ TEST_DIR := tests
 
 # === Compiler & flags ===
 CXX ?= g++
-CXXFLAGS := -std=c++20 -O3 -march=native -flto -Iinclude -Iexternal -w -ffast-math
+CXXFLAGS := -std=c++20 -O3 -march=native -flto -Iinclude -Iexternal -w  -g
 LDFLAGS := -lz
 
 # Tests: each tests/foo/bar.cpp → tests/foo/bar(.exe)

@@ -15,7 +15,7 @@ ForwardShockEqn<Ejecta, Medium>::ForwardShockEqn(Medium const& medium, Ejecta co
       ejecta(ejecta),
       phi(phi),
       theta0(theta),
-      eps_e(eps_e),
+      eps_rad(eps_e * 0),
       dOmega0(1 - std::cos(theta)),
       theta_s(theta_s),
       m_shell(0) {
@@ -105,7 +105,7 @@ Real ForwardShockEqn<Ejecta, Medium>::dU_dt(Real m_swept, Real dm_dt_swept, Stat
         dlnVdt += factor / (ad_idx - 1);
     }
 
-    return (1 - eps_e) * (state.Gamma - 1) * con::c2 * dm_dt_swept - (ad_idx - 1) * dlnVdt * state.u;
+    return (1 - eps_rad) * (state.Gamma - 1) * con::c2 * dm_dt_swept - (ad_idx - 1) * dlnVdt * state.u;
 }
 
 template <typename Ejecta, typename Medium>
@@ -193,7 +193,7 @@ Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const&
         for (size_t j = 0; j < theta_size; ++j) {
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e, theta_s);
-            //   Solve the shock shell for this theta slice
+            //    Solve the shock shell for this theta slice
             grid_solve_fwd_shock(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }

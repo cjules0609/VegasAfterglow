@@ -54,7 +54,6 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     Real Gamma3 = 1;
 
     // Gamma_rel = 1;
-
     auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
     diff.eps_shell = deps_shell_dt;
     diff.m_shell = dm_shell_dt;
@@ -83,6 +82,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
     diff.theta = 0;  // no lateral spreading
 }
+
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T);
 
 template <typename Ejecta, typename Medium>
@@ -398,8 +398,15 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
 
     Real Gamma3 = eqn_rvs.compute_crossing_Gamma3(state);
 
-    save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
-    save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
+    Real p_f = save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
+    Real p_r = save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
+
+    if (p_r > p_f) {  // reverse shock cannot be generated.
+        shock_rvs.Gamma_rel(i, j, k) = 1;
+        shock_rvs.column_num_den(i, j, k) = 0;
+        shock_rvs.B(i, j, k) = 0;
+    }
+
     return state.m3 >= state.m_shell && !eqn_rvs.is_injecting(t);
 }
 
@@ -528,7 +535,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     typename RvsEqn::State state_rvs;
 
     Real t_dec = compute_dec_time(eqn_rvs, t.back());
-    Real t0 = std::min(t.front(), t_dec / 100);
+    Real t0 = min(t.front(), t_dec / 100, 1 * unit::sec);
 
     eqn_fwd.set_init_state(state_fwd, t0);
 

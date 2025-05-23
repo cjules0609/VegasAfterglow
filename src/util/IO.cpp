@@ -61,6 +61,7 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
     xt::xarray<Real> nu_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     xt::xarray<Real> nu_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     xt::xarray<Real> I_nu_peak = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> regime = xt::zeros<Real>({shape[0], shape[1], shape[2]});
 
     for (size_t i = 0; i < shape[0]; ++i)
         for (size_t j = 0; j < shape[1]; ++j)
@@ -70,6 +71,7 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
                 nu_c(i, j, k) = ph(i, j, k).nu_c / unit::Hz;
                 nu_M(i, j, k) = ph(i, j, k).nu_M / unit::Hz;
                 I_nu_peak(i, j, k) = ph(i, j, k).elec->I_nu_peak / (unit::erg / unit::cm2 / unit::sec / unit::Hz);
+                regime(i, j, k) = ph(i, j, k).elec->regime;
             }
 
     xt::dump_npz(filename + ".npz", "nu_a", nu_a, false, false);
@@ -77,6 +79,7 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
     xt::dump_npz(filename + ".npz", "nu_c", nu_c, false, true);
     xt::dump_npz(filename + ".npz", "nu_Max", nu_M, false, true);
     xt::dump_npz(filename + ".npz", "I_nu_peak", I_nu_peak, false, true);
+    xt::dump_npz(filename + ".npz", "regime", regime, false, true);
 }
 
 void write_npz(std::string const& filename, SynElectronGrid const& e) {
@@ -100,7 +103,7 @@ void write_npz(std::string const& filename, SynElectronGrid const& e) {
     xt::dump_npz(filename + ".npz", "gamma_a", gamma_a, false, false);
     xt::dump_npz(filename + ".npz", "gamma_m", gamma_m, false, true);
     xt::dump_npz(filename + ".npz", "gamma_c", gamma_c, false, true);
-    xt::dump_npz(filename + ".npz", "gamma_M", gamma_M, false, true);
+    xt::dump_npz(filename + ".npz", "gamma_Max", gamma_M, false, true);
     xt::dump_npz(filename + ".npz", "column_num_den", column_num_den, false, true);
 }
 

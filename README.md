@@ -34,7 +34,7 @@
 
 <img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="450"/>
 
-- **Forward and Reverse Shock Modeling:** Simulates both shocks with arbitrary magnetization levels.
+- **Forward and Reverse Shock Modeling:** Simulates both shocks with arbitrary magnetization levels and shell thicknesses.
 - **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
 - **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
 - **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
@@ -374,7 +374,7 @@ cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]
 cfg.z = 1.58               # Redshift
 
 # Physical model configuration
-cfg.medium = "wind"        # Ambient medium: "wind", "ISM" (Interstellar Medium) or "user" (user-defined)
+cfg.medium = "wind"        # Ambient medium: "wind", "ism" (Interstellar Medium) or "user" (user-defined)
 cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
 ```
 
@@ -385,19 +385,19 @@ These settings affect how the model is calculated but are not varied during the 
 <summary><b>2. Defining Parameters and Running MCMC</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-The `ParamDef` class is used to define the parameters for MCMC exploration. Each parameter requires a name, initial value, prior range, and sampling scale:
+The `ParamDef` class is used to define the parameters for MCMC exploration. Each parameter requires a name, prior range, and sampling scale:
 
 ```python
 mc_params = [
-    ParamDef("E_iso",    1e52,  1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
-    ParamDef("Gamma0",     30,     5,  1000,  Scale.LOG),       # Lorentz factor at the core
-    ParamDef("theta_c",   0.2,   0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
-    ParamDef("theta_v",    0.,  None,  None,  Scale.FIXED),     # Viewing angle [rad]
-    ParamDef("p",         2.5,     2,     3,  Scale.LINEAR),    # Shocked electron power law index
-    ParamDef("eps_e",     0.1,  1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
-    ParamDef("eps_B",    1e-2,  1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
-    ParamDef("A_star",   0.01,  1e-3,     1,  Scale.LOG),       # Wind parameter
-    ParamDef("xi",        0.5,  1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
+    ParamDef("E_iso",      1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
+    ParamDef("Gamma0",        5,  1000,  Scale.LOG),       # Lorentz factor at the core
+    ParamDef("theta_c",     0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
+    ParamDef("theta_v",     0.0,   0.0,  Scale.FIXED),     # Viewing angle [rad]
+    ParamDef("p",             2,     3,  Scale.LINEAR),    # Shocked electron power law index
+    ParamDef("eps_e",      1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
+    ParamDef("eps_B",      1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
+    ParamDef("A_star",     1e-3,     1,  Scale.LOG),       # Wind parameter
+    ParamDef("xi",         1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
 ]
 ```
 

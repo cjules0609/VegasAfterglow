@@ -64,7 +64,7 @@ class Fitter:
             *(
                 (
                     pd.name,
-                    (np.log10(pd.init)  if pd.scale is Scale.LOG else pd.init),
+                    (0.5*(np.log10(pd.lower)+np.log10(pd.upper))  if pd.scale is Scale.LOG else 0.5*(pd.lower + pd.upper)),
                     (np.log10(pd.lower) if pd.scale is Scale.LOG else pd.lower),
                     (np.log10(pd.upper) if pd.scale is Scale.LOG else pd.upper),
                 )
@@ -83,7 +83,7 @@ class Fitter:
             for pd in defs:
                 if pd.scale is Scale.FIXED:
                     # fixed param: always pd.init
-                    setattr(p, pd.name, pd.init)
+                    setattr(p, pd.name, 0.5*(pd.lower+pd.upper))
                 else:
                     v = x[i]
                     if pd.scale is Scale.LOG:

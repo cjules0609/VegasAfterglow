@@ -38,6 +38,8 @@ void tests(Real phi_resol, Real theta_resol, Real t_resol, Real n_ism, Real eps_
 
     auto syn_ph = generate_syn_photons(f_shock, syn_e);
 
+    // auto ic = generate_IC_photons(syn_e, syn_ph);
+
     Real nu_obs = eVtoHz(1 * unit::keV);
 
     Array F_nu = obs.specific_flux(t_obs, nu_obs, syn_ph);

@@ -101,9 +101,9 @@ class ForwardShockEqn {
     Medium const& medium;  ///< Reference to the ambient medium properties
     Ejecta const& ejecta;  ///< Reference to the ejecta properties
 
-    Real const phi{0};     ///< Angular coordinate phi in the jet frame
-    Real const theta0{0};  ///< Initial angular coordinate theta
-    Real const eps_e{0};   ///< Fraction of energy given to electrons
+    Real const phi{0};      ///< Angular coordinate phi in the jet frame
+    Real const theta0{0};   ///< Initial angular coordinate theta
+    Real const eps_rad{0};  ///< Blast wave radiation efficiency
 
    private:
     /**

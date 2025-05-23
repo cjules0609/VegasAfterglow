@@ -14,7 +14,7 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
       ejecta(ejecta),
       phi(phi),
       theta0(theta),
-      eps_e(eps_e),
+      eps_rad(eps_e * 0),
       dOmega0(1 - std::cos(theta0)),
       theta_s(theta_s),
       m_shell(0) {
@@ -73,7 +73,7 @@ Real SimpleShockEqn<Ejecta, Medium>::dGamma_dt(Real dm_dt_swept, State const& st
         m_shell = state.m_shell;
     }
 
-    return a1 / (m_shell + eps_e * m_swept + 2 * (1 - eps_e) * state.Gamma * m_swept);
+    return a1 / (m_shell + eps_rad * m_swept + 2 * (1 - eps_rad) * state.Gamma * m_swept);
 }
 
 template <typename Ejecta, typename Medium>

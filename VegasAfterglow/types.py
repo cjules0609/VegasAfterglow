@@ -27,7 +27,6 @@ class ParamDef:
     scale=FIXED means this param never appears in the sampler.
     """
     name:   str
-    init:   float
     lower:  Optional[float] = None  # for FIXED these can be None
     upper:  Optional[float] = None
     scale:  Scale = Scale.LINEAR

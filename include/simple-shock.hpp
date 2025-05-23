@@ -92,11 +92,11 @@ class SimpleShockEqn {
      */
     void set_init_state(State& state, Real t0) const noexcept;
 
-    Medium const& medium;  ///< Reference to the medium properties
-    Ejecta const& ejecta;  ///< Reference to the ejecta properties
-    Real const phi{0};     ///< Angular coordinate phi
-    Real const theta0{0};  ///< Angular coordinate theta
-    Real const eps_e{0};   ///< Electron energy fraction
+    Medium const& medium;   ///< Reference to the medium properties
+    Ejecta const& ejecta;   ///< Reference to the ejecta properties
+    Real const phi{0};      ///< Angular coordinate phi
+    Real const theta0{0};   ///< Angular coordinate theta
+    Real const eps_rad{0};  ///< Blast wave radiation efficiency
 
    private:
     /**
@@ -110,7 +110,7 @@ class SimpleShockEqn {
      * <!-- ************************************************************************************** -->
      */
     Real dGamma_dt(Real dm_dt_swept, State const& state, State const& diff) const noexcept;
-    
+
     Real const dOmega0{0};  ///< Initial solid angle
     Real const theta_s{0};  ///< Critical angle for jet spreading
     Real m_shell{0};        ///< Ejecta mass per solid angle
