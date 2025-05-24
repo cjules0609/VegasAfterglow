@@ -133,7 +133,7 @@ class PyRadiation {
      */
     PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e = 1, bool IC_cooling = false, bool SSC = false,
                 bool KN = false)
-        : rad(eps_e, eps_B, p, xi_e), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
+        : rad(RadParams{eps_e, eps_B, p, xi_e}), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
 
     RadParams rad;
     bool IC_cooling{false};  ///< Whether to include IC cooling
