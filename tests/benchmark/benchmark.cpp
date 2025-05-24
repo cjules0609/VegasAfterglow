@@ -26,7 +26,12 @@ void tests(Real phi_resol, Real theta_resol, Real t_resol, Real n_ism, Real eps_
 
     Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, phi_resol, theta_resol, t_resol);
 
-    Shock f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
+    RadParams rad_fwd;
+    rad_fwd.eps_e = eps_e;
+    rad_fwd.eps_B = eps_B;
+    rad_fwd.p = p;
+
+    Shock f_shock = generate_fwd_shock(coord, medium, jet, rad_fwd);
 
     Observer obs;
 
@@ -34,7 +39,7 @@ void tests(Real phi_resol, Real theta_resol, Real t_resol, Real n_ism, Real eps_
 
     obs.observe(coord, f_shock, lumi_dist, z);
 
-    auto syn_e = generate_syn_electrons(f_shock, p);
+    auto syn_e = generate_syn_electrons(f_shock);
 
     auto syn_ph = generate_syn_photons(f_shock, syn_e);
 

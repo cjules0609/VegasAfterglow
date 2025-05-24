@@ -9,12 +9,12 @@
 
 template <typename Ejecta, typename Medium>
 SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta,
-                                               Real eps_e, Real theta_s)
+                                               RadParams const& rad_params, Real theta_s)
     : medium(medium),
       ejecta(ejecta),
       phi(phi),
       theta0(theta),
-      eps_rad(eps_e * 0),
+      rad(rad_params),
       dOmega0(1 - std::cos(theta0)),
       theta_s(theta_s),
       m_shell(0) {
@@ -22,6 +22,8 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
     if constexpr (HasSigma<Ejecta>) {
         m_shell /= 1 + ejecta.sigma0(phi, theta0);
     }
+    rad_const = 16. / 3 * con::mp * con::sigmaT * con::c / (con::me * con::me) * (rad.p - 2) / (rad.p - 1) * rad.eps_e *
+                rad.eps_B / rad.xi_e;
 }
 
 template <typename Ejecta, typename Medium>
@@ -48,11 +50,14 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
     Real rho = medium.rho(phi, state.theta, state.r);
     Real dm_dt_swept = state.r * state.r * rho * diff.r;
 
-    diff.Gamma = dGamma_dt(dm_dt_swept, state, diff);
+    Real eps_rad = compute_radiative_efficiency(rad_const, state.t_comv, state.Gamma, rho, rad.eps_e, rad.p);
+    
+    diff.Gamma = dGamma_dt(eps_rad, dm_dt_swept, state, diff);
 }
 
 template <typename Ejecta, typename Medium>
-Real SimpleShockEqn<Ejecta, Medium>::dGamma_dt(Real dm_dt_swept, State const& state, State const& diff) const noexcept {
+Real SimpleShockEqn<Ejecta, Medium>::dGamma_dt(Real eps_rad, Real dm_dt_swept, State const& state,
+                                               State const& diff) const noexcept {
     Real m_swept = compute_swept_mass(*this, state);
     Real m_shell = this->m_shell;
 

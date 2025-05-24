@@ -90,7 +90,7 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
                                     Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
-    auto syn_e = generate_syn_electrons(shock, rad.p, rad.xi_e);
+    auto syn_e = generate_syn_electrons(shock);
 
     auto syn_ph = generate_syn_photons(shock, syn_e);
 
@@ -120,15 +120,14 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs) -> 
     Observer observer;
 
     if (!rvs_rad_opt) {
-        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.eps_e, fwd_rad.eps_B, rtol);
+        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
 
         single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
 
         return flux_dict;
     } else {
         auto rvs_rad = *rvs_rad_opt;
-        auto [fwd_shock, rvs_shock] =
-            generate_shock_pair(coord, medium, jet, fwd_rad.eps_e, fwd_rad.eps_B, rvs_rad.eps_e, rvs_rad.eps_B, rtol);
+        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
 
         single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
 

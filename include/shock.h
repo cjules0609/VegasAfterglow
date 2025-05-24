@@ -34,25 +34,23 @@ class Shock {
      * @param phi_size Number of grid points in phi direction
      * @param theta_size Number of grid points in theta direction
      * @param t_size Number of grid points in time direction
-     * @param eps_e Electron energy fraction
-     * @param eps_B Magnetic energy fraction
+     * @param rad_params Radiation parameters
      * <!-- ************************************************************************************** -->
      */
-    Shock(size_t phi_size, size_t theta_size, size_t t_size, Real eps_e, Real eps_B);
+    Shock(size_t phi_size, size_t theta_size, size_t t_size, RadParams const& rad_params);
 
     Shock() noexcept = default;
 
-    MeshGrid3d t_comv;          ///< Comoving time
-    MeshGrid3d r;               ///< Radius
-    MeshGrid3d theta;           ///< Theta for jet spreading
-    MeshGrid3d Gamma;           ///< Bulk Lorentz factor
-    MeshGrid3d Gamma_rel;       ///< Relative Lorentz factor between downstream and upstream
-    MeshGrid3d B;               ///< Comoving magnetic field
-    MeshGrid3d column_num_den;  ///< Downstream proton column number density
-    MeshGrid injection_idx;     ///< Beyond which grid index there is no electron injection
-    MaskGrid required;          ///< Grid points actually required for final flux calculation
-    Real eps_e{0};              ///< Electron energy fraction
-    Real eps_B{0};              ///< Magnetic energy fraction
+    MeshGrid3d t_comv;                 ///< Comoving time
+    MeshGrid3d r;                      ///< Radius
+    MeshGrid3d theta;                  ///< Theta for jet spreading
+    MeshGrid3d Gamma;                  ///< Bulk Lorentz factor
+    MeshGrid3d Gamma_rel;              ///< Relative Lorentz factor between downstream and upstream
+    MeshGrid3d B;                      ///< Comoving magnetic field
+    MeshGrid3d proton_column_num_den;  ///< Downstream proton column number density
+    MeshGrid injection_idx;            ///< Beyond which grid index there is no electron injection
+    MaskGrid required;                 ///< Grid points actually required for final flux calculation
+    RadParams rad;                     ///< Radiation parameters
 
     /// Returns grid dimensions as a tuple
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }
@@ -296,6 +294,27 @@ inline Real compute_region4_num_den(Real dEdOmega, Real Gamma0, Real r, Real D_j
 
 /**
  * <!-- ************************************************************************************** -->
+ * @brief Computes the radiative efficiency based on the radiative constant, comoving time, Lorentz factor, and density.
+ * @param rad_const Radiative constant
+ * @param t_comv Comoving time
+ * @param Gamma Lorentz factor
+ * @param rho Density
+ * @param eps_e Electron energy fraction
+ * @param p Electron energy power law index
+ * @return The radiative efficiency
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_radiative_efficiency(Real rad_const, Real t_comv, Real Gamma, Real rho, Real eps_e, Real p) {
+    Real g_m_g_c = rad_const * t_comv * Gamma * (Gamma - 1) * (Gamma - 1) * rho;  // gamma_m/gamma_c
+    if (g_m_g_c < 1 && p > 2) {                                                   // slow cooling
+        return eps_e * fast_pow(g_m_g_c, p - 2);
+    } else {  // fast cooling or p<=2
+        return eps_e;
+    }
+}
+
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Sets a stopping shock state when the Lorentz factor drops below threshold.
  * @param i Grid index for phi
  * @param j Grid index for theta
@@ -364,7 +383,7 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
     xt::view(shock.Gamma, i, j, xt::all()) = 1;
     xt::view(shock.Gamma_rel, i, j, xt::all()) = 1;
     xt::view(shock.B, i, j, xt::all()) = 0;
-    xt::view(shock.column_num_den, i, j, xt::all()) = 0;
+    xt::view(shock.proton_column_num_den, i, j, xt::all()) = 0;
 }
 
 template <typename State>
@@ -383,8 +402,8 @@ Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
     shock.theta(i, j, k) = state.theta;
     shock.Gamma(i, j, k) = Gamma_downstr;
     shock.Gamma_rel(i, j, k) = Gamma_rel;
-    shock.B(i, j, k) = compute_comv_weibel_B(shock.eps_B, e_th) + std::sqrt(pB_downstr * 8 * con::pi);
-    shock.column_num_den(i, j, k) = N_downstr / (state.r * state.r);
+    shock.B(i, j, k) = compute_comv_weibel_B(shock.rad.eps_B, e_th) + std::sqrt(pB_downstr * 8 * con::pi);
+    shock.proton_column_num_den(i, j, k) = N_downstr / (state.r * state.r);
     return (ad_idx - 1) * e_th + pB_downstr;
 }
 

@@ -61,16 +61,15 @@ class FRShockEqn {
      * @param ejecta The ejecta driving the shock
      * @param phi Azimuthal angle
      * @param theta Polar angle
-     * @param eps_e Electron energy fraction
      * <!-- ************************************************************************************** -->
      */
-    FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, Real eps_e);
+    FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, RadParams const& rad_params);
 
     Medium const& medium;  ///< Reference to the medium properties
     Ejecta const& ejecta;  ///< Reference to the jet properties
+    RadParams const rad;   ///< Radiation parameters
     Real const phi{0};     ///< Angular coordinate phi
     Real const theta0{0};  ///< Angular coordinate theta
-    Real const eps_e{0};   ///< Electron energy fraction
     Real Gamma4{1};        ///< Initial Lorentz factor of the jet
     Real u_x{0};           ///< Reverse shock crossed four velocity
     Real r_x{0};           ///< Reverse shock crossed radius
@@ -213,8 +212,8 @@ using ShockPair = std::pair<Shock, Shock>;
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta, typename Medium>
-ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol = 1e-5);
+ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
+                              RadParams const& rad_rvs, Real rtol = 1e-5);
 
 //========================================================================================================
 //                                  template function implementation

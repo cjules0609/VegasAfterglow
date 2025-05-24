@@ -34,12 +34,13 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
 }
 
 template <typename Ejecta, typename Medium>
-FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e)
+FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta,
+                                       RadParams const& rad_params)
     : medium(medium),
       ejecta(ejecta),
+      rad(rad_params),
       phi(phi),
       theta0(theta),
-      eps_e(eps_e),
       Gamma4(ejecta.Gamma0(phi, theta)),
       deps0_dt(ejecta.eps_k(phi, theta) / ejecta.T0),
       dm0_dt(deps0_dt / (Gamma4 * con::c2)),
@@ -181,7 +182,7 @@ void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
     this->u_x = std::sqrt(Gamma3 * Gamma3 - 1);
 
     Real Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
-    Real gamma_electron = (Gamma_rel - 1) * con::mp / con::me * eps_e + 1;  // electron Lorentz factor
+    Real gamma_electron = (Gamma_rel - 1) * con::mp / con::me * rad.eps_e + 1;  // electron Lorentz factor
 
     // use electron adiabatic index see section 3.2 https://arxiv.org/pdf/astro-ph/9910241
     this->gamma_hat_x = adiabatic_idx(gamma_electron);
@@ -331,7 +332,7 @@ inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, 
     shock.theta(i, j, k) = state.theta;
     shock.Gamma_rel(i, j, k) = eqn.compute_crossed_Gamma_rel(state);
     shock.Gamma(i, j, k) = eqn.compute_crossed_Gamma3(shock.Gamma_rel(i, j, k), state.r);
-    shock.column_num_den(i, j, k) = shock.column_num_den(i, j, k0) * (r0 * r0) / (state.r * state.r);
+    shock.proton_column_num_den(i, j, k) = shock.proton_column_num_den(i, j, k0) * (r0 * r0) / (state.r * state.r);
     shock.B(i, j, k) = eqn.compute_crossed_B(state);
 }
 
@@ -403,7 +404,7 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
 
     if (p_r > p_f) {  // reverse shock cannot be generated.
         shock_rvs.Gamma_rel(i, j, k) = 1;
-        shock_rvs.column_num_den(i, j, k) = 0;
+        shock_rvs.proton_column_num_den(i, j, k) = 0;
         shock_rvs.B(i, j, k) = 0;
     }
 
@@ -564,19 +565,19 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
 }
 
 template <typename Ejecta, typename Medium>
-ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol) {
+ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
+                              RadParams const& rad_rvs, Real rtol) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = coord.t.shape()[0];
-    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e_f, eps_B_f);
-    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e_r, eps_B_r);
+    Shock f_shock(phi_size_needed, theta_size, t_size, rad_fwd);
+    Shock r_shock(phi_size_needed, theta_size, t_size, rad_rvs);
     for (size_t i = 0; i < phi_size_needed; ++i) {
         Real theta_s =
             jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
-            // auto eqn_f = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_f, theta_s);
-            auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_f, theta_s);
-            auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_r);
+            // auto eqn_f = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_fwd, theta_s);
+            auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_fwd, theta_s);
+            auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_rvs);
             // Solve the forward-reverse shock shell
             grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_f, eqn_r, rtol);
         }

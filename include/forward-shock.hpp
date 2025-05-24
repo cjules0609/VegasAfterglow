@@ -71,11 +71,12 @@ class ForwardShockEqn {
      * @param ejecta The ejecta driving the shock
      * @param phi Azimuthal angle
      * @param theta Polar angle
-     * @param eps_e Electron energy fraction
+     * @param rad_params Radiation parameters
      * @param theta_s Critical angle for jet spreading
      * <!-- ************************************************************************************** -->
      */
-    ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e, Real theta_s);
+    ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, RadParams const& rad_params,
+                    Real theta_s);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -100,10 +101,9 @@ class ForwardShockEqn {
 
     Medium const& medium;  ///< Reference to the ambient medium properties
     Ejecta const& ejecta;  ///< Reference to the ejecta properties
-
-    Real const phi{0};      ///< Angular coordinate phi in the jet frame
-    Real const theta0{0};   ///< Initial angular coordinate theta
-    Real const eps_rad{0};  ///< Blast wave radiation efficiency
+    Real const phi{0};     ///< Angular coordinate phi in the jet frame
+    Real const theta0{0};  ///< Initial angular coordinate theta
+    RadParams const rad;   ///< Radiation parameters
 
    private:
     /**
@@ -126,6 +126,7 @@ class ForwardShockEqn {
      * @brief Computes the derivative of internal energy with respect to time t.
      * @details Calculates the rate of change of the internal energy density considering adiabatic expansion
      *          and energy injection from newly swept-up material.
+     * @param eps_rad radiative efficiency
      * @param m_swept Total swept-up mass
      * @param dm_dt_swept Rate of swept-up mass
      * @param state Current state of the system
@@ -134,12 +135,13 @@ class ForwardShockEqn {
      * @return The time derivative of internal energy
      * <!-- ************************************************************************************** -->
      */
-    inline Real dU_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
+    inline Real dU_dt(Real eps_rad, Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
                       Real ad_idx) const noexcept;
 
     Real const dOmega0{0};  ///< Initial solid angle element
     Real const theta_s{0};  ///< Jet structure parameter controlling angular dependence
     Real m_shell{0};        ///< Ejecta mass per solid angle
+    Real rad_const{0};      ///< Radiative constant 'C' where  t_comv*Gamma*(Gamma-1)^2*rho* C = gamma_m/gamma_c
 };
 
 /**
@@ -179,14 +181,13 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
  * @param coord Coordinate system definition
  * @param medium The medium through which the shock propagates
  * @param jet The jet (ejecta) driving the shock
- * @param eps_e Electron energy fraction
- * @param eps_B Magnetic energy fraction
+ * @param rad_params Radiation parameters
  * @param rtol Relative tolerance for the ODE solver (default: 1e-5)
  * @return A Shock object containing the evolution data
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta, typename Medium>
-Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
+Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_params,
                          Real rtol = 1e-5);
 
 //========================================================================================================

@@ -133,12 +133,9 @@ class PyRadiation {
      */
     PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e = 1, bool IC_cooling = false, bool SSC = false,
                 bool KN = false)
-        : eps_e(eps_e), eps_B(eps_B), p(p), xi_e(xi_e), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
+        : rad(eps_e, eps_B, p, xi_e), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
 
-    Real eps_e{1e-1};        ///< Fraction of shock energy in electrons
-    Real eps_B{1e-2};        ///< Fraction of shock energy in magnetic field
-    Real p{2.3};             ///< Electron energy spectral index
-    Real xi_e{1};            ///< Fraction of electrons accelerated
+    RadParams rad;
     bool IC_cooling{false};  ///< Whether to include IC cooling
     bool SSC{false};         ///< Whether to include SSC
     bool KN{false};          ///< Whether to include KN

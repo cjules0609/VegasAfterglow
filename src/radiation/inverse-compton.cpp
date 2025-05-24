@@ -282,7 +282,7 @@ void Thomson_cooling(SynElectronGrid& electrons, SynPhotonGrid& photons, Shock c
     for (size_t i = 0; i < phi_size; i++) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < t_size; ++k) {
-                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B,
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.rad.eps_e, shock.rad.eps_B,
                                              electrons(i, j, k));
                 electrons(i, j, k).Ys = InverseComptonY(Y_T);
             }
@@ -299,7 +299,7 @@ void KN_cooling(SynElectronGrid& electrons, SynPhotonGrid& photons, Shock const&
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             for (size_t k = 0; k < r_size; ++k) {
-                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B,
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.rad.eps_e, shock.rad.eps_B,
                                              electrons(i, j, k));
                 // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
                 electrons(i, j, k).Ys =

@@ -15,8 +15,6 @@
 #include "physics.h"
 #include "utilities.h"
 
-inline constexpr Real gamma_cyclotron = 3;
-
 Real SynElectrons::compute_column_num_den(Real gamma) const {
     if (gamma < gamma_c) {  // Below cooling Lorentz factor: direct scaling
         return column_num_den * compute_gamma_spectrum(gamma) * fast_exp2(-gamma / gamma_M);
@@ -363,6 +361,7 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
 Real compute_syn_peak_power(Real B, Real p) {
     constexpr double sqrt3_half = 1.73205080757 / 2;
     return (p - 1) * B * (sqrt3_half * con::e3 / (con::me * con::c2));
+    // return B * (1.73205080757 * con::e3 / (con::me * con::c2));
 }
 
 /**
@@ -461,8 +460,8 @@ Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
     Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
     Real gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y0) * t_comv);
     Real gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;  // correction on newtonian regime
-    Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
 
+    Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-3;) {  // iterate for IC cooling
         gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y1) * t_comv);
         gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
@@ -484,27 +483,34 @@ Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
  * @param I_syn_peak Peak synchrotron intensity
  * @param gamma_m Minimum electron Lorentz factor
  * @param gamma_c Cooling electron Lorentz factor
+ * @param gamma_M Maximum electron Lorentz factor
  * @param p Power-law index of electron distribution
  * @return Self-absorption Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Real p) {
+Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Real gamma_M, Real p) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
     Real nu_peak = compute_syn_freq(gamma_peak, B);
 
-    Real kT = (gamma_peak - 1) * (con::me * con::c2) * 2. / 3;
+    Real kT = (gamma_peak - 1) * (con::me * con::c2) / 3;
     // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3) // first assume nu_a is in the 1/3 segment
     Real nu_a = fast_pow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
 
-    // strong absorption
     if (nu_a > nu_peak) {  // nu_a is not in the 1/3 segment
-        Real nu_c = compute_syn_freq(gamma_c, B);
-        Real factor = I_syn_peak / (4. / 3 * con::me * std::sqrt((4 * con::pi * con::me * con::c / (3 * con::e)) / B));
-        if (nu_a < nu_c) {  // medium absorption, nu_a is in the -(p-1)/2 segment
+        constexpr Real coef = 3 * con::e / (4 * con::pi * con::me * con::c);
+        if (gamma_c > gamma_m) {  // then assume nu_a is in the -(p-1)/2 segment
             Real nu_m = compute_syn_freq(gamma_m, B);
-            nu_a = fast_pow(factor, 2 / (p + 4)) * fast_pow(nu_m, (p - 1) / (p + 4));
-        } else {  // strong absorption, electron pile-up, nu_a reaches I_syn_peak
-            nu_a = fast_pow(factor, 0.4);
+            nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * fast_pow(nu_m, p / 2), 2 / (p + 4));
+            Real nu_c = compute_syn_freq(gamma_c, B);
+            if (nu_a > nu_c) {  // nu_a is not in the -(p-1)/2 segment, strong absorption
+                Real C = 1.5 * I_syn_peak / (con::me * coef * coef * B * B);
+                Real gamma_a = root_bisect([C](Real x) -> Real { return x * x * x * x * x - x - C; }, gamma_c, gamma_M);
+                return gamma_a;
+            }
+        } else {  // strong absorption
+            Real C = 1.5 * I_syn_peak / (con::me * coef * coef * B * B);
+            Real gamma_a = root_bisect([C](Real x) -> Real { return x * x * x * x * x - x - C; }, gamma_c, gamma_M);
+            return gamma_a;
         }
     }
     return compute_syn_gamma(nu_a, B) + 1;
@@ -517,6 +523,21 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
     } else {
         return gamma_peak;
     }
+}
+
+Real cyclotron_correction(Real& gamma_m, Real& gamma_c, Real p) {
+    constexpr Real gamma_cyclotron = 2;
+    Real f = 1.;
+
+    if (1 < gamma_m && gamma_m <= gamma_cyclotron) {
+        f = (gamma_m - 1) / (gamma_cyclotron - 1);
+        if (p > 3) {
+            f = fast_pow((gamma_m - 1) / (gamma_cyclotron - 1), (p - 1) / 2);
+        }
+        gamma_m = gamma_cyclotron;
+    }
+
+    return f;
 }
 
 /**
@@ -553,7 +574,8 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
                     elec.gamma_M = elec.gamma_c;
                 }
-                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.gamma_a =
+                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
                 elec.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, elec.gamma_c, p);
             }
@@ -561,8 +583,10 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
     }
 }
 
-SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
+SynElectronGrid generate_syn_electrons(Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
+
+    RadParams rad = shock.rad;
 
     SynElectronGrid electrons({phi_size, theta_size, t_size});
 
@@ -576,37 +600,37 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi) {
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
-                Real Sigma = shock.column_num_den(i, j, k);
 
                 auto& elec = electrons(i, j, k);
 
-                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, p);
-                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, shock.eps_e, p, xi);
+                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, rad.p);
+                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
 
                 // Fraction of synchrotron electrons; the rest are cyclotron
-                Real f = 1.;
-                if (1 < elec.gamma_m && elec.gamma_m < gamma_cyclotron) {
-                    f = std::min(fast_pow((gamma_cyclotron - 1) / (elec.gamma_m - 1), 1 - p), 1_r);
-                }
-                elec.column_num_den = Sigma * f * xi;
-                elec.I_nu_peak = compute_syn_peak_power(B, p) * elec.column_num_den / (4 * con::pi);
+                Real f = cyclotron_correction(elec.gamma_m, elec.gamma_c, rad.p);
+
+                elec.column_num_den = shock.proton_column_num_den(i, j, k) * rad.xi_e * f;
+                elec.I_nu_peak = compute_syn_peak_power(B, rad.p) * elec.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    elec.gamma_c = compute_gamma_c(t_com, B, elec.Ys, p);
+                    elec.gamma_c = compute_gamma_c(t_com, B, elec.Ys, rad.p);
                 } else {  // no shocked electron injection, just adiabatic cooling
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
                     elec.gamma_M = elec.gamma_c;
                 }
-                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.gamma_a =
+                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
-                elec.p = p;
+                elec.p = rad.p;
             }
         }
     }
     return electrons;
 }
 
-void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi) {
+void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
+
+    RadParams rad = shock.rad;
 
     electrons.resize({phi_size, theta_size, t_size});
 
@@ -620,28 +644,28 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
-                Real Sigma = shock.column_num_den(i, j, k);
 
                 auto& elec = electrons(i, j, k);
 
-                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, p);
-                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, shock.eps_e, p, xi);
+                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, rad.p);
+                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
+
                 // Fraction of synchrotron electrons; the rest are cyclotron
-                Real f = 1.;
-                if (1 < elec.gamma_m && elec.gamma_m < gamma_cyclotron) {
-                    f = std::min(fast_pow((gamma_cyclotron - 1) / (elec.gamma_m - 1), 1 - p), 1_r);
-                }
-                elec.column_num_den = Sigma * f * xi;
-                elec.I_nu_peak = compute_syn_peak_power(B, p) * elec.column_num_den / (4 * con::pi);
+                Real f = cyclotron_correction(elec.gamma_m, elec.gamma_c, rad.p);
+
+                elec.column_num_den = shock.proton_column_num_den(i, j, k) * rad.xi_e * f;
+                elec.I_nu_peak = compute_syn_peak_power(B, rad.p) * elec.column_num_den / (4 * con::pi);
                 if (k <= k_inj) {
-                    elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, p);
+                    elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, rad.p);
                 } else {  // no shocked electron injection, just adiabatic cooling
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
                     elec.gamma_M = elec.gamma_c;
                 }
-                elec.gamma_a = compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, p);
+                elec.gamma_a =
+                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
-                elec.p = p;
+
+                elec.p = rad.p;
             }
         }
     }

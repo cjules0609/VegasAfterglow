@@ -330,3 +330,16 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
 
     return coord;  // Construct coordinate object.
 }
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Parameters for radiation transport
+ * @details Parameters for radiation transport
+ * <!-- ************************************************************************************** -->
+ */
+struct RadParams {
+    Real eps_e{0.1};   ///< Electron energy fraction
+    Real eps_B{0.01};  ///< Magnetic field energy fraction
+    Real p{2.3};       ///< Electron energy distribution index
+    Real xi_e{1};      ///< Electron self-absorption parameter
+};

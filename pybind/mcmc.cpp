@@ -161,10 +161,12 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
     Real theta_c = param.theta_c;
     Real theta_v = param.theta_v;
     Real theta_w = param.theta_w;
-    Real p = param.p;
-    Real eps_e = param.eps_e;
-    Real eps_B = param.eps_B;
-    Real xi = param.xi;
+    RadParams rad;
+
+    rad.p = param.p;
+    rad.eps_e = param.eps_e;
+    rad.eps_B = param.eps_B;
+    rad.xi_e = param.xi;
 
     Real lumi_dist = config.lumi_dist * unit::cm;
     Real z = config.z;
@@ -200,12 +202,12 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
 
     auto coord = auto_grid(jet, t_eval, theta_w, theta_v, z, phi_resol, theta_resol, t_resol);
 
-    auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
+    auto shock = generate_fwd_shock(coord, medium, jet, rad, config.rtol);
 
     // obs.observe_at(t_eval, coord, shock, lumi_dist, z);
     obs.observe(coord, shock, lumi_dist, z);
 
-    electrons = generate_syn_electrons(shock, p, xi);
+    electrons = generate_syn_electrons(shock);
 
     photons = generate_syn_photons(shock, electrons);
 }

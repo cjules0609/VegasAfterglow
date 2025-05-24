@@ -163,12 +163,10 @@ using SynElectronGrid = xt::xtensor<SynElectrons, 3>;
  * @details Initializes all electron properties including Lorentz factors, column densities,
  *          and peak intensities for each grid cell.
  * @param shock The shock object containing physical properties
- * @param p Power-law index for the electron energy distribution
- * @param xi Energy partitioning parameter (default: 1)
  * @return A new grid of synchrotron electrons
  * <!-- ************************************************************************************** -->
  */
-SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi = 1);
+SynElectronGrid generate_syn_electrons(Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -176,11 +174,9 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi = 1);
  * @details Modifies a grid supplied by the caller rather than creating a new one.
  * @param electrons The electron grid to populate
  * @param shock The shock object containing physical properties
- * @param p Power-law index for the electron energy distribution
- * @param xi Energy partitioning parameter (default: 1)
  * <!-- ************************************************************************************** -->
  */
-void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi = 1);
+void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->

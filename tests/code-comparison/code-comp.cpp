@@ -26,9 +26,10 @@ void lc_gen(std::string folder_name, bool out = false) {
     Real n_ism = data["n_ism"];
     n_ism /= (unit::cm3);
 
-    Real eps_e = data["epsilon_e"];
-    Real eps_B = data["epsilon_B"];
-    Real p = data["p"];
+    RadParams rad_fwd;
+    rad_fwd.eps_e = data["epsilon_e"];
+    rad_fwd.eps_B = data["epsilon_B"];
+    rad_fwd.p = data["p"];
 
     Real theta_view = data["theta_view"];
 
@@ -56,13 +57,13 @@ void lc_gen(std::string folder_name, bool out = false) {
     Coord coord = auto_grid(jet, t_bins, theta_w, theta_view, z);
 
     // solve dynamics
-    Shock f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
+    Shock f_shock = generate_fwd_shock(coord, medium, jet, rad_fwd);
 
     Observer obs;
 
     obs.observe_at(t_bins, coord, f_shock, lumi_dist, z);
 
-    auto syn_e = generate_syn_electrons(f_shock, p);
+    auto syn_e = generate_syn_electrons(f_shock);
 
     auto syn_ph = generate_syn_photons(f_shock, syn_e);
 

@@ -6,10 +6,14 @@ void test_reverse_shock(double xi, double sigma) {
     Real theta_v = 0;
 
     Real n_ism = 100 / unit::cm3;
-    Real eps_e = 1e-2;
-    Real eps_B = 1e-4;
     Real Gamma0 = 200;
     Real z = 0;
+
+    RadParams rad_fwd;
+    rad_fwd.eps_e = 1e-2;
+    rad_fwd.eps_B = 1e-4;
+
+    RadParams rad_rvs = rad_fwd;
 
     Array t_obs = xt::logspace(std::log10(0.03 * unit::sec), std::log10(1e9 * unit::sec), 130);
 
@@ -26,7 +30,7 @@ void test_reverse_shock(double xi, double sigma) {
 
     Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.001, 1, 50);
 
-    auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, eps_e, eps_B, eps_e, eps_B);
+    auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto r_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
 
@@ -43,10 +47,13 @@ void test_spreading() {
     Real theta_v = 0;
 
     Real n_ism = 1 / unit::cm3;
-    Real eps_e = 1e-2;
-    Real eps_B = 1e-3;
+
     Real Gamma0 = 300;
     Real z = 0;
+
+    RadParams rad_fwd;
+    rad_fwd.eps_e = 1e-2;
+    rad_fwd.eps_B = 1e-3;
 
     Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e8 * unit::sec), 130);
 
@@ -61,7 +68,7 @@ void test_spreading() {
 
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z);
 
-    auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
+    auto shock = generate_fwd_shock(coord, medium, jet, rad_fwd);
 
     write_npz("spreading-data/shock", shock);
 }
@@ -102,14 +109,19 @@ void test_FRS() {
     Real theta_v = 0;
 
     Real n_ism = std::pow(10, -0.32) / unit::cm3;
-    Real eps_e = std::pow(10, -1.81);
-    Real eps_B = std::pow(10, -3.43);
-    Real eps_e_rs = std::pow(10, -0.14);
-    Real eps_B_rs = std::pow(10, -5.10);
+
+    RadParams rad_fwd;
+    rad_fwd.eps_e = std::pow(10, -1.81);
+    rad_fwd.eps_B = std::pow(10, -3.43);
+    rad_fwd.p = 2.77;
+
+    RadParams rad_rvs;
+    rad_rvs.eps_e = std::pow(10, -0.14);
+    rad_rvs.eps_B = std::pow(10, -5.10);
+    rad_rvs.p = 2.71;
+
     Real Gamma0 = std::pow(10, 2.14);
     Real z = 1.88;
-    Real p = 2.77;
-    Real p_r = 2.71;
 
     Array t_obs = xt::logspace(std::log10(1e2 * unit::sec), std::log10(1e8 * unit::sec), 130);
 
@@ -122,13 +134,13 @@ void test_FRS() {
     // jet.T0 = 1e6 * unit::sec;
 
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 15, 50);
-    auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, eps_e, eps_B, eps_e_rs, eps_B_rs);
+    auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e_rs, eps_B_rs);
     // auto r_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
 
-    auto elec = generate_syn_electrons(f_shock, p);
-    auto elec_rs = generate_syn_electrons(r_shock, p_r);
+    auto elec = generate_syn_electrons(f_shock);
+    auto elec_rs = generate_syn_electrons(r_shock);
     auto photons = generate_syn_photons(f_shock, elec);
     auto photons_rs = generate_syn_photons(r_shock, elec_rs);
 

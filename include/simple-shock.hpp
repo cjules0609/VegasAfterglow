@@ -65,11 +65,12 @@ class SimpleShockEqn {
      * @param ejecta The ejecta driving the shock
      * @param phi Azimuthal angle
      * @param theta Polar angle
-     * @param eps_e Electron energy fraction
+     * @param rad_params Radiation parameters
      * @param theta_s Critical angle for jet spreading
      * <!-- ************************************************************************************** -->
      */
-    SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e, Real theta_s);
+    SimpleShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, RadParams const& rad_params,
+                   Real theta_s);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -92,28 +93,30 @@ class SimpleShockEqn {
      */
     void set_init_state(State& state, Real t0) const noexcept;
 
-    Medium const& medium;   ///< Reference to the medium properties
-    Ejecta const& ejecta;   ///< Reference to the ejecta properties
-    Real const phi{0};      ///< Angular coordinate phi
-    Real const theta0{0};   ///< Angular coordinate theta
-    Real const eps_rad{0};  ///< Blast wave radiation efficiency
+    Medium const& medium;  ///< Reference to the medium properties
+    Ejecta const& ejecta;  ///< Reference to the ejecta properties
+    Real const phi{0};     ///< Angular coordinate phi
+    Real const theta0{0};  ///< Angular coordinate theta
+    RadParams const rad;   ///< Radiation parameters
 
    private:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Computes the derivative of Gamma with respect to engine time t.
      * @details Calculates the rate of change of the Lorentz factor based on swept-up mass and energy injection.
+     * @param eps_rad radiative efficiency
      * @param dm_dt_swept Rate of swept-up mass
      * @param state Current state of the system
      * @param diff Current derivatives
      * @return The time derivative of Gamma
      * <!-- ************************************************************************************** -->
      */
-    Real dGamma_dt(Real dm_dt_swept, State const& state, State const& diff) const noexcept;
+    Real dGamma_dt(Real eps_rad, Real dm_dt_swept, State const& state, State const& diff) const noexcept;
 
     Real const dOmega0{0};  ///< Initial solid angle
     Real const theta_s{0};  ///< Critical angle for jet spreading
     Real m_shell{0};        ///< Ejecta mass per solid angle
+    Real rad_const{0};      ///< Radiative constant 'C' where  t_comv*Gamma*(Gamma-1)^2*rho* C = gamma_m/gamma_c
 };
 
 #include "../src/dynamics/simple-shock.tpp"
