@@ -131,7 +131,7 @@ void test_FRS() {
 
     jet.eps_k = math::tophat(theta_c, E_iso);
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
-    // jet.T0 = 1e6 * unit::sec;
+    // jet.T0 = 1e4 * unit::sec;
 
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 15, 50);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);

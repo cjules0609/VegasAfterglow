@@ -73,7 +73,7 @@
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-- **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) in approximately 0.9 milliseconds on an Apple M2 chip with a single core.
+- **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) from a structured jet viewed off-axis in approximately 1 milliseconds on an Apple M2 chip with a single core.
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~20 seconds for on-axis structured jet scenarios

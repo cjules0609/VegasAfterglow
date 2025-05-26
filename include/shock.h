@@ -269,7 +269,7 @@ inline Real compute_downstr_eth(Real gamma_rel, Real n_down_str) {
  * <!-- ************************************************************************************** -->
  * @brief Computes the rate at which the shock shell spreads in the comoving frame.
  * @param Gamma_rel Relative Lorentz factor
- * @param dtdt_com Rate of change of comoving time with respect to observer time
+ * @param dtdt_com Rate of change of comoving time with respect to burst time
  * @return The shell spreading rate in the comoving frame
  * <!-- ************************************************************************************** -->
  */

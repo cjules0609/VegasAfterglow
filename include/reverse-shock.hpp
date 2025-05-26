@@ -28,7 +28,7 @@ struct ReverseState {
 
     union {
         struct {
-            Real width_shell;  ///< Width of the shell
+            Real width_shell;  ///< Comoving frame width of the shell
             Real m3;           ///< Shocked ejecta mass per solid angle
             Real r;            ///< Radius
             Real t_comv;       ///< Comoving time

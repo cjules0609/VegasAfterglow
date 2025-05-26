@@ -51,8 +51,8 @@ struct ForwardState {
  * @class ForwardShockEqn
  * @brief Represents the forward shock equation for a given jet and medium.
  * @details It defines a state vector (with variable size based on template parameters) and overloads operator()
- *          to compute the derivatives of the state with respect to t. It also declares helper functions for the
- *          derivatives. This class implements the physical equations governing the forward shock evolution.
+ *          to compute the derivatives of the state with respect to source time. It also declares helper functions for
+ *          the derivatives. This class implements the physical equations governing the forward shock evolution.
  *
  * @tparam Ejecta The ejecta class template parameter
  * @tparam Medium The medium class template parameter

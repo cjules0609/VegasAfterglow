@@ -53,8 +53,8 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
 template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
     Real Gamma3 = 1;
+    // Real Gamma_rel = 1;
 
-    // Gamma_rel = 1;
     auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
     diff.eps_shell = deps_shell_dt;
     diff.m_shell = dm_shell_dt;
@@ -81,6 +81,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
 
     diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
+    // diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma_rel, diff.t_comv);
     diff.theta = 0;  // no lateral spreading
 }
 
@@ -374,6 +375,7 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
  * @internal
  * @brief Saves the state of both forward and reverse shocks at a grid point.
  * @details Updates shock properties for both shocks and checks if crossing is complete.
+ * @param is_rvs_shock_exist Whether the reverse shock has been generated
  * @param i Grid index for phi
  * @param j Grid index for theta
  * @param k Grid index for time
@@ -386,8 +388,8 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
  * <!-- ************************************************************************************** -->
  */
 template <typename Eqn, typename State>
-bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State const& state, Real t, Shock& shock_fwd,
-                           Shock& shock_rvs) {
+bool save_shock_pair_state(bool& is_rvs_shock_exist, size_t i, size_t j, int k, Eqn const& eqn_rvs, State const& state,
+                           Real t, Shock& shock_fwd, Shock& shock_rvs) {
     Real n4 = state.m_shell / (state.r * state.r * state.width_shell * con::mp);
     Real sigma4 = eqn_rvs.compute_shell_sigma(state);
 
@@ -402,10 +404,14 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State 
     Real p_f = save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
     Real p_r = save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
 
-    if (p_r > p_f) {  // reverse shock cannot be generated.
-        shock_rvs.Gamma_rel(i, j, k) = 1;
-        shock_rvs.proton_column_num_den(i, j, k) = 0;
-        shock_rvs.B(i, j, k) = 0;
+    if (!is_rvs_shock_exist) {
+        if (p_r > p_f) {  // reverse shock cannot be generated yet
+            shock_rvs.Gamma_rel(i, j, k) = 1;
+            shock_rvs.proton_column_num_den(i, j, k) = 0;
+            shock_rvs.B(i, j, k) = 0;
+        } else {
+            is_rvs_shock_exist = true;
+        }
     }
 
     return state.m3 >= state.m_shell && !eqn_rvs.is_injecting(t);
@@ -458,13 +464,15 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs
     size_t k0 = 0;
     Real t_back = t.back();
     bool crossed = false;
+    bool is_rvs_shock_exist = false;
     size_t k = 0;
 
     while (!crossed && stepper_rvs.current_time() <= t_back) {
         stepper_rvs.do_step(eqn_rvs);
         while (k < t.size() && stepper_rvs.current_time() > t(k)) {
             stepper_rvs.calc_state(t(k), state_rvs);
-            crossed = save_shock_pair_state(i, j, k, eqn_rvs, state_rvs, t(k), shock_fwd, shock_rvs);
+            crossed =
+                save_shock_pair_state(is_rvs_shock_exist, i, j, k, eqn_rvs, state_rvs, t(k), shock_fwd, shock_rvs);
             if (crossed) {
                 k0 = k;
                 shock_rvs.injection_idx(i, j) = k0;
@@ -537,6 +545,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
 
     Real t_dec = compute_dec_time(eqn_rvs, t.back());
     Real t0 = min(t.front(), t_dec / 100, 1 * unit::sec);
+    // Real t0 = std::min(t.front(), 10 * unit::sec);
 
     eqn_fwd.set_init_state(state_fwd, t0);
 
