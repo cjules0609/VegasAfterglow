@@ -22,38 +22,47 @@
  */
 struct SynElectrons {
     // All values in comoving frame
-    Real I_nu_peak{0};       ///< Peak intensity at the characteristic frequency
-    Real gamma_m{0};         ///< Minimum electron Lorentz factor
-    Real gamma_c{0};         ///< Cooling electron Lorentz factor
-    Real gamma_a{0};         ///< Self-absorption Lorentz factor
-    Real gamma_M{0};         ///< Maximum electron Lorentz factor
-    Real p{2.3};             ///< Power-law index for the electron energy distribution
-    Real column_num_den{0};  ///< Normalized column number density
-    Real Y_c{0};             ///< Inverse Compton Y parameter at cooling frequency
-    size_t regime{0};        ///< Regime indicator (1-6, determines spectral shape)
-    InverseComptonY Ys;      ///< InverseComptonY parameters for this electron population
+    Real gamma_m{0};     ///< Minimum electron Lorentz factor
+    Real gamma_c{0};     ///< Cooling electron Lorentz factor
+    Real gamma_a{0};     ///< Self-absorption Lorentz factor
+    Real gamma_M{0};     ///< Maximum electron Lorentz factor
+    Real p{2.3};         ///< Power-law index for the electron energy distribution
+    Real N_e{0};         ///< shock electron number PER SOLID ANGLE
+    Real column_den{0};  ///< Column number density
+    Real Y_c{0};         ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};    ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys;  ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the electron column number density at a specific Lorentz factor.
+     * @brief Calculates the comoving electron number (PER SOLID ANGLE) spectrum at a specific Lorentz factor.
      * @details Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
      * @param gamma Electron Lorentz factor
      * @return Column number density at the specified Lorentz factor
      * <!-- ************************************************************************************** -->
      */
-    Real compute_column_num_den(Real gamma) const;
+    Real compute_N_gamma(Real gamma) const;
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the column number density of the electron distribution.
+     * @details Uses the electron energy spectrum to compute the column number density.
+     * @return Column number density of the electron distribution
+     * <!-- ************************************************************************************** -->
+     */
+    Real compute_column_den(Real gamma) const;
 
    private:
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the electron energy spectrum at a given Lorentz factor.
+     * @brief Calculates the comoving electron energy spectrum at a given Lorentz factor.
      * @details Different spectral forms apply based on the current regime and relative to
      *          characteristic Lorentz factors (gamma_a, gamma_c, gamma_m, gamma_M).
      * @param gamma Electron Lorentz factor
      * @return The normalized electron energy spectrum value
      * <!-- ************************************************************************************** -->
      */
-    inline Real compute_gamma_spectrum(Real gamma) const;
+    inline Real compute_spectrum(Real gamma) const;
 };
 
 /**
@@ -64,12 +73,13 @@ struct SynElectrons {
  */
 struct SynPhotons {
     // All values in comoving frame
-    Real nu_m{0};  ///< Characteristic frequency corresponding to gamma_m
-    Real nu_c{0};  ///< Cooling frequency corresponding to gamma_c
-    Real nu_a{0};  ///< Self-absorption frequency
-    Real nu_M{0};  ///< Maximum photon frequency
+    Real P_nu_max{0};  ///< Maximum specific synchrotron power PER SOLID ANGLE
+    Real nu_m{0};      ///< Characteristic frequency corresponding to gamma_m
+    Real nu_c{0};      ///< Cooling frequency corresponding to gamma_c
+    Real nu_a{0};      ///< Self-absorption frequency
+    Real nu_M{0};      ///< Maximum photon frequency
 
-    Real log2_I_nu_peak{0};             ///< Log2 of peak intensity (for computational efficiency)
+    Real log2_P_nu_max{0};              ///< Log2 of P_nu_max (for computational efficiency)
     Real log2_nu_m{0};                  ///< Log2 of nu_m
     Real log2_nu_c{0};                  ///< Log2 of nu_c
     Real log2_nu_a{0};                  ///< Log2 of nu_a
@@ -78,23 +88,23 @@ struct SynPhotons {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the synchrotron intensity at a given frequency.
+     * @brief Calculates the comoving synchrotron power PER SOLID ANGLE at a given frequency.
      * @details Includes inverse Compton corrections for frequencies above the cooling frequency.
-     * @param nu Frequency at which to compute the intensity
-     * @return The synchrotron intensity at the specified frequency
+     * @param nu Frequency at which to compute the power PER SOLID ANGLE
+     * @return The synchrotron power PER SOLID ANGLE at the specified frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_I_nu(Real nu) const;  ///< Linear intensity
+    Real compute_P_nu(Real nu) const;  ///< Linear power PER SOLID ANGLE
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the base-2 logarithm of synchrotron intensity at a given frequency.
+     * @brief Calculates the base-2 logarithm of comoving synchrotron power PER SOLID ANGLE at a given frequency.
      * @details Optimized for numerical computation by using logarithmic arithmetic.
      * @param log2_nu Base-2 logarithm of the frequency
-     * @return Base-2 logarithm of synchrotron intensity
+     * @return Base-2 logarithm of synchrotron power PER SOLID ANGLE
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_I_nu(Real log2_nu) const;  ///<  Log2 intensity (for computational efficiency)
+    Real compute_log2_P_nu(Real log2_nu) const;  ///<  Log2 power PER SOLID ANGLE (for computational efficiency)
 
     /**
      * <!-- ************************************************************************************** -->

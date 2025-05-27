@@ -165,12 +165,12 @@ struct IntegratorGrid {
         boundary_to_center(gamma_edge, gamma);  // Compute center values for gamma.
     }
 
-    static constexpr size_t num{64};    ///< Number of bins.
+    static constexpr size_t num{128};   ///< Number of bins.
     StackArray<num + 1> nu_edge{0};     ///< Bin edges for nu.
     StackArray<num + 1> gamma_edge{0};  ///< Bin edges for gamma.
     StackArray<num> nu{0};              ///< Center values for nu.
     StackArray<num> gamma{0};           ///< Center values for gamma.
-    StackArray<num> I_nu_syn{0};        ///< Synchrotron intensity at each nu center.
+    StackArray<num> P_nu{0};            ///< Specificpower at each nu center.
     StackArray<num> column_num_den{0};  ///< column Number density at each gamma center.
     StackMesh<num, num> I0{{{0}}};      ///< 2D array to store computed intermediate values.
 };
@@ -193,21 +193,21 @@ struct ICPhoton {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Returns the photon intensity at frequency nu.
-     * @param nu The frequency at which to compute the intensity
-     * @return The intensity at the given frequency
+     * @brief Returns the photon specific power at frequency nu.
+     * @param nu The frequency at which to compute the specific power
+     * @return The specific power at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_I_nu(Real nu) const noexcept;
+    Real compute_P_nu(Real nu) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Computes the base-2 logarithm of the synchrotron intensity at a given frequency.
+     * @brief Computes the base-2 logarithm of the photon specific power at a given frequency.
      * @param log2_nu The base-2 logarithm of the frequency
-     * @return The base-2 logarithm of the synchrotron intensity at the given frequency
+     * @return The base-2 logarithm of the photon specific power at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_I_nu(Real log2_nu) const noexcept;
+    Real compute_log2_P_nu(Real log2_nu) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
@@ -229,9 +229,9 @@ struct ICPhoton {
     void compute_IC_spectrum(Electrons const& electrons, Photons const& photons, bool KN = true) noexcept;
 
    private:
-    StackArray<spectrum_resol> I_nu_IC_{0};     ///< IC photon spectrum intensity array.
+    StackArray<spectrum_resol> P_nu_IC_{0};     ///< IC photon spectrum specific power array.
     StackArray<spectrum_resol> nu_IC_{0};       ///< Frequency grid for the IC photon spectrum.
-    StackArray<spectrum_resol> log2_I_nu_{0};   ///< Base-2 logarithm of the IC photon spectrum intensity array.
+    StackArray<spectrum_resol> log2_P_nu_{0};   ///< Base-2 logarithm of the IC photon spectrum specific power array.
     StackArray<spectrum_resol> log2_nu_IC_{0};  ///< Base-2 logarithm of the frequency grid for the IC photon spectrum.
 
     /**
@@ -360,7 +360,7 @@ void ICPhoton::compute_IC_spectrum(Electrons const& electrons, Photons const& ph
     remove_zero_tail();
 
     // Convert to log space for interpolation
-    log2_I_nu_ = xt::log2(I_nu_IC_);
+    log2_P_nu_ = xt::log2(P_nu_IC_);
     log2_nu_IC_ = xt::log2(nu_IC_);
 }
 
@@ -380,7 +380,7 @@ template <typename Electrons, typename Photons>
 void ICPhoton::fill_input_spectrum(IntegratorGrid& grid, Electrons const& electrons, Photons const& photons) noexcept {
     // For each bin in nu0, compute the synchrotron intensity and column number density
     for (size_t i = 0; i < grid.num; i++) {
-        grid.I_nu_syn(i) = photons.compute_I_nu(grid.nu(i));
-        grid.column_num_den(i) = electrons.compute_column_num_den(grid.gamma(i));
+        grid.P_nu(i) = photons.compute_P_nu(grid.nu(i));
+        grid.column_num_den(i) = electrons.compute_column_den(grid.gamma(i));
     }
 }

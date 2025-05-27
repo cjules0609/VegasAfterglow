@@ -127,7 +127,7 @@ void ICPhoton::fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept {
             // Store cross-section based on KN regime
             Real cross_section = KN ? compton_cross_section(gamma_nu) : con::sigmaT;
 
-            grid.I0(i, j) = grid.column_num_den(j) * grid.I_nu_syn(i) * dS / factor * cross_section;
+            grid.I0(i, j) = grid.column_num_den(j) * grid.P_nu(i) * dS / factor * cross_section;
         }
     }
 }
@@ -150,7 +150,7 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
             Real max_freq = 4 * IC_x0 * grid.gamma(j) * grid.gamma(j) * grid.nu(i);
             for (size_t k = 0; k < spectrum_resol; ++k) {
                 if (nu_IC_(k) <= max_freq) {
-                    I_nu_IC_(k) += grid.I0(i, j);
+                    P_nu_IC_(k) += grid.I0(i, j);
                 } else {
                     break;
                 }
@@ -158,19 +158,19 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
         }
     }
 
-    I_nu_IC_ *= nu_IC_;
+    P_nu_IC_ *= nu_IC_;
 }
 
 void ICPhoton::remove_zero_tail() noexcept {
-    size_t idx = I_nu_IC_.size();
-    for (size_t i = I_nu_IC_.size() - 1; i >= 0; --i) {
-        if (I_nu_IC_(i) != 0) {
+    size_t idx = P_nu_IC_.size();
+    for (size_t i = P_nu_IC_.size() - 1; i >= 0; --i) {
+        if (P_nu_IC_(i) != 0) {
             idx = i;
             break;
         }
     }
     nu_IC_ = xt::view(nu_IC_, xt::range(0, idx + 1));
-    I_nu_IC_ = xt::view(I_nu_IC_, xt::range(0, idx + 1));
+    P_nu_IC_ = xt::view(P_nu_IC_, xt::range(0, idx + 1));
 }
 
 /**
@@ -218,11 +218,11 @@ Real compute_Thomson_Y(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     return Y0;
 }
 
-Real ICPhoton::compute_I_nu(Real nu) const noexcept {
-    return eq_space_loglog_interp(nu, this->nu_IC_, this->I_nu_IC_, true, true);
+Real ICPhoton::compute_P_nu(Real nu) const noexcept {
+    return eq_space_loglog_interp(nu, this->nu_IC_, this->P_nu_IC_, true, true);
 }
 
-Real ICPhoton::compute_log2_I_nu(Real log2_nu) const noexcept {
+Real ICPhoton::compute_log2_P_nu(Real log2_nu) const noexcept {
     Real dlog2_nu = log2_nu_IC_(1) - log2_nu_IC_(0);
     size_t idx = static_cast<size_t>((log2_nu - log2_nu_IC_(0)) / dlog2_nu + 1);
     if (idx < 1) {
@@ -231,9 +231,9 @@ Real ICPhoton::compute_log2_I_nu(Real log2_nu) const noexcept {
         idx = log2_nu_IC_.size() - 1;
     }
 
-    Real slope = (log2_I_nu_(idx) - log2_I_nu_(idx - 1)) / dlog2_nu;
+    Real slope = (log2_P_nu_(idx) - log2_P_nu_(idx - 1)) / dlog2_nu;
 
-    return log2_I_nu_(idx - 1) + slope * (log2_nu - log2_nu_IC_(idx - 1));
+    return log2_P_nu_(idx - 1) + slope * (log2_nu - log2_nu_IC_(idx - 1));
 }
 
 Real compton_cross_section(Real nu) {

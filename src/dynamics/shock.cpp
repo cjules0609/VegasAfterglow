@@ -8,18 +8,18 @@
 #include "shock.h"
 
 Shock::Shock(size_t phi_size, size_t theta_size, size_t t_size, RadParams const& rad_params)
-    : t_comv({phi_size, theta_size, t_size}, 0),                 // Initialize comoving time grid with 0
-      r({phi_size, theta_size, t_size}, 0),                      // Initialize radius grid with 0
-      theta({phi_size, theta_size, t_size}, 0),                  // Initialize theta grid with 0
-      Gamma({phi_size, theta_size, t_size}, 1),                  // Initialize Gamma grid with 1
-      Gamma_rel({phi_size, theta_size, t_size}, 1),              // Initialize Gamma_rel grid with 1
-      B({phi_size, theta_size, t_size}, 0),                      // Initialize magnetic field grid with 0
-      proton_column_num_den({phi_size, theta_size, t_size}, 0),  // Initialize column density grid with 0
-      injection_idx({phi_size, theta_size}, t_size),             // Initialize cross index grid with t_size
-      required({phi_size, theta_size, t_size}, 1),               // Initialize required grid with true
-      rad(rad_params),                                           // Set radiation parameters
-      phi_size(phi_size),                                        // Store phi grid size
-      theta_size(theta_size),                                    // Store theta grid size
+    : t_comv({phi_size, theta_size, t_size}, 0),      // Initialize comoving time grid with 0
+      r({phi_size, theta_size, t_size}, 0),           // Initialize radius grid with 0
+      theta({phi_size, theta_size, t_size}, 0),       // Initialize theta grid with 0
+      Gamma({phi_size, theta_size, t_size}, 1),       // Initialize Gamma grid with 1
+      Gamma_rel({phi_size, theta_size, t_size}, 1),   // Initialize Gamma_rel grid with 1
+      B({phi_size, theta_size, t_size}, 0),           // Initialize magnetic field grid with 0
+      proton_num({phi_size, theta_size, t_size}, 0),  // Initialize column density grid with 0
+      injection_idx({phi_size, theta_size}, t_size),  // Initialize cross index grid with t_size
+      required({phi_size, theta_size, t_size}, 1),    // Initialize required grid with true
+      rad(rad_params),                                // Set radiation parameters
+      phi_size(phi_size),                             // Store phi grid size
+      theta_size(theta_size),                         // Store theta grid size
       t_size(t_size) {}
 
 void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
@@ -32,7 +32,7 @@ void Shock::resize(size_t phi_size, size_t theta_size, size_t t_size) {
     Gamma.resize({phi_size, theta_size, t_size});
     Gamma_rel.resize({phi_size, theta_size, t_size});
     B.resize({phi_size, theta_size, t_size});
-    proton_column_num_den.resize({phi_size, theta_size, t_size});
+    proton_num.resize({phi_size, theta_size, t_size});
     injection_idx.resize({phi_size, theta_size});
     injection_idx.fill(t_size);
     required.resize({phi_size, theta_size, t_size});

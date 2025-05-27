@@ -12,7 +12,7 @@
  * <!-- ************************************************************************************** -->
  * @internal
  * @brief Computes the rate of change of shocked ejecta mass per solid angle.
- * @param width Width of the shocked region
+ * @param width Width of the region 4 (unshocked ejecta)
  * @param m4 Mass per solid angle in region 4 (unshocked ejecta)
  * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
  * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
@@ -333,7 +333,7 @@ inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, 
     shock.theta(i, j, k) = state.theta;
     shock.Gamma_rel(i, j, k) = eqn.compute_crossed_Gamma_rel(state);
     shock.Gamma(i, j, k) = eqn.compute_crossed_Gamma3(shock.Gamma_rel(i, j, k), state.r);
-    shock.proton_column_num_den(i, j, k) = shock.proton_column_num_den(i, j, k0) * (r0 * r0) / (state.r * state.r);
+    shock.proton_num(i, j, k) = shock.proton_num(i, j, k0) * (r0 * r0) / (state.r * state.r);
     shock.B(i, j, k) = eqn.compute_crossed_B(state);
 }
 
@@ -401,13 +401,13 @@ bool save_shock_pair_state(bool& is_rvs_shock_exist, size_t i, size_t j, int k, 
 
     Real Gamma3 = eqn_rvs.compute_crossing_Gamma3(state);
 
-    Real p_f = save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
-    Real p_r = save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
+    Real p2 = save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
+    Real p3 = save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
 
     if (!is_rvs_shock_exist) {
-        if (p_r > p_f) {  // reverse shock cannot be generated yet
+        if (p3 > p2) {  // reverse shock cannot be generated yet
             shock_rvs.Gamma_rel(i, j, k) = 1;
-            shock_rvs.proton_column_num_den(i, j, k) = 0;
+            shock_rvs.proton_num(i, j, k) = 0;
             shock_rvs.B(i, j, k) = 0;
         } else {
             is_rvs_shock_exist = true;

@@ -15,15 +15,27 @@
 #include "physics.h"
 #include "utilities.h"
 
-Real SynElectrons::compute_column_num_den(Real gamma) const {
-    if (gamma < gamma_c) {  // Below cooling Lorentz factor: direct scaling
-        return column_num_den * compute_gamma_spectrum(gamma) * fast_exp2(-gamma / gamma_M);
+Real SynElectrons::compute_N_gamma(Real gamma) const {
+    Real exp_cut = gamma < gamma_M ? 1. : fast_exp2(-gamma / gamma_M);
+
+    if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
+        return exp_cut * N_e * compute_spectrum(gamma);
     } else {
-        return column_num_den * compute_gamma_spectrum(gamma) * fast_exp2(-gamma / gamma_M) * (1 + Y_c) /
+        return exp_cut * N_e * compute_spectrum(gamma) * (1 + Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
     }
 }
 
+Real SynElectrons::compute_column_den(Real gamma) const {
+    Real exp_cut = gamma < gamma_M ? 1. : fast_exp2(-gamma / gamma_M);
+
+    if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
+        return exp_cut * column_den * compute_spectrum(gamma);
+    } else {
+        return exp_cut * column_den * compute_spectrum(gamma) * (1 + Y_c) /
+               (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
+    }
+}
 /**
  * <!-- ************************************************************************************** -->
  * @internal
@@ -65,7 +77,7 @@ size_t determine_regime(Real a, Real c, Real m) {
         return 0;
 }
 
-Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
+Real SynElectrons::compute_spectrum(Real gamma) const {
     switch (regime) {
         case 1:  // same as case 2
         case 2:
@@ -120,21 +132,26 @@ Real SynElectrons::compute_gamma_spectrum(Real gamma) const {
     }
 }
 
-Real SynPhotons::compute_I_nu(Real nu) const {
-    if (nu < nu_c) {  // Below cooling frequency, simple scaling
-        return elec->I_nu_peak * compute_spectrum(nu) * fast_exp2(-nu / nu_M);
+Real SynPhotons::compute_P_nu(Real nu) const {
+    Real exp_cut = nu < nu_M ? 1. : fast_exp2(-nu / nu_M);
+
+    if (nu <= nu_c) {  // Below cooling frequency, simple scaling
+        return exp_cut * P_nu_max * compute_spectrum(nu);
     } else {
-        return elec->I_nu_peak * compute_spectrum(nu) * fast_exp2(-nu / nu_M) * (1 + elec->Y_c) /
+        return exp_cut * P_nu_max * compute_spectrum(nu) * (1 + elec->Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, nu, elec->p));
     }
 }
 
-Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
-    if (log2_nu < log2_nu_c) {  // Below cooling frequency, simple scaling
-        return log2_I_nu_peak + compute_log2_spectrum(log2_nu) - fast_exp2(log2_nu) / nu_M;
+Real SynPhotons::compute_log2_P_nu(Real log2_nu) const {
+    Real exp_cut = log2_nu < log2_nu_M ? 0. : fast_exp2(log2_nu) / nu_M;
+
+    if (log2_nu <= log2_nu_c) {  // Below cooling frequency, simple scaling
+        return log2_P_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;
     } else {
-        return log2_I_nu_peak + compute_log2_spectrum(log2_nu) - fast_exp2(log2_nu) / nu_M + fast_log2(1 + elec->Y_c) -
-               fast_log2(1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, std::exp2(log2_nu), elec->p));
+        Real cooling_factor =
+            (1 + elec->Y_c) / (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, std::exp2(log2_nu), elec->p));
+        return log2_P_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) - exp_cut;
     }
 }
 
@@ -275,70 +292,70 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
     switch (elec->regime) {
         case 1:
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
             if (log2_nu <= log2_nu_m) {
-                return log2_C2_ + log2_nu / 3;
+                return log2_C2_ + log2_nu / 3.;
             }
             if (log2_nu <= log2_nu_c) {
-                return log2_C3_ - (p - 1) / 2 * log2_nu;
+                return log2_C3_ - (p - 1.) / 2. * log2_nu;
             }
-            return log2_C4_ - p / 2 * log2_nu;
+            return log2_C4_ - p / 2. * log2_nu;
 
             break;
         case 2:
             if (log2_nu <= log2_nu_m) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
             if (log2_nu <= log2_nu_a) {
                 return log2_C2_ + 2.5 * log2_nu;
             }
             if (log2_nu <= log2_nu_c) {
-                return log2_C3_ - (p - 1) / 2 * log2_nu;
+                return log2_C3_ - (p - 1.) / 2. * log2_nu;
             }
 
-            return log2_C4_ - p / 2 * log2_nu;
+            return log2_C4_ - p / 2. * log2_nu;
 
             break;
         case 3:
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
             if (log2_nu <= log2_nu_c) {
-                return log2_C2_ + log2_nu / 3;
+                return log2_C2_ + log2_nu / 3.;
             }
             if (log2_nu <= log2_nu_m) {
-                return log2_C3_ - log2_nu / 2;
+                return log2_C3_ - log2_nu / 2.;
             }
 
-            return log2_C4_ - p / 2 * log2_nu;
+            return log2_C4_ - p / 2. * log2_nu;
 
             break;
         case 4:
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
             if (log2_nu <= log2_nu_m) {
-                return log2_C2_ - log2_nu / 2;
+                return log2_C2_ - log2_nu / 2.;
             }
 
-            return log2_C3_ - p / 2 * log2_nu;
+            return log2_C3_ - p / 2. * log2_nu;
 
             break;
         case 5:
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
 
-            return log2_C2_ - p / 2 * log2_nu;
+            return log2_C2_ - p / 2. * log2_nu;
 
             break;
         case 6:
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2 * log2_nu;
+                return log2_C1_ + 2. * log2_nu;
             }
 
-            return log2_C3_ - p / 2 * log2_nu;
+            return log2_C3_ - p / 2. * log2_nu;
 
             break;
 
@@ -358,10 +375,21 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
  * @return Peak synchrotron power per electron
  * <!-- ************************************************************************************** -->
  */
-Real compute_syn_peak_power(Real B, Real p) {
-    constexpr double sqrt3_half = 1.73205080757 / 2;
-    return (p - 1) * B * (sqrt3_half * con::e3 / (con::me * con::c2));
-    // return B * (1.73205080757 * con::e3 / (con::me * con::c2));
+Real compute_single_elec_P_nu_max(Real B, Real p) { return B * (1.73205080757 * con::e3 / (con::me * con::c2)); }
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
+ * @brief Calculates the peak synchrotron intensity for a given column number density.
+ * @details Uses the peak synchrotron power and column number density.
+ * @param B Magnetic field strength
+ * @param p Power-law index of electron distribution
+ * @param column_den Column number density
+ * @return Peak synchrotron intensity
+ * <!-- ************************************************************************************** -->
+ */
+Real compute_syn_I_peak(Real B, Real p, Real column_den) {
+    return compute_single_elec_P_nu_max(B, p) * column_den / (4 * con::pi);
 }
 
 /**
@@ -437,16 +465,16 @@ Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
  * <!-- ************************************************************************************** -->
  */
 Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
-    Real gamma_bar_minus_1 = eps_e * (Gamma_rel - 1) * (con::mp / con::me) / xi;
+    Real gamma_ave_minus_1 = eps_e * (Gamma_rel - 1) * (con::mp / con::me) / xi;
     Real gamma_m_minus_1 = 1;
     if (p > 2) {
-        gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_bar_minus_1;
+        gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_ave_minus_1;
     } else if (p < 2) {
-        gamma_m_minus_1 = std::pow((2 - p) / (p - 1) * gamma_bar_minus_1 * std::pow(gamma_M, p - 2), 1 / (p - 1));
+        gamma_m_minus_1 = std::pow((2 - p) / (p - 1) * gamma_ave_minus_1 * std::pow(gamma_M, p - 2), 1 / (p - 1));
     } else {
         gamma_m_minus_1 = root_bisect(
             [=](Real x) -> Real {
-                return (x * std::log(gamma_M) - (x + 1) * std::log(x) - gamma_bar_minus_1 - std::log(gamma_M));
+                return (x * std::log(gamma_M) - (x + 1) * std::log(x) - gamma_ave_minus_1 - std::log(gamma_M));
             },
             0, gamma_M);
     }
@@ -455,7 +483,6 @@ Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real 
 
 Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
     // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
-    // Real gamma_c = 6 * con::pi * con::me * con::c / (con::sigmaT * B * B * (1 + Y_tilt) * t_comv);
 
     Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
     Real gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y0) * t_comv);
@@ -525,18 +552,11 @@ Real compute_gamma_peak(Real gamma_a, Real gamma_m, Real gamma_c) {
     }
 }
 
-Real cyclotron_correction(Real& gamma_m, Real& gamma_c, Real p) {
-    constexpr Real gamma_cyclotron = 2;
-    Real f = 1.;
-
-    if (1 < gamma_m && gamma_m <= gamma_cyclotron) {
-        f = (gamma_m - 1) / (gamma_cyclotron - 1);
-        if (p > 3) {
-            f = fast_pow((gamma_m - 1) / (gamma_cyclotron - 1), (p - 1) / 2);
-        }
-        gamma_m = gamma_cyclotron;
+Real cyclotron_correction(Real gamma_m, Real p) {
+    Real f = (gamma_m - 1) / gamma_m;
+    if (p > 3) {
+        f = fast_pow(f, (p - 1) / 2);
     }
-
     return f;
 }
 
@@ -563,6 +583,7 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
+                Real r = shock.r(i, j, k);
                 Real p = electrons(i, j, k).p;
                 auto& Ys = electrons(i, j, k).Ys;
                 auto& elec = electrons(i, j, k);
@@ -574,8 +595,9 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
                     elec.gamma_M = elec.gamma_c;
                 }
+                Real I_nu_peak = compute_syn_I_peak(B, p, elec.column_den);
                 elec.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, p);
+                    compute_syn_gamma_a(Gamma_rel, B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
                 elec.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, elec.gamma_c, p);
             }
@@ -586,44 +608,10 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
 SynElectronGrid generate_syn_electrons(Shock const& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
 
-    RadParams rad = shock.rad;
-
     SynElectronGrid electrons({phi_size, theta_size, t_size});
 
-    for (size_t i = 0; i < phi_size; ++i) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            size_t k_inj = shock.injection_idx(i, j);
-            for (size_t k = 0; k < t_size; ++k) {
-                if (shock.required(i, j, k) == 0) {
-                    continue;
-                }
-                Real Gamma_rel = shock.Gamma_rel(i, j, k);
-                Real t_com = shock.t_comv(i, j, k);
-                Real B = shock.B(i, j, k);
+    generate_syn_electrons(electrons, shock);
 
-                auto& elec = electrons(i, j, k);
-
-                elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, rad.p);
-                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
-
-                // Fraction of synchrotron electrons; the rest are cyclotron
-                Real f = cyclotron_correction(elec.gamma_m, elec.gamma_c, rad.p);
-
-                elec.column_num_den = shock.proton_column_num_den(i, j, k) * rad.xi_e * f;
-                elec.I_nu_peak = compute_syn_peak_power(B, rad.p) * elec.column_num_den / (4 * con::pi);
-                if (k <= k_inj) {
-                    elec.gamma_c = compute_gamma_c(t_com, B, elec.Ys, rad.p);
-                } else {  // no shocked electron injection, just adiabatic cooling
-                    elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
-                    elec.gamma_M = elec.gamma_c;
-                }
-                elec.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
-                elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
-                elec.p = rad.p;
-            }
-        }
-    }
     return electrons;
 }
 
@@ -644,6 +632,7 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock) {
                 Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
+                Real r = shock.r(i, j, k);
 
                 auto& elec = electrons(i, j, k);
 
@@ -651,18 +640,21 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock) {
                 elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
 
                 // Fraction of synchrotron electrons; the rest are cyclotron
-                Real f = cyclotron_correction(elec.gamma_m, elec.gamma_c, rad.p);
+                Real f_syn = cyclotron_correction(elec.gamma_m, rad.p);
 
-                elec.column_num_den = shock.proton_column_num_den(i, j, k) * rad.xi_e * f;
-                elec.I_nu_peak = compute_syn_peak_power(B, rad.p) * elec.column_num_den / (4 * con::pi);
+                elec.N_e = (rad.p - 1) * shock.proton_num(i, j, k) * rad.xi_e * f_syn;
+                elec.column_den = elec.N_e / (r * r);
+                Real I_nu_peak = compute_syn_I_peak(B, rad.p, elec.column_den);
+
                 if (k <= k_inj) {
                     elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, rad.p);
                 } else {  // no shocked electron injection, just adiabatic cooling
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
-                    elec.gamma_M = elec.gamma_c;
+                    elec.gamma_M = elec.gamma_c;  // no injection, so cooling gamma is cutoff gamma
                 }
+
                 elec.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, elec.I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
+                    compute_syn_gamma_a(Gamma_rel, B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
 
                 elec.p = rad.p;
@@ -676,31 +668,8 @@ SynPhotonGrid generate_syn_photons(Shock const& shock, SynElectronGrid const& el
 
     SynPhotonGrid photons({phi_size, theta_size, t_size});
 
-    for (size_t i = 0; i < phi_size; ++i) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < t_size; ++k) {
-                auto& ph = photons(i, j, k);
-                auto& elec = electrons(i, j, k);
-                ph.elec = &elec;
-                if (shock.required(i, j, k) == 0) {
-                    continue;
-                }
-                Real B = shock.B(i, j, k);
+    generate_syn_photons(photons, shock, electrons);
 
-                ph.nu_M = compute_syn_freq(elec.gamma_M, B);
-                ph.nu_m = compute_syn_freq(elec.gamma_m, B);
-                ph.nu_c = compute_syn_freq(elec.gamma_c, B);
-                ph.nu_a = compute_syn_freq(elec.gamma_a, B);
-
-                ph.log2_I_nu_peak = fast_log2(elec.I_nu_peak);
-                ph.log2_nu_m = fast_log2(ph.nu_m);
-                ph.log2_nu_c = fast_log2(ph.nu_c);
-                ph.log2_nu_a = fast_log2(ph.nu_a);
-                ph.log2_nu_M = fast_log2(ph.nu_M);
-                ph.update_constant();
-            }
-        }
-    }
     return photons;
 }
 
@@ -723,8 +692,9 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
                 ph.nu_m = compute_syn_freq(elec.gamma_m, B);
                 ph.nu_c = compute_syn_freq(elec.gamma_c, B);
                 ph.nu_a = compute_syn_freq(elec.gamma_a, B);
+                ph.P_nu_max = compute_single_elec_P_nu_max(B, elec.p) * elec.N_e;
 
-                ph.log2_I_nu_peak = fast_log2(elec.I_nu_peak);
+                ph.log2_P_nu_max = fast_log2(ph.P_nu_max);
                 ph.log2_nu_m = fast_log2(ph.nu_m);
                 ph.log2_nu_c = fast_log2(ph.nu_c);
                 ph.log2_nu_a = fast_log2(ph.nu_a);

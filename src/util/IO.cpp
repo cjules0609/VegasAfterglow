@@ -70,7 +70,7 @@ void write_npz(std::string const& filename, SynPhotonGrid const& ph) {
                 nu_m(i, j, k) = ph(i, j, k).nu_m / unit::Hz;
                 nu_c(i, j, k) = ph(i, j, k).nu_c / unit::Hz;
                 nu_M(i, j, k) = ph(i, j, k).nu_M / unit::Hz;
-                I_nu_peak(i, j, k) = ph(i, j, k).elec->I_nu_peak / (unit::erg / unit::cm2 / unit::sec / unit::Hz);
+                I_nu_peak(i, j, k) = ph(i, j, k).P_nu_max / (unit::erg / unit::cm2 / unit::sec / unit::Hz);
                 regime(i, j, k) = ph(i, j, k).elec->regime;
             }
 
@@ -88,7 +88,7 @@ void write_npz(std::string const& filename, SynElectronGrid const& e) {
     xt::xarray<Real> gamma_m = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     xt::xarray<Real> gamma_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     xt::xarray<Real> gamma_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    xt::xarray<Real> column_num_den = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    xt::xarray<Real> N_e = xt::zeros<Real>({shape[0], shape[1], shape[2]});
 
     for (size_t i = 0; i < shape[0]; ++i)
         for (size_t j = 0; j < shape[1]; ++j)
@@ -97,23 +97,23 @@ void write_npz(std::string const& filename, SynElectronGrid const& e) {
                 gamma_m(i, j, k) = e(i, j, k).gamma_m;
                 gamma_c(i, j, k) = e(i, j, k).gamma_c;
                 gamma_M(i, j, k) = e(i, j, k).gamma_M;
-                column_num_den(i, j, k) = e(i, j, k).column_num_den * unit::cm2;
+                N_e(i, j, k) = e(i, j, k).N_e * unit::cm2;
             }
 
     xt::dump_npz(filename + ".npz", "gamma_a", gamma_a, false, false);
     xt::dump_npz(filename + ".npz", "gamma_m", gamma_m, false, true);
     xt::dump_npz(filename + ".npz", "gamma_c", gamma_c, false, true);
     xt::dump_npz(filename + ".npz", "gamma_Max", gamma_M, false, true);
-    xt::dump_npz(filename + ".npz", "column_num_den", column_num_den, false, true);
+    xt::dump_npz(filename + ".npz", "N_e", N_e, false, true);
 }
 
 void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "Gamma", shock.Gamma, false, false);
     xt::dump_npz(filename + ".npz", "Gamma_rel", shock.Gamma_rel, false, true);
     xt::dump_npz(filename + ".npz", "B", xt::eval(shock.B / unit::Gauss), false, true);
-    xt::dump_npz(filename + ".npz", "t_com", xt::eval(shock.t_comv / unit::sec), false, true);
+    xt::dump_npz(filename + ".npz", "t_comv", xt::eval(shock.t_comv / unit::sec), false, true);
     xt::dump_npz(filename + ".npz", "r", xt::eval(shock.r / unit::cm), false, true);
     xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
-    xt::dump_npz(filename + ".npz", "column_num_den", xt::eval(shock.proton_column_num_den * unit::cm2), false, true);
+    xt::dump_npz(filename + ".npz", "N_p", xt::eval(shock.proton_num * unit::cm2), false, true);
 }
 #endif

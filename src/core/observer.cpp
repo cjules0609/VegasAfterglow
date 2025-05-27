@@ -15,10 +15,10 @@
 
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real lg2_t_obs) const noexcept {
     Real dlg2_t = lg2_t_obs - lg2_t(i, j, k);
-    return fast_exp2(lg2_surface(i, j, k) + state.lg2_I_lo + dlg2_t * state.slope);
+    return fast_exp2(state.lg2_P_nu_lo + dlg2_t * state.slope);
 }
 
-void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
+void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
     Array dphi({eff_phi_grid}, 0);
 
     if (eff_phi_grid == 1) {
@@ -58,8 +58,7 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
                 //     continue;
                 // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
-                Real r = shock.r(i_eff, j, k);
-                lg2_surface(i, j, k) = std::log2(dOmega * r * r) + 3 * lg2_doppler(i, j, k);
+                lg2_Omega(i, j, k) = std::log2(dOmega) + 2 * lg2_doppler(i, j, k);
             }
         }
     }
@@ -150,7 +149,7 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     time.resize({eff_phi_grid, theta_size, t_size});
     lg2_t.resize({eff_phi_grid, theta_size, t_size});
     lg2_doppler.resize({eff_phi_grid, theta_size, t_size});
-    lg2_surface.resize({eff_phi_grid, theta_size, t_size});
+    lg2_Omega.resize({eff_phi_grid, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
     calc_t_obs(coord, shock);
@@ -158,12 +157,12 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
 
 void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
-    calc_emission_surface(coord, shock);
+    calc_obs_solid_angle(coord, shock);
 }
 
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
     xt::view(shock.required, xt::all(), xt::all(), xt::all()) = 0;
     update_required(shock.required, t_obs);
-    calc_emission_surface(coord, shock);
+    calc_obs_solid_angle(coord, shock);
 }

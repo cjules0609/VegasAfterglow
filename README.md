@@ -36,6 +36,7 @@
 
 - **Forward and Reverse Shock Modeling:** Simulates both shocks with arbitrary magnetization levels and shell thicknesses.
 - **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
+- **Adiabatic and Radiative Blast Wave:** Supports smooth transition between adiabatic and radiative blast wave.
 - **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
 - **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
 
@@ -595,7 +596,9 @@ For the full license text, see the [LICENSE](LICENSE) file in the repository.
 
 ---
 
-## Citation
+## Acknowledgments & Citation
+
+We would like to thank the contributors who helped improve VegasAfterglow. **Special thanks to Weihua Lei, Shaoyu Fu, Iris Yin, Cuiyuan Dai and Binbin Zhang** for their invaluable work as beta testers, providing feedback and helping with bug fixes during development. We also thank the broader community for their suggestions and support.
 
 If you use VegasAfterglow in your research, please cite the relevant paper(s):
 

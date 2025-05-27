@@ -51,11 +51,8 @@ void ForwardShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff
     Real rho = medium.rho(phi, state.theta, state.r);
     Real dm_dt_swpt = state.r * state.r * rho * diff.r;
     Real m_swept = compute_swept_mass(*this, state);
-
     Real eps_rad = compute_radiative_efficiency(rad_const, state.t_comv, state.Gamma, rho, rad.eps_e, rad.p);
-
     Real ad_idx = adiabatic_idx(state.Gamma);
-
     diff.Gamma = dGamma_dt(m_swept, dm_dt_swpt, state, diff, ad_idx);
     diff.u = dU_dt(eps_rad, m_swept, dm_dt_swpt, state, diff, ad_idx);
 }
@@ -198,7 +195,7 @@ Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const&
         for (size_t j = 0; j < theta_size; ++j) {
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
-            //    Solve the shock shell for this theta slice
+            //      Solve the shock shell for this theta slice
             grid_solve_fwd_shock(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }

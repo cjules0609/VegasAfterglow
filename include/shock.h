@@ -41,16 +41,16 @@ class Shock {
 
     Shock() noexcept = default;
 
-    MeshGrid3d t_comv;                 ///< Comoving time
-    MeshGrid3d r;                      ///< Radius
-    MeshGrid3d theta;                  ///< Theta for jet spreading
-    MeshGrid3d Gamma;                  ///< Bulk Lorentz factor
-    MeshGrid3d Gamma_rel;              ///< Relative Lorentz factor between downstream and upstream
-    MeshGrid3d B;                      ///< Comoving magnetic field
-    MeshGrid3d proton_column_num_den;  ///< Downstream proton column number density
-    MeshGrid injection_idx;            ///< Beyond which grid index there is no electron injection
-    MaskGrid required;                 ///< Grid points actually required for final flux calculation
-    RadParams rad;                     ///< Radiation parameters
+    MeshGrid3d t_comv;       ///< Comoving time
+    MeshGrid3d r;            ///< Radius
+    MeshGrid3d theta;        ///< Theta for jet spreading
+    MeshGrid3d Gamma;        ///< Bulk Lorentz factor
+    MeshGrid3d Gamma_rel;    ///< Relative Lorentz factor between downstream and upstream
+    MeshGrid3d B;            ///< Comoving magnetic field
+    MeshGrid3d proton_num;   ///< Downstream proton number
+    MeshGrid injection_idx;  ///< Beyond which grid index there is no electron injection
+    MaskGrid required;       ///< Grid points actually required for final flux calculation
+    RadParams rad;           ///< Radiation parameters
 
     /// Returns grid dimensions as a tuple
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }
@@ -115,7 +115,7 @@ Real compute_4vel_jump(Real gamma_rel, Real sigma);
  */
 inline Real compute_sound_speed(Real Gamma_rel) {
     Real ad_idx = adiabatic_idx(Gamma_rel);
-    return std::sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx));
+    return std::sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx)) * con::c;
 }
 
 /**
@@ -304,7 +304,7 @@ inline Real compute_region4_num_den(Real dEdOmega, Real Gamma0, Real r, Real D_j
  * @return The radiative efficiency
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_radiative_efficiency(Real rad_const, Real t_comv, Real Gamma, Real rho, Real eps_e, Real p) {
+inline Real compute_radiative_efficiency(Real rad_const, Real t_comv, Real Gamma, Real rho, Real eps_e, Real p) {  //
     Real g_m_g_c = rad_const * t_comv * Gamma * (Gamma - 1) * (Gamma - 1) * rho;  // gamma_m/gamma_c
     if (g_m_g_c < 1 && p > 2) {                                                   // slow cooling
         return eps_e * fast_pow(g_m_g_c, p - 2);
@@ -383,7 +383,7 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
     xt::view(shock.Gamma, i, j, xt::all()) = 1;
     xt::view(shock.Gamma_rel, i, j, xt::all()) = 1;
     xt::view(shock.B, i, j, xt::all()) = 0;
-    xt::view(shock.proton_column_num_den, i, j, xt::all()) = 0;
+    xt::view(shock.proton_num, i, j, xt::all()) = 0;
 }
 
 template <typename State>
@@ -395,7 +395,13 @@ Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
     Real pB_upstr = compute_upstr_mag_p(n_upstr, sigma_upstr);
     Real pB_downstr = pB_upstr * ratio_u * ratio_u;
     Real n_downstr = n_upstr * ratio_u;
+
     Real e_th = compute_downstr_eth(Gamma_rel, n_downstr);
+
+    if constexpr (HasU<State>) {
+        Real V_comv = N_downstr / n_downstr;
+        e_th = state.u / V_comv;
+    }
 
     shock.t_comv(i, j, k) = state.t_comv;
     shock.r(i, j, k) = state.r;
@@ -403,7 +409,7 @@ Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& s
     shock.Gamma(i, j, k) = Gamma_downstr;
     shock.Gamma_rel(i, j, k) = Gamma_rel;
     shock.B(i, j, k) = compute_comv_weibel_B(shock.rad.eps_B, e_th) + std::sqrt(pB_downstr * 8 * con::pi);
-    shock.proton_column_num_den(i, j, k) = N_downstr / (state.r * state.r);
+    shock.proton_num(i, j, k) = N_downstr;
     return (ad_idx - 1) * e_th + pB_downstr;
 }
 
