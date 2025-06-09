@@ -5,13 +5,11 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
+
 #pragma once
 #include <cmath>
 
-#include "jet.h"
 #include "macros.h"
-#include "medium.h"
-#include "mesh.h"
 
 /**
  * <!-- ************************************************************************************** -->
@@ -188,29 +186,6 @@ Real find_jet_edge(Ejecta const& jet, Real gamma_cut);
 template <typename Ejecta, typename Medium>
 Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0);
 
-/**
- * <!-- ************************************************************************************** -->
- * @brief Constructs a coordinate grid (Coord) for shock evolution
- * @tparam Ejecta Type of the jet/ejecta class
- * @param jet The jet/ejecta object
- * @param t_obs Array of observation times
- * @param theta_cut Maximum theta value to include
- * @param theta_view Viewing angle
- * @param z Redshift
- * @param phi_resol Number of grid points per degree in phi (default: 0.1)
- * @param theta_resol Number of grid points per degree in theta (default: 1)
- * @param t_resol Number of grid points per decade in time (default: 5)
- * @param is_axisymmetric Whether the jet is axisymmetric (default: true)
- * @return A Coord object with the constructed grid
- * @details The grid is based on the observation times (t_obs), maximum theta value (theta_cut), and
- *          specified numbers of grid points in phi, theta, and t. The radial grid is logarithmically
- *          spaced between t_min and t_max, and the theta grid is generated linearly.
- * <!-- ************************************************************************************** -->
- */
-template <typename Ejecta>
-Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol = 0.25,
-                Real theta_resol = 1, Real t_resol = 3, bool is_axisymmetric = true);
-
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
@@ -261,74 +236,6 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
     }
 
     return theta_s;
-}
-
-template <typename Ejecta>
-Array adaptive_theta_grid(Ejecta const& jet, Real theta_min, Real theta_max, Real theta_view, size_t theta_num) {
-    return xt::linspace(theta_min, theta_max, theta_num);
-    size_t num_samples = 500;
-    Array sample = xt::linspace(theta_min, theta_max, num_samples);
-    Array weights = xt::zeros<Real>({num_samples - 1});
-    Real sin_obs = std::sin(theta_view);
-    Real cos_obs = std::cos(theta_view);
-    Real cos_phi = 0;
-    for (size_t i = 1; i < num_samples; ++i) {
-        Real theta = 0.5 * (sample(i) + sample(i - 1));
-        Real gamma = jet.Gamma0(0, theta);
-        Real beta = gamma_to_beta(gamma);
-        // Real Doppler = 1 / (gamma * (1 - beta * std::cos(theta - theta_view)));
-        Real cosv = std::sin(theta) * cos_phi * sin_obs + std::cos(theta) * cos_obs;
-        Real Doppler = 1 / (gamma * (1 - beta * cosv));
-
-        // weights(i) = (Doppler * Doppler * Doppler * gamma * std::sin(theta));
-        weights(i) = (Doppler * std::sin(theta));
-    }
-
-    Array CFD = xt::zeros<Real>({num_samples});
-    CFD(0) = 0;
-    for (size_t i = 1; i < num_samples; ++i) {
-        CFD(i) = CFD(i - 1) + weights(i - 1) * (sample(i) - sample(i - 1));
-    }
-    CFD /= CFD(num_samples - 1);
-    auto targets = xt::linspace(0.0, 1.0, theta_num);
-    auto theta_new = xt::interp(targets, CFD, sample);
-    return theta_new;
-}
-
-template <typename Ejecta>
-Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol,
-                Real theta_resol, Real t_resol, bool is_axisymmetric) {
-    // constexpr size_t min_grid_size = 24;
-    Coord coord;
-    coord.theta_view = theta_view;
-
-    size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
-    coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
-
-    Real jet_edge = find_jet_edge(jet, con::Gamma_cut);  // Determine the jet edge angle.
-    Real theta_min = 1e-6;
-    Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 24);
-    coord.theta = adaptive_theta_grid(jet, theta_min, theta_max, theta_view, theta_num);  //
-
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
-    size_t t_num = std::max<size_t>(static_cast<size_t>(std::log10(t_max / t_min) * t_resol), 24);
-
-    size_t phi_size_needed = is_axisymmetric ? 1 : phi_num;
-    coord.t = xt::zeros<Real>({phi_size_needed, theta_num, t_num});
-    for (size_t i = 0; i < phi_size_needed; ++i) {
-        for (size_t j = 0; j < theta_num; ++j) {
-            Real b = gamma_to_beta(jet.Gamma0(coord.phi(i), coord.theta(j)));
-            Real theta_max = coord.theta(j) + theta_view;
-
-            Real t_start = 0.99 * t_min * (1 - b) / (1 - std::cos(theta_max) * b) / (1 + z);
-            Real t_end = 1.01 * t_max / (1 + z);
-            xt::view(coord.t, i, j, xt::all()) = xt::logspace(std::log10(t_start), std::log10(t_end), t_num);
-        }
-    }
-
-    return coord;  // Construct coordinate object.
 }
 
 /**

@@ -58,10 +58,10 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
                       Real, bool>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
-             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 3., 5.),
+             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.5, 3., 5.),
              py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
-        .def("spectra", &PyModel::spectra, py::arg("nu"), py::arg("t"));
+        .def("specific_flux_matrix", &PyModel::specific_flux_matrix, py::arg("t"), py::arg("nu"));
 
     //========================================================================================================
     //                                 MCMC bindings

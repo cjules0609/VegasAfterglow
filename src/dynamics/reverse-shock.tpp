@@ -30,7 +30,9 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
     Real ratio_u = compute_4vel_jump(gamma34, sigma);
     Real column_den3 = m4 * ratio_u / width;
     Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
-    return column_den3 * gamma3 * dxdt;
+    // Real dxdt = con::c / (1 - beta3) / (1 - gamma4 / (gamma3 * ratio_u)) / gamma4 * std::sqrt(n1 / n4);
+
+    return column_den3 * dxdt * gamma3;
 }
 
 template <typename Ejecta, typename Medium>
@@ -64,6 +66,9 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     if (!crossed) {
         Gamma3 = compute_crossing_Gamma3(state);
         // Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
+
+        // Real n1 = medium.rho(phi, theta0, state.r) / con::mp;
+        // Real n4 = state.m_shell / (state.r * state.r * state.width_shell * con::mp);
 
         Real sigma4 = compute_shell_sigma(state);
         diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4);
@@ -156,6 +161,7 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
     Real m2 = compute_swept_mass(*this, state);
     Real m3 = state.m3;
     Real sigma4 = compute_shell_sigma(state);
+    constexpr Real Gamma1 = 1;
 
     auto func = [=, this](Real Gamma3) -> Real {
         Real Gamma34 = compute_rel_Gamma(Gamma4, Gamma3);
@@ -164,11 +170,23 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) con
         Real g_eff2 = compute_effective_Gamma(adx2, Gamma3);
         Real g_eff3 = compute_effective_Gamma(adx3, Gamma3);
 
-        Real eps2 = m2 * (Gamma3 - 1 + g_eff2 * (Gamma3 - 1));
+        Real eps2 = m2 * (Gamma3 - Gamma1 + g_eff2 * (Gamma3 - 1));
         Real eps3 = m3 * (Gamma3 - Gamma4 + g_eff3 * (Gamma34 - 1)) * (1 + sigma4);
 
         return eps2 + eps3;
     };
+
+    /*Real n1 = medium.rho(phi, theta0, state.r) / con::mp;
+    Real n4 = state.m_shell / (state.r * state.r * state.width_shell * con::mp);
+    auto func = [=, this](Real Gamma3) -> Real {
+        Real Gamma34 = compute_rel_Gamma(Gamma4, Gamma3);
+        Real adx3 = adiabatic_idx(Gamma34);
+        Real adx2 = adiabatic_idx(Gamma3);
+        Real p2 = (adx2 - 1) * (Gamma3 - 1) * 4 * Gamma3 * n1;
+        Real p3 = (adx3 - 1) * (Gamma34 - 1) * 4 * Gamma34 * n4;
+
+        return p2 - p3;
+    };*/
     constexpr Real r_tol = 1e-4;
     return root_bisect(func, 1, Gamma4, r_tol);
 }
@@ -333,7 +351,8 @@ inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, 
     shock.theta(i, j, k) = state.theta;
     shock.Gamma_rel(i, j, k) = eqn.compute_crossed_Gamma_rel(state);
     shock.Gamma(i, j, k) = eqn.compute_crossed_Gamma3(shock.Gamma_rel(i, j, k), state.r);
-    shock.proton_num(i, j, k) = shock.proton_num(i, j, k0) * (r0 * r0) / (state.r * state.r);
+    shock.proton_num(i, j, k) = shock.proton_num(i, j, k0);
+    //  *(r0 * r0) / (state.r * state.r);
     shock.B(i, j, k) = eqn.compute_crossed_B(state);
 }
 
@@ -404,15 +423,15 @@ bool save_shock_pair_state(bool& is_rvs_shock_exist, size_t i, size_t j, int k, 
     Real p2 = save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
     Real p3 = save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
 
-    if (!is_rvs_shock_exist) {
-        if (p3 > p2) {  // reverse shock cannot be generated yet
-            shock_rvs.Gamma_rel(i, j, k) = 1;
-            shock_rvs.proton_num(i, j, k) = 0;
-            shock_rvs.B(i, j, k) = 0;
-        } else {
-            is_rvs_shock_exist = true;
-        }
-    }
+    /* if (!is_rvs_shock_exist) {
+         if (p3 > p2) {  // reverse shock cannot be generated yet
+             shock_rvs.Gamma_rel(i, j, k) = 1;
+             shock_rvs.proton_num(i, j, k) = 0;
+             shock_rvs.B(i, j, k) = 0;
+         } else {
+             is_rvs_shock_exist = true;
+         }
+     }*/
 
     return state.m3 >= state.m_shell && !eqn_rvs.is_injecting(t);
 }
@@ -545,7 +564,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
 
     Real t_dec = compute_dec_time(eqn_rvs, t.back());
     Real t0 = min(t.front(), t_dec / 100, 1 * unit::sec);
-    // Real t0 = std::min(t.front(), 10 * unit::sec);
+    // Real t0 = 0.1 * unit::sec;
 
     eqn_fwd.set_init_state(state_fwd, t0);
 

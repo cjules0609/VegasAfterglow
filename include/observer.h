@@ -91,6 +91,19 @@ class Observer {
 
     /**
      * <!-- ************************************************************************************** -->
+     * @brief Computes the specific flux at a single observed frequency for multiple observation times
+     * @tparam PhotonGrid Types of photon grid objects
+     * @param t_obs Array of observation times
+     * @param nu_obs Observed frequency
+     * @param photons Parameter pack of photon grid objects
+     * @return Array of specific flux values at each observation time for a single observed frequency
+     * <!-- ************************************************************************************** -->
+     */
+    template <typename... PhotonGrid>
+    Array point_specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
+
+    /**
+     * <!-- ************************************************************************************** -->
      * @brief Computes the integrated flux over a frequency band
      * @tparam PhotonGrid Types of photon grid objects
      * @param t_obs Array of observation times
@@ -324,6 +337,51 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                             }
                         } else {
                             iterate_to(lg2_t_hi, lg2_t_obs, t_idx);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Normalize the flux by the factor (1+z)/(4pi*lumi_dist^2).
+    Real const coef = one_plus_z / (4 * con::pi * lumi_dist * lumi_dist);
+    F_nu *= coef;
+
+    return F_nu;
+}
+
+template <typename... PhotonGrid>
+Array Observer::point_specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+    size_t t_obs_len = t_obs.size();
+    size_t nu_len = nu_obs.size();
+
+    if (nu_len != t_obs_len) {
+        std::cout << "nu_obs and t_obs must have the same length" << std::endl;
+    }
+
+    Array lg2_t_obs = xt::log2(t_obs);
+    Array lg2_nu = xt::log2(nu_obs);
+
+    Array F_nu({t_obs_len}, 0);
+
+    InterpState state;
+
+    // Loop over effective phi and theta grid points.
+    for (size_t i = 0; i < eff_phi_grid; i++) {
+        for (size_t j = 0; j < theta_grid; j++) {
+            // Skip observation times that are below the grid's start time
+            size_t t_idx = 0;
+            iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
+
+            for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
+                Real const lg2_t_hi = lg2_t(i, j, k + 1);
+                if (lg2_t_hi < lg2_t_obs(t_idx)) {
+                    continue;
+                } else {
+                    for (; t_idx < t_obs_len && lg2_t_obs(t_idx) <= lg2_t_hi; t_idx++) {
+                        if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
+                            F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                         }
                     }
                 }

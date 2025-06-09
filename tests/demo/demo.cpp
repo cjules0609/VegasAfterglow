@@ -15,18 +15,20 @@ void test_reverse_shock(double xi, double sigma) {
 
     RadParams rad_rvs = rad_fwd;
 
-    Array t_obs = xt::logspace(std::log10(0.03 * unit::sec), std::log10(1e9 * unit::sec), 130);
+    Array t_obs = xt::logspace(std::log10(0.01 * unit::sec), std::log10(1e9 * unit::sec), 230);
 
     ISM medium(n_ism);
 
     Ejecta jet;
 
-    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
     jet.sigma0 = math::tophat(theta_c, sigma);
 
     jet.T0 = calc_engine_duration(E_iso, n_ism, Gamma0, xi);
-    std::cout << "T0: " << jet.T0 / unit::sec << ' ' << xi << ' ' << sigma << std::endl;
+
+    std::cout << "T0: " << jet.T0 / unit::sec << ' ' << xi << ' ' << sigma << ' '
+              << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
 
     Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.001, 1, 50);
 
@@ -61,7 +63,7 @@ void test_spreading() {
 
     Ejecta jet;
 
-    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
 
     jet.spreading = true;
@@ -90,7 +92,7 @@ void test_grid() {
 
     Ejecta jet;
 
-    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
 
     // jet.eps_k = math::gaussian(theta_c, E_iso);
@@ -129,9 +131,11 @@ void test_FRS() {
 
     Ejecta jet;
 
-    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
-    // jet.T0 = 1e4 * unit::sec;
+    jet.T0 = 1 * unit::sec;
+
+    std::cout << "FRS:" << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
 
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 15, 50);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
@@ -172,8 +176,8 @@ void test_FRS() {
 int main() {
     test_FRS();
 
-    return 0;
     double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
+    // double xi[] = {100};
     double sigma[] = {0, 0.01, 0.05, 0.1, 1, 100};
 
     for (auto x : xi) {

@@ -34,7 +34,7 @@
 
 <img align="right" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/shock_dynamics.svg" width="450"/>
 
-- **Forward and Reverse Shock Modeling:** Simulates both shocks with arbitrary magnetization levels and shell thicknesses.
+- **Forward and Reverse Shock Modeling:** Simulates both shocks via shock crossing dynamics with arbitrary magnetization levels and shell thicknesses.
 - **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
 - **Adiabatic and Radiative Blast Wave:** Supports smooth transition between adiabatic and radiative blast wave.
 - **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
@@ -62,7 +62,7 @@
 - **Inverse Compton (IC) Scattering:** Models IC processes, including:
   - Synchrotron Self-Compton (SSC) from both forward and reverse shocks.
   - Pairwise IC between forward and reverse shock electron and photon populations (experimental).
-  - Includes Klein-Nishina corrections for accurate high-energy IC cooling and emission.
+  - Includes Klein-Nishina corrections for accurate synchrotron and IC emission.
 
 <br clear="right"/>
 
@@ -78,7 +78,6 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~20 seconds for on-axis structured jet scenarios
-  - ~2 minutes for off-axis modeling scenarios
   
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
@@ -219,13 +218,13 @@ Now, let's compute and plot multi-wavelength light curves to see how the aftergl
 
 ```python
 # 1. Create logarithmic time array from 10² to 10⁸ seconds (100s to ~3yrs)
-times = np.logspace(2, 8, 200)  
+times = np.logspace(2, 8, 100)  
 
 # 2. Define observing frequencies (radio, optical, X-ray bands in Hz)
 bands = np.array([1e9, 1e14, 1e17])  
 
 # 3. Calculate the afterglow emission at each time and frequency
-results = model.specific_flux(times, bands)
+results = model.specific_flux_matrix(times, bands)
 
 # 4. Visualize the multi-wavelength light curves
 plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -238,15 +237,15 @@ for i, nu in enumerate(bands):
 
 def add_note(plt):
     plt.annotate('jet break',xy=(3e4, 1e-26), xytext=(3e3, 5e-28), arrowprops=dict(arrowstyle='->'))
-    plt.annotate(r'$\nu_m=\nu_a$',xy=(6e5, 3e-25), xytext=(7.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
-    plt.annotate(r'$\nu=\nu_a$',xy=(1.5e6, 4e-25), xytext=(7.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu_m=\nu_a$',xy=(8e5, 2e-25), xytext=(7.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
+    plt.annotate(r'$\nu=\nu_a$',xy=(4e6, 4e-25), xytext=(7.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
 
 add_note(plt)   
 plt.xlabel('Time (s)')
 plt.ylabel('Flux Density (erg/cm²/s/Hz)')
 plt.legend()
 plt.title('Light Curves')
-plt.savefig('assets/quick-lc.png',dpi=300)
+plt.savefig('quick-lc.png',dpi=300,bbox_inches='tight')
 ```
 
 <div align="center">
@@ -264,14 +263,13 @@ We can also examine how the broadband spectrum evolves at different times after 
 
 ```python
 # 1. Define broad frequency range (10⁵ to 10²² Hz) 
-frequencies = np.logspace(5, 22, 200)  
+frequencies = np.logspace(5, 22, 100)  
 
 # 2. Select specific time epochs for spectral snapshots 
 epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
 # 3. Calculate spectra at each epoch
-results = model.spectra(frequencies, epochs)
-
+results = model.specific_flux_matrix(epochs, frequencies)
 
 # 4. Plot broadband spectra at each epoch
 plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -280,7 +278,7 @@ colors = plt.cm.viridis(np.linspace(0,1,len(epochs)))
 for i, t in enumerate(epochs):
     exp = int(np.floor(np.log10(t)))
     base = t / 10**exp
-    plt.loglog(frequencies, results['syn'][i,:], color=colors[i], label=fr'${base:.1f} \times 10^{{{exp}}}$ s')
+    plt.loglog(frequencies, results['syn'][:,i], color=colors[i], label=fr'${base:.1f} \times 10^{{{exp}}}$ s')
 
 # 5. Add vertical lines marking the bands from the light curve plot
 for i, band in enumerate(bands):
@@ -292,7 +290,7 @@ plt.xlabel('frequency (Hz)')
 plt.ylabel('flux density (erg/cm²/s/Hz)')
 plt.legend(ncol=2)
 plt.title('Synchrotron Spectra')
-plt.savefig('assets/quick-spec.png',dpi=300)
+plt.savefig('quick-spec.png',dpi=300,bbox_inches='tight')
 ```
 
 <div align="center">

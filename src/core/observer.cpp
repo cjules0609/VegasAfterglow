@@ -85,7 +85,7 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
     }
 
     for (size_t i = 0; i < eff_phi_grid; ++i) {
-        Real cos_phi = std::cos(coord.phi[i]);
+        Real cos_phi = std::cos(coord.phi[i] - coord.phi_view);
         size_t i_eff = i * jet_3d;
         for (size_t j = 0; j < theta_grid; ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.

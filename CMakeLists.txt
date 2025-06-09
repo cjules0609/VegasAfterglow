@@ -8,7 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-O3 -flto -DNDEBUG -pipe -w)
 elseif(MSVC)
-  add_compile_options(/O2 /DNDEBUG /fp:fast /MP /GL /std:c++20)
+  add_compile_options(/O2 /DNDEBUG /MP /GL /std:c++20)
   add_link_options(/LTCG)
 endif()
 

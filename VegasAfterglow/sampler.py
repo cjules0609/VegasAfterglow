@@ -13,7 +13,6 @@ from .types import ModelParams, Setups, ObsData, VegasMC, FitResult
 
 logger = logging.getLogger(__name__)
 
-
 class _log_prob:
     """
     Thread-safe log-probability callable for emcee.
@@ -78,12 +77,13 @@ class MultiThreadEmcee:
         self,
         data: ObsData,
         base_cfg: Setups,
-        resolution: Tuple[float, float, float] = (0.1, 1, 3),
+        resolution: Tuple[float, float, float] = (0.5, 1, 5),
         total_steps: int = 10_000,
         burn_frac: float = 0.2,
         thin: int = 1,
         moves: Optional[Sequence[Tuple[emcee.moves.Move, float]]] = None,
-        refine_steps: int = 200
+        refine_steps: int = 500,
+        top_k: int = 10
     ) -> FitResult:
         """
         Run coarse MCMC + optional stretch-move refinement at higher resolution.
@@ -112,45 +112,38 @@ class MultiThreadEmcee:
 
         # 5) extract & filter
         burn = int(burn_frac * total_steps)
-        chain = sampler.get_chain(discard=burn, thin=thin)
-        logp  = sampler.get_log_prob(discard=burn, thin=thin)
+        chain = sampler.get_chain(discard = burn, thin = thin)
+        logp  = sampler.get_log_prob(discard = burn, thin = thin)
         chain, logp, _ = self._filter_bad_walkers(chain, logp)
 
-        # 6) flatten & find MAP
+        # 6) flatten & find top k fits
         flat_chain = chain.reshape(-1, self.ndim)
         flat_logp  = logp.reshape(-1)
-        best_idx   = np.argmax(flat_logp)
-        best_theta = flat_chain[best_idx]
-
-        # 7) refine at high resolution
-        logger.info("🔬 Refining MAP with stretch move for %d steps", refine_steps)
-        cfg_high = self._make_cfg(base_cfg, 0.25, 2, 5)
-        high_log_prob = _log_prob(data, cfg_high, self.to_params, self.pl, self.pu, self.model_cls)
-
-        pos_refine = best_theta + 0.1 * spread * np.random.randn(self.nwalkers, self.ndim)
-        pos_refine = np.clip(pos_refine, self.pl + 1e-8, self.pu - 1e-8)
-
-        with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
-            sampler_ref = emcee.EnsembleSampler(
-                self.nwalkers, self.ndim, high_log_prob, pool=pool, moves=[(StretchMove(), 1.0)]
-            )
-            sampler_ref.run_mcmc(pos_refine, refine_steps, progress=True)
-
-        burn_ref   = int(burn_frac * refine_steps)
-        ref_chain  = sampler_ref.get_chain(discard=burn_ref, thin=thin)
-        ref_logp   = sampler_ref.get_log_prob(discard=burn_ref, thin=thin)
-        ref_chain, ref_logp, _ = self._filter_bad_walkers(ref_chain, ref_logp)
-        ref_flat_chain = ref_chain.reshape(-1, self.ndim)
-        ref_flat_logp  = ref_logp.reshape(-1)
-        best_idx_r     = np.argmax(ref_flat_logp)
-        best_theta     = ref_flat_chain[best_idx_r]
+        
+        # Find top k unique parameter combinations
+        sorted_idx = np.argsort(flat_logp)[::-1]  # Sort by log prob (descending)
+        
+        # Round parameters to avoid floating point precision issues
+        rounded_params = np.round(flat_chain[sorted_idx], decimals=12)
+        
+        # Find unique parameter combinations while preserving sort order
+        _, unique_idx = np.unique(rounded_params, axis=0, return_index=True)
+        unique_idx = np.sort(unique_idx)[:top_k]  # Keep original sort order, limit to top_k
+        
+        final_idx = sorted_idx[unique_idx]
+        top_k_params = flat_chain[final_idx]
+        top_k_log_probs = flat_logp[final_idx]
+        
+        logger.info("🎯 Found %d unique fits with log probabilities: %.2f to %.2f", 
+                   len(top_k_params), top_k_log_probs[0], top_k_log_probs[-1])
 
         # 8) return FitResult
         return FitResult(
-            samples     = chain,
-            log_probs   = logp,
-            best_params = best_theta,
-            labels      = self.labels
+            samples       = chain,
+            log_probs     = logp,
+            labels        = self.labels,
+            top_k_params  = top_k_params,
+            top_k_log_probs = top_k_log_probs
         )
 
     def _make_cfg(self, base_cfg: Setups, phi: float, theta: float, t: float) -> Setups:

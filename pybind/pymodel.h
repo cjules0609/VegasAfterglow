@@ -181,17 +181,16 @@ class PyModel {
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
+    FluxDict specific_flux_matrix(PyArray const& t, PyArray const& nu);
 
     /**
-     * @brief Calculate spectra (flux vs frequency) at different times
-     * Returns transposed arrays compared to specific_flux
+     * @brief Calculate specific flux at given times and frequencies
      *
-     * @param nu Observer frequency array [Hz]
      * @param t Observer time array [seconds]
-     * @return FluxDict Dictionary with flux arrays (frequency as first dimension)
+     * @param nu Observer frequency array [Hz]
+     * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict spectra(PyArray const& nu, PyArray const& t);
+    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
 
    private:
     /**
@@ -199,9 +198,10 @@ class PyModel {
      *
      * @param t Observer time array [internal units]
      * @param nu Observer frequency array [internal units]
+     * @param trace Whether to return the trace of the flux matrix
      * @return FluxDict Dictionary with flux components
      */
-    FluxDict compute_specific_flux(Array const& t, Array const& nu);
+    FluxDict compute_specific_flux(Array const& t, Array const& nu, bool trace = true);
 
     /**
      * @brief Helper method to calculate flux for a given shock
@@ -214,9 +214,10 @@ class PyModel {
      * @param rad Radiation parameters
      * @param flux_dict Output flux dictionary
      * @param suffix Key suffix for flux components
+     * @param return_trace Whether to return the trace of the flux matrix
      */
     void single_shock_emission(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
-                               PyRadiation rad, FluxDict& flux_dict, std::string suffix);
+                               PyRadiation rad, FluxDict& flux_dict, std::string suffix, bool return_trace);
 
     Ejecta jet;                              ///< Jet model
     Medium medium;                           ///< Circumburst medium

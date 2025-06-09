@@ -11,8 +11,9 @@ class FitResult:
     """
     samples: np.ndarray
     log_probs: np.ndarray
-    best_params: np.ndarray
     labels: Sequence[str]
+    top_k_params: np.ndarray
+    top_k_log_probs: np.ndarray
 
 class Scale(Enum):
     LINEAR = "linear"
@@ -27,6 +28,6 @@ class ParamDef:
     scale=FIXED means this param never appears in the sampler.
     """
     name:   str
-    lower:  Optional[float] = None  # for FIXED these can be None
-    upper:  Optional[float] = None
+    lower:  float
+    upper:  float
     scale:  Scale = Scale.LINEAR

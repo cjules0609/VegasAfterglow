@@ -163,7 +163,7 @@ void ICPhoton::integrate_IC_spectrum(IntegratorGrid const& grid) noexcept {
 
 void ICPhoton::remove_zero_tail() noexcept {
     size_t idx = P_nu_IC_.size();
-    for (size_t i = P_nu_IC_.size() - 1; i >= 0; --i) {
+    for (size_t i = P_nu_IC_.size() - 1; i > 0; --i) {
         if (P_nu_IC_(i) != 0) {
             idx = i;
             break;

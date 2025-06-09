@@ -30,10 +30,11 @@ class Fitter:
     def fit(
         self,
         param_defs: Sequence[ParamDef],
-        resolution: Tuple[float, float, float] = (0.1, 1, 3),
+        resolution: Tuple[float, float, float] = (0.5, 1, 5),
         total_steps: int = 10_000,
         burn_frac: float = 0.3,
-        thin: int = 1
+        thin: int = 1,
+        top_k: int = 10
     ) -> FitResult:
         """
         Run the MCMC sampler.
@@ -50,6 +51,8 @@ class Fitter:
             Fraction of steps to discard as burn-in.
         thin :
             Thinning factor for the returned chain.
+        top_k :
+            Number of top fits to save in the result.
 
         Returns
         -------
@@ -108,7 +111,8 @@ class Fitter:
             resolution=resolution,
             total_steps=total_steps,
             burn_frac=burn_frac,
-            thin=thin
+            thin=thin,
+            top_k=top_k
         )
         return result
     

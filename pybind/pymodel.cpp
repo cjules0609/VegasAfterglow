@@ -87,7 +87,8 @@ Medium PyWind(Real A_star) {
 }
 
 void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
-                                    Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix) {
+                                    Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix,
+                                    bool return_trace) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
     auto syn_e = generate_syn_electrons(shock);
@@ -105,13 +106,20 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
     if (rad.SSC) {
         auto IC_ph = generate_IC_photons(syn_e, syn_ph, rad.KN);
 
-        flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
+        if (return_trace) {
+            flux_dict["IC" + suffix] = obs.point_specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
+        } else {
+            flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
+        }
     }
-
-    flux_dict["syn" + suffix] = obs.specific_flux(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
+    if (return_trace) {
+        flux_dict["syn" + suffix] = obs.point_specific_flux(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
+    } else {
+        flux_dict["syn" + suffix] = obs.specific_flux(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
+    }
 }
 
-auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs) -> FluxDict {
+auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, bool return_trace) -> FluxDict {
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
@@ -122,16 +130,16 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs) -> 
     if (!rvs_rad_opt) {
         auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
 
-        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
+        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "", return_trace);
 
         return flux_dict;
     } else {
         auto rvs_rad = *rvs_rad_opt;
         auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
 
-        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "");
+        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "", return_trace);
 
-        single_shock_emission(rvs_shock, coord, t_obs, nu_obs, observer, rvs_rad, flux_dict, "_rvs");
+        single_shock_emission(rvs_shock, coord, t_obs, nu_obs, observer, rvs_rad, flux_dict, "_rvs", return_trace);
 
         return flux_dict;
     }
@@ -140,19 +148,20 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs) -> 
 auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> FluxDict {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
+    bool return_trace = true;
 
-    return compute_specific_flux(t_obs, nu_obs);
-}
-
-auto PyModel::spectra(PyArray const& nu, PyArray const& t) -> FluxDict {
-    Array nu_obs = nu * unit::Hz;
-    Array t_obs = t * unit::sec;
-
-    FluxDict flux_dict = compute_specific_flux(t_obs, nu_obs);
-
-    for (auto const& [key, value] : flux_dict) {
-        flux_dict[key] = xt::transpose(value);
+    if (t_obs.size() != nu_obs.size()) {
+        std::cout << "t_obs and nu_obs must have the same size" << std::endl;
+        exit(0);
     }
 
-    return flux_dict;
+    return compute_specific_flux(t_obs, nu_obs, return_trace);
+}
+
+auto PyModel::specific_flux_matrix(PyArray const& t, PyArray const& nu) -> FluxDict {
+    Array t_obs = t * unit::sec;
+    Array nu_obs = nu * unit::Hz;
+    bool return_trace = false;
+
+    return compute_specific_flux(t_obs, nu_obs, return_trace);
 }
