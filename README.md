@@ -551,7 +551,7 @@ Comprehensive documentation is available at **[Documentation](https://yihanwanga
 - **C++ API Reference**: Detailed documentation of C++ classes and functions
 - **Contributing Guide**: Information for developers who wish to contribute
 
-The documentation is regularly updated with the latest features and improvements.
+The documentation is regularly updated with the latest features and improvements (NOT officially released).
 
 ---
 
