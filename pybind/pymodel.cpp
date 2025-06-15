@@ -151,8 +151,9 @@ auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> FluxDict {
     bool return_trace = true;
 
     if (t_obs.size() != nu_obs.size()) {
-        std::cout << "t_obs and nu_obs must have the same size" << std::endl;
-        exit(0);
+        throw std::invalid_argument(
+            "time and frequency arrays must have the same size\n"
+            "If you intend to get matrix output, use `specific_flux_matrix` instead");
     }
 
     return compute_specific_flux(t_obs, nu_obs, return_trace);

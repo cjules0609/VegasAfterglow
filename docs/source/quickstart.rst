@@ -63,7 +63,7 @@ Now, let's compute and plot multi-wavelength light curves to see how the aftergl
     bands = np.array([1e9, 1e14, 1e17])  
 
     # 3. Calculate the afterglow emission at each time and frequency
-    results = model.specific_flux(times, bands)
+    results = model.specific_flux_matrix(times, bands)
 
     # 4. Visualize the multi-wavelength light curves
     plt.figure(figsize=(4.8, 3.6), dpi=200)
