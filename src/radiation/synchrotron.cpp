@@ -375,7 +375,11 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
  * @return Peak synchrotron power per electron
  * <!-- ************************************************************************************** -->
  */
-Real compute_single_elec_P_nu_max(Real B, Real p) { return B * (1.73205080757 * con::e3 / (con::me * con::c2)); }
+Real compute_single_elec_P_nu_max(Real B, Real p) {
+    constexpr Real sin_angle_ave = con::pi / 4;
+    constexpr Real Fx_max = 0.92;  // Bing's book 5.5
+    return B * (sin_angle_ave * Fx_max * 1.73205080757 * con::e3 / (con::me * con::c2));
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -642,7 +646,7 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock) {
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f_syn = cyclotron_correction(elec.gamma_m, rad.p);
 
-                elec.N_e = (rad.p - 1) * shock.proton_num(i, j, k) * rad.xi_e * f_syn;
+                elec.N_e = shock.proton_num(i, j, k) * rad.xi_e * f_syn;
                 elec.column_den = elec.N_e / (r * r);
                 Real I_nu_peak = compute_syn_I_peak(B, rad.p, elec.column_den);
 

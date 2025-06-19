@@ -29,7 +29,7 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
     Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
     Real ratio_u = compute_4vel_jump(gamma34, sigma);
     Real column_den3 = m4 * ratio_u / width;
-    Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * ((gamma3 * ratio_u) / gamma4 - 1));
+    Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * (gamma3 * ratio_u / gamma4 - 1));
     return column_den3 * dx3dt * gamma3;
 }
 
