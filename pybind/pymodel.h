@@ -181,16 +181,25 @@ class PyModel {
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux_matrix(PyArray const& t, PyArray const& nu);
+    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
 
     /**
-     * @brief Calculate specific flux at given times and frequencies
+     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series.
      *
      * @param t Observer time array [seconds]
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
+    FluxDict specific_flux_series(PyArray const& t, PyArray const& nu);
+
+    /**
+     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, sorted by t_i.
+     *
+     * @param t Observer time array [seconds]
+     * @param nu Observer frequency array [Hz]
+     * @return FluxDict Dictionary with synchrotron and IC flux components
+     */
+    FluxDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
 
    private:
     /**

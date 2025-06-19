@@ -1,11 +1,11 @@
 
 #include "afterglow.h"
-void test_reverse_shock(double xi, double sigma) {
+auto test_reverse_shock(double xi, double sigma, bool output = true) {
     Real E_iso = 1e49 * unit::erg;
     Real theta_c = 0.1;
     Real theta_v = 0;
 
-    Real n_ism = 100 / unit::cm3;
+    Real n_ism = 1 / unit::cm3;
     Real Gamma0 = 200;
     Real z = 0;
 
@@ -15,7 +15,7 @@ void test_reverse_shock(double xi, double sigma) {
 
     RadParams rad_rvs = rad_fwd;
 
-    Array t_obs = xt::logspace(std::log10(0.01 * unit::sec), std::log10(1e9 * unit::sec), 230);
+    Array t_obs = xt::logspace(std::log10(1e-5 * unit::sec), std::log10(1e9 * unit::sec), 230);
 
     ISM medium(n_ism);
 
@@ -30,17 +30,23 @@ void test_reverse_shock(double xi, double sigma) {
     std::cout << "T0: " << jet.T0 / unit::sec << ' ' << xi << ' ' << sigma << ' '
               << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.001, 1, 50);
+    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.001, 1, 100);
 
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto r_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
 
-    write_npz("rshock-data/coord" + std::to_string(xi) + "-" + std::to_string(sigma), coord);
-    write_npz("rshock-data/f_shock" + std::to_string(xi) + "-" + std::to_string(sigma), f_shock);
-    write_npz("rshock-data/r_shock" + std::to_string(xi) + "-" + std::to_string(sigma), r_shock);
+    if (output) {
+        write_npz("rshock-data/coord" + std::to_string(xi) + "-" + std::to_string(sigma), coord);
+        write_npz("rshock-data/f_shock" + std::to_string(xi) + "-" + std::to_string(sigma), f_shock);
+        write_npz("rshock-data/r_shock" + std::to_string(xi) + "-" + std::to_string(sigma), r_shock);
+    }
 
-    return;
+    auto t_cross = coord.t(0, 0, r_shock.injection_idx(0, 0)) / unit::sec;
+    auto duration = jet.T0 / unit::sec;
+    auto t_dec = sedov_length(E_iso, n_ism) / std::pow(Gamma0, 8. / 3) / 2 / con::c / unit::sec;
+
+    return std::make_tuple(t_cross, duration, t_dec);
 }
 
 void test_spreading() {
@@ -125,7 +131,7 @@ void test_FRS() {
     Real Gamma0 = std::pow(10, 2.14);
     Real z = 1.88;
 
-    Array t_obs = xt::logspace(std::log10(1e2 * unit::sec), std::log10(1e8 * unit::sec), 130);
+    Array t_obs = xt::logspace(std::log10(1e0 * unit::sec), std::log10(1e8 * unit::sec), 130);
 
     ISM medium(n_ism);
 
@@ -135,7 +141,8 @@ void test_FRS() {
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
     jet.T0 = 1 * unit::sec;
 
-    std::cout << "FRS:" << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
+    std::cout << "FRS:" << sedov_length(E_iso, n_ism) / (2 * con::c * std::pow(Gamma0, 8. / 3)) / unit::sec << ' '
+              << shell_thickness_param(E_iso, n_ism, Gamma0, jet.T0) << std::endl;
 
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 15, 50);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
@@ -178,11 +185,22 @@ int main() {
 
     double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
     // double xi[] = {100};
-    double sigma[] = {0, 0.01, 0.05, 0.1, 1, 100};
+    double sigma[] = {0, 0.01, 0.05, 0.1, 1, 10, 100};
 
     for (auto x : xi) {
         for (auto s : sigma) {
             test_reverse_shock(x, s);
+        }
+    }
+
+    double xi2[] = {0.001, 0.01, 0.1, 1, 5, 10, 100};
+    Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
+
+    for (auto x : xi2) {
+        std::ofstream out("rshock-data/crossing-time-" + std::to_string(x) + ".txt");
+        for (auto s : sigma2) {
+            auto [t_cross, duration, t_dec] = test_reverse_shock(x, s, false);
+            out << x << ' ' << s << ' ' << t_cross << ' ' << duration << ' ' << t_dec << std::endl;
         }
     }
 

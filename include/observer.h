@@ -100,7 +100,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    Array point_specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
+    Array specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -327,7 +327,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                 iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
 
                 for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
-                    Real const lg2_t_hi = lg2_t(i, j, k + 1);
+                    Real lg2_t_hi = lg2_t(i, j, k + 1);
                     if (lg2_t_hi < lg2_t_obs(t_idx)) {
                         continue;
                     } else {
@@ -352,7 +352,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
 }
 
 template <typename... PhotonGrid>
-Array Observer::point_specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
     size_t t_obs_len = t_obs.size();
     size_t nu_len = nu_obs.size();
 
@@ -365,21 +365,12 @@ Array Observer::point_specific_flux(Array const& t_obs, Array const& nu_obs, Pho
 
     Array F_nu({t_obs_len}, 0);
 
-    InterpState state;
-
-    // Loop over effective phi and theta grid points.
     for (size_t i = 0; i < eff_phi_grid; i++) {
         for (size_t j = 0; j < theta_grid; j++) {
-            // Skip observation times that are below the grid's start time
-            size_t t_idx = 0;
-            iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
-
-            for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
-                Real const lg2_t_hi = lg2_t(i, j, k + 1);
-                if (lg2_t_hi < lg2_t_obs(t_idx)) {
-                    continue;
-                } else {
-                    for (; t_idx < t_obs_len && lg2_t_obs(t_idx) <= lg2_t_hi; t_idx++) {
+            for (size_t t_idx = 0; t_idx < t_obs_len; t_idx++) {
+                for (size_t k = 0; k < t_grid - 1; k++) {
+                    if (lg2_t_obs(t_idx) <= lg2_t(i, j, k + 1)) {
+                        InterpState state;
                         if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
                             F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                         }

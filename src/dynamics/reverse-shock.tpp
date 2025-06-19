@@ -29,10 +29,8 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
     Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
     Real ratio_u = compute_4vel_jump(gamma34, sigma);
     Real column_den3 = m4 * ratio_u / width;
-    Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
-    // Real dxdt = con::c / (1 - beta3) / (1 - gamma4 / (gamma3 * ratio_u)) / gamma4 * std::sqrt(n1 / n4);
-
-    return column_den3 * dxdt * gamma3;
+    Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * ((gamma3 * ratio_u) / gamma4 - 1));
+    return column_den3 * dx3dt * gamma3;
 }
 
 template <typename Ejecta, typename Medium>
@@ -66,9 +64,6 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
     if (!crossed) {
         Gamma3 = compute_crossing_Gamma3(state);
         // Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
-
-        // Real n1 = medium.rho(phi, theta0, state.r) / con::mp;
-        // Real n4 = state.m_shell / (state.r * state.r * state.width_shell * con::mp);
 
         Real sigma4 = compute_shell_sigma(state);
         diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4);

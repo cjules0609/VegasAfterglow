@@ -60,8 +60,12 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
              py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.5, 3., 5.),
              py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
-        .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"))
-        .def("specific_flux_matrix", &PyModel::specific_flux_matrix, py::arg("t"), py::arg("nu"));
+        .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("specific_flux_series", &PyModel::specific_flux_series, py::arg("t"), py::arg("nu"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("specific_flux_sorted_series", &PyModel::specific_flux_sorted_series, py::arg("t"), py::arg("nu"),
+             py::call_guard<py::gil_scoped_release>());
 
     //========================================================================================================
     //                                 MCMC bindings

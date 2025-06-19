@@ -224,7 +224,7 @@ times = np.logspace(2, 8, 100)
 bands = np.array([1e9, 1e14, 1e17])  
 
 # 3. Calculate the afterglow emission at each time and frequency
-results = model.specific_flux_matrix(times, bands)
+results = model.specific_flux(times, bands)
 
 # 4. Visualize the multi-wavelength light curves
 plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -269,7 +269,7 @@ frequencies = np.logspace(5, 22, 100)
 epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
 # 3. Calculate spectra at each epoch
-results = model.specific_flux_matrix(epochs, frequencies)
+results = model.specific_flux(epochs, frequencies)
 
 # 4. Plot broadband spectra at each epoch
 plt.figure(figsize=(4.8, 3.6),dpi=200)
