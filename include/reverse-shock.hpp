@@ -22,13 +22,14 @@ template <typename Ejecta, typename Medium>
 struct ReverseState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< Whether ejecta has mass injection
     static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< Whether ejecta has energy injection
-    static constexpr size_t array_size = 7;
+    static constexpr size_t array_size = 8;
 
     MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)
 
     union {
         struct {
             Real width_shell;  ///< Comoving frame width of the shell
+            Real width_cross;  ///< Crossed width of the shell
             Real m3;           ///< Shocked ejecta mass per solid angle
             Real r;            ///< Radius
             Real t_comv;       ///< Comoving time

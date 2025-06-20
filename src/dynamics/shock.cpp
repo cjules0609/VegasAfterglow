@@ -72,7 +72,7 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
         Real v = std::clamp(3 * Q / (2 * P * u), -1.0, 1.0);
         Real uds = 2 * u * std::cos((std::acos(v) - 2 * con::pi) / 3) - b / 3;
         return std::sqrt(uds);
-    }
+    } 
 }
 
 Real compute_4vel_jump(Real gamma_rel, Real sigma) {

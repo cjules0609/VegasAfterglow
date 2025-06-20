@@ -12,15 +12,16 @@
  * <!-- ************************************************************************************** -->
  * @internal
  * @brief Computes the rate of change of shocked ejecta mass per solid angle.
- * @param width Width of the region 4 (unshocked ejecta)
- * @param m4 Mass per solid angle in region 4 (unshocked ejecta)
+ * @param width_shell  Width of the shell (unshocked ejecta + shocked ejecta)
+ * @param m_shell Mass per solid angle in shell
  * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
  * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
  * @param sigma Magnetization parameter
+ * @param dx3dt_comv co-moving width of region 3 during crossing
  * @return The rate of change of mass in region 3
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real sigma) {
+inline Real compute_dm3_dt(Real width_shell, Real m_shell, Real gamma3, Real gamma4, Real sigma, Real dx3dt_comv) {
     if (gamma3 == gamma4) {
         return 0.;
     }
@@ -28,9 +29,31 @@ inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real s
     Real beta4 = gamma_to_beta(gamma4);
     Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
     Real ratio_u = compute_4vel_jump(gamma34, sigma);
-    Real column_den3 = m4 * ratio_u / width;
+    Real column_den3 = m_shell * ratio_u / width_shell;
+    // Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * (gamma3 * ratio_u / gamma4 - 1));
+    return column_den3 * dx3dt_comv;
+}
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @internal
+ * @brief Computes the rate of change of co-moving width of region 3 during crossing.
+ * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
+ * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
+ * @param sigma Magnetization parameter
+ * @return The rate of change of co-moving width of region 3 during crossing
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_dx3_dt(Real gamma3, Real gamma4, Real sigma) {
+    if (gamma3 == gamma4) {
+        return 0.;
+    }
+    Real beta3 = gamma_to_beta(gamma3);
+    Real beta4 = gamma_to_beta(gamma4);
+    Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
+    Real ratio_u = compute_4vel_jump(gamma34, sigma);
     Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * (gamma3 * ratio_u / gamma4 - 1));
-    return column_den3 * dx3dt * gamma3;
+    return dx3dt * gamma3;
 }
 
 template <typename Ejecta, typename Medium>
@@ -53,7 +76,6 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
 template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
     Real Gamma3 = 1;
-    // Real Gamma_rel = 1;
 
     auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
     diff.eps_shell = deps_shell_dt;
@@ -63,25 +85,28 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
 
     if (!crossed) {
         Gamma3 = compute_crossing_Gamma3(state);
-        // Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
+        Real beta3 = gamma_to_beta(Gamma3);
+        diff.r = compute_dr_dt(beta3);
+        diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
 
         Real sigma4 = compute_shell_sigma(state);
-        diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4);
+        diff.width_cross = compute_dx3_dt(Gamma3, Gamma4, sigma4);
+        diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4, diff.width_cross);
         if (state.m3 >= state.m_shell) {
             diff.m3 = std::min(diff.m3, diff.m_shell);
         }
     } else {
         Real Gamma_rel = compute_crossed_Gamma_rel(state);
         Gamma3 = compute_crossed_Gamma3(Gamma_rel, state.r);
+        Real beta3 = gamma_to_beta(Gamma3);
+        diff.r = compute_dr_dt(beta3);
+        diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
         diff.m3 = 0;
+        diff.width_cross = compute_shell_spreading_rate(Gamma_rel, diff.t_comv);
     }
 
-    Real beta3 = gamma_to_beta(Gamma3);
-    diff.r = compute_dr_dt(beta3);
-    diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
+    diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma4, diff.t_comv);
 
-    diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
-    // diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma_rel, diff.t_comv);
     diff.theta = 0;  // no lateral spreading
 }
 
@@ -92,6 +117,7 @@ bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
     Real beta4 = gamma_to_beta(Gamma4);
     state.theta = theta0;
     state.width_shell = compute_init_comv_shell_width(Gamma4, t0, ejecta.T0);
+    state.width_cross = 0;
 
     Real dt = std::min(t0, ejecta.T0);
     state.eps_shell = deps0_dt * dt;
@@ -190,7 +216,7 @@ template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
     this->r_x = state.r;
     constexpr Real n3_norm = 1;  // normalized n3/n3_x = 1
-    this->N_electron = n3_norm * state.width_shell * state.r * state.r;
+    this->N_electron = n3_norm * state.width_cross * state.r * state.r;
 
     Real Gamma3 = compute_crossing_Gamma3(state);
     this->u_x = std::sqrt(Gamma3 * Gamma3 - 1);
@@ -233,14 +259,14 @@ Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma3(Real gamma_rel, Real r) 
 
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma_rel(State const& state) const {
-    Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
+    Real n3_norm = N_electron / (state.width_cross * state.r * state.r);  // proton number conservation
     Real p3_norm = std::pow(n3_norm, gamma_hat_x) / adiabatic_const;      // adiabatic expansion
     return p3_norm / ((gamma_hat_x - 1) * n3_norm) + 1;
 }
 
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_crossed_B(State const& state) const {
-    Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
+    Real n3_norm = N_electron / (state.width_cross * state.r * state.r);  // proton number conservation
     Real p3_norm = std::pow(n3_norm, gamma_hat_x) / adiabatic_const;      // adiabatic expansion
     return std::sqrt(p3_norm / e_mag_const);
 }

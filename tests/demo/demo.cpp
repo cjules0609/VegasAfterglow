@@ -15,7 +15,7 @@ auto test_reverse_shock(double xi, double sigma, bool output = true) {
 
     RadParams rad_rvs = rad_fwd;
 
-    Array t_obs = xt::logspace(std::log10(1e-5 * unit::sec), std::log10(1e9 * unit::sec), 230);
+    Array t_obs = xt::logspace(std::log10(1e-9 * unit::sec), std::log10(1e9 * unit::sec), 230);
 
     ISM medium(n_ism);
 
@@ -193,7 +193,7 @@ int main() {
         }
     }
 
-    double xi2[] = {0.001, 0.01, 0.1, 1, 5, 10, 100};
+    double xi2[] = {0.001, 0.01, 0.1, 1, 5, 10, 100, 1000, 10000};
     Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
 
     for (auto x : xi2) {

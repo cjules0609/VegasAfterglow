@@ -10,7 +10,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "VegasAfterglow"
-version = "0.1.9"
+version = "0.2.0"
 description = "MCMC tools for astrophysics"
 readme = "README.md"
 authors = [
