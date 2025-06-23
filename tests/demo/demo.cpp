@@ -144,7 +144,7 @@ void test_FRS() {
     std::cout << "FRS:" << sedov_length(E_iso, n_ism) / (2 * con::c * std::pow(Gamma0, 8. / 3)) / unit::sec << ' '
               << shell_thickness_param(E_iso, n_ism, Gamma0, jet.T0) << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 5, 50);
+    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 5, 10);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e_rs, eps_B_rs);

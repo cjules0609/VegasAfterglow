@@ -202,7 +202,7 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     Real jet_edge = find_jet_edge(jet, con::Gamma_cut);  // Determine the jet edge angle.
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 24);
+    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 32);
     coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.

@@ -85,6 +85,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
 
     if (!crossed) {
         Gamma3 = compute_crossing_Gamma3(state);
+        Real Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
         Real beta3 = gamma_to_beta(Gamma3);
         diff.r = compute_dr_dt(beta3);
         diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
@@ -92,6 +93,7 @@ void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Rea
         Real sigma4 = compute_shell_sigma(state);
         diff.width_cross = compute_dx3_dt(Gamma3, Gamma4, sigma4);
         diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4, diff.width_cross);
+        diff.width_cross += compute_shell_spreading_rate(Gamma_rel, diff.t_comv);
         if (state.m3 >= state.m_shell) {
             diff.m3 = std::min(diff.m3, diff.m_shell);
         }
@@ -244,8 +246,7 @@ void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
  * <!-- ************************************************************************************** -->
  */
 inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
-    return 1.5;
-    constexpr Real g_low = 2;     // k is the medium power law index
+    constexpr Real g_low = 1.5;   // k is the medium power law index
     constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
     Real p = std::sqrt(std::sqrt(gamma_rel - 1));
     return g_low + (g_high - g_low) * p / (1 + p);
@@ -614,6 +615,17 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
                      save_crossed_RS_state<RvsEqn, typename RvsEqn::State>);
 }
 
+inline void smooth_shock(Shock& shock) {
+    auto [phi_size, theta_size, t_size] = shock.shape();
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            size_t k0 = shock.injection_idx(i, j);
+            shock.Gamma_rel(i, j, k0) =
+                (shock.Gamma_rel(i, j, k0 - 1) + shock.Gamma_rel(i, j, k0) + shock.Gamma_rel(i, j, k0 + 1)) / 3;
+            shock.B(i, j, k0) = (shock.B(i, j, k0 - 1) + shock.B(i, j, k0) + shock.B(i, j, k0 + 1)) / 3;
+        }
+    }
+}
 template <typename Ejecta, typename Medium>
 ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
                               RadParams const& rad_rvs, Real rtol) {
@@ -634,6 +646,6 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
                                   rtol);
         }
     }
-
+    smooth_shock(r_shock);
     return std::make_pair(std::move(f_shock), std::move(r_shock));
 }
