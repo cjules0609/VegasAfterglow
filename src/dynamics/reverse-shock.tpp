@@ -615,17 +615,19 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
                      save_crossed_RS_state<RvsEqn, typename RvsEqn::State>);
 }
 
-inline void smooth_shock(Shock& shock) {
+inline void smooth_peak(Shock& shock) {
     auto [phi_size, theta_size, t_size] = shock.shape();
     for (size_t i = 0; i < phi_size; ++i) {
         for (size_t j = 0; j < theta_size; ++j) {
             size_t k0 = shock.injection_idx(i, j);
+            if (k0 == 0 || k0 == t_size - 1) continue;
             shock.Gamma_rel(i, j, k0) =
                 (shock.Gamma_rel(i, j, k0 - 1) + shock.Gamma_rel(i, j, k0) + shock.Gamma_rel(i, j, k0 + 1)) / 3;
             shock.B(i, j, k0) = (shock.B(i, j, k0 - 1) + shock.B(i, j, k0) + shock.B(i, j, k0 + 1)) / 3;
         }
     }
 }
+
 template <typename Ejecta, typename Medium>
 ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
                               RadParams const& rad_rvs, Real rtol) {
@@ -646,6 +648,6 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
                                   rtol);
         }
     }
-    smooth_shock(r_shock);
+    // smooth_peak(r_shock);
     return std::make_pair(std::move(f_shock), std::move(r_shock));
 }
