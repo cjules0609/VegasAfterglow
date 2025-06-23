@@ -145,7 +145,7 @@ class PyRadiation {
  * @brief Main model class for afterglow calculations
  */
 class PyModel {
-    using FluxDict = std::unordered_map<std::string, MeshGrid>;
+    using FluxDict = std::unordered_map<std::string, xt::xarray<Real>>;
 
    public:
     /**

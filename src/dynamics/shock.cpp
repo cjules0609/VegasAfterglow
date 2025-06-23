@@ -44,7 +44,7 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
     Real gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
     Real ad_idx_m_2 = ad_idx - 2;    // (ad_idx - 2)
     Real ad_idx_m_1 = ad_idx - 1;    // (ad_idx - 1)
-    if (sigma == 0) {
+    if (std::abs(sigma) <= 1e-6) {
         return std::sqrt(gamma_m_1 * ad_idx_m_1 * ad_idx_m_1 / (-ad_idx * ad_idx_m_2 * gamma_m_1 + 2));
     } else {
         Real gamma_sq = gamma_rel * gamma_rel;  // gamma_rel^2
@@ -72,7 +72,7 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
         Real v = std::clamp(3 * Q / (2 * P * u), -1.0, 1.0);
         Real uds = 2 * u * std::cos((std::acos(v) - 2 * con::pi) / 3) - b / 3;
         return std::sqrt(uds);
-    } 
+    }
 }
 
 Real compute_4vel_jump(Real gamma_rel, Real sigma) {

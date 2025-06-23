@@ -244,7 +244,8 @@ void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
  * <!-- ************************************************************************************** -->
  */
 inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
-    constexpr Real g_low = 1.5;   // k is the medium power law index
+    return 1.5;
+    constexpr Real g_low = 2;     // k is the medium power law index
     constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
     Real p = std::sqrt(std::sqrt(gamma_rel - 1));
     return g_low + (g_high - g_low) * p / (1 + p);
@@ -576,7 +577,7 @@ void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& ste
  */
 template <typename FwdEqn, typename RvsEqn, typename View>
 void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, FwdEqn const& eqn_fwd,
-                           RvsEqn& eqn_rvs, Real rtol = 1e-6) {
+                           RvsEqn& eqn_rvs, Real t_min, Real rtol = 1e-6) {
     using namespace boost::numeric::odeint;
     auto stepper_fwd = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::State>());
 
@@ -584,7 +585,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     typename RvsEqn::State state_rvs;
 
     Real t_dec = compute_dec_time(eqn_rvs, t.back());
-    Real t0 = min(t.front(), t_dec / 100, 1 * unit::sec);
+    Real t0 = min(t_min, t_dec / 100, 1 * unit::sec);
     // Real t0 = 0.1 * unit::sec;
 
     eqn_fwd.set_init_state(state_fwd, t0);
@@ -620,6 +621,7 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
     size_t phi_size_needed = coord.t.shape()[0];
     Shock f_shock(phi_size_needed, theta_size, t_size, rad_fwd);
     Shock r_shock(phi_size_needed, theta_size, t_size, rad_rvs);
+    auto t_min = *std::min_element(coord.t.begin(), coord.t.end());
     for (size_t i = 0; i < phi_size_needed; ++i) {
         Real theta_s =
             jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
@@ -628,7 +630,8 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
             auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_fwd, theta_s);
             auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_rvs);
             // Solve the forward-reverse shock shell
-            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_f, eqn_r, rtol);
+            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_f, eqn_r, t_min,
+                                  rtol);
         }
     }
 

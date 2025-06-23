@@ -159,11 +159,10 @@ inline Real compute_dr_dt(Real beta) { return (beta * con::c) / (1 - beta); }
  * <!-- ************************************************************************************** -->
  */
 inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real Gamma) {
-    constexpr Real Q = 2.82842712475;
+    constexpr Real Q = 7;
     Real u2 = Gamma * Gamma - 1;
-    Real ratio = std::sqrt(u2 / (Q * Q * theta_s * theta_s));
-    Real x = theta / theta_s;
-    Real f = 1 / (1 + ratio);
+    Real u = std::sqrt(u2);
+    Real f = 1 / (1 + u * theta_s * Q);
     return drdt / (2 * Gamma * r) * std::sqrt((2 * u2 + 3) / (4 * u2 + 3)) * f;
 }
 

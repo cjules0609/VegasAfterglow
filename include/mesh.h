@@ -214,8 +214,8 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     for (size_t i = 0; i < phi_size_needed; ++i) {
         for (size_t j = 0; j < theta_num; ++j) {
             Real b = gamma_to_beta(jet.Gamma0(coord.phi(i), coord.theta(j)));
-            Real theta_max = coord.theta(j) + theta_view;
-
+            // Real theta_max = coord.theta(j) + theta_view;
+            Real theta_max = coord.theta.back() + theta_view;
             Real t_start = 0.99 * t_min * (1 - b) / (1 - std::cos(theta_max) * b) / (1 + z);
             Real t_end = 1.01 * t_max / (1 + z);
             xt::view(coord.t, i, j, xt::all()) = xt::logspace(std::log10(t_start), std::log10(t_end), t_num);

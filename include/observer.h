@@ -363,7 +363,7 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
     Array lg2_t_obs = xt::log2(t_obs);
     Array lg2_nu = xt::log2(nu_obs);
 
-    Array F_nu({t_obs_len}, 0);
+    Array F_nu = xt::zeros<Real>({t_obs_len});
 
     for (size_t i = 0; i < eff_phi_grid; i++) {
         for (size_t j = 0; j < theta_grid; j++) {

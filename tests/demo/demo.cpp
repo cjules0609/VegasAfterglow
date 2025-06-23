@@ -131,7 +131,7 @@ void test_FRS() {
     Real Gamma0 = std::pow(10, 2.14);
     Real z = 1.88;
 
-    Array t_obs = xt::logspace(std::log10(1e0 * unit::sec), std::log10(1e8 * unit::sec), 130);
+    Array t_obs = xt::logspace(std::log10(1e2 * unit::sec), std::log10(1e8 * unit::sec), 130);
 
     ISM medium(n_ism);
 
@@ -144,7 +144,7 @@ void test_FRS() {
     std::cout << "FRS:" << sedov_length(E_iso, n_ism) / (2 * con::c * std::pow(Gamma0, 8. / 3)) / unit::sec << ' '
               << shell_thickness_param(E_iso, n_ism, Gamma0, jet.T0) << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 15, 50);
+    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 5, 50);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e_rs, eps_B_rs);

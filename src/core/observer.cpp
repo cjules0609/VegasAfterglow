@@ -40,10 +40,9 @@ void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
     size_t shock_phi_size = shock.theta.shape(0);
     for (size_t i = 0; i < shock_phi_size; ++i) {
         for (size_t j = 0; j < theta_grid; ++j) {
-            size_t j_m1 = (j == 0) ? 0 : (j - 1);
             size_t j_p1 = (j == last) ? last : (j + 1);
             for (size_t k = 0; k < t_grid; ++k) {
-                Real theta_lo = 0.5 * (shock.theta(i, j, k) + shock.theta(i, j_m1, k));
+                Real theta_lo = (j == 0) ? 0.0 : 0.5 * (shock.theta(i, j, k) + shock.theta(i, j - 1, k));
                 Real theta_hi = 0.5 * (shock.theta(i, j, k) + shock.theta(i, j_p1, k));
                 dcos(i, j, k) = std::cos(theta_hi) - std::cos(theta_lo);
             }

@@ -112,6 +112,7 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
             flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
         }
     }
+
     if (serilized) {
         flux_dict["syn" + suffix] = obs.specific_flux_series(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
     } else {
