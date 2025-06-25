@@ -503,7 +503,6 @@ bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs,
 template <typename View, typename RState, typename REqn, typename Stepper>
 size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs, REqn& eqn_rvs, RState& state_rvs,
                          Shock& shock_fwd, Shock& shock_rvs) {
-    size_t k0 = 0;
     Real t_back = t.back();
     bool crossed = false;
     bool is_rvs_shock_exist = false;
@@ -516,17 +515,16 @@ size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs
             crossed =
                 save_shock_pair_state(is_rvs_shock_exist, i, j, k, eqn_rvs, state_rvs, t(k), shock_fwd, shock_rvs);
             if (crossed) {
-                k0 = k;
-                shock_rvs.injection_idx(i, j) = k0;
+                shock_rvs.injection_idx(i, j) = k;
                 eqn_rvs.set_cross_state(state_rvs, shock_rvs.B(i, j, k));
-                stepper_rvs.initialize(state_rvs, t(k0), stepper_rvs.current_time_step());
+                stepper_rvs.initialize(state_rvs, t(k), stepper_rvs.current_time_step());
                 break;
             }
             k++;
         }
     }
 
-    return k0;
+    return shock_rvs.injection_idx(i, j);
 }
 
 /**
