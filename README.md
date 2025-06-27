@@ -1,4 +1,4 @@
-# VegasAfterglow (under construction, stay tuned!)
+# VegasAfterglow
 
 <img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="270"/>
 
@@ -18,13 +18,21 @@
 
 ## Table of Contents
 
-- [Features](#features)
-- [Performance Highlights](#performance-highlights)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
+- [VegasAfterglow](#vegasafterglow)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Performance Highlights](#performance-highlights)
+  - [Installation](#installation)
+    - [Python Installation](#python-installation)
+    - [C++ Installation](#c-installation)
+  - [Usage](#usage)
+    - [Quick Start](#quick-start)
+    - [Light Curve \& Spectrum Calculation](#light-curve--spectrum-calculation)
+    - [MCMC Parameter Fitting](#mcmc-parameter-fitting)
+  - [Documentation](#documentation)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgments \& Citation](#acknowledgments--citation)
 
 ---
 
