@@ -367,14 +367,21 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
 
     for (size_t i = 0; i < eff_phi_grid; i++) {
         for (size_t j = 0; j < theta_grid; j++) {
-            for (size_t t_idx = 0; t_idx < t_obs_len; t_idx++) {
-                for (size_t k = 0; k < t_grid - 1; k++) {
-                    if (lg2_t_obs(t_idx) <= lg2_t(i, j, k + 1)) {
-                        InterpState state;
-                        if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
-                            F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
-                        }
+            size_t t_idx = 0;
+            iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
+
+            size_t k = 0;
+            while (t_idx < t_obs_len && k < t_grid - 1) {
+                Real lg2_t_hi = lg2_t(i, j, k + 1);
+                if (lg2_t_hi < lg2_t_obs(t_idx)) {
+                    k++;
+                    continue;
+                } else {
+                    InterpState state;
+                    if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
+                        F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                     }
+                    t_idx++;
                 }
             }
         }

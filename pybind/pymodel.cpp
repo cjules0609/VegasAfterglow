@@ -7,6 +7,9 @@
 
 #include "pymodel.h"
 
+#include <algorithm>
+#include <numeric>
+
 #include "afterglow.h"
 
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real T0, std::optional<PyMagnetar> magnetar) {
@@ -84,6 +87,24 @@ Medium PyWind(Real A_star) {
     Medium medium;
     std::tie(medium.rho, medium.mass) = evn::wind(A_star);
     return medium;
+}
+
+void convert_unit(Ejecta& jet, Medium& medium) {
+    jet.eps_k = [](Real phi, Real theta) { return jet.eps_k(phi, theta) * (unit::erg / (4 * con::pi)); };
+
+    jet.deps_dt = [](Real phi, Real theta, Real t) {
+        return jet.deps_dt(phi, theta, t) * (unit::erg / (4 * con::pi * unit::sec));
+    };
+
+    jet.dm_dt = [](Real phi, Real theta, Real t) {
+        return jet.dm_dt(phi, theta, t) * (unit::g / (4 * con::pi * unit::sec));
+    };
+
+    medium.rho = [](Real phi, Real theta, Real r) {
+        return medium.rho(phi, theta, r) * (unit::g / (unit::cm * unit::cm * unit::cm));
+    };
+
+    medium.mass = [](Real phi, Real theta, Real r) { return medium.mass(phi, theta, r) * (unit::g / (4 * con::pi)); };
 }
 
 void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
@@ -171,7 +192,34 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> FluxD
             "If you intend to get matrix-like output, use the generic `specific_flux` instead");
     }
 
-    return compute_specific_flux(t_obs, nu_obs, serilized);
+    // Create sorted indices to handle random order
+    std::vector<size_t> sorted_indices(t_obs.size());
+    std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+    std::sort(sorted_indices.begin(), sorted_indices.end(),
+              [&t_obs](size_t i, size_t j) { return t_obs(i) < t_obs(j); });
+
+    // Create sorted arrays
+    Array t_sorted = xt::zeros<Real>({t_obs.size()});
+    Array nu_sorted = xt::zeros<Real>({nu_obs.size()});
+    for (size_t i = 0; i < sorted_indices.size(); ++i) {
+        t_sorted(i) = t_obs(sorted_indices[i]);
+        nu_sorted(i) = nu_obs(sorted_indices[i]);
+    }
+
+    // Compute flux with sorted arrays
+    FluxDict sorted_flux_dict = compute_specific_flux(t_sorted, nu_sorted, serilized);
+
+    // Reorder results back to original order
+    FluxDict flux_dict;
+    for (auto const& [key, sorted_flux] : sorted_flux_dict) {
+        Array reordered_flux = xt::zeros<Real>({sorted_flux.size()});
+        for (size_t i = 0; i < sorted_indices.size(); ++i) {
+            reordered_flux(sorted_indices[i]) = sorted_flux(i);
+        }
+        flux_dict[key] = reordered_flux;
+    }
+
+    return flux_dict;
 }
 
 auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> FluxDict {

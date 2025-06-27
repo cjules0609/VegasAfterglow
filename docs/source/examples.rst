@@ -113,7 +113,7 @@ User-Defined Medium
         
 
     def custom_mass(phi, theta, r):
-        #return the integral of the density profile over r.
+        #return the integral of the density profile over r (swept up mass PER SOLID ANGLE).
         #you may keep the consistency of the mass profile with the density profile
         #the purpose of providing the extra mass profile is to reduce the extra computations.
     
@@ -242,8 +242,8 @@ Reverse Shock
     jet = TophatJet(theta_c=0.1, E_iso=1e52, Gamma0=300, duration = 100)
 
     # Create a radiation model with self-Compton radiation
-    fwd_rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3, SSC=True, KN=True, IC_cooling=True)
-    rvs_rad = Radiation(eps_e=1e-2, eps_B=1e-4, p=2.4, SSC=False, KN=False, IC_cooling=False)
+    fwd_rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
+    rvs_rad = Radiation(eps_e=1e-2, eps_B=1e-4, p=2.4)
 
     #..other settings
     model = Model(forward_rad=fwd_rad, reverse_rad=rvs_rad, resolutions=(0.5, 10, 10),...)
@@ -397,16 +397,3 @@ Parameter Study
     plt.title('Effect of Electron Energy Index (p) on Optical Light Curves')
     plt.grid(True, which='both', linestyle='--', alpha=0.5)
     plt.show()
-
-Sample Scripts
---------------
-
-The repository includes several example scripts in the ``script`` directory:
-
-1. **MCMC parameter estimation**: ``script/mcmc.py``
-
-You can run these examples directly:
-
-.. code-block:: bash
-
-    python script/mcmc.py 
