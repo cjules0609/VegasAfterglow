@@ -23,18 +23,18 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     py::class_<PyMagnetar>(m, "Magnetar").def(py::init<Real, Real>(), py::arg("L0"), py::arg("t0"));
 
     m.def("TophatJet", &PyTophatJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
-          py::arg("spreading") = false, py::arg("duration") = 1 * unit::sec, py::arg("magnetar") = py::none());
+          py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     m.def("GaussianJet", &PyGaussianJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
-          py::arg("spreading") = false, py::arg("duration") = 1 * unit::sec, py::arg("magnetar") = py::none());
+          py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
-          py::arg("spreading") = false, py::arg("duration") = 1 * unit::sec, py::arg("magnetar") = py::none());
+          py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     py::class_<Ejecta>(m, "Ejecta")
         .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("energy"),
              py::arg("lorentz"), py::arg("magnetization") = zero2d_fn, py::arg("energy_injection") = zero3d_fn,
-             py::arg("mass_injection") = zero3d_fn, py::arg("spreading") = false, py::arg("duration") = 1 * unit::sec);
+             py::arg("mass_injection") = zero3d_fn, py::arg("spreading") = false, py::arg("duration") = 1);
 
     // Medium bindings
     m.def("ISM", &PyISM, py::arg("n_ism"));

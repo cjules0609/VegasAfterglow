@@ -27,7 +27,7 @@ Setting up a simple afterglow model
     obs = Observer(lumi_dist=1e26, z=0.1, theta_obs=0)
 
     # Define radiation microphysics parameters
-    rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
+    rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3, xi_e=1)
 
     # Combine all components into a complete afterglow model
     model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.3,3,5))
@@ -107,13 +107,16 @@ User-Defined Medium
 
     from VegasAfterglow import Medium
 
-    # Define a custom density profile function
-    def custom_density(phi, theta, r):
-        #return what ever density profile you want as a function of phi, theta, and r
-        
+    m_p = 1.6726219e-24  # Proton mass in grams
 
-    def custom_mass(phi, theta, r):
-        #return the integral of the density profile over r (swept up mass PER SOLID ANGLE).
+    # Define a custom density profile function
+    def custom_density(phi, theta, r):# r in cm, phi and theta in radians
+        return m_p # n_ism =  1 cm^-3
+        #return what ever density profile (g/cm^3) you want as a function of phi, theta, and r
+        
+    def custom_mass(phi, theta, r):# r in cm, phi and theta in radians
+        return m_p * r * r * r / 3
+        #return the swept up mass PER SOLID ANGLE (g) over r (\int_0^r rho*r*r dr).
         #you may keep the consistency of the mass profile with the density profile
         #the purpose of providing the extra mass profile is to reduce the extra computations.
     
@@ -197,18 +200,22 @@ Those profiles are optional and will be set to zero function if not provided.
 
     # Define a custom energy profile function, required to complete the jet structure
     def energy(phi, theta):
+        return 1e53 # E_iso = 1e53 erg isotropic fireball
         #return what ever energy PER SOLID ANGLE profile you want as a function of phi and theta
 
     # Define a custom lorentz factor profile function, required to complete the jet structure
     def lorentz(phi, theta):
+        return 300 # Gamma0 = 300
         #return what ever lorentz factor profile you want as a function of phi and theta
     
     # Define a custom magnetization profile function, optional
     def magnetization(phi, theta):
+        return 0.1 # sigma = 0.1
         #return what ever magnetization profile you want as a function of phi and theta
 
     # Define a custom energy injection profile function, optional
     def energy_injection(phi, theta, t):
+        return 1e46*(1 + t/100)**(-2) # L = 1e46 erg/s, t0 = 100 seconds
         #return what ever energy injection PER SOLID ANGLE profile you want as a function of phi, theta, and time
 
     # Define a custom mass injection profile function, optional

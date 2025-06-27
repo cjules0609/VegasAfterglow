@@ -28,7 +28,7 @@ struct PyMagnetar {
      * @param L_0 Luminosity at t = t_0 [erg/s]
      * @param t_0 Time at which luminosity is L_0 [s]
      */
-    PyMagnetar(Real L_0, Real t_0) : L_0(L_0 * unit::erg / (4 * con::pi * unit::sec)), t_0(t_0 * unit::sec) {}
+    PyMagnetar(Real L_0, Real t_0) : L_0(L_0), t_0(t_0) {}
 
     Real L_0;
     Real t_0;
@@ -41,11 +41,11 @@ struct PyMagnetar {
  * @param E_iso Isotropic-equivalent energy [erg]
  * @param Gamma0 Initial Lorentz factor
  * @param spreading Whether to include jet lateral spreading
- * @param T0 Engine activity time [seconds]
+ * @param duration Engine activity time [seconds]
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with top-hat profile
  */
-Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
+Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real duration = 1,
                    std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
@@ -55,11 +55,11 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false
  * @param E_iso Isotropic-equivalent energy at the center [erg]
  * @param Gamma0 Initial Lorentz factor at the center
  * @param spreading Whether to include jet lateral spreading
- * @param T0 Engine activity time [seconds]
+ * @param duration Engine activity time [seconds]
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with Gaussian profile
  */
-Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec,
+Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real duration = 1,
                      std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
@@ -70,11 +70,11 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = fal
  * @param Gamma0 Initial Lorentz factor at the center
  * @param k Power-law index
  * @param spreading Whether to include jet lateral spreading
- * @param T0 Engine activity time [seconds]
+ * @param duration Engine activity time [seconds]
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with power-law profile
  */
-Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real T0 = 1 * unit::sec,
+Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real duration = 1,
                      std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
@@ -184,75 +184,72 @@ class PyModel {
           t_resol(std::get<2>(resolutions)),
           rtol(rtol),
           axisymmetric(axisymmetric) {
-        convert_unit(jet, medium);
-    };
-}
+        convert_unit(this->jet, this->medium);
+    }
 
-/**
- * @brief Calculate specific flux at given times and frequencies
- *
- * @param t Observer time array [seconds]
- * @param nu Observer frequency array [Hz]
- * @return FluxDict Dictionary with synchrotron and IC flux components
- */
-FluxDict
-specific_flux(PyArray const& t, PyArray const& nu);
+    /**
+     * @brief Calculate specific flux at given times and frequencies
+     *
+     * @param t Observer time array [seconds]
+     * @param nu Observer frequency array [Hz]
+     * @return FluxDict Dictionary with synchrotron and IC flux components
+     */
+    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
 
-/**
- * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series.
- *
- * @param t Observer time array [seconds]
- * @param nu Observer frequency array [Hz]
- * @return FluxDict Dictionary with synchrotron and IC flux components
- */
-FluxDict specific_flux_series(PyArray const& t, PyArray const& nu);
+    /**
+     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series.
+     *
+     * @param t Observer time array [seconds]
+     * @param nu Observer frequency array [Hz]
+     * @return FluxDict Dictionary with synchrotron and IC flux components
+     */
+    FluxDict specific_flux_series(PyArray const& t, PyArray const& nu);
 
-/**
- * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, sorted by t_i.
- *
- * @param t Observer time array [seconds]
- * @param nu Observer frequency array [Hz]
- * @return FluxDict Dictionary with synchrotron and IC flux components
- */
-FluxDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
+    /**
+     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, sorted by t_i.
+     *
+     * @param t Observer time array [seconds]
+     * @param nu Observer frequency array [Hz]
+     * @return FluxDict Dictionary with synchrotron and IC flux components
+     */
+    FluxDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
 
-private:
-/**
- * @brief Internal specific flux calculation method using natural units
- *
- * @param t Observer time array [internal units]
- * @param nu Observer frequency array [internal units]
- * @param trace Whether to return the trace of the flux matrix
- * @return FluxDict Dictionary with flux components
- */
-FluxDict compute_specific_flux(Array const& t, Array const& nu, bool trace = true);
+   private:
+    /**
+     * @brief Internal specific flux calculation method using natural units
+     *
+     * @param t Observer time array [internal units]
+     * @param nu Observer frequency array [internal units]
+     * @param trace Whether to return the trace of the flux matrix
+     * @return FluxDict Dictionary with flux components
+     */
+    FluxDict compute_specific_flux(Array const& t, Array const& nu, bool trace = true);
 
-/**
- * @brief Helper method to calculate flux for a given shock
- *
- * @param shock Forward or reverse shock structure
- * @param coord Coordinate system
- * @param t Observer time array [internal units]
- * @param nu Observer frequency array [internal units]
- * @param obs Observer object
- * @param rad Radiation parameters
- * @param flux_dict Output flux dictionary
- * @param suffix Key suffix for flux components
- * @param return_trace Whether to return the trace of the flux matrix
- */
-void single_shock_emission(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
-                           PyRadiation rad, FluxDict& flux_dict, std::string suffix, bool return_trace);
+    /**
+     * @brief Helper method to calculate flux for a given shock
+     *
+     * @param shock Forward or reverse shock structure
+     * @param coord Coordinate system
+     * @param t Observer time array [internal units]
+     * @param nu Observer frequency array [internal units]
+     * @param obs Observer object
+     * @param rad Radiation parameters
+     * @param flux_dict Output flux dictionary
+     * @param suffix Key suffix for flux components
+     * @param return_trace Whether to return the trace of the flux matrix
+     */
+    void single_shock_emission(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
+                               PyRadiation rad, FluxDict& flux_dict, std::string suffix, bool return_trace);
 
-Ejecta jet;                              ///< Jet model
-Medium medium;                           ///< Circumburst medium
-PyObserver obs_setup;                    ///< Observer configuration
-PyRadiation fwd_rad;                     ///< Forward shock radiation parameters
-std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
-Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
-Real phi_resol{0.3};                     ///< Azimuthal resolution: number of points per degree
-Real theta_resol{2};                     ///< Polar resolution: number of points per degree
-Real t_resol{5};                         ///< Time resolution: number of points per decade
-Real rtol{1e-5};                         ///< Relative tolerance
-bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet
-}
-;
+    Ejecta jet;                              ///< Jet model
+    Medium medium;                           ///< Circumburst medium
+    PyObserver obs_setup;                    ///< Observer configuration
+    PyRadiation fwd_rad;                     ///< Forward shock radiation parameters
+    std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
+    Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
+    Real phi_resol{0.3};                     ///< Azimuthal resolution: number of points per degree
+    Real theta_resol{2};                     ///< Polar resolution: number of points per degree
+    Real t_resol{5};                         ///< Time resolution: number of points per decade
+    Real rtol{1e-5};                         ///< Relative tolerance
+    bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet
+};
