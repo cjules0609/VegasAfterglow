@@ -28,10 +28,11 @@ struct PyMagnetar {
      * @param L_0 Luminosity at t = t_0 [erg/s]
      * @param t_0 Time at which luminosity is L_0 [s]
      */
-    PyMagnetar(Real L_0, Real t_0) : L_0(L_0), t_0(t_0) {}
+    PyMagnetar(Real L_0, Real t_0, Real q = 2) : L_0(L_0), t_0(t_0), q(q) {}
 
     Real L_0;
     Real t_0;
+    Real q;
 };
 
 /**
