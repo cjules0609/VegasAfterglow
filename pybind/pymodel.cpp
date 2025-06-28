@@ -24,7 +24,7 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real d
         jet.deps_dt = [=](Real phi, Real theta, Real t) {
             if (theta <= theta_c) {
                 Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 / std::pow(tt, magnetar->q);
+                return magnetar->L_0 * std::pow(tt, -magnetar->q);
             } else {
                 return 0.;
             }
@@ -46,7 +46,7 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
         jet.deps_dt = [=](Real phi, Real theta, Real t) {
             if (theta <= theta_c) {
                 Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 / std::pow(tt, magnetar->q);
+                return magnetar->L_0 * std::pow(tt, -magnetar->q);
             } else {
                 return 0.;
             }
@@ -68,7 +68,7 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
         jet.deps_dt = [=](Real phi, Real theta, Real t) {
             if (theta <= theta_c) {
                 Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 / std::pow(tt, magnetar->q);
+                return magnetar->L_0 * std::pow(tt, -magnetar->q);
             } else {
                 return 0.;
             }
