@@ -608,4 +608,3 @@ We would like to thank the contributors who helped improve VegasAfterglow. **Spe
 
 If you use VegasAfterglow in your research, please cite the relevant paper(s):
 
-If you use specific modules or features that are described in other publications, please cite those as well according to standard academic practice.
