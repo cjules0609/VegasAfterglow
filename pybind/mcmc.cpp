@@ -166,7 +166,7 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
     rad.p = param.p;
     rad.eps_e = param.eps_e;
     rad.eps_B = param.eps_B;
-    rad.xi_e = param.xi;
+    rad.xi_e = param.xi_e;
 
     Real lumi_dist = config.lumi_dist * unit::cm;
     Real z = config.z;

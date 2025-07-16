@@ -56,7 +56,7 @@ struct Params {
     double eps_B{0.01};
     double n_ism{1};
     double A_star{0.01};
-    double xi{1};
+    double xi_e{1};
     double k_jet{2};
 };
 
@@ -69,6 +69,9 @@ struct ConfigParams {
     Real theta_resol{1};
     Real t_resol{3};
     double rtol{1e-5};
+    bool reverse_shock{false};
+    bool forward_SSC{false};
+    bool reverse_SSC{false};
 };
 
 struct MultiBandModel {

@@ -404,7 +404,7 @@ mc_params = [
     ParamDef("eps_e",      1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
     ParamDef("eps_B",      1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
     ParamDef("A_star",     1e-3,     1,  Scale.LOG),       # Wind parameter
-    ParamDef("xi",         1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
+    ParamDef("xi_e",       1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
 ]
 ```
 
@@ -608,3 +608,4 @@ We would like to thank the contributors who helped improve VegasAfterglow. **Spe
 
 If you use VegasAfterglow in your research, please cite the relevant paper(s):
 
+[https://ui.adsabs.harvard.edu/abs/2025arXiv250710829W/abstract](https://ui.adsabs.harvard.edu/abs/2025arXiv250710829W/abstract)

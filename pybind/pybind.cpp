@@ -83,7 +83,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("eps_B", &Params::eps_B)
         .def_readwrite("n_ism", &Params::n_ism)
         .def_readwrite("A_star", &Params::A_star)
-        .def_readwrite("xi", &Params::xi)
+        .def_readwrite("xi_e", &Params::xi_e)
         .def_readwrite("k_jet", &Params::k_jet)
         .def("__repr__", [](const Params &p) {
             return "<Params E_iso=" + std::to_string(p.E_iso) + ", Gamma0=" + std::to_string(p.Gamma0) +
@@ -91,7 +91,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
                    ", theta_w=" + std::to_string(p.theta_w) + ", p=" + std::to_string(p.p) +
                    ", eps_e=" + std::to_string(p.eps_e) + ", eps_B=" + std::to_string(p.eps_B) +
                    ", n_ism=" + std::to_string(p.n_ism) + ", A_star=" + std::to_string(p.A_star) +
-                   ", xi=" + std::to_string(p.xi) + ", k_jet=" + std::to_string(p.k_jet) + ">";
+                   ", xi_e=" + std::to_string(p.xi_e) + ", k_jet=" + std::to_string(p.k_jet) + ">";
         });
     // Parameters for modeling that are not used in the MCMC
     py::class_<ConfigParams>(m, "Setups")
