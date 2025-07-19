@@ -79,6 +79,22 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
                      std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
+ * @brief Creates a two-component jet model with different properties for narrow and wide components
+ * @param theta_n Core angle of the narrow component [radians]
+ * @param E_iso_n Isotropic-equivalent energy of the narrow component [erg]
+ * @param Gamma0_n Initial Lorentz factor of the narrow component
+ * @param theta_w Core angle of the wide component [radians]
+ * @param E_iso_w Isotropic-equivalent energy of the wide component [erg]
+ * @param Gamma0_w Initial Lorentz factor of the wide component
+ * @param spreading Whether to include jet lateral spreading
+ * @param duration Engine activity time [seconds]
+ * @param magnetar Optional magnetar model
+ * @return Ejecta Configured two-component jet with specified properties
+ */
+Ejecta PyTwoComponentJet(Real theta_n, Real E_iso_n, Real Gamma0_n, Real theta_w, Real E_iso_w, Real Gamma0_w,
+                         bool spreading = false, Real duration = 1, std::optional<PyMagnetar> magnetar = std::nullopt);
+
+/**
  * @brief Creates a constant density ISM (Interstellar Medium) environment
  *
  * @param n_ism Number density of the ISM [cm^-3]

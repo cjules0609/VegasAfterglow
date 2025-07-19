@@ -78,6 +78,46 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
     return jet;
 }
 
+Ejecta PyTwoComponentJet(Real theta_n, Real E_iso_n, Real Gamma0_n, Real theta_w, Real E_iso_w, Real Gamma0_w,
+                         bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
+    Ejecta jet;
+    jet.eps_k = [=](Real phi, Real theta) {
+        if (theta <= theta_n) {
+            return E_iso_n;
+        } else if (theta <= theta_w) {
+            return E_iso_w;
+        } else {
+            return 0.;
+        }
+    };
+
+    jet.Gamma0 = [=](Real phi, Real theta) {
+        if (theta <= theta_n) {
+            return Gamma0_n;
+        } else if (theta <= theta_w) {
+            return Gamma0_w;
+        } else {
+            return 1.0;  // Default Lorentz factor outside the jet
+        }
+    };
+
+    jet.spreading = spreading;
+    jet.T0 = duration;
+
+    if (magnetar) {
+        jet.deps_dt = [=](Real phi, Real theta, Real t) {
+            if (theta <= theta_w) {
+                Real tt = 1 + t / magnetar->t_0;
+                return magnetar->L_0 * std::pow(tt, -magnetar->q);
+            } else {
+                return 0.;
+            }
+        };
+    }
+
+    return jet;
+}
+
 Medium PyISM(Real n_ism) {
     Medium medium;
     medium.rho = [=](Real phi, Real theta, Real r) { return n_ism * 1.67e-24; };

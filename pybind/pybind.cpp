@@ -31,6 +31,10 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
           py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
+    m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_n"), py::arg("E_iso_n"), py::arg("Gamma0_n"),
+          py::arg("theta_w"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("spreading") = false,
+          py::arg("duration") = 1, py::arg("magnetar") = py::none());
+
     py::class_<Ejecta>(m, "Ejecta")
         .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("E_iso"),
              py::arg("Gamma0"), py::arg("sigma0") = zero2d_fn, py::arg("E_dot") = zero3d_fn,
