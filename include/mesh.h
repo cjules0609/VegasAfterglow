@@ -172,6 +172,39 @@ template <typename Ejecta>
 Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol = 0.25,
                 Real theta_resol = 1, Real t_resol = 3, bool is_axisymmetric = true, Real phi_view = 0);
 
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Determines the edge of the jet based on a given gamma cut-off using binary search
+ * @tparam Ejecta Type of the jet/ejecta class
+ * @param jet The jet/ejecta object
+ * @param gamma_cut Lorentz factor cutoff value
+ * @param phi_resol Azimuthal resolution
+ * @param theta_resol Polar resolution
+ * @param is_axisymmetric Flag for axisymmetric jets
+ * @return Angle (in radians) at which the jet's Lorentz factor drops to gamma_cut
+ * <!-- ************************************************************************************** -->
+ */
+template <typename Ejecta>
+Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric);
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Determines the edge of the jet where the spreading is strongest
+ * @tparam Ejecta Type of the jet/ejecta class
+ * @tparam Medium Type of the ambient medium
+ * @param jet The jet/ejecta object
+ * @param medium The ambient medium object
+ * @param phi Azimuthal angle
+ * @param theta_min Minimum polar angle to consider
+ * @param theta_max Maximum polar angle to consider
+ * @param t0 Initial time
+ * @return Angle (in radians) where the spreading is strongest
+ * @details The spreading strength is measured by the derivative of the pressure with respect to theta,
+ *          which is proportional to d((Gamma-1)Gamma rho)/dtheta
+ * <!-- ************************************************************************************** -->
+ */
+template <typename Ejecta, typename Medium>
+Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0);
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
@@ -190,6 +223,74 @@ void boundary_to_center_log(Arr1 const& boundary, Arr2& center) {
 }
 
 template <typename Ejecta>
+Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric) {
+    // binary search for the edge of the jet
+    if (jet.Gamma0(0, con::pi / 2) >= gamma_cut) {
+        return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
+    }
+    Real low = 0;
+    Real hi = con::pi / 2;
+    Real eps = 1e-9;
+    for (; hi - low > eps;) {
+        Real mid = 0.5 * (low + hi);
+        if (jet.Gamma0(0, mid) > gamma_cut) {
+            low = mid;
+        } else {
+            hi = mid;
+        }
+    }
+
+    // grid based search for the edge of the jet
+    size_t phi_num = std::max<size_t>(static_cast<size_t>(360. * phi_resol), 1);
+    phi_num = is_axisymmetric ? 1 : phi_num;
+    size_t theta_num = std::max<size_t>(static_cast<size_t>(90. * theta_resol), 32);
+    auto phi = xt::linspace(0., 2 * con::pi, phi_num);
+    auto theta = xt::linspace(0., con::pi / 2, theta_num);
+
+    Real theta_edge = con::pi / 2;
+
+    for (size_t i = 0; i < phi_num; ++i) {
+        for (int j = theta_num - 1; j >= 0; --j) {
+            if (jet.Gamma0(phi[i], theta[j]) >= gamma_cut) {
+                theta_edge = std::max(theta_edge, theta[j]);
+                break;  // Found the edge for this phi, no need to check lower theta values
+            }
+        }
+    }
+
+    return std::max(theta_edge, low);
+}
+
+template <typename Ejecta, typename Medium>
+Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0) {
+    Real step = (theta_max - theta_min) / 256;
+    Real theta_s = theta_min;
+    Real dp_min = 0;
+
+    for (Real theta = theta_min; theta <= theta_max; theta += step) {
+        // Real G = jet.Gamma0(phi, theta);
+        // Real beta0 = gamma_to_beta(G);
+        // Real r0 = beta0 * con::c * t0 / (1 - beta0);
+        // Real rho = medium.rho(phi, theta, 0);
+        Real th_lo = std::max(theta - step, theta_min);
+        Real th_hi = std::min(theta + step, theta_max);
+        Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
+        // Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
+        Real dp = dG;  //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
+
+        if (dp < dp_min) {
+            dp_min = dp;
+            theta_s = theta;
+        }
+    }
+    if (dp_min == 0) {
+        theta_s = theta_max;
+    }
+
+    return theta_s;
+}
+
+template <typename Ejecta>
 Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol,
                 Real theta_resol, Real t_resol, bool is_axisymmetric, Real phi_view) {
     // constexpr size_t min_grid_size = 24;
@@ -199,7 +300,8 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
     coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
 
-    Real jet_edge = find_jet_edge(jet, con::Gamma_cut);  // Determine the jet edge angle.
+    Real jet_edge =
+        find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);  // Determine the jet edge angle.
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
     size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 32);

@@ -5,12 +5,10 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-
 #pragma once
 #include <cmath>
 
 #include "macros.h"
-
 /**
  * <!-- ************************************************************************************** -->
  * @brief Computes the deceleration radius of the shock.
@@ -155,88 +153,9 @@ inline Real RS_crossing_radius(Real E_iso, Real n_ism, Real engine_dura) {
     return std::sqrt(std::sqrt(l * l * l * con::c * engine_dura));
 }
 
-/**
- * <!-- ************************************************************************************** -->
- * @brief Determines the edge of the jet based on a given gamma cut-off using binary search
- * @tparam Ejecta Type of the jet/ejecta class
- * @param jet The jet/ejecta object
- * @param gamma_cut Lorentz factor cutoff value
- * @return Angle (in radians) at which the jet's Lorentz factor drops to gamma_cut
- * <!-- ************************************************************************************** -->
- */
-template <typename Ejecta>
-Real find_jet_edge(Ejecta const& jet, Real gamma_cut);
-
-/**
- * <!-- ************************************************************************************** -->
- * @brief Determines the edge of the jet where the spreading is strongest
- * @tparam Ejecta Type of the jet/ejecta class
- * @tparam Medium Type of the ambient medium
- * @param jet The jet/ejecta object
- * @param medium The ambient medium object
- * @param phi Azimuthal angle
- * @param theta_min Minimum polar angle to consider
- * @param theta_max Maximum polar angle to consider
- * @param t0 Initial time
- * @return Angle (in radians) where the spreading is strongest
- * @details The spreading strength is measured by the derivative of the pressure with respect to theta,
- *          which is proportional to d((Gamma-1)Gamma rho)/dtheta
- * <!-- ************************************************************************************** -->
- */
-template <typename Ejecta, typename Medium>
-Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0);
-
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
-
-template <typename Ejecta>
-Real find_jet_edge(Ejecta const& jet, Real gamma_cut) {
-    if (jet.Gamma0(0, con::pi / 2) >= gamma_cut) {
-        return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
-    }
-    Real low = 0;
-    Real hi = con::pi / 2;
-    Real eps = 1e-9;
-    for (; hi - low > eps;) {
-        Real mid = 0.5 * (low + hi);
-        if (jet.Gamma0(0, mid) > gamma_cut) {
-            low = mid;
-        } else {
-            hi = mid;
-        }
-    }
-    return low;
-}
-
-template <typename Ejecta, typename Medium>
-Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real theta_min, Real theta_max, Real t0) {
-    Real step = (theta_max - theta_min) / 256;
-    Real theta_s = theta_min;
-    Real dp_min = 0;
-
-    for (Real theta = theta_min; theta <= theta_max; theta += step) {
-        // Real G = jet.Gamma0(phi, theta);
-        // Real beta0 = gamma_to_beta(G);
-        // Real r0 = beta0 * con::c * t0 / (1 - beta0);
-        // Real rho = medium.rho(phi, theta, 0);
-        Real th_lo = std::max(theta - step, theta_min);
-        Real th_hi = std::min(theta + step, theta_max);
-        Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
-        // Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
-        Real dp = dG;  //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
-
-        if (dp < dp_min) {
-            dp_min = dp;
-            theta_s = theta;
-        }
-    }
-    if (dp_min == 0) {
-        theta_s = theta_max;
-    }
-
-    return theta_s;
-}
 
 /**
  * <!-- ************************************************************************************** -->
