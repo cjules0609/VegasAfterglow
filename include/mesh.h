@@ -252,8 +252,10 @@ Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta
     for (size_t i = 0; i < phi_num; ++i) {
         for (int j = theta_num - 1; j >= 0; --j) {
             if (jet.Gamma0(phi[i], theta[j]) >= gamma_cut) {
-                theta_edge = std::max(theta_edge, theta[j]);
+                theta_edge = theta[j];
                 break;  // Found the edge for this phi, no need to check lower theta values
+            } else {
+                theta_edge = theta[j];
             }
         }
     }

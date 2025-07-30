@@ -47,7 +47,7 @@ class Shock {
     MeshGrid3d Gamma;        ///< Bulk Lorentz factor
     MeshGrid3d Gamma_rel;    ///< Relative Lorentz factor between downstream and upstream
     MeshGrid3d B;            ///< Comoving magnetic field
-    MeshGrid3d proton_num;   ///< Downstream proton number
+    MeshGrid3d proton_num;   ///< Downstream proton number per solid angle
     MeshGrid injection_idx;  ///< Beyond which grid index there is no electron injection
     MaskGrid required;       ///< Grid points actually required for final flux calculation
     RadParams rad;           ///< Radiation parameters
@@ -334,7 +334,7 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
  * @param state Current state of the system
  * @param Gamma_downstr Downstream Lorentz factor
  * @param Gamma_upstr Upstream Lorentz factor
- * @param N_downstr Downstream total number of shocked particles
+ * @param N_downstr Downstream total number of shocked particles per solid angle
  * @param n_upstr Upstream number density
  * @param sigma_upstr Upstream magnetization
  * @return The total pressure in the downstream region

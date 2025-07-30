@@ -158,10 +158,10 @@ class Observer {
      */
     void update_required(MaskGrid& required, Array const& t_obs);
 
-   private:
     MeshGrid3d lg2_t;        ///< Log2 of observation time grid
     MeshGrid3d lg2_doppler;  ///< Log2 of Doppler factor grid
     MeshGrid3d lg2_Omega;    ///< Log2 of observe frame solid angle grid
+   private:
     Real one_plus_z{1};      ///< 1 + redshift
     Real lg2_one_plus_z{0};  ///< Log2(1 + redshift)
     Real lumi_dist{1};       ///< Luminosity distance

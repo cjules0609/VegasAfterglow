@@ -15,6 +15,7 @@
 #include "macros.h"
 #include "pybind.h"
 
+using ArrayDict = std::unordered_map<std::string, xt::xarray<Real>>;
 /**
  * @brief Magnetar model class
  *
@@ -173,8 +174,6 @@ void convert_unit(Ejecta& jet, Medium& medium);
  * @brief Main model class for afterglow calculations
  */
 class PyModel {
-    using FluxDict = std::unordered_map<std::string, xt::xarray<Real>>;
-
    public:
     /**
      * @brief Construct afterglow model with given components
@@ -211,7 +210,7 @@ class PyModel {
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux(PyArray const& t, PyArray const& nu);
+    ArrayDict specific_flux(PyArray const& t, PyArray const& nu);
 
     /**
      * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series.
@@ -220,7 +219,7 @@ class PyModel {
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux_series(PyArray const& t, PyArray const& nu);
+    ArrayDict specific_flux_series(PyArray const& t, PyArray const& nu);
 
     /**
      * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, sorted by t_i.
@@ -229,7 +228,14 @@ class PyModel {
      * @param nu Observer frequency array [Hz]
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    FluxDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
+    ArrayDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
+
+    /**
+     * @brief Get details of the model configuration
+     *
+     * @return ArrayDict Dictionary with model details such as shock, electron and photon grids.
+     */
+    ArrayDict details(PyArray const& t);
 
    private:
     /**
@@ -240,7 +246,7 @@ class PyModel {
      * @param trace Whether to return the trace of the flux matrix
      * @return FluxDict Dictionary with flux components
      */
-    FluxDict compute_specific_flux(Array const& t, Array const& nu, bool trace = true);
+    ArrayDict compute_specific_flux(Array const& t, Array const& nu, bool trace = true);
 
     /**
      * @brief Helper method to calculate flux for a given shock
@@ -256,7 +262,21 @@ class PyModel {
      * @param return_trace Whether to return the trace of the flux matrix
      */
     void single_shock_emission(Shock const& shock, Coord const& coord, Array const& t, Array const& nu, Observer& obs,
-                               PyRadiation rad, FluxDict& flux_dict, std::string suffix, bool return_trace);
+                               PyRadiation rad, ArrayDict& flux_dict, std::string suffix, bool return_trace);
+
+    /**
+     * @brief Helper method to calculate details for a given shock
+     * @param shock Forward or reverse shock structure
+     * @param coord Coordinate system
+     * @param t Observer time array [internal units]
+     * @param nu Observer frequency array [internal units]
+     * @param obs Observer object
+     * @param rad Radiation parameters
+     * @param detail_dict Output detail dictionary
+     * @param suffix Key suffix for detail components
+     */
+    void single_shock_details(Shock const& shock, Coord const& coord, Array const& t, Observer& obs, PyRadiation rad,
+                              ArrayDict& detail_dict, std::string suffix);
 
     Ejecta jet;                              ///< Jet model
     Medium medium;                           ///< Circumburst medium

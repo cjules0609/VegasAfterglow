@@ -15,8 +15,8 @@
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
                    std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::tophat(theta_c, E_iso);
-    jet.Gamma0 = math::tophat(theta_c, Gamma0);
+    jet.eps_k = [=](Real phi, Real theta) { return theta < theta_c ? E_iso : 0.; };
+    jet.Gamma0 = [=](Real phi, Real theta) { return theta < theta_c ? Gamma0 : 1.; };
     jet.spreading = spreading;
     jet.T0 = duration;
 
@@ -37,8 +37,9 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real d
 Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
                      std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::gaussian(theta_c, E_iso);
-    jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+    Real norm = -1 / (2 * theta_c * theta_c);
+    jet.eps_k = [=](Real phi, Real theta) { return E_iso * fast_exp(norm * theta * theta); };
+    jet.Gamma0 = [=](Real phi, Real theta) { return (Gamma0 - 1) * fast_exp(norm * theta * theta) + 1; };
     jet.spreading = spreading;
     jet.T0 = duration;
 
@@ -59,8 +60,8 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
 Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real duration,
                      std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::powerlaw(theta_c, E_iso, k);
-    jet.Gamma0 = math::powerlaw(theta_c, Gamma0, k);
+    jet.eps_k = [=](Real phi, Real theta) { return E_iso / (1 + fast_pow(theta / theta_c, k)); };
+    jet.Gamma0 = [=](Real phi, Real theta) { return (Gamma0 - 1) / (1 + fast_pow(theta / theta_c, k)) + 1; };
     jet.spreading = spreading;
     jet.T0 = duration;
 
@@ -161,7 +162,7 @@ void convert_unit(Ejecta& jet, Medium& medium) {
 }
 
 void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
-                                    Observer& obs, PyRadiation rad, FluxDict& flux_dict, std::string suffix,
+                                    Observer& obs, PyRadiation rad, ArrayDict& flux_dict, std::string suffix,
                                     bool serilized) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
@@ -194,11 +195,11 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
     }
 }
 
-auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, bool serilized) -> FluxDict {
+auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, bool serilized) -> ArrayDict {
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
-    FluxDict flux_dict;
+    ArrayDict flux_dict;
 
     Observer observer;
 
@@ -220,7 +221,118 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, boo
     }
 }
 
-auto PyModel::specific_flux_sorted_series(PyArray const& t, PyArray const& nu) -> FluxDict {
+void save_shock_details(Shock const& shock, ArrayDict& detail_dict, std::string suffix) {
+    detail_dict["Gamma_downstr" + suffix] = shock.Gamma;
+    detail_dict["Gamma_rel" + suffix] = shock.Gamma_rel;
+    detail_dict["r" + suffix] = shock.r;
+    detail_dict["t_comv" + suffix] = shock.t_comv;
+    detail_dict["B" + suffix] = shock.B;
+    detail_dict["N_p" + suffix] = shock.proton_num;
+    detail_dict["theta" + suffix] = shock.theta;
+}
+
+template <typename ElectronGrid>
+void save_electron_details(ElectronGrid const& electrons, ArrayDict& detail_dict, std::string suffix) {
+    auto shape = electrons.shape();
+    detail_dict["gamma_m" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["gamma_c" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["gamma_a" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["gamma_M" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["N_e" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                detail_dict["gamma_a" + suffix](i, j, k) = electrons(i, j, k).gamma_a;
+                detail_dict["gamma_m" + suffix](i, j, k) = electrons(i, j, k).gamma_m;
+                detail_dict["gamma_c" + suffix](i, j, k) = electrons(i, j, k).gamma_c;
+                detail_dict["gamma_M" + suffix](i, j, k) = electrons(i, j, k).gamma_M;
+                detail_dict["N_e" + suffix](i, j, k) = electrons(i, j, k).N_e;
+            }
+        }
+    }
+}
+template <typename PhotonGrid>
+void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std::string suffix) {
+    auto shape = photons.shape();
+    detail_dict["nu_m" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["nu_c" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["nu_a" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["nu_M" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["P_nu_max" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                detail_dict["nu_a" + suffix](i, j, k) = photons(i, j, k).nu_a / unit::Hz;
+                detail_dict["nu_m" + suffix](i, j, k) = photons(i, j, k).nu_m / unit::Hz;
+                detail_dict["nu_c" + suffix](i, j, k) = photons(i, j, k).nu_c / unit::Hz;
+                detail_dict["nu_M" + suffix](i, j, k) = photons(i, j, k).nu_M / unit::Hz;
+                detail_dict["P_nu_max" + suffix](i, j, k) =
+                    photons(i, j, k).P_nu_max / (unit::erg / unit::Hz / unit::sec);
+            }
+        }
+    }
+}
+
+void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,
+                                   PyRadiation rad, ArrayDict& detail_dict, std::string suffix) {
+    obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
+
+    detail_dict["EAT" + suffix] = obs.time / unit::sec;
+    detail_dict["Doppler" + suffix] = xt::exp2(obs.lg2_doppler);
+    detail_dict["Omega" + suffix] = xt::exp2(obs.lg2_Omega);
+
+    auto syn_e = generate_syn_electrons(shock);
+
+    auto syn_ph = generate_syn_photons(shock, syn_e);
+
+    if (rad.IC_cooling) {
+        if (rad.KN) {
+            KN_cooling(syn_e, syn_ph, shock);
+        } else {
+            Thomson_cooling(syn_e, syn_ph, shock);
+        }
+    }
+    save_electron_details(syn_e, detail_dict, suffix);
+    save_photon_details(syn_ph, detail_dict, suffix);
+}
+
+auto PyModel::details(PyArray const& t_obs) -> ArrayDict {
+    Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
+                            t_resol, axisymmetric);
+
+    ArrayDict details_dict;
+
+    details_dict["phi"] = coord.phi;
+    details_dict["theta"] = coord.theta;
+    details_dict["t_src"] = coord.t / unit::sec;
+
+    Observer observer;
+
+    if (!rvs_rad_opt) {
+        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
+
+        save_shock_details(fwd_shock, details_dict, "_fwd");
+
+        single_shock_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+
+        return details_dict;
+    } else {
+        auto rvs_rad = *rvs_rad_opt;
+        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
+
+        save_shock_details(fwd_shock, details_dict, "_fwd");
+
+        save_shock_details(rvs_shock, details_dict, "_rvs");
+
+        single_shock_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+
+        single_shock_details(rvs_shock, coord, t_obs, observer, rvs_rad, details_dict, "_rvs");
+
+        return details_dict;
+    }
+}
+
+auto PyModel::specific_flux_sorted_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
     bool serilized = true;
@@ -234,7 +346,7 @@ auto PyModel::specific_flux_sorted_series(PyArray const& t, PyArray const& nu) -
     return compute_specific_flux(t_obs, nu_obs, serilized);
 }
 
-auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> FluxDict {
+auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
     bool serilized = true;
@@ -260,10 +372,10 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> FluxD
     }
 
     // Compute flux with sorted arrays
-    FluxDict sorted_flux_dict = compute_specific_flux(t_sorted, nu_sorted, serilized);
+    ArrayDict sorted_flux_dict = compute_specific_flux(t_sorted, nu_sorted, serilized);
 
     // Reorder results back to original order
-    FluxDict flux_dict;
+    ArrayDict flux_dict;
     for (auto const& [key, sorted_flux] : sorted_flux_dict) {
         Array reordered_flux = xt::zeros<Real>({sorted_flux.size()});
         for (size_t i = 0; i < sorted_indices.size(); ++i) {
@@ -275,7 +387,7 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> FluxD
     return flux_dict;
 }
 
-auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> FluxDict {
+auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> ArrayDict {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
     bool return_trace = false;

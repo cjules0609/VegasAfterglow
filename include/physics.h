@@ -114,7 +114,7 @@ Real calc_engine_duration(Real E_iso, Real n_ism, Real Gamma0, Real xi);
  * @return Velocity fraction (beta = v/c)
  * <!-- ************************************************************************************** -->
  */
-inline Real gamma_to_beta(Real gamma) { return std::sqrt(1 - 1 / (gamma * gamma)); }
+inline Real gamma_to_beta(Real gamma) { return std::sqrt(gamma * gamma - 1) / gamma; }
 
 /**
  * <!-- ************************************************************************************** -->

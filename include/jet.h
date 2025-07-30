@@ -161,7 +161,9 @@ class GaussianJet {
      * @return Lorentz factor with Gaussian angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_exp(theta * theta * norm_); }
+    inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return (Gamma0_ - 1) * fast_exp(theta * theta * norm_) + 1;
+    }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
@@ -206,7 +208,7 @@ class PowerLawJet {
      * @return Energy per solid angle with power-law angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ * fast_pow(theta / theta_c_, -k_); }
+    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ / (1 + fast_pow(theta / theta_c_, k_)); }
 
     /**
      * <!-- ************************************************************************************** -->
@@ -216,7 +218,9 @@ class PowerLawJet {
      * @return Lorentz factor with power-law angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_pow(theta / theta_c_, -k_); }
+    inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return (Gamma0_ - 1) / (1 + fast_pow(theta / theta_c_, k_)) + 1;
+    }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
