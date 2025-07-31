@@ -28,9 +28,10 @@
   - [Usage](#usage)
     - [Quick Start](#quick-start)
     - [Light Curve \& Spectrum Calculation](#light-curve--spectrum-calculation)
-    - [Internal quantities evolution](#internal-quantities-evolution)
+    - [Internal Quantities Evolution](#internal-quantities-evolution)
     - [MCMC Parameter Fitting](#mcmc-parameter-fitting)
   - [Documentation](#documentation)
+  - [Changelog](CHANGELOG.md)
   - [Contributing](#contributing)
   - [License](#license)
   - [Acknowledgments \& Citation](#acknowledgments--citation)
@@ -45,7 +46,7 @@
 
 - **Forward and Reverse Shock Modeling:** Simulates both shocks via shock crossing dynamics with arbitrary magnetization levels and shell thicknesses.
 - **Relativistic and Non-Relativistic Regimes:** Accurately models shock evolution across all velocity regimes.
-- **Adiabatic and Radiative Blast Wave:** Supports smooth transition between adiabatic and radiative blast wave.
+- **Adiabatic and Radiative Blast Waves:** Supports smooth transition between adiabatic and radiative blast waves.
 - **Ambient Medium:** Supports uniform Interstellar Medium (ISM), stellar wind environments, and user-defined density profiles.
 - **Energy and Mass Injection:** Supports user-defined profiles for continuous energy and/or mass injection into the blast wave.
 
@@ -83,7 +84,7 @@
 
 VegasAfterglow delivers exceptional computational performance through deep optimization of its core algorithms:
 
-- **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) from a structured jet viewed off-axis in approximately 1 milliseconds on an Apple M2 chip with a single core.
+- **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) from a structured jet viewed off-axis in approximately 1 millisecond on an Apple M2 chip with a single core.
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~20 seconds for on-axis structured jet scenarios
@@ -106,7 +107,7 @@ To install VegasAfterglow using pip:
 pip install VegasAfterglow
 ```
 
-This is the recommended method for most users. VegasAfterglow requires Python 3.7 or higher.
+This is the recommended method for most users. VegasAfterglow requires Python 3.8 or higher.
 
 <details>
 <summary><b>Alternative: Install from Source</b> <i>(click to expand/collapse)</i></summary>
@@ -182,7 +183,7 @@ The following development tools are required:
 
 ### Quick Start
 
-We provide basic example scripts (`script/quick.ipynb`,`script/details.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
+We provide basic example scripts (`script/quick.ipynb`, `script/details.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
 
 To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
 
@@ -312,7 +313,7 @@ The spectral analysis code will generate this visualization showing spectra at d
 These examples demonstrate the core functionality of VegasAfterglow for modeling GRB afterglows. The code is designed to be highly efficient, allowing for rapid exploration of parameter space and comparison with observational data.
 
 
-### Internal quantities evolution
+### Internal Quantities Evolution
 
 The example below walks through how you can check the evolution of internal quantities under various reference frames via `script/details.ipynb`.
 
@@ -320,7 +321,7 @@ The example below walks through how you can check the evolution of internal quan
 <summary><b>Model Setup</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-Same as the light curve generation, let's set up the physical components of our afterglow model, including the environment, jet, observer, and radiation parameters:
+Same as for light curve generation, let's set up the physical components of our afterglow model, including the environment, jet, observer, and radiation parameters:
 
 ```python
 import numpy as np
@@ -364,8 +365,8 @@ You will get a list of keys representing the internal quantities, such as `t_src
 - `EAT_fwd`: 3D numpy array of observer times for the forward shock in `seconds`.
 - `Gamma_downstr_fwd`: 3D numpy array of downstream Lorentz factors for the forward shock.
 - `Gamma_rel_fwd`: 3D numpy array of relative Lorentz factors between upstream and downstream for the forward shock.
-- `r_fwd`: 3D numpy array of lab frame radii in centimeters.
-- `B_fwd`: 3D numpy array of downstream comoving magnetic field strengths for the forward shock in Gauss.
+- `r_fwd`: 3D numpy array of lab frame radii in `cm`.
+- `B_fwd`: 3D numpy array of downstream comoving magnetic field strengths for the forward shock in `Gauss`.
 - `theta_fwd`: 3D numpy array of polar angles for the forward shock in `radians`.
 - `N_p_fwd`: 3D numpy array of downstream shocked proton number per solid angle for the forward shock.
 - `N_e_fwd`: 3D numpy array of downstream synchrotron electron number per solid angle for the forward shock.
@@ -386,7 +387,7 @@ You will get a list of keys representing the internal quantities, such as `t_src
 <summary><b>Checking the evolution of various parameters</b> <i>(click to expand/collapse)</i></summary>
 <br>
 
-To analyze the temporal evolution of physical parameters across different reference frames, we can visualize how key quantities evolve in the source frame, comoving frame, and observer frame. The following analysis demonstrates the comprehensive tracking of shock dynamics and microphysical parameters throughout the afterglow evolution:
+To analyze the temporal evolution of physical parameters across different reference frames, we can visualize how key quantities evolve in the source, comoving, and observer frames. The following analysis demonstrates the comprehensive tracking of shock dynamics and microphysical parameters throughout the afterglow evolution:
 
 **Multi-parameter evolution visualization:**
 This code creates a comprehensive multi-panel figure displaying the temporal evolution of fundamental shock parameters (Lorentz factor, magnetic field, particle numbers, radius, and peak synchrotron power) across all three reference frames:
@@ -789,7 +790,9 @@ Comprehensive documentation is available at **[Documentation](https://yihanwanga
 - **C++ API Reference**: Detailed documentation of C++ classes and functions
 - **Contributing Guide**: Information for developers who wish to contribute
 
-The documentation is regularly updated with the latest features and improvements (NOT officially released).
+The documentation is regularly updated with the latest features and improvements (not yet officially released).
+
+For a complete history of changes and new features, see our [**Changelog**](CHANGELOG.md).
 
 ---
 
