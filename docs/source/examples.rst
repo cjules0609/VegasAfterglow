@@ -84,6 +84,27 @@ Setting up a simple afterglow model
     plt.legend(ncol=2)
     plt.title('Synchrotron Spectra')
 
+Calculate flux on time-frequency pairs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Suppose you want to calculate the flux at specific time-frequency pairs (t_i, nu_i) instead of a grid (t_i, nu_j), you can use the following method:
+
+.. code-block:: python
+
+    # Define time range for light curve calculation
+    times = np.logspace(2, 8, 200)  
+
+    # Define observing frequencies (must be the same length as times)
+    bands = np.logspace(9,17, 200)  
+
+    results = model.specific_flux_series(times, bands) #times array could be random order
+
+    #or 
+    results = model.specific_flux_sorted_series(times, bands)# times array must be in ascending order (higher performance)
+
+    # the returned results is a dictionary contains arrays of the same shape as the input times and bands.
+
+
 
 Ambient Media Models
 --------------------
@@ -362,28 +383,6 @@ Self-Synchrotron Compton Radiation
   
 Advanced Features
 -----------------
-
-Calculate flux on time-frequency pairs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Suppose you want to calculate the flux at specific time-frequency pairs (t_i, nu_i) instead of a grid (t_i, nu_j), you can use the following method:
-
-.. code-block:: python
-
-    # Define time range for light curve calculation
-    times = np.logspace(2, 8, 200)  
-
-    # Define observing frequencies (must be the same length as times)
-    bands = np.logspace(9,17, 200)  
-
-    results = model.specific_flux_series(times, bands) #times array could be random order
-
-    #or 
-    results = model.specific_flux_sorted_series(times, bands)# times array must be in ascending order (higher performance)
-
-    # the returned results is a dictionary contains arrays of the same shape as the input times and bands.
-
-
 
 MCMC Parameter Fitting
 ^^^^^^^^^^^^^^^^^^^^^^
