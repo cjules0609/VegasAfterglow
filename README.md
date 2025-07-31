@@ -28,6 +28,7 @@
   - [Usage](#usage)
     - [Quick Start](#quick-start)
     - [Light Curve \& Spectrum Calculation](#light-curve--spectrum-calculation)
+    - [Internal quantities evolution](#internal-quantities-evolution)
     - [MCMC Parameter Fitting](#mcmc-parameter-fitting)
   - [Documentation](#documentation)
   - [Contributing](#contributing)
@@ -181,13 +182,13 @@ The following development tools are required:
 
 ### Quick Start
 
-We provide basic example scripts (`script/quick.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
+We provide basic example scripts (`script/quick.ipynb`,`script/details.ipynb` and `script/mcmc.ipynb`) that demonstrate how to set up and run afterglow simulations. This section shows how to calculate light curves and spectra for a simple GRB afterglow model without the need for observational data and perform MCMC parameter fitting with observational data. The notebook can be run using either Jupyter Notebook or VSCode with the Jupyter extension.
 
 To avoid conflicts when updating the repository in the future, make a copy of the example notebook in the same directory and work with the copy instead of the original.
 
 ### Light Curve & Spectrum Calculation
 
-The example below walks through the main components needed to model a GRB afterglow, from setting up the physical parameters to producing light curves and spectra.
+The example below walks through the main components needed to model a GRB afterglow, from setting up the physical parameters to producing light curves and spectra via `script/quick.ipynb`.
 
 <details>
 <summary><b>Model Setup</b> <i>(click to expand/collapse)</i></summary>
@@ -309,6 +310,235 @@ The spectral analysis code will generate this visualization showing spectra at d
 </details>
 
 These examples demonstrate the core functionality of VegasAfterglow for modeling GRB afterglows. The code is designed to be highly efficient, allowing for rapid exploration of parameter space and comparison with observational data.
+
+
+### Internal quantities evolution
+
+The example below walks through how you can check the evolution of internal quantities under various reference frames via `script/details.ipynb`.
+
+<details>
+<summary><b>Model Setup</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+Same as the light curve generation, let's set up the physical components of our afterglow model, including the environment, jet, observer, and radiation parameters:
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from VegasAfterglow import ISM, TophatJet, Observer, Radiation, Model
+
+medium = ISM(n_ism=1)
+
+jet = TophatJet(theta_c=0.3, E_iso=1e52, Gamma0=100)
+
+obs = Observer(lumi_dist=1e26, z=0.1, theta_obs=0.)
+
+rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
+
+model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.1,5,10))
+```
+
+</details>
+
+<details>
+<summary><b>Get the simulation quantities</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+Now, let's get the internal simulation quantities:
+
+```python
+times = np.logspace(-2, 8, 100)  
+
+# Get the simulation details
+details = model.details(times)
+
+# Print the keys of the internal quantities
+print("Simulation details:", details.keys())
+```
+You will get a list of keys representing the internal quantities, such as `t_src`, `t_comv_fwd`, `EAT_fwd`, etc.
+
+- `phi`: 1D numpy array of azimuthal angles in `radians`.
+- `theta`: 1D numpy array of polar angles in `radians`.
+- `t_src`: 3D numpy array of source frame times on coordinate (phi_i, theta_j, t_k) grid in `seconds`.
+- `t_comv_fwd`: 3D numpy array of comoving times for the forward shock in `seconds`.
+- `EAT_fwd`: 3D numpy array of observer times for the forward shock in `seconds`.
+- `Gamma_downstr_fwd`: 3D numpy array of downstream Lorentz factors for the forward shock.
+- `Gamma_rel_fwd`: 3D numpy array of relative Lorentz factors between upstream and downstream for the forward shock.
+- `r_fwd`: 3D numpy array of lab frame radii in centimeters.
+- `B_fwd`: 3D numpy array of downstream comoving magnetic field strengths for the forward shock in Gauss.
+- `theta_fwd`: 3D numpy array of polar angles for the forward shock in `radians`.
+- `N_p_fwd`: 3D numpy array of downstream shocked proton number per solid angle for the forward shock.
+- `N_e_fwd`: 3D numpy array of downstream synchrotron electron number per solid angle for the forward shock.
+- `gamma_a_fwd`: 3D numpy array of comoving frame self-absorption Lorentz factors for the forward shock.
+- `gamma_m_fwd`: 3D numpy array of comoving frame injection Lorentz factors for the forward shock.
+- `gamma_c_fwd`: 3D numpy array of comoving frame cooling Lorentz factors for the forward shock.
+- `gamma_M_fwd`: 3D numpy array of comoving frame maximum Lorentz factors for the forward shock.
+- `nu_a_fwd`: 3D numpy array of comoving frame self-absorption frequencies for the forward shock in `Hz`.
+- `nu_m_fwd`: 3D numpy array of comoving frame injection frequencies for the forward shock in `Hz`.
+- `nu_c_fwd`: 3D numpy array of comoving frame cooling frequencies for the forward shock in `Hz`.
+- `nu_M_fwd`: 3D numpy array of comoving frame maximum frequencies for the forward shock in `Hz`.
+- `P_nu_max_fwd`: 3D numpy array of comoving frame synchrotron maximum flux densities for the forward shock in `erg/cm²/s/Hz`.
+- `Doppler_fwd`: 3D numpy array of Doppler factors for the forward shock.
+
+</details>
+
+<details>
+<summary><b>Checking the evolution of various parameters</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+To analyze the temporal evolution of physical parameters across different reference frames, we can visualize how key quantities evolve in the source frame, comoving frame, and observer frame. The following analysis demonstrates the comprehensive tracking of shock dynamics and microphysical parameters throughout the afterglow evolution:
+
+**Multi-parameter evolution visualization:**
+This code creates a comprehensive multi-panel figure displaying the temporal evolution of fundamental shock parameters (Lorentz factor, magnetic field, particle numbers, radius, and peak synchrotron power) across all three reference frames:
+
+```python
+keys =['Gamma_rel_fwd', 'B_fwd', 'N_p_fwd','r_fwd','N_e_fwd','P_nu_max_fwd']
+ylabels = [r'$\Gamma$', r'$B^\prime$ [G]', r'$N_p$', r'$r$ [cm]', r'$N_e$', r'$P_{\nu, \rm max}^\prime$ [erg/s/Hz]']
+
+frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+titles = ['source frame', 'comoving frame', 'observer frame']
+colors = ['C0', 'C1', 'C2']
+xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
+plt.figure(figsize= (4.2*len(frames), 3*len(keys)))
+
+#plot the evolution of various parameters for phi = 0 and theta = 0 (so the first two indexes are 0)
+for i, frame in enumerate(frames):
+    for j, key in enumerate(keys):
+        plt.subplot(len(keys), len(frames) , j * len(frames) + i + 1)
+        if j == 0:
+            plt.title(titles[i])
+        plt.loglog(details[frame][0, 0, :], details[key][0, 0, :], color='k',lw=2.5)
+        plt.loglog(details[frame][0, 0, :], details[key][0, 0, :], color=colors[i])
+        
+        plt.xlabel(xlabels[i])
+        plt.ylabel(ylabels[j])
+
+plt.tight_layout()
+plt.savefig('shock_quantities.png', dpi=300,bbox_inches='tight')
+```
+
+<div align="center">
+<img src="assets/shock_quantities.png" alt="Shock evolution" width="1000"/>
+</div>
+
+**Electron energy distribution analysis:**
+This visualization focuses specifically on the characteristic electron energies (self-absorption, injection, and cooling) across all three reference frames:
+
+```python
+frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
+plt.figure(figsize= (4.2*len(frames), 3.6))
+
+for i, frame in enumerate(frames):
+    plt.subplot(1, len(frames), i + 1)
+    plt.loglog(details[frame][0, 0, :], details['gamma_a_fwd'][0, 0, :],label=r'$\gamma_a^\prime$',c='firebrick')
+    plt.loglog(details[frame][0, 0, :], details['gamma_m_fwd'][0, 0, :],label=r'$\gamma_m^\prime$',c='yellowgreen')
+    plt.loglog(details[frame][0, 0, :], details['gamma_c_fwd'][0, 0, :],label=r'$\gamma_c^\prime$',c='royalblue')
+    plt.loglog(details[frame][0, 0, :], details['gamma_a_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\gamma_a$',ls='--',c='firebrick')
+    plt.loglog(details[frame][0, 0, :], details['gamma_m_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\gamma_m$',ls='--',c='yellowgreen')
+    plt.loglog(details[frame][0, 0, :], details['gamma_c_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\gamma_c$',ls='--',c='royalblue')
+    plt.xlabel(xlabels[i])
+    plt.ylabel(r'$\gamma_e^\prime$')
+    plt.legend(ncol=2)
+plt.tight_layout()
+plt.savefig('electron_quantities.png', dpi=300,bbox_inches='tight')
+```
+
+<div align="center">
+<img src="assets/electron_quantities.png" alt="Shock evolution" width="1000"/>
+</div>
+
+**Synchrotron frequency evolution:**
+This analysis tracks the evolution of characteristic synchrotron frequencies:
+
+```python
+frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
+plt.figure(figsize= (4.2*len(frames), 3.6))
+
+for i, frame in enumerate(frames):
+    plt.subplot(1, len(frames), i + 1)
+    plt.loglog(details[frame][0, 0, :], details['nu_a_fwd'][0, 0, :],label=r'$\nu_a^\prime$',c='firebrick')
+    plt.loglog(details[frame][0, 0, :], details['nu_m_fwd'][0, 0, :],label=r'$\nu_m^\prime$',c='yellowgreen')
+    plt.loglog(details[frame][0, 0, :], details['nu_c_fwd'][0, 0, :],label=r'$\nu_c^\prime$',c='royalblue')
+    plt.loglog(details[frame][0, 0, :], details['nu_a_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\nu_a$',ls='--',c='firebrick')
+    plt.loglog(details[frame][0, 0, :], details['nu_m_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\nu_m$',ls='--',c='yellowgreen')
+    plt.loglog(details[frame][0, 0, :], details['nu_c_fwd'][0, 0, :]*details['Doppler_fwd'][0,0,:],label=r'$\nu_c$',ls='--',c='royalblue')
+    plt.xlabel(xlabels[i])
+    plt.ylabel(r'$\nu$ [Hz]')
+    plt.legend(ncol=2)
+plt.tight_layout()
+plt.savefig('photon_quantities.png', dpi=300,bbox_inches='tight')
+```
+<div align="center">
+<img src="assets/photon_quantities.png" alt="Shock evolution" width="1000"/>
+</div>
+
+**Doppler factor spatial distribution:**
+This polar plot visualizes the spatial distribution of the Doppler factor across the jet structure, showing how relativistic beaming varies with angular position and radial distance:
+
+```python
+plt.figure(figsize=(6,6))
+ax = plt.subplot(111, polar=True)
+
+theta = details['theta_fwd'][0,:,:]
+r     = details['r_fwd'][0,:,:]
+D     = details['Doppler_fwd'][0,:,:]
+
+# Polar contour plot
+scale = 3.0  
+c = ax.contourf(theta*scale, r, np.log10(D), levels=30, cmap='viridis')
+
+ax.set_rscale('log')  
+true_ticks = np.linspace(0, 0.3, 6)             
+ax.set_xticks(true_ticks * scale)               
+ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])  
+ax.set_xlim(0,0.3*scale)
+ax.set_ylabel(r'$\theta$ [rad]')
+ax.set_xlabel(r'$r$ [cm]')
+
+plt.colorbar(c, ax=ax, label=r'$\log_{10} D$')
+
+plt.tight_layout()
+plt.savefig('doppler.png', dpi=300,bbox_inches='tight')
+```
+<div align="center">
+<img src="assets/doppler.png" alt="Shock evolution" width="600"/>
+</div>
+
+**Equal arrival time (EAT) surface visualization:**
+This final visualization maps the equal arrival time surfaces in polar coordinates, illustrating how light from different parts of the jet reaches the observer at the same time:
+
+```python
+plt.figure(figsize=(6,6))
+ax = plt.subplot(111, polar=True)
+
+theta = details['theta_fwd'][0,:,:]
+r     = details['r_fwd'][0,:,:]
+t_obs = details['EAT_fwd'][0,:,:]
+
+scale = 3.0  
+c = ax.contourf(theta*scale, r, np.log10(t_obs), levels=30, cmap='viridis')
+
+ax.set_rscale('log')  
+true_ticks = np.linspace(0, 0.3, 6)             
+ax.set_xticks(true_ticks * scale)               
+ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])  
+ax.set_xlim(0,0.3*scale)
+ax.set_ylabel(r'$\theta$ [rad]')
+ax.set_xlabel(r'$r$ [cm]')
+
+plt.colorbar(c, ax=ax, label=r'$\log_{10} (t_{\rm obs}/s)$')
+
+plt.tight_layout()
+plt.savefig('EAT.png', dpi=300,bbox_inches='tight')
+```
+<div align="center">
+<img src="assets/EAT.png" alt="Shock evolution" width="600"/>
+
+</div>
+</details>
+
 
 ### MCMC Parameter Fitting
 

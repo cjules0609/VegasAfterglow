@@ -224,9 +224,9 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, boo
 void save_shock_details(Shock const& shock, ArrayDict& detail_dict, std::string suffix) {
     detail_dict["Gamma_downstr" + suffix] = shock.Gamma;
     detail_dict["Gamma_rel" + suffix] = shock.Gamma_rel;
-    detail_dict["r" + suffix] = shock.r;
-    detail_dict["t_comv" + suffix] = shock.t_comv;
-    detail_dict["B" + suffix] = shock.B;
+    detail_dict["r" + suffix] = shock.r / unit::cm;
+    detail_dict["t_comv" + suffix] = shock.t_comv / unit::sec;
+    detail_dict["B" + suffix] = shock.B / unit::Gauss;
     detail_dict["N_p" + suffix] = shock.proton_num;
     detail_dict["theta" + suffix] = shock.theta;
 }
