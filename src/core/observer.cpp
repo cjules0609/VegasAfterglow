@@ -57,7 +57,7 @@ void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
                 //     continue;
                 // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
-                lg2_Omega(i, j, k) = std::log2(dOmega) + 2 * lg2_doppler(i, j, k);
+                lg2_Omega(i, j, k) = std::log2(dOmega);
             }
         }
     }

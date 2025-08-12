@@ -262,15 +262,19 @@ void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std:
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             for (size_t k = 0; k < shape[2]; ++k) {
-                detail_dict["nu_a" + suffix](i, j, k) = photons(i, j, k).nu_a / unit::Hz;
-                detail_dict["nu_m" + suffix](i, j, k) = photons(i, j, k).nu_m / unit::Hz;
-                detail_dict["nu_c" + suffix](i, j, k) = photons(i, j, k).nu_c / unit::Hz;
-                detail_dict["nu_M" + suffix](i, j, k) = photons(i, j, k).nu_M / unit::Hz;
-                detail_dict["P_nu_max" + suffix](i, j, k) =
-                    photons(i, j, k).P_nu_max / (unit::erg / unit::Hz / unit::sec);
+                detail_dict["nu_a" + suffix](i, j, k) = photons(i, j, k).nu_a;
+                detail_dict["nu_m" + suffix](i, j, k) = photons(i, j, k).nu_m;
+                detail_dict["nu_c" + suffix](i, j, k) = photons(i, j, k).nu_c;
+                detail_dict["nu_M" + suffix](i, j, k) = photons(i, j, k).nu_M;
+                detail_dict["P_nu_max" + suffix](i, j, k) = photons(i, j, k).P_nu_max;
             }
         }
     }
+    detail_dict["nu_m" + suffix] /= unit::Hz;
+    detail_dict["nu_c" + suffix] /= unit::Hz;
+    detail_dict["nu_a" + suffix] /= unit::Hz;
+    detail_dict["nu_M" + suffix] /= unit::Hz;
+    detail_dict["P_nu_max" + suffix] /= (unit::erg / unit::Hz / unit::sec);
 }
 
 void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,

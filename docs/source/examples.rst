@@ -429,32 +429,4 @@ MCMC Parameter Fitting
     # Plot the posterior distributions
     fitter.plot_corner()
 
-Parameter Study
-^^^^^^^^^^^^^^^
 
-.. code-block:: python
-
-    # Study the effect of electron energy index p
-    p_values = np.linspace(2.0, 3.0, 5)
-    
-    plt.figure(figsize=(10, 6))
-    
-    # Fix a frequency to study (optical)
-    nu_index = 1  # Optical band
-    
-    for p in p_values:
-        # Update the radiation model
-        model.radiation.p = p
-        
-        # Calculate new light curve
-        results_p = model.calculate_light_curves(times, frequencies)
-        
-        # Plot
-        plt.loglog(times, results_p[:, nu_index], label=f'p = {p:.1f}')
-    
-    plt.xlabel('Time (s)')
-    plt.ylabel('Flux Density (erg/cm²/s/Hz)')
-    plt.legend()
-    plt.title('Effect of Electron Energy Index (p) on Optical Light Curves')
-    plt.grid(True, which='both', linestyle='--', alpha=0.5)
-    plt.show()

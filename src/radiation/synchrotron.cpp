@@ -16,7 +16,7 @@
 #include "utilities.h"
 
 Real SynElectrons::compute_N_gamma(Real gamma) const {
-    Real exp_cut = gamma < gamma_M ? 1. : fast_exp2(-gamma / gamma_M);
+    Real exp_cut = gamma < gamma_c ? 1. : fast_exp2((gamma_c - gamma) / gamma_M);
 
     if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
         return exp_cut * N_e * compute_spectrum(gamma);
@@ -27,7 +27,7 @@ Real SynElectrons::compute_N_gamma(Real gamma) const {
 }
 
 Real SynElectrons::compute_column_den(Real gamma) const {
-    Real exp_cut = gamma < gamma_M ? 1. : fast_exp2(-gamma / gamma_M);
+    Real exp_cut = gamma < gamma_c ? 1. : fast_exp2((gamma_c - gamma) / gamma_M);
 
     if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
         return exp_cut * column_den * compute_spectrum(gamma);
@@ -133,7 +133,7 @@ Real SynElectrons::compute_spectrum(Real gamma) const {
 }
 
 Real SynPhotons::compute_P_nu(Real nu) const {
-    Real exp_cut = nu < nu_M ? 1. : fast_exp2(-nu / nu_M);
+    Real exp_cut = nu < nu_c ? 1. : fast_exp2((nu_c - nu) / nu_M);
 
     if (nu <= nu_c) {  // Below cooling frequency, simple scaling
         return exp_cut * P_nu_max * compute_spectrum(nu);
@@ -144,7 +144,7 @@ Real SynPhotons::compute_P_nu(Real nu) const {
 }
 
 Real SynPhotons::compute_log2_P_nu(Real log2_nu) const {
-    Real exp_cut = log2_nu < log2_nu_M ? 0. : fast_exp2(log2_nu) / nu_M;
+    Real exp_cut = log2_nu < log2_nu_c ? 0. : fast_exp2(log2_nu) / nu_M;
 
     if (log2_nu <= log2_nu_c) {  // Below cooling frequency, simple scaling
         return log2_P_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;

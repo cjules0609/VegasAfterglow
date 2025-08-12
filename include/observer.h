@@ -290,11 +290,11 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
     } else {
         Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
         state.lg2_P_nu_lo =
-            lg2_doppler(i, j, k) + (photons(eff_i, j, k).compute_log2_P_nu(lg2_nu_lo) + ...) + lg2_Omega(i, j, k);
+            3 * lg2_doppler(i, j, k) + (photons(eff_i, j, k).compute_log2_P_nu(lg2_nu_lo) + ...) + lg2_Omega(i, j, k);
     }
 
     Real lg2_nu_hi = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k + 1);
-    state.lg2_P_nu_hi = lg2_doppler(i, j, k + 1) + (photons(eff_i, j, k + 1).compute_log2_P_nu(lg2_nu_hi) + ...) +
+    state.lg2_P_nu_hi = 3 * lg2_doppler(i, j, k + 1) + (photons(eff_i, j, k + 1).compute_log2_P_nu(lg2_nu_hi) + ...) +
                         lg2_Omega(i, j, k + 1);
 
     state.slope = (state.lg2_P_nu_hi - state.lg2_P_nu_lo) / lg2_t_ratio;
