@@ -54,7 +54,7 @@ Real InverseComptonY::compute_val_at_gamma(Real gamma, Real p) const {
             } else if (gamma <= gamma_hat_c) {
                 return Y_T / std::sqrt(gamma / gamma_hat_m);  // Intermediate regime scaling
             } else
-                return Y_T * pow43(gamma_hat_c / gamma) / std::sqrt(gamma_hat_c / gamma_hat_m);  // High gamma scaling
+                return Y_T * pow43(gamma_hat_c / gamma) * std::sqrt(gamma_hat_m / gamma_hat_c);  // High gamma scaling
 
             break;
         case 2:
@@ -84,7 +84,8 @@ Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
             } else if (nu <= nu_hat_c) {
                 return Y_T * std::sqrt(std::sqrt(nu_hat_m / nu));  // Intermediate frequency scaling
             } else
-                return Y_T * pow23(nu_hat_c / nu) * std::sqrt(std::sqrt(nu_hat_m / nu));  // High frequency scaling
+                return Y_T * pow23(nu_hat_c / nu) *
+                       std::sqrt(std::sqrt(nu_hat_m / nu_hat_c));  // High frequency scaling
 
             break;
         case 2:
@@ -127,7 +128,7 @@ void ICPhoton::fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept {
             // Store cross-section based on KN regime
             Real cross_section = KN ? compton_cross_section(gamma_nu) : con::sigmaT;
 
-            grid.I0(i, j) = grid.column_num_den(j) * grid.P_nu(i) * dS / factor * cross_section;
+            grid.I0(i, j) = grid.column_num_den(j) * grid.I_nu(i) * dS / factor * cross_section;
         }
     }
 }
@@ -218,11 +219,11 @@ Real compute_Thomson_Y(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons 
     return Y0;
 }
 
-Real ICPhoton::compute_P_nu(Real nu) const noexcept {
+Real ICPhoton::compute_I_nu(Real nu) const noexcept {
     return eq_space_loglog_interp(nu, this->nu_IC_, this->P_nu_IC_, true, true);
 }
 
-Real ICPhoton::compute_log2_P_nu(Real log2_nu) const noexcept {
+Real ICPhoton::compute_log2_I_nu(Real log2_nu) const noexcept {
     Real dlog2_nu = log2_nu_IC_(1) - log2_nu_IC_(0);
     size_t idx = static_cast<size_t>((log2_nu - log2_nu_IC_(0)) / dlog2_nu + 1);
     if (idx < 1) {

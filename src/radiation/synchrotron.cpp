@@ -132,26 +132,26 @@ Real SynElectrons::compute_spectrum(Real gamma) const {
     }
 }
 
-Real SynPhotons::compute_P_nu(Real nu) const {
+Real SynPhotons::compute_I_nu(Real nu) const {
     Real exp_cut = nu < nu_c ? 1. : fast_exp2((nu_c - nu) / nu_M);
 
     if (nu <= nu_c) {  // Below cooling frequency, simple scaling
-        return exp_cut * P_nu_max * compute_spectrum(nu);
+        return exp_cut * I_nu_max * compute_spectrum(nu);
     } else {
-        return exp_cut * P_nu_max * compute_spectrum(nu) * (1 + elec->Y_c) /
+        return exp_cut * I_nu_max * compute_spectrum(nu) * (1 + elec->Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, nu, elec->p));
     }
 }
 
-Real SynPhotons::compute_log2_P_nu(Real log2_nu) const {
+Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
     Real exp_cut = log2_nu < log2_nu_c ? 0. : fast_exp2(log2_nu) / nu_M;
 
     if (log2_nu <= log2_nu_c) {  // Below cooling frequency, simple scaling
-        return log2_P_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;
+        return log2_I_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;
     } else {
         Real cooling_factor =
             (1 + elec->Y_c) / (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, std::exp2(log2_nu), elec->p));
-        return log2_P_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) - exp_cut;
+        return log2_I_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) - exp_cut;
     }
 }
 
@@ -696,9 +696,9 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
                 ph.nu_m = compute_syn_freq(elec.gamma_m, B);
                 ph.nu_c = compute_syn_freq(elec.gamma_c, B);
                 ph.nu_a = compute_syn_freq(elec.gamma_a, B);
-                ph.P_nu_max = compute_single_elec_P_nu_max(B, elec.p) * elec.N_e;
+                ph.I_nu_max = compute_syn_I_peak(B, elec.p, elec.column_den);
 
-                ph.log2_P_nu_max = fast_log2(ph.P_nu_max);
+                ph.log2_I_nu_max = fast_log2(ph.I_nu_max);
                 ph.log2_nu_m = fast_log2(ph.nu_m);
                 ph.log2_nu_c = fast_log2(ph.nu_c);
                 ph.log2_nu_a = fast_log2(ph.nu_a);

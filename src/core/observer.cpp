@@ -15,7 +15,7 @@
 
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real lg2_t_obs) const noexcept {
     Real dlg2_t = lg2_t_obs - lg2_t(i, j, k);
-    return fast_exp2(state.lg2_P_nu_lo + dlg2_t * state.slope);
+    return fast_exp2(state.lg2_I_nu_lo + dlg2_t * state.slope);
 }
 
 void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
@@ -57,7 +57,7 @@ void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
                 //     continue;
                 // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
-                lg2_Omega(i, j, k) = std::log2(dOmega);
+                lg2_emission_area(i, j, k) = std::log2(dOmega * shock.r(i, j, k) * shock.r(i, j, k));
             }
         }
     }
@@ -148,7 +148,7 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     time.resize({eff_phi_grid, theta_size, t_size});
     lg2_t.resize({eff_phi_grid, theta_size, t_size});
     lg2_doppler.resize({eff_phi_grid, theta_size, t_size});
-    lg2_Omega.resize({eff_phi_grid, theta_size, t_size});
+    lg2_emission_area.resize({eff_phi_grid, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
     calc_t_obs(coord, shock);

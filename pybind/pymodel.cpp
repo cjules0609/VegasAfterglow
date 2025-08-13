@@ -258,7 +258,7 @@ void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std:
     detail_dict["nu_c" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     detail_dict["nu_a" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     detail_dict["nu_M" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["P_nu_max" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    detail_dict["I_nu_max" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             for (size_t k = 0; k < shape[2]; ++k) {
@@ -266,7 +266,7 @@ void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std:
                 detail_dict["nu_m" + suffix](i, j, k) = photons(i, j, k).nu_m;
                 detail_dict["nu_c" + suffix](i, j, k) = photons(i, j, k).nu_c;
                 detail_dict["nu_M" + suffix](i, j, k) = photons(i, j, k).nu_M;
-                detail_dict["P_nu_max" + suffix](i, j, k) = photons(i, j, k).P_nu_max;
+                detail_dict["I_nu_max" + suffix](i, j, k) = photons(i, j, k).I_nu_max;
             }
         }
     }
@@ -274,7 +274,7 @@ void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std:
     detail_dict["nu_c" + suffix] /= unit::Hz;
     detail_dict["nu_a" + suffix] /= unit::Hz;
     detail_dict["nu_M" + suffix] /= unit::Hz;
-    detail_dict["P_nu_max" + suffix] /= (unit::erg / unit::Hz / unit::sec);
+    detail_dict["I_nu_max" + suffix] /= (unit::erg / (unit::Hz * unit::sec * unit::cm2));
 }
 
 void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,
@@ -283,7 +283,7 @@ void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array
 
     detail_dict["EAT" + suffix] = obs.time / unit::sec;
     detail_dict["Doppler" + suffix] = xt::exp2(obs.lg2_doppler);
-    detail_dict["Omega" + suffix] = xt::exp2(obs.lg2_Omega);
+    // detail_dict["Omega" + suffix] = xt::exp2(obs.lg2_emission_area);
 
     auto syn_e = generate_syn_electrons(shock);
 

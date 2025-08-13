@@ -31,7 +31,6 @@
     - [Internal Quantities Evolution](#internal-quantities-evolution)
     - [MCMC Parameter Fitting](#mcmc-parameter-fitting)
   - [Documentation](#documentation)
-  - [Changelog](CHANGELOG.md)
   - [Contributing](#contributing)
   - [License](#license)
   - [Acknowledgments \& Citation](#acknowledgments--citation)
@@ -378,7 +377,7 @@ You will get a list of keys representing the internal quantities, such as `t_src
 - `nu_m_fwd`: 3D numpy array of comoving frame injection frequencies for the forward shock in `Hz`.
 - `nu_c_fwd`: 3D numpy array of comoving frame cooling frequencies for the forward shock in `Hz`.
 - `nu_M_fwd`: 3D numpy array of comoving frame maximum frequencies for the forward shock in `Hz`.
-- `P_nu_max_fwd`: 3D numpy array of comoving frame synchrotron maximum flux densities for the forward shock in `erg/cm²/s/Hz`.
+- `I_nu_max_fwd`: 3D numpy array of comoving frame synchrotron maximum specific intensities for the forward shock in `erg/cm²/s/Hz`.
 - `Doppler_fwd`: 3D numpy array of Doppler factors for the forward shock.
 
 </details>

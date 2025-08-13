@@ -73,13 +73,13 @@ struct SynElectrons {
  */
 struct SynPhotons {
     // All values in comoving frame
-    Real P_nu_max{0};  ///< Maximum specific synchrotron power PER SOLID ANGLE
+    Real I_nu_max{0};  ///< Maximum specific synchrotron power PER SOLID ANGLE
     Real nu_m{0};      ///< Characteristic frequency corresponding to gamma_m
     Real nu_c{0};      ///< Cooling frequency corresponding to gamma_c
     Real nu_a{0};      ///< Self-absorption frequency
     Real nu_M{0};      ///< Maximum photon frequency
 
-    Real log2_P_nu_max{0};              ///< Log2 of P_nu_max (for computational efficiency)
+    Real log2_I_nu_max{0};              ///< Log2 of I_nu_max (for computational efficiency)
     Real log2_nu_m{0};                  ///< Log2 of nu_m
     Real log2_nu_c{0};                  ///< Log2 of nu_c
     Real log2_nu_a{0};                  ///< Log2 of nu_a
@@ -88,23 +88,23 @@ struct SynPhotons {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the comoving synchrotron power PER SOLID ANGLE at a given frequency.
+     * @brief Calculates the comoving synchrotron specific intensity.
      * @details Includes inverse Compton corrections for frequencies above the cooling frequency.
-     * @param nu Frequency at which to compute the power PER SOLID ANGLE
-     * @return The synchrotron power PER SOLID ANGLE at the specified frequency
+     * @param nu Frequency at which to compute the specific intensity
+     * @return The synchrotron specific intensity at the specified frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_P_nu(Real nu) const;  ///< Linear power PER SOLID ANGLE
+    Real compute_I_nu(Real nu) const;  ///< Linear power PER SOLID ANGLE
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the base-2 logarithm of comoving synchrotron power PER SOLID ANGLE at a given frequency.
+     * @brief Calculates the base-2 logarithm of comoving synchrotron specific intensity at a given frequency.
      * @details Optimized for numerical computation by using logarithmic arithmetic.
      * @param log2_nu Base-2 logarithm of the frequency
-     * @return Base-2 logarithm of synchrotron power PER SOLID ANGLE
+     * @return Base-2 logarithm of synchrotron specific intensity
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_P_nu(Real log2_nu) const;  ///<  Log2 power PER SOLID ANGLE (for computational efficiency)
+    Real compute_log2_I_nu(Real log2_nu) const;  ///<  Log2 specific intensity (for computational efficiency)
 
     /**
      * <!-- ************************************************************************************** -->

@@ -170,7 +170,7 @@ struct IntegratorGrid {
     StackArray<num + 1> gamma_edge{0};  ///< Bin edges for gamma.
     StackArray<num> nu{0};              ///< Center values for nu.
     StackArray<num> gamma{0};           ///< Center values for gamma.
-    StackArray<num> P_nu{0};            ///< Specificpower at each nu center.
+    StackArray<num> I_nu{0};            ///< Specific intensity at each nu center.
     StackArray<num> column_num_den{0};  ///< column Number density at each gamma center.
     StackMesh<num, num> I0{{{0}}};      ///< 2D array to store computed intermediate values.
 };
@@ -193,21 +193,21 @@ struct ICPhoton {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Returns the photon specific power at frequency nu.
-     * @param nu The frequency at which to compute the specific power
-     * @return The specific power at the given frequency
+     * @brief Returns the photon specific intensity.
+     * @param nu The frequency at which to compute the specific intensity
+     * @return The specific intensity at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_P_nu(Real nu) const noexcept;
+    Real compute_I_nu(Real nu) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Computes the base-2 logarithm of the photon specific power at a given frequency.
+     * @brief Computes the base-2 logarithm of the photon specific intensity at a given frequency.
      * @param log2_nu The base-2 logarithm of the frequency
-     * @return The base-2 logarithm of the photon specific power at the given frequency
+     * @return The base-2 logarithm of the photon specific intensity at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_P_nu(Real log2_nu) const noexcept;
+    Real compute_log2_I_nu(Real log2_nu) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
@@ -380,7 +380,7 @@ template <typename Electrons, typename Photons>
 void ICPhoton::fill_input_spectrum(IntegratorGrid& grid, Electrons const& electrons, Photons const& photons) noexcept {
     // For each bin in nu0, compute the synchrotron intensity and column number density
     for (size_t i = 0; i < grid.num; i++) {
-        grid.P_nu(i) = photons.compute_P_nu(grid.nu(i));
+        grid.I_nu(i) = photons.compute_I_nu(grid.nu(i));
         grid.column_num_den(i) = electrons.compute_column_den(grid.gamma(i));
     }
 }

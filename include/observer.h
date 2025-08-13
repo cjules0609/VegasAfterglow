@@ -158,9 +158,9 @@ class Observer {
      */
     void update_required(MaskGrid& required, Array const& t_obs);
 
-    MeshGrid3d lg2_t;        ///< Log2 of observation time grid
-    MeshGrid3d lg2_doppler;  ///< Log2 of Doppler factor grid
-    MeshGrid3d lg2_Omega;    ///< Log2 of observe frame solid angle grid
+    MeshGrid3d lg2_t;              ///< Log2 of observation time grid
+    MeshGrid3d lg2_doppler;        ///< Log2 of Doppler factor grid
+    MeshGrid3d lg2_emission_area;  ///< Log2 of observe frame emission area
    private:
     Real one_plus_z{1};      ///< 1 + redshift
     Real lg2_one_plus_z{0};  ///< Log2(1 + redshift)
@@ -215,8 +215,8 @@ class Observer {
      */
     struct InterpState {
         Real slope{0};        ///< Slope for logarithmic interpolation
-        Real lg2_P_nu_lo{0};  ///< Lower boundary of specific power (log2 scale)
-        Real lg2_P_nu_hi{0};  ///< Upper boundary of specific power (log2 scale)
+        Real lg2_I_nu_lo{0};  ///< Lower boundary of specific intensity (log2 scale)
+        Real lg2_I_nu_hi{0};  ///< Upper boundary of specific intensity (log2 scale)
         size_t last_hi{0};    ///< Index for the upper boundary in the grid
     };
 
@@ -286,18 +286,18 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
     if (state.last_hi != 0 && k == state.last_hi) {
-        state.lg2_P_nu_lo = state.lg2_P_nu_hi;
+        state.lg2_I_nu_lo = state.lg2_I_nu_hi;
     } else {
         Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
-        state.lg2_P_nu_lo =
-            3 * lg2_doppler(i, j, k) + (photons(eff_i, j, k).compute_log2_P_nu(lg2_nu_lo) + ...) + lg2_Omega(i, j, k);
+        state.lg2_I_nu_lo = 3 * lg2_doppler(i, j, k) + (photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + ...) +
+                            lg2_emission_area(i, j, k);
     }
 
     Real lg2_nu_hi = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k + 1);
-    state.lg2_P_nu_hi = 3 * lg2_doppler(i, j, k + 1) + (photons(eff_i, j, k + 1).compute_log2_P_nu(lg2_nu_hi) + ...) +
-                        lg2_Omega(i, j, k + 1);
+    state.lg2_I_nu_hi = 3 * lg2_doppler(i, j, k + 1) + (photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) + ...) +
+                        lg2_emission_area(i, j, k + 1);
 
-    state.slope = (state.lg2_P_nu_hi - state.lg2_P_nu_lo) / lg2_t_ratio;
+    state.slope = (state.lg2_I_nu_hi - state.lg2_I_nu_lo) / lg2_t_ratio;
 
     if (!std::isfinite(state.slope)) {
         return false;
@@ -344,8 +344,8 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
         }
     }
 
-    // Normalize the flux by the factor (1+z)/(4pi*lumi_dist^2).
-    Real const coef = one_plus_z / (4 * con::pi * lumi_dist * lumi_dist);
+    // Normalize the flux by the factor (1+z)/(lumi_dist^2).
+    Real const coef = one_plus_z / (lumi_dist * lumi_dist);
     F_nu *= coef;
 
     return F_nu;
@@ -387,8 +387,8 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
         }
     }
 
-    // Normalize the flux by the factor (1+z)/(4pi*lumi_dist^2).
-    Real const coef = one_plus_z / (4 * con::pi * lumi_dist * lumi_dist);
+    // Normalize the flux by the factor (1+z)/(lumi_dist^2).
+    Real const coef = one_plus_z / (lumi_dist * lumi_dist);
     F_nu *= coef;
 
     return F_nu;
