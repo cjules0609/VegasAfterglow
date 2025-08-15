@@ -71,7 +71,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons);
+    Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -87,7 +87,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
+    MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -100,7 +100,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    Array specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons);
+    Array specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -116,7 +116,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons);
+    Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -131,7 +131,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons);
+    MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -146,7 +146,7 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename... PhotonGrid>
-    Array spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons);
+    Array spectrum(Array const& freqs, Real t_obs, PhotonGrid&... photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -254,7 +254,7 @@ class Observer {
      */
     template <typename... PhotonGrid>
     bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu,
-                        PhotonGrid const&... photons) noexcept;
+                        PhotonGrid&... photons) noexcept;
 };
 
 //========================================================================================================
@@ -278,7 +278,7 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
 
 template <typename... PhotonGrid>
 bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
-                              PhotonGrid const&... photons) noexcept {
+                              PhotonGrid&... photons) noexcept {
     Real lg2_t_ratio = lg2_t(i, j, k + 1) - lg2_t(i, j, k);
 
     size_t eff_i = i * jet_3d;
@@ -308,7 +308,7 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
 }
 
 template <typename... PhotonGrid>
-MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons) {
     size_t t_obs_len = t_obs.size();
     size_t nu_len = nu_obs.size();
 
@@ -352,7 +352,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
 }
 
 template <typename... PhotonGrid>
-Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid const&... photons) {
+Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons) {
     size_t t_obs_len = t_obs.size();
     size_t nu_len = nu_obs.size();
 
@@ -395,22 +395,22 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
 }
 
 template <typename... PhotonGrid>
-Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid const&... photons) {
+Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid&... photons) {
     return xt::view(specific_flux(t_obs, Array({nu_obs}), photons...), 0);
 }
 
 template <typename... PhotonGrid>
-Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid const&... photons) {
+Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid&... photons) {
     return xt::view(spectra(freqs, Array({t_obs}), photons...), 0);
 }
 
 template <typename... PhotonGrid>
-MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid const&... photons) {
+MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid&... photons) {
     return xt::transpose(specific_flux(t_obs, freqs, photons...));
 }
 
 template <typename... PhotonGrid>
-Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid const&... photons) {
+Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid&... photons) {
     Array nu_obs = boundary_to_center_log(band_freq);
     MeshGrid F_nu = specific_flux(t_obs, nu_obs, photons...);
     Array flux({t_obs.size()}, 0);

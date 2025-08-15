@@ -78,13 +78,16 @@ struct SynPhotons {
     Real nu_c{0};      ///< Cooling frequency corresponding to gamma_c
     Real nu_a{0};      ///< Self-absorption frequency
     Real nu_M{0};      ///< Maximum photon frequency
+    Real p{2.3};       ///< Power-law index for the electron energy distribution
 
-    Real log2_I_nu_max{0};              ///< Log2 of I_nu_max (for computational efficiency)
-    Real log2_nu_m{0};                  ///< Log2 of nu_m
-    Real log2_nu_c{0};                  ///< Log2 of nu_c
-    Real log2_nu_a{0};                  ///< Log2 of nu_a
-    Real log2_nu_M{0};                  ///< Log2 of nu_M
-    const SynElectrons* elec{nullptr};  ///< Pointer to the associated SynElectrons
+    Real log2_I_nu_max{0};  ///< Log2 of I_nu_max (for computational efficiency)
+    Real log2_nu_m{0};      ///< Log2 of nu_m
+    Real log2_nu_c{0};      ///< Log2 of nu_c
+    Real log2_nu_a{0};      ///< Log2 of nu_a
+    Real log2_nu_M{0};      ///< Log2 of nu_M
+    Real Y_c{0};            ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};       ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys;     ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->

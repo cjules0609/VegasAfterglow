@@ -138,8 +138,8 @@ Real SynPhotons::compute_I_nu(Real nu) const {
     if (nu <= nu_c) {  // Below cooling frequency, simple scaling
         return exp_cut * I_nu_max * compute_spectrum(nu);
     } else {
-        return exp_cut * I_nu_max * compute_spectrum(nu) * (1 + elec->Y_c) /
-               (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, nu, elec->p));
+        return exp_cut * I_nu_max * compute_spectrum(nu) * (1 + Y_c) /
+               (1 + InverseComptonY::compute_Y_tilt_at_nu(Ys, nu, p));
     }
 }
 
@@ -149,16 +149,14 @@ Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
     if (log2_nu <= log2_nu_c) {  // Below cooling frequency, simple scaling
         return log2_I_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;
     } else {
-        Real cooling_factor =
-            (1 + elec->Y_c) / (1 + InverseComptonY::compute_Y_tilt_at_nu(elec->Ys, std::exp2(log2_nu), elec->p));
+        Real cooling_factor = (1 + Y_c) / (1 + InverseComptonY::compute_Y_tilt_at_nu(Ys, std::exp2(log2_nu), p));
         return log2_I_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) - exp_cut;
     }
 }
 
 void SynPhotons::update_constant() {
     // Update constants based on spectral parameters
-    Real p = elec->p;
-    if (elec->regime == 1) {
+    if (regime == 1) {
         // a_m_1_3 = std::cbrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/3)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
         C1_ = std::cbrt(nu_a / nu_m);
@@ -168,7 +166,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = -fast_log2(nu_m) / 3;
         log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
         log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
-    } else if (elec->regime == 2) {
+    } else if (regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
         // c_m_mpa1_2 = fastPow(nu_c / nu_m, (-p + 1) / 2);  // (nu_c / nu_m)^((-p+1)/2)
@@ -180,7 +178,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = (p - 1) / 2 * fast_log2(nu_m / nu_a) - 2.5 * fast_log2(nu_a);
         log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
         log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
-    } else if (elec->regime == 3) {
+    } else if (regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
         C1_ = std::cbrt(nu_a / nu_c);
@@ -190,7 +188,7 @@ void SynPhotons::update_constant() {
         log2_C2_ = -fast_log2(nu_c) / 3;
         log2_C3_ = fast_log2(nu_c) / 2;
         log2_C4_ = fast_log2(nu_c / nu_m) / 2 + p / 2 * fast_log2(nu_m);
-    } else if (elec->regime == 4) {
+    } else if (regime == 4) {
         // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
         // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
         C1_ = std::sqrt(nu_a / nu_m);
@@ -199,7 +197,7 @@ void SynPhotons::update_constant() {
         log2_C1_ = -2 * fast_log2(nu_a);
         log2_C2_ = fast_log2(C2_) + fast_log2(nu_a) / 2;
         log2_C3_ = fast_log2(C2_) + fast_log2(nu_a / nu_m) / 2 + p / 2 * fast_log2(nu_m);
-    } else if (elec->regime == 5 || elec->regime == 6) {
+    } else if (regime == 5 || regime == 6) {
         // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for
         // regime 4 R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
         C1_ = std::sqrt(nu_c / nu_a) / 3;
@@ -213,8 +211,7 @@ void SynPhotons::update_constant() {
 }
 
 Real SynPhotons::compute_spectrum(Real nu) const {
-    Real p = elec->p;
-    switch (elec->regime) {
+    switch (regime) {
         case 1:
             if (nu <= nu_a) {
                 return C1_ * (nu / nu_a) * (nu / nu_a);
@@ -288,8 +285,7 @@ Real SynPhotons::compute_spectrum(Real nu) const {
 }
 
 Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
-    Real p = elec->p;
-    switch (elec->regime) {
+    switch (regime) {
         case 1:
             if (log2_nu <= log2_nu_a) {
                 return log2_C1_ + 2. * log2_nu;
@@ -686,10 +682,15 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
             for (size_t k = 0; k < t_size; ++k) {
                 auto& ph = photons(i, j, k);
                 auto& elec = electrons(i, j, k);
-                ph.elec = &elec;
+                ph.p = elec.p;
+                ph.Ys = elec.Ys;
+                ph.Y_c = elec.Y_c;
+                ph.regime = elec.regime;
+
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
+                
                 Real B = shock.B(i, j, k);
 
                 ph.nu_M = compute_syn_freq(elec.gamma_M, B);

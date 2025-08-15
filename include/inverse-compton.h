@@ -15,13 +15,6 @@
 #include "mesh.h"
 #include "shock.h"
 #include "utilities.h"
-
-template <std::size_t N>
-using StackArray = xt::xtensor_fixed<Real, xt::xshape<N>>;
-
-template <std::size_t N, std::size_t M>
-using StackMesh = xt::xtensor_fixed<Real, xt::xshape<N, M>>;
-
 /**
  * <!-- ************************************************************************************** -->
  * @struct InverseComptonY
@@ -123,74 +116,30 @@ struct InverseComptonY {
 
 /**
  * <!-- ************************************************************************************** -->
- * @defgroup IC_Calculation Inverse Compton Calculation Constants and Functions
- * @brief Constants and inline functions for inverse Compton photon calculations
- * <!-- ************************************************************************************** -->
- */
-
-/// A constant used in the IC photon calculation, defined as √2/3.
-inline constexpr Real IC_x0 = 0.47140452079103166;
-
-/**
- * <!-- ************************************************************************************** -->
  * @brief Computes the Compton scattering cross-section as a function of frequency (nu).
  * @param nu The frequency at which to compute the cross-section
  * @return Compton cross-section
  * <!-- ************************************************************************************** -->
  */
-inline Real compton_cross_section(Real nu);
-
-/**
- * <!-- ************************************************************************************** -->
- * @struct IntegratorGrid
- * @brief Defines a grid for numerical integration in log-space. Stack struct to avoid memory allocation.
- * @details Given minimum and maximum values for nu and gamma, it computes logarithmically spaced bins (nu_edge and
- * gamma_edge) and then determines center values (nu and gamma) from those bins.
- * <!-- ************************************************************************************** -->
- */
-struct IntegratorGrid {
-    /**
-     * @brief Constructor: Initializes the grid with given nu and gamma boundaries.
-     * @param nu_min Minimum nu-value
-     * @param nu_max Maximum nu-value
-     * @param gamma_min Minimum gamma-value
-     * @param gamma_max Maximum gamma-value
-     */
-    IntegratorGrid(Real nu_min, Real nu_max, Real gamma_min, Real gamma_max) {
-        // Generate logarithmically spaced bin edges for nu.
-        nu_edge = xt::logspace(std::log10(nu_min), std::log10(nu_max), num + 1);
-        // Generate logarithmically spaced bin edges for gamma.
-        gamma_edge = xt::logspace(std::log10(gamma_min), std::log10(gamma_max), num + 1);
-        boundary_to_center(nu_edge, nu);        // Compute center values for nu.
-        boundary_to_center(gamma_edge, gamma);  // Compute center values for gamma.
-    }
-
-    static constexpr size_t num{128};   ///< Number of bins.
-    StackArray<num + 1> nu_edge{0};     ///< Bin edges for nu.
-    StackArray<num + 1> gamma_edge{0};  ///< Bin edges for gamma.
-    StackArray<num> nu{0};              ///< Center values for nu.
-    StackArray<num> gamma{0};           ///< Center values for gamma.
-    StackArray<num> I_nu{0};            ///< Specific intensity at each nu center.
-    StackArray<num> column_num_den{0};  ///< column Number density at each gamma center.
-    StackMesh<num, num> I0{{{0}}};      ///< 2D array to store computed intermediate values.
-};
+Real compton_cross_section(Real nu);
 
 /**
  * <!-- ************************************************************************************** -->
  * @struct ICPhoton
+ * @tparam Electrons Type of the electron distribution
+ * @tparam Photons Type of the photon distribution
  * @brief Represents a single inverse Compton (IC) photon.
  * @details Contains methods to compute the photon intensity I_nu and to generate an IC photon spectrum based
  *          on electron and synchrotron photon properties.
  * <!-- ************************************************************************************** -->
  */
+template <typename Electrons, typename Photons>
 struct ICPhoton {
    public:
     /// Default constructor
     ICPhoton() = default;
 
-    /// Resolution of the computed IC spectrum.
-    static constexpr size_t spectrum_resol{64};
-
+    ICPhoton(Electrons const& electrons, Photons const& photons, bool KN) noexcept;
     /**
      * <!-- ************************************************************************************** -->
      * @brief Returns the photon specific intensity.
@@ -198,7 +147,7 @@ struct ICPhoton {
      * @return The specific intensity at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_I_nu(Real nu) const noexcept;
+    Real compute_I_nu(Real nu);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -207,180 +156,252 @@ struct ICPhoton {
      * @return The base-2 logarithm of the photon specific intensity at the given frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_I_nu(Real log2_nu) const noexcept;
+    Real compute_log2_I_nu(Real log2_nu);
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Generates the IC photon spectrum from the given electron and photon data.
-     * @tparam Electrons Type of the electron distribution
-     * @tparam Photons Type of the photon distribution
-     * @param electrons The electron distribution
-     * @param photons The photon distribution
-     * @param KN Whether to use the Klein-Nishina corrected cross-section
-     * @details This template member function uses the properties of the electrons (e) and synchrotron photons (ph) to:
-     *          - Determine minimum electron Lorentz factor and minimum synchrotron frequency.
-     *          - Define integration limits for the synchrotron frequency (nu0) and electron Lorentz factor (gamma).
-     *          - Fill in an IntegratorGrid with computed synchrotron intensity and electron column density.
-     *          - Compute a 2D array I0 representing differential contributions.
-     *          - Finally, integrate over the grid to populate the IC photon spectrum (I_nu_IC_).
-     * <!-- ************************************************************************************** -->
-     */
-    template <typename Electrons, typename Photons>
-    void compute_IC_spectrum(Electrons const& electrons, Photons const& photons, bool KN = true) noexcept;
+    Photons photons;
 
-   private:
-    StackArray<spectrum_resol> P_nu_IC_{0};     ///< IC photon spectrum specific power array.
-    StackArray<spectrum_resol> nu_IC_{0};       ///< Frequency grid for the IC photon spectrum.
-    StackArray<spectrum_resol> log2_P_nu_{0};   ///< Base-2 logarithm of the IC photon spectrum specific power array.
-    StackArray<spectrum_resol> log2_nu_IC_{0};  ///< Base-2 logarithm of the frequency grid for the IC photon spectrum.
+    Electrons electrons;
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Get the integration bounds for the IC photon spectrum.
-     * @param electrons The electron distribution
-     * @param photons The photon distribution
-     * @tparam Electrons Type of the electron distribution
-     * @tparam Photons Type of the photon distribution
-     * @details This template member function computes the minimum and maximum values for the synchrotron frequency
-     * (nu0) and electron Lorentz factor (gamma)
-     * @return A tuple containing the minimum and maximum values for nu0, gamma, nu_min, and nu_max
-     * <!-- ************************************************************************************** -->
-     */
-    template <typename Electrons, typename Photons>
-    std::tuple<Real, Real, Real, Real> get_integration_bounds(Electrons const& electrons,
-                                                              Photons const& photons) noexcept;
+    Array nu0;  // input frequency nu0 grid value
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Fill the input spectrum data for the IC photon spectrum.
-     * @param grid The integrator grid
-     * @param electrons The electron distribution
-     * @param photons The photon distribution
-     * @tparam Electrons Type of the electron distribution
-     * @tparam Photons Type of the photon distribution
-     * <!-- ************************************************************************************** -->
-     */
-    template <typename Electrons, typename Photons>
-    void fill_input_spectrum(IntegratorGrid& grid, Electrons const& electrons, Photons const& photons) noexcept;
+    Array dnu0;
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Fill the integration grid for the IC photon spectrum.
-     * @param grid The integrator grid
-     * @param KN Whether to use the Klein-Nishina cross-section
-     * <!-- ************************************************************************************** -->
-     */
-    void fill_integration_grid(IntegratorGrid& grid, bool KN) noexcept;
+    Array I_nu;  // input I_nu
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Integrate the IC photon spectrum.
-     * @param grid The integrator grid
-     * <!-- ************************************************************************************** -->
-     */
-    void integrate_IC_spectrum(IntegratorGrid const& grid) noexcept;
+    Array gamma;  // gamma grid boundary values
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Remove the zero tail of the IC photon spectrum.
-     * <!-- ************************************************************************************** -->
-     */
-    void remove_zero_tail() noexcept;
+    Array dgamma;
+
+    Array column_den;  // electron column density
+
+    MeshGrid IC_tab;
+
+    static constexpr size_t gamma_grid_per_order{7};  // Number of frequency bins
+
+    static constexpr size_t nu_grid_per_order{5};  // Number of gamma bins
+
+    bool KN{false};  // Klein-Nishina flag
 };
 
-class SynPhotons;
-class SynElectrons;
-
-/// Type alias for 3D grid of synchrotron photons
-using SynPhotonGrid = xt::xtensor<SynPhotons, 3>;
-
-/// Type alias for 3D grid of synchrotron electrons
-using SynElectronGrid = xt::xtensor<SynElectrons, 3>;
-
 /// Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
-using ICPhotonGrid = xt::xtensor<ICPhoton, 3>;
+template <typename Electrons, typename Photons>
+using ICPhotonGrid = xt::xtensor<ICPhoton<Electrons, Photons>, 3>;
 
-/**
- * <!-- ************************************************************************************** -->
- * @defgroup IC_Functions IC Photon and Electron Cooling Functions
- * @brief Functions to create and generate IC photon grids, and apply electron cooling mechanisms.
- * <!-- ************************************************************************************** -->
- */
+template <typename Electrons>
+using ElectronGrid = xt::xtensor<Electrons, 3>;
 
+template <typename Photons>
+using PhotonGrid = xt::xtensor<Photons, 3>;
+
+inline constexpr Real IC_x0 = 0.47140452079103166;
 /**
  * <!-- ************************************************************************************** -->
  * @brief Creates and generates an IC photon grid from electron and photon distributions
+ * @tparam Electrons Type of the electron distribution
+ * @tparam Photons Type of the photon distribution
  * @param electron The electron grid
  * @param photon The photon grid
  * @return A 3D grid of IC photons
  * <!-- ************************************************************************************** -->
  */
-ICPhotonGrid generate_IC_photons(SynElectronGrid const& electron, SynPhotonGrid const& photon, bool KN = true) noexcept;
+template <typename Electrons, typename Photons>
+ICPhotonGrid<Electrons, Photons> generate_IC_photons(ElectronGrid<Electrons> const& electron,
+                                                     PhotonGrid<Photons> const& photon, bool KN = true) noexcept;
 
 /**
  * <!-- ************************************************************************************** -->
  * @brief Applies Thomson cooling to electrons based on photon distribution
+ * @tparam Electrons Type of the electron distribution
+ * @tparam Photons Type of the photon distribution
  * @param electron The electron grid to be modified
  * @param photon The photon grid
  * @param shock The shock properties
  * <!-- ************************************************************************************** -->
  */
-void Thomson_cooling(SynElectronGrid& electron, SynPhotonGrid& photon, Shock const& shock);
+template <typename Electrons, typename Photons>
+void Thomson_cooling(ElectronGrid<Electrons>& electron, PhotonGrid<Photons>& photon, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
  * @brief Applies Klein-Nishina cooling to electrons based on photon distribution
+ * @tparam Electrons Type of the electron distribution
+ * @tparam Photons Type of the photon distribution
  * @param electron The electron grid to be modified
  * @param photon The photon grid
  * @param shock The shock properties
  * <!-- ************************************************************************************** -->
  */
-void KN_cooling(SynElectronGrid& electron, SynPhotonGrid& photon, Shock const& shock);
+template <typename Electrons, typename Photons>
+void KN_cooling(ElectronGrid<Electrons>& electron, PhotonGrid<Photons>& photon, Shock const& shock);
 
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
-template <typename Electrons, typename Photons>
-void ICPhoton::compute_IC_spectrum(Electrons const& electrons, Photons const& photons, bool KN) noexcept {
-    // Get integration boundaries
-    auto [nu0_min, nu0_max, gamma_min, gamma_max] = get_integration_bounds(electrons, photons);
-
-    // Construct an integration grid in nu0 and gamma
-    // IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
-    IntegratorGrid grid(nu0_min, nu0_max, gamma_min, gamma_max);
-
-    fill_input_spectrum(grid, electrons, photons);
-
-    // Compute the differential contributions
-    fill_integration_grid(grid, KN);
-
-    // Perform final integration
-    integrate_IC_spectrum(grid);
-
-    remove_zero_tail();
-
-    // Convert to log space for interpolation
-    log2_P_nu_ = xt::log2(P_nu_IC_);
-    log2_nu_IC_ = xt::log2(nu_IC_);
-}
 
 template <typename Electrons, typename Photons>
-std::tuple<Real, Real, Real, Real> ICPhoton::get_integration_bounds(Electrons const& electrons,
-                                                                    Photons const& photons) noexcept {
-    Real nu0_min = min(photons.nu_m, photons.nu_c, photons.nu_a) / 1e5;
-    Real nu0_max = photons.nu_M * 5;
+ICPhoton<Electrons, Photons>::ICPhoton(Electrons const& electrons, Photons const& photons, bool KN) noexcept
+    : electrons(electrons), photons(photons), KN(KN) {
+    constexpr Real IC_nu_min = 1e6 * unit::Hz;
 
-    Real gamma_min = min(electrons.gamma_m, electrons.gamma_c, electrons.gamma_a);
-    Real gamma_max = electrons.gamma_M * 5;
+    Real gamma_min = std::min(electrons.gamma_m, electrons.gamma_c);
+    Real gamma_max = electrons.gamma_M * 10;
+    size_t gamma_size = static_cast<size_t>(std::log10(gamma_max / gamma_min) * gamma_grid_per_order);
 
-    return std::make_tuple(nu0_min, nu0_max, gamma_min, gamma_max);
-}
+    Real nu_min = std::min(photons.nu_a, photons.nu_m) / 10;
+    Real nu_max = photons.nu_M * 10;
+    size_t nu_size = static_cast<size_t>(std::log10(nu_max / nu_min) * nu_grid_per_order);
 
-template <typename Electrons, typename Photons>
-void ICPhoton::fill_input_spectrum(IntegratorGrid& grid, Electrons const& electrons, Photons const& photons) noexcept {
-    // For each bin in nu0, compute the synchrotron intensity and column number density
-    for (size_t i = 0; i < grid.num; i++) {
-        grid.I_nu(i) = photons.compute_I_nu(grid.nu(i));
-        grid.column_num_den(i) = electrons.compute_column_den(grid.gamma(i));
+    Array nu0_boundary = xt::logspace(std::log10(nu_min), std::log10(nu_max), nu_size + 1);
+    Array gamma_boundary = xt::logspace(std::log10(gamma_min), std::log10(gamma_max), gamma_size + 1);
+
+    nu0 = Array({nu_size}, 0);
+    dnu0 = Array({nu_size}, 0);
+    I_nu = Array({nu_size}, -1);
+    gamma = Array({gamma_size}, 0);
+    dgamma = Array({gamma_size}, 0);
+    column_den = Array({gamma_size}, -1);
+    IC_tab = MeshGrid({gamma_size, nu_size}, -1);
+
+    for (size_t i = 0; i < nu_size; ++i) {
+        nu0(i) = std::sqrt(nu0_boundary(i) * nu0_boundary(i + 1));   // centre value of nu0
+        dnu0(i) = std::fabs(nu0_boundary(i + 1) - nu0_boundary(i));  // width of nu0 bin
     }
+
+    for (size_t i = 0; i < gamma_size; ++i) {
+        gamma(i) = std::sqrt(gamma_boundary(i) * gamma_boundary(i + 1));   // centre value of gamma
+        dgamma(i) = std::fabs(gamma_boundary(i + 1) - gamma_boundary(i));  // width of gamma bin
+    }
+}
+
+template <typename Electrons, typename Photons>
+Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
+    /// A constant used in the IC photon calculation, defined as √2/3.
+    Real IC_I_nu = 0;
+
+    size_t gamma_size = gamma.size();
+    size_t nu_size = nu0.size();
+
+    for (int i = gamma_size - 1; i >= 0; --i) {
+        Real gamma_i = gamma(i);
+        if (column_den(i) < 0) {
+            column_den(i) = electrons.compute_column_den(gamma_i);
+        }
+        int j = nu_size - 1;
+        for (; j >= 0; --j) {
+            Real nu0_j = nu0(j);
+            if (I_nu(j) < 0) {
+                I_nu(j) = photons.compute_I_nu(nu0_j);
+            }
+            if (IC_tab(i, j) < 0) {  // integral at (gamma(i), nu(j)) has not been evaluated
+                Real nu_comv = gamma_i * nu0_j;
+                Real sigma = con::sigmaT;
+                if (KN) {
+                    sigma = compton_cross_section(nu_comv);
+                }
+                Real grid_value = column_den(i) * I_nu(j) * sigma / (4 * nu_comv * nu_comv) * dnu0(j) * dgamma(i);
+                if (j != nu_size - 1) {
+                    IC_tab(i, j) = IC_tab(i, j + 1) + grid_value;
+                } else {
+                    IC_tab(i, j) = grid_value;
+                }
+            }
+
+            if (4 * gamma_i * gamma_i * IC_x0 * nu0_j < nu) {
+                if (j != nu_size - 1) {
+                    // IC_I_nu += IC_tab(i, j + 1);
+                    IC_I_nu += IC_tab(i, j + 1) + (IC_tab(i, j) - IC_tab(i, j + 1)) / (nu0(j + 1) - nu0(j)) *
+                                                      (nu0(j + 1) - nu / (4 * gamma_i * gamma_i * IC_x0));
+                }
+                break;
+            }
+        }
+        if (j < 0) {
+            IC_I_nu += IC_tab(i, 0) + (IC_tab(i, 0) - IC_tab(i, 1)) / (nu0(1) - nu0(0)) *
+                                          (nu0(0) - nu / (4 * gamma_i * gamma_i * IC_x0));
+        }
+    }
+
+    return IC_I_nu * nu;
+}
+
+template <typename Electrons, typename Photons>
+Real ICPhoton<Electrons, Photons>::compute_log2_I_nu(Real log2_nu) {
+    return std::log2(compute_I_nu(std::exp2(log2_nu)));
+}
+
+template <typename Electrons, typename Photons>
+ICPhotonGrid<Electrons, Photons> generate_IC_photons(ElectronGrid<Electrons> const& electrons,
+                                                     PhotonGrid<Photons> const& photons, bool KN) noexcept {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t t_size = electrons.shape()[2];
+    ICPhotonGrid<Electrons, Photons> IC_ph({phi_size, theta_size, t_size});
+
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < t_size; ++k) {
+                IC_ph(i, j, k) = ICPhoton(electrons(i, j, k), photons(i, j, k), KN);
+            }
+        }
+    }
+    return IC_ph;
+}
+
+inline Real eta_rad(Real gamma_m, Real gamma_c, Real p) {
+    return gamma_c < gamma_m ? 1 : fast_pow(gamma_c / gamma_m, (2 - p));
+}
+
+template <typename Electrons>
+Real compute_Thomson_Y(Real B, Real t_com, Real eps_e, Real eps_B, Electrons const& e) {
+    Real eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
+    Real b = eta_e * eps_e / eps_B;
+    Real Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
+    Real Y1 = 2 * Y0;
+    for (; std::fabs((Y1 - Y0) / Y0) > 1e-4;) {
+        Y1 = Y0;
+        Real gamma_c = compute_gamma_c(t_com, B, e.Ys, e.p);
+        eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
+        b = eta_e * eps_e / eps_B;
+        Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
+    }
+    return Y0;
+}
+
+template <typename Electrons, typename Photons>
+void Thomson_cooling(ElectronGrid<Electrons>& electrons, PhotonGrid<Photons>& photons, Shock const& shock) {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t t_size = electrons.shape()[2];
+
+    for (size_t i = 0; i < phi_size; i++) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < t_size; ++k) {
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.rad.eps_e, shock.rad.eps_B,
+                                             electrons(i, j, k));
+                electrons(i, j, k).Ys = InverseComptonY(Y_T);
+            }
+        }
+    }
+    update_electrons_4Y(electrons, shock);
+    generate_syn_photons(photons, shock, electrons);
+}
+
+template <typename Electrons, typename Photons>
+void KN_cooling(ElectronGrid<Electrons>& electrons, PhotonGrid<Photons>& photons, Shock const& shock) {
+    size_t phi_size = electrons.shape()[0];
+    size_t theta_size = electrons.shape()[1];
+    size_t r_size = electrons.shape()[2];
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < r_size; ++k) {
+                Real Y_T = compute_Thomson_Y(shock.B(i, j, k), shock.t_comv(i, j, k), shock.rad.eps_e, shock.rad.eps_B,
+                                             electrons(i, j, k));
+                // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
+                electrons(i, j, k).Ys =
+                    InverseComptonY(photons(i, j, k).nu_m, photons(i, j, k).nu_c, shock.B(i, j, k), Y_T);
+            }
+        }
+    }
+    update_electrons_4Y(electrons, shock);
+    generate_syn_photons(photons, shock, electrons);
 }
