@@ -5,6 +5,19 @@ All notable changes to VegasAfterglow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.8] - 2025-08-15
+
+### Improved
+
+- **Inverse Compton Performance**: Major performance optimization (~10x speedup) for inverse Compton scattering calculations
+- **Photon Interface**: Changed parameter name from `P_nu_max` to `I_nu_max` for better consistency in photon interface
+- **Spectrum Smoothing**: Enhanced spectrum smoothing at `nu_max` for better numerical stability
+
+### Documentation
+
+- Updated documentation for detailed simulation quantities evolution
+- Enhanced examples and API documentation
+
 ## [v0.2.7] - 2025-07-31
 
 ### Added
@@ -236,6 +249,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Features |
 |---------|--------------|--------------|
+| v0.2.8  | 2025-08-15   | Inverse Compton performance optimization (~10x), interface improvements |
 | v0.2.7  | 2025-07-31   | Internal quantities evolution interface, performance fixes |
 | v0.2.6  | 2025-07-19   | Two-component jet support |
 | v0.2.5  | 2025-07-19   | Enhanced jet edge detection |
