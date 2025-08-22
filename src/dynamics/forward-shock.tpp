@@ -195,7 +195,7 @@ Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const&
         for (size_t j = 0; j < theta_size; ++j) {
             // auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
             auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
-            //      Solve the shock shell for this theta slice
+            //       Solve the shock shell for this theta slice
             grid_solve_fwd_shock(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }

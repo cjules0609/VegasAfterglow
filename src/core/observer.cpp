@@ -18,7 +18,7 @@ Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t 
     return fast_exp2(state.lg2_I_nu_lo + dlg2_t * state.slope);
 }
 
-void Observer::calc_obs_solid_angle(Coord const& coord, Shock const& shock) {
+void Observer::calc_solid_angle(Coord const& coord, Shock const& shock) {
     Array dphi({eff_phi_grid}, 0);
 
     if (eff_phi_grid == 1) {
@@ -156,12 +156,12 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
 
 void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
-    calc_obs_solid_angle(coord, shock);
+    calc_solid_angle(coord, shock);
 }
 
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
     xt::view(shock.required, xt::all(), xt::all(), xt::all()) = 0;
     update_required(shock.required, t_obs);
-    calc_obs_solid_angle(coord, shock);
+    calc_solid_angle(coord, shock);
 }

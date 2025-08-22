@@ -205,7 +205,7 @@ class Observer {
      * @param shock Shock object containing the evolution data
      * <!-- ************************************************************************************** -->
      */
-    void calc_obs_solid_angle(Coord const& coord, Shock const& shock);
+    void calc_solid_angle(Coord const& coord, Shock const& shock);
 
     /**
      * <!-- ************************************************************************************** -->

@@ -17,8 +17,6 @@
 
 **VegasAfterglow** is a high-performance C++ framework with a user-friendly Python interface designed for the comprehensive modeling of afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations.
 
-
-
 <br clear="left"/>
 
 ---
@@ -240,6 +238,7 @@ times = np.logspace(2, 8, 100)
 bands = np.array([1e9, 1e14, 1e17])  
 
 # 3. Calculate the afterglow emission at each time and frequency
+# NOTE: times array must be in ascending order, frequencies can be in random order
 results = model.specific_flux(times, bands)
 
 # 4. Visualize the multi-wavelength light curves
@@ -285,6 +284,7 @@ frequencies = np.logspace(5, 22, 100)
 epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
 # 3. Calculate spectra at each epoch
+# NOTE: epochs array must be in ascending order, frequencies can be in random order
 results = model.specific_flux(epochs, frequencies)
 
 # 4. Plot broadband spectra at each epoch
@@ -314,6 +314,35 @@ plt.savefig('quick-spec.png',dpi=300,bbox_inches='tight')
 
 The spectral analysis code will generate this visualization showing spectra at different times, with vertical lines indicating the frequencies calculated in the light curve example.
 </div>
+</details>
+
+<details>
+<summary><b>Time-Frequency Pairs Calculation</b> <i>(click to expand/collapse)</i></summary>
+<br>
+
+If you want to calculate flux at specific time-frequency pairs (t_i, nu_i) instead of a grid (t_i, nu_j), you can use the alternative series interfaces:
+
+```python
+# Define time and frequency arrays (must be the same length)
+times = np.logspace(2, 8, 200)  
+frequencies = np.logspace(9, 17, 200)  
+
+# For random order time arrays - more flexible but slightly slower
+results = model.specific_flux_series(times, frequencies)
+
+# For ascending order time arrays - higher performance
+results = model.specific_flux_sorted_series(times, frequencies)
+
+# The returned results is a dictionary containing arrays of the same shape as the input
+print("Result keys:", results.keys())  # e.g., ['syn', 'IC'] depending on your model
+print("Shape:", results['syn'].shape)  # Same shape as input arrays
+```
+
+**Key differences:**
+- `specific_flux()`: Calculates flux on a time-frequency grid (NxM output from N times and M frequencies)
+- `specific_flux_series()`: Calculates flux at paired time-frequency points (N output from N time-frequency pairs), accepts random order time arrays
+- `specific_flux_sorted_series()`: Same as above but requires ascending order time arrays for optimal performance
+
 </details>
 
 These examples demonstrate the core functionality of VegasAfterglow for modeling GRB afterglows. The code is designed to be highly efficient, allowing for rapid exploration of parameter space and comparison with observational data.

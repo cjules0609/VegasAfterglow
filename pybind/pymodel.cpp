@@ -300,7 +300,8 @@ void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array
     save_photon_details(syn_ph, detail_dict, suffix);
 }
 
-auto PyModel::details(PyArray const& t_obs) -> ArrayDict {
+auto PyModel::details(PyArray const& t_obs_cgs) -> ArrayDict {
+    Array t_obs = t_obs_cgs * unit::sec;
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 

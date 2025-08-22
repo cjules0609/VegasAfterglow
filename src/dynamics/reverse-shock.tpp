@@ -401,6 +401,10 @@ void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState 
 
     if constexpr (HasU<FState>) {
         state_fwd.u = (gamma2 - 1) * m_swept * con::c2;
+
+        // Real Gamma3 = eqn_rvs.compute_crossing_Gamma3(state_rvs);
+        // Real Gamma34 = compute_rel_Gamma(eqn_rvs.Gamma4, Gamma3);
+        // state_fwd.u += (Gamma34 - 1) * state_rvs.m_shell * con::c2;  // internal energy from region3
     }
 
     if constexpr (FState::energy_inject) {

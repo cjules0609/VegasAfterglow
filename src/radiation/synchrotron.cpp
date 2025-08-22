@@ -16,23 +16,19 @@
 #include "utilities.h"
 
 Real SynElectrons::compute_N_gamma(Real gamma) const {
-    Real exp_cut = gamma < gamma_c ? 1. : fast_exp2((gamma_c - gamma) / gamma_M);
-
     if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
-        return exp_cut * N_e * compute_spectrum(gamma);
+        return N_e * compute_spectrum(gamma);
     } else {
-        return exp_cut * N_e * compute_spectrum(gamma) * (1 + Y_c) /
+        return fast_exp2((gamma_c - gamma) / gamma_M) * N_e * compute_spectrum(gamma) * (1 + Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
     }
 }
 
 Real SynElectrons::compute_column_den(Real gamma) const {
-    Real exp_cut = gamma < gamma_c ? 1. : fast_exp2((gamma_c - gamma) / gamma_M);
-
     if (gamma <= gamma_c) {  // Below cooling Lorentz factor: direct scaling
-        return exp_cut * column_den * compute_spectrum(gamma);
+        return column_den * compute_spectrum(gamma);
     } else {
-        return exp_cut * column_den * compute_spectrum(gamma) * (1 + Y_c) /
+        return fast_exp2((gamma_c - gamma) / gamma_M) * column_den * compute_spectrum(gamma) * (1 + Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma, p));
     }
 }
@@ -133,24 +129,21 @@ Real SynElectrons::compute_spectrum(Real gamma) const {
 }
 
 Real SynPhotons::compute_I_nu(Real nu) const {
-    Real exp_cut = nu < nu_c ? 1. : fast_exp2((nu_c - nu) / nu_M);
-
     if (nu <= nu_c) {  // Below cooling frequency, simple scaling
-        return exp_cut * I_nu_max * compute_spectrum(nu);
+        return I_nu_max * compute_spectrum(nu);
     } else {
-        return exp_cut * I_nu_max * compute_spectrum(nu) * (1 + Y_c) /
+        return fast_exp2((nu_c - nu) / nu_M) * I_nu_max * compute_spectrum(nu) * (1 + Y_c) /
                (1 + InverseComptonY::compute_Y_tilt_at_nu(Ys, nu, p));
     }
 }
 
 Real SynPhotons::compute_log2_I_nu(Real log2_nu) const {
-    Real exp_cut = log2_nu < log2_nu_c ? 0. : fast_exp2(log2_nu) / nu_M;
-
     if (log2_nu <= log2_nu_c) {  // Below cooling frequency, simple scaling
-        return log2_I_nu_max + compute_log2_spectrum(log2_nu) - exp_cut;
+        return log2_I_nu_max + compute_log2_spectrum(log2_nu);
     } else {
         Real cooling_factor = (1 + Y_c) / (1 + InverseComptonY::compute_Y_tilt_at_nu(Ys, std::exp2(log2_nu), p));
-        return log2_I_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) - exp_cut;
+        return log2_I_nu_max + compute_log2_spectrum(log2_nu) + fast_log2(cooling_factor) +
+               (nu_c - fast_exp2(log2_nu)) / nu_M;
     }
 }
 
@@ -690,7 +683,7 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
-                
+
                 Real B = shock.B(i, j, k);
 
                 ph.nu_M = compute_syn_freq(elec.gamma_M, B);
