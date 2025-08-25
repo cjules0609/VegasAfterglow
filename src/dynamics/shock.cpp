@@ -101,7 +101,9 @@ Real compute_compression(Real Gamma_upstr, Real Gamma_downstr, Real sigma_upstr)
     return compute_4vel_jump(Gamma_rel, sigma_upstr);
 }
 
-Real compute_downstr_B(Real eps_B, Real rho_downstr, Real B_upstr, Real Gamma_th, Real comp_ratio) {
+Real compute_downstr_B(Real eps_B, Real rho_upstr, Real B_upstr, Real Gamma_th, Real comp_ratio) {
+    Real rho_downstr = rho_upstr * comp_ratio;
+
     Real e_th = (Gamma_th - 1) * rho_downstr * con::c2;
 
     return compute_comv_weibel_B(eps_B, e_th) + B_upstr * comp_ratio;

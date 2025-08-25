@@ -150,7 +150,7 @@ void save_fwd_shock_state(size_t i, size_t j, size_t k, Eqn const& eqn, State co
 
     Real comp_ratio = compute_compression(gamma1, state.Gamma, sigma);
 
-    Real B = compute_downstr_B(shock.rad.eps_B, rho * comp_ratio, B_upstr, Gamma_th, comp_ratio);
+    Real B = compute_downstr_B(shock.rad.eps_B, rho, B_upstr, Gamma_th, comp_ratio);
 
     save_shock_state(shock, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma_th, B, mass);
 }
@@ -164,7 +164,7 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
 
     // Get initial time and set up initial conditions
     Real t_dec = compute_dec_time(eqn, t.back());
-    Real t0 = min(t.front(), t_dec, 1 * unit::sec);
+    Real t0 = min(t.front(), t_dec / 10, 1 * unit::sec);
     eqn.set_init_state(state, t0);
 
     // Early exit if initial Lorentz factor is below cutoff

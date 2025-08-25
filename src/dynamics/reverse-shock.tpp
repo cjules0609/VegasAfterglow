@@ -247,11 +247,16 @@ template <typename Ejecta, typename Medium>
 void FRShockEqn<Ejecta, Medium>::save_cross_state(State const& state) {
     r_x = state.r;
     u_x = std::sqrt(state.Gamma * state.Gamma - 1);
+
     V3_comv_x = r_x * r_x * state.x3;
 
-    Real rho4 = state.m4 / (state.r * state.r * state.x4);
     Real sigma4 = compute_shell_sigma(state);
-    B4_x = compute_upstr_B(rho4, sigma4);
+    Real comp_ratio34 = compute_compression(Gamma4, state.Gamma, sigma4);
+    Real rho4 = state.m4 / (state.r * state.r * state.x4);
+    rho3_x = rho4 * comp_ratio34;
+
+    Real B4 = compute_upstr_B(rho4, sigma4);
+    B3_ordered_x = B4 * comp_ratio34;
 }
 
 template <typename Ejecta, typename Medium>
@@ -345,41 +350,37 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn, State cons
 
     Real comp_ratio12 = compute_compression(gamma1, state.Gamma, sigma1);
     Real rho1 = eqn.medium.rho(eqn.phi, state.theta, state.r);
-    Real rho2 = rho1 * comp_ratio12;
 
     Real m2 = compute_swept_mass(eqn, state);
     Real Gamma2_th = state.U2_th / (m2 * con::c2) + 1;
 
     Real B1 = compute_upstr_B(rho1, sigma1);
-    Real B2 = compute_downstr_B(shock_fwd.rad.eps_B, rho2, B1, Gamma2_th, comp_ratio12);
+    Real B2 = compute_downstr_B(shock_fwd.rad.eps_B, rho1, B1, Gamma2_th, comp_ratio12);
 
     save_shock_state(shock_fwd, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma2_th, B2, m2);
 
     //------------------------------------------------------------------------------------------------//
 
-    if (k < shock_rvs.injection_idx(i, j)) {
+    if (k <= shock_rvs.injection_idx(i, j)) {
         Real Gamma4 = eqn.Gamma4;
         Real sigma4 = eqn.compute_shell_sigma(state);
 
         Real comp_ratio34 = compute_compression(Gamma4, state.Gamma, sigma4);
         Real rho4 = state.m4 / (state.r * state.r * state.x4);
-        Real rho3 = rho4 * comp_ratio34;
 
         Real Gamma3_th = state.U3_th / (state.m3 * con::c2) + 1;
 
         Real B4 = compute_upstr_B(rho4, sigma4);
-        Real B3 = compute_downstr_B(shock_rvs.rad.eps_B, rho3, B4, Gamma3_th, comp_ratio34);
+        Real B3 = compute_downstr_B(shock_rvs.rad.eps_B, rho4, B4, Gamma3_th, comp_ratio34);
 
         save_shock_state(shock_rvs, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma3_th, B3, state.m3);
     } else {
         Real V3_comv = state.r * state.r * state.x3;
-        Real expansion_ratio = eqn.V3_comv_x / V3_comv;
-
-        Real rho3 = state.m3 / V3_comv;
+        Real comp_ratio = eqn.V3_comv_x / V3_comv;
 
         Real Gamma3_th = state.U3_th / (state.m3 * con::c2) + 1;
 
-        Real B3 = compute_downstr_B(shock_rvs.rad.eps_B, rho3, eqn.B4_x, Gamma3_th, expansion_ratio);
+        Real B3 = compute_downstr_B(shock_rvs.rad.eps_B, eqn.rho3_x, eqn.B3_ordered_x, Gamma3_th, comp_ratio);
 
         save_shock_state(shock_rvs, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma3_th, B3, state.m3);
     }
@@ -400,7 +401,7 @@ bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn, State cons
  * <!-- ************************************************************************************** -->
  */
 template <typename Eqn, typename View>
-void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, Eqn& eqn, Real t_min,
+void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, Eqn& eqn,
                            Real rtol = 1e-6) {
     using namespace boost::numeric::odeint;
 
@@ -450,14 +451,13 @@ ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta c
     size_t phi_size_needed = coord.t.shape()[0];
     Shock f_shock(phi_size_needed, theta_size, t_size, rad_fwd);
     Shock r_shock(phi_size_needed, theta_size, t_size, rad_rvs);
-    auto t_min = *std::min_element(coord.t.begin(), coord.t.end());
     for (size_t i = 0; i < phi_size_needed; ++i) {
         Real theta_s =
             jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_fwd, rad_rvs);
             // Solve the forward-reverse shock shell
-            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_r, t_min, rtol);
+            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_r, rtol);
         }
     }
     return std::make_pair(std::move(f_shock), std::move(r_shock));

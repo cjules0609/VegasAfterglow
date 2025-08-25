@@ -79,8 +79,9 @@ class FRShockEqn {
     Real Gamma4{1};           ///< Initial Lorentz factor of the jet
     Real u_x{0};              ///< Reverse shock crossed four velocity
     Real r_x{0};              ///< Reverse shock crossed radius
-    Real B4_x{0};             ///< Magnetic field in region 4 at crossing
+    Real B3_ordered_x{0};     ///< Ordered magnetic field in region 3 at crossing
     Real V3_comv_x{0};        ///< Comoving Volume in region 3 at crossing
+    Real rho3_x{0};           ///< Density in region 3 at crossing
 
     /**
      * <!-- ************************************************************************************** -->
