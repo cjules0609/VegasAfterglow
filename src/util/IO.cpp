@@ -109,11 +109,11 @@ void write_npz(std::string const& filename, SynElectronGrid const& e) {
 
 void write_npz(std::string const& filename, Shock const& shock) {
     xt::dump_npz(filename + ".npz", "Gamma", shock.Gamma, false, false);
-    xt::dump_npz(filename + ".npz", "Gamma_rel", shock.Gamma_rel, false, true);
+    xt::dump_npz(filename + ".npz", "Gamma_th", shock.Gamma_th, false, true);
     xt::dump_npz(filename + ".npz", "B", xt::eval(shock.B / unit::Gauss), false, true);
     xt::dump_npz(filename + ".npz", "t_comv", xt::eval(shock.t_comv / unit::sec), false, true);
     xt::dump_npz(filename + ".npz", "r", xt::eval(shock.r / unit::cm), false, true);
     xt::dump_npz(filename + ".npz", "theta", shock.theta, false, true);
-    xt::dump_npz(filename + ".npz", "N_p", xt::eval(shock.proton_num), false, true);
+    xt::dump_npz(filename + ".npz", "N_p", xt::eval(shock.N_p), false, true);
 }
 #endif

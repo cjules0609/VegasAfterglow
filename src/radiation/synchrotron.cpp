@@ -449,7 +449,7 @@ Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
  * @brief Calculates the minimum electron Lorentz factor for synchrotron emission.
  * @details Accounts for different power-law indices with special handling for the p=2 case.
  *          Uses the fraction of shock energy given to electrons (eps_e) and electron fraction (xi).
- * @param Gamma_rel Bulk Lorentz factor of the shock
+ * @param Gamma_th Downstream thermal Lorentz factor
  * @param gamma_M Maximum electron Lorentz factor
  * @param eps_e Fraction of shock energy given to electrons
  * @param p Power-law index of electron distribution
@@ -457,8 +457,8 @@ Real compute_syn_gamma_M(Real B, InverseComptonY const& Ys, Real p) {
  * @return Minimum electron Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real xi) {
-    Real gamma_ave_minus_1 = eps_e * (Gamma_rel - 1) * (con::mp / con::me) / xi;
+Real compute_syn_gamma_m(Real Gamma_th, Real gamma_M, Real eps_e, Real p, Real xi) {
+    Real gamma_ave_minus_1 = eps_e * (Gamma_th - 1) * (con::mp / con::me) / xi;
     Real gamma_m_minus_1 = 1;
     if (p > 2) {
         gamma_m_minus_1 = (p - 2) / (p - 1) * gamma_ave_minus_1;
@@ -475,15 +475,16 @@ Real compute_syn_gamma_m(Real Gamma_rel, Real gamma_M, Real eps_e, Real p, Real 
 }
 
 Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
-    // t_com = (6*pi*gamma*me*c^2) /(gamma^2*beta^2*sigma_T*c*B^2*(1 + Y_tilt))
+    Real ad_cooling = 1;
+    //-sqrt(Gamma * Gamma - 1) * con::c* t_comv / r;  // adiabatic cooling
 
     Real Y0 = InverseComptonY::compute_Y_Thompson(Ys);
-    Real gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y0) * t_comv);
+    Real gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y0) * t_comv) * ad_cooling;
     Real gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;  // correction on newtonian regime
 
     Real Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
     for (; std::fabs((Y1 - Y0) / Y0) > 1e-3;) {  // iterate for IC cooling
-        gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y1) * t_comv);
+        gamma_bar = (6 * con::pi * con::me * con::c / con::sigmaT) / (B * B * (1 + Y1) * t_comv) * ad_cooling;
         gamma_c = (gamma_bar + std::sqrt(gamma_bar * gamma_bar + 4)) / 2;
         Y0 = Y1;
         Y1 = InverseComptonY::compute_Y_tilt_at_gamma(Ys, gamma_c, p);
@@ -498,7 +499,6 @@ Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
  * @brief Calculates the self-absorption Lorentz factor by equating synchrotron emission to blackbody.
  * @details Uses the peak intensity and shock parameters to determine where absorption becomes important.
  *          Handles both weak and strong absorption regimes.
- * @param Gamma_rel Bulk Lorentz factor of the shock
  * @param B Magnetic field strength
  * @param I_syn_peak Peak synchrotron intensity
  * @param gamma_m Minimum electron Lorentz factor
@@ -508,7 +508,7 @@ Real compute_gamma_c(Real t_comv, Real B, InverseComptonY const& Ys, Real p) {
  * @return Self-absorption Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-Real compute_syn_gamma_a(Real Gamma_rel, Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Real gamma_M, Real p) {
+Real compute_syn_gamma_a(Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Real gamma_M, Real p) {
     Real gamma_peak = std::min(gamma_m, gamma_c);
     Real nu_peak = compute_syn_freq(gamma_peak, B);
 
@@ -573,24 +573,23 @@ void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock) {
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
-                Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
                 Real r = shock.r(i, j, k);
                 Real p = electrons(i, j, k).p;
+                // Real Gamma = shock.Gamma(i, j, k);
                 auto& Ys = electrons(i, j, k).Ys;
                 auto& elec = electrons(i, j, k);
 
-                elec.gamma_M = compute_syn_gamma_M(B, Ys, p);  // Update maximum electron Lorentz factor
-                if (k <= k_inj) {
-                    elec.gamma_c = compute_gamma_c(t_com, B, Ys, p);  // Update cooling electron Lorentz factor
-                } else {  // no shocked electron injection, just adiabatic cooling
+                elec.gamma_M = compute_syn_gamma_M(B, Ys, p);
+                elec.gamma_c = compute_gamma_c(t_com, B, Ys, p);
+
+                if (k >= k_inj) {  // no new shocked electrons, cooling lorentz factor is truncation lorentz factor
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
                     elec.gamma_M = elec.gamma_c;
                 }
                 Real I_nu_peak = compute_syn_I_peak(B, p, elec.column_den);
-                elec.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, p);
+                elec.gamma_a = compute_syn_gamma_a(B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
                 elec.Y_c = InverseComptonY::compute_Y_tilt_at_gamma(Ys, elec.gamma_c, p);
             }
@@ -622,32 +621,32 @@ void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock) {
                 if (shock.required(i, j, k) == 0) {
                     continue;
                 }
-                Real Gamma_rel = shock.Gamma_rel(i, j, k);
                 Real t_com = shock.t_comv(i, j, k);
                 Real B = shock.B(i, j, k);
                 Real r = shock.r(i, j, k);
+                // Real Gamma = shock.Gamma(i, j, k);
+                Real Gamma_th = shock.Gamma_th(i, j, k);
 
                 auto& elec = electrons(i, j, k);
 
                 elec.gamma_M = compute_syn_gamma_M(B, elec.Ys, rad.p);
-                elec.gamma_m = compute_syn_gamma_m(Gamma_rel, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
+                elec.gamma_m = compute_syn_gamma_m(Gamma_th, elec.gamma_M, rad.eps_e, rad.p, rad.xi_e);
 
                 // Fraction of synchrotron electrons; the rest are cyclotron
                 Real f_syn = cyclotron_correction(elec.gamma_m, rad.p);
 
-                elec.N_e = shock.proton_num(i, j, k) * rad.xi_e * f_syn;
+                elec.N_e = shock.N_p(i, j, k) * rad.xi_e * f_syn;
                 elec.column_den = elec.N_e / (r * r);
                 Real I_nu_peak = compute_syn_I_peak(B, rad.p, elec.column_den);
 
-                if (k <= k_inj) {
-                    elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, rad.p);
-                } else {  // no shocked electron injection, just adiabatic cooling
+                elec.gamma_c = compute_gamma_c(t_com, B, electrons(i, j, k).Ys, rad.p);
+
+                if (k >= k_inj) {  // no new shocked electrons, cooling lorentz factor is truncation lorentz factor
                     elec.gamma_c = electrons(i, j, k_inj).gamma_c * elec.gamma_m / electrons(i, j, k_inj).gamma_m;
-                    elec.gamma_M = elec.gamma_c;  // no injection, so cooling gamma is cutoff gamma
+                    elec.gamma_M = elec.gamma_c;
                 }
 
-                elec.gamma_a =
-                    compute_syn_gamma_a(Gamma_rel, B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
+                elec.gamma_a = compute_syn_gamma_a(B, I_nu_peak, elec.gamma_m, elec.gamma_c, elec.gamma_M, rad.p);
                 elec.regime = determine_regime(elec.gamma_a, elec.gamma_c, elec.gamma_m);
 
                 elec.p = rad.p;

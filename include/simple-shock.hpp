@@ -116,7 +116,6 @@ class SimpleShockEqn {
     Real const dOmega0{0};  ///< Initial solid angle
     Real const theta_s{0};  ///< Critical angle for jet spreading
     Real m_shell{0};        ///< Ejecta mass per solid angle
-    Real rad_const{0};      ///< Radiative constant 'C' where  t_comv*Gamma*(Gamma-1)^2*rho* C = gamma_m/gamma_c
 };
 
 #include "../src/dynamics/simple-shock.tpp"

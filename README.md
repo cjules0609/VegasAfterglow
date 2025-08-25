@@ -391,15 +391,15 @@ details = model.details(times)
 # Print the keys of the internal quantities
 print("Simulation details:", details.keys())
 ```
-You will get a list of keys representing the internal quantities, such as `t_src`, `t_comv_fwd`, `EAT_fwd`, etc.
+You will get a list of keys representing the internal quantities, such as `t_src`, `t_comv_fwd`, `t_obs_fwd`, etc.
 
 - `phi`: 1D numpy array of azimuthal angles in `radians`.
 - `theta`: 1D numpy array of polar angles in `radians`.
 - `t_src`: 3D numpy array of source frame times on coordinate (phi_i, theta_j, t_k) grid in `seconds`.
 - `t_comv_fwd`: 3D numpy array of comoving times for the forward shock in `seconds`.
-- `EAT_fwd`: 3D numpy array of observer times for the forward shock in `seconds`.
-- `Gamma_downstr_fwd`: 3D numpy array of downstream Lorentz factors for the forward shock.
-- `Gamma_rel_fwd`: 3D numpy array of relative Lorentz factors between upstream and downstream for the forward shock.
+- `t_obs_fwd`: 3D numpy array of observer times for the forward shock in `seconds`.
+- `Gamma_fwd`: 3D numpy array of downstream Lorentz factors for the forward shock.
+- `Gamma_th_fwd`: 3D numpy array of thermal Lorentz factors for the forward shock.
 - `r_fwd`: 3D numpy array of lab frame radii in `cm`.
 - `B_fwd`: 3D numpy array of downstream comoving magnetic field strengths for the forward shock in `Gauss`.
 - `theta_fwd`: 3D numpy array of polar angles for the forward shock in `radians`.
@@ -428,10 +428,10 @@ To analyze the temporal evolution of physical parameters across different refere
 This code creates a comprehensive multi-panel figure displaying the temporal evolution of fundamental shock parameters (Lorentz factor, magnetic field, particle numbers, radius, and peak synchrotron power) across all three reference frames:
 
 ```python
-keys =['Gamma_rel_fwd', 'B_fwd', 'N_p_fwd','r_fwd','N_e_fwd','P_nu_max_fwd']
+keys =['Gamma_fwd', 'B_fwd', 'N_p_fwd','r_fwd','N_e_fwd','P_nu_max_fwd']
 ylabels = [r'$\Gamma$', r'$B^\prime$ [G]', r'$N_p$', r'$r$ [cm]', r'$N_e$', r'$P_{\nu, \rm max}^\prime$ [erg/s/Hz]']
 
-frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+frames = ['t_src', 't_comv_fwd', 't_obs_fwd']
 titles = ['source frame', 'comoving frame', 'observer frame']
 colors = ['C0', 'C1', 'C2']
 xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
@@ -461,7 +461,7 @@ plt.savefig('shock_quantities.png', dpi=300,bbox_inches='tight')
 This visualization focuses specifically on the characteristic electron energies (self-absorption, injection, and cooling) across all three reference frames:
 
 ```python
-frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+frames = ['t_src', 't_comv_fwd', 't_obs_fwd']
 xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
 plt.figure(figsize= (4.2*len(frames), 3.6))
 
@@ -488,7 +488,7 @@ plt.savefig('electron_quantities.png', dpi=300,bbox_inches='tight')
 This analysis tracks the evolution of characteristic synchrotron frequencies:
 
 ```python
-frames = ['t_src', 't_comv_fwd', 'EAT_fwd']
+frames = ['t_src', 't_comv_fwd', 't_obs_fwd']
 xlabels = [r'$t_{\rm src}$ [s]', r'$t^\prime$ [s]', r'$t_{\rm obs}$ [s]']
 plt.figure(figsize= (4.2*len(frames), 3.6))
 
@@ -551,7 +551,7 @@ ax = plt.subplot(111, polar=True)
 
 theta = details['theta_fwd'][0,:,:]
 r     = details['r_fwd'][0,:,:]
-t_obs = details['EAT_fwd'][0,:,:]
+t_obs = details['t_obs_fwd'][0,:,:]
 
 scale = 3.0  
 c = ax.contourf(theta*scale, r, np.log10(t_obs), levels=30, cmap='viridis')

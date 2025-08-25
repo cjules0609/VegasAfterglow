@@ -45,9 +45,9 @@ class Shock {
     MeshGrid3d r;            ///< Radius
     MeshGrid3d theta;        ///< Theta for jet spreading
     MeshGrid3d Gamma;        ///< Bulk Lorentz factor
-    MeshGrid3d Gamma_rel;    ///< Relative Lorentz factor between downstream and upstream
+    MeshGrid3d Gamma_th;     ///< Downstream internal Lorentz factor
     MeshGrid3d B;            ///< Comoving magnetic field
-    MeshGrid3d proton_num;   ///< Downstream proton number per solid angle
+    MeshGrid3d N_p;          ///< Downstream proton number per solid angle
     MeshGrid injection_idx;  ///< Beyond which grid index there is no electron injection
     MaskGrid required;       ///< Grid points actually required for final flux calculation
     RadParams rad;           ///< Radiation parameters
@@ -130,6 +130,19 @@ inline Real compute_effective_Gamma(Real adx, Real Gamma) { return (adx * Gamma 
 
 /**
  * <!-- ************************************************************************************** -->
+ * @brief Computes the derivative of the effective Lorentz factor with respect to the bulk Lorentz factor.
+ * @param adx Adiabatic index of the medium
+ * @param Gamma Bulk Lorentz factor
+ * @return The derivative of the effective Lorentz factor
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_effective_Gamma_dGamma(Real adx, Real Gamma) {
+    Real Gamma2 = Gamma * Gamma;
+    return (adx * Gamma2 + adx - 1) / Gamma2;
+}
+
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Computes the comoving magnetic field using the Weibel instability mechanism.
  * @param eps_B Fraction of thermal energy in magnetic fields
  * @param e_thermal Thermal energy density
@@ -178,13 +191,13 @@ inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 -
 
 /**
  * <!-- ************************************************************************************** -->
- * @brief Computes the upstream magnetic pressure based on number density and magnetization.
- * @param n_up Upstream number density
+ * @brief Computes the upstream magnetic field.
+ * @param rho_up Upstream density
  * @param sigma Magnetization parameter
- * @return The upstream magnetic pressure
+ * @return The upstream magnetic field
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_upstr_mag_p(Real n_up, Real sigma) { return sigma * n_up * con::mp * con::c2 / 2; }
+inline Real compute_upstr_B(Real rho_up, Real sigma) { return std::sqrt(4 * con::pi * sigma * rho_up * con::c2); }
 
 /**
  * <!-- ************************************************************************************** -->
@@ -195,7 +208,7 @@ inline Real compute_upstr_mag_p(Real n_up, Real sigma) { return sigma * n_up * c
  * <!-- ************************************************************************************** -->
  */
 inline Real compute_upstr_4vel(Real u_down, Real gamma_rel) {
-    return std::sqrt((1 + u_down * u_down) * (gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
+    return std::sqrt((1 + u_down * u_down) * std::fabs(gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
 }
 
 /**
@@ -221,7 +234,7 @@ inline Real compute_downstr_num_den(Real n_up_str, Real gamma_rel, Real sigma) {
  * <!-- ************************************************************************************** -->
  */
 inline Real compute_rel_Gamma(Real gamma1, Real gamma2) {
-    return gamma1 * gamma2 - std::sqrt((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1));
+    return gamma1 * gamma2 - std::sqrt(std::fabs((gamma1 * gamma1 - 1) * (gamma2 * gamma2 - 1)));
 }
 
 /**
@@ -256,25 +269,56 @@ inline Real compute_Gamma_from_relative(Real gamma4, Real gamma_rel) {
  * <!-- ************************************************************************************** -->
  * @brief Computes the downstream thermal energy density.
  * @param gamma_rel Relative Lorentz factor
- * @param n_down_str Downstream number density
+ * @param rho_downstr Downstream density
  * @return The thermal energy density in the downstream region
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_downstr_eth(Real gamma_rel, Real n_down_str) {
-    return n_down_str * (gamma_rel - 1) * con::mp * con::c2;
+inline Real compute_downstr_eth(Real gamma_rel, Real rho_downstr) { return rho_downstr * (gamma_rel - 1) * con::c2; }
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the shock heating rate.
+ * @param Gamma_rel Relative Lorentz factor
+ * @param mdot Mass accretion rate
+ * @return The shock heating rate
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_shock_heating_rate(Real Gamma_rel, Real mdot) { return mdot * (Gamma_rel - 1) * con::c2; }
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the adiabatic cooling rate.
+ * @param ad_idx Adiabatic index
+ * @param r Radius
+ * @param Gamma Lorentz factor
+ * @param u Internal energy density
+ * @param drdt Rate of change of radius
+ * @param dGammadt Rate of change of Lorentz factor
+ * @return The adiabatic cooling rate
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_adiabatic_cooling_rate(Real ad_idx, Real r, Real Gamma, Real u, Real drdt, Real dGammadt) {
+    return -(ad_idx - 1) * (3 * drdt / r - dGammadt / Gamma) * u;
 }
 
+inline Real compute_adiabatic_cooling_rate2(Real ad_idx, Real r, Real x, Real u, Real drdt, Real dxdt) {
+    Real dlnvdt = 2 * drdt / r;
+    if (x > 0) {
+        dlnvdt += dxdt / x;
+    }
+    return -(ad_idx - 1) * dlnvdt * u;
+}
 /**
  * <!-- ************************************************************************************** -->
  * @brief Computes the rate at which the shock shell spreads in the comoving frame.
  * @param Gamma_rel Relative Lorentz factor
- * @param dtdt_com Rate of change of comoving time with respect to burst time
+ * @param dtdt_comv Rate of change of comoving time with respect to burst time
  * @return The shell spreading rate in the comoving frame
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_shell_spreading_rate(Real Gamma_rel, Real dtdt_com) {
+inline Real compute_shell_spreading_rate(Real Gamma_rel, Real dtdt_comv) {
     Real cs = compute_sound_speed(Gamma_rel);
-    return cs * dtdt_com;
+    return cs * dtdt_comv;
 }
 /**
  * <!-- ************************************************************************************** -->
@@ -294,23 +338,43 @@ inline Real compute_region4_num_den(Real dEdOmega, Real Gamma0, Real r, Real D_j
 /**
  * <!-- ************************************************************************************** -->
  * @brief Computes the radiative efficiency based on the radiative constant, comoving time, Lorentz factor, and density.
- * @param rad_const Radiative constant
  * @param t_comv Comoving time
  * @param Gamma Lorentz factor
- * @param rho Density
- * @param eps_e Electron energy fraction
- * @param p Electron energy power law index
+ * @param u    internal energy density
+ * @param rad  Radiation parameters
  * @return The radiative efficiency
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_radiative_efficiency(Real rad_const, Real t_comv, Real Gamma, Real rho, Real eps_e, Real p) {  //
-    Real g_m_g_c = rad_const * t_comv * Gamma * (Gamma - 1) * (Gamma - 1) * rho;  // gamma_m/gamma_c
-    if (g_m_g_c < 1 && p > 2) {                                                   // slow cooling
-        return eps_e * fast_pow(g_m_g_c, p - 2);
+inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadParams const& rad) {  //
+    Real gamma_m = (rad.p - 2) / (rad.p - 1) * rad.eps_e * (Gamma - 1) * con::mp / con::me / rad.xi_e + 1;
+    Real gamma_c = (6 * con::pi * con::me * con::c / con::sigmaT) / (rad.eps_B * u * t_comv);
+
+    Real g_m_g_c = gamma_m / gamma_c;  // gamma_m/gamma_c
+    if (g_m_g_c < 1 && rad.p > 2) {    // slow cooling
+        return rad.eps_e * fast_pow(g_m_g_c, rad.p - 2);
     } else {  // fast cooling or p<=2
-        return eps_e;
+        return rad.eps_e;
     }
 }
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Saves the current state of the shock.
+ * @param shock Reference to the Shock object to be updated
+ * @param i Grid index for phi
+ * @param j Grid index for theta
+ * @param k Grid index for time
+ * @param t_comv Comoving time
+ * @param r Radius
+ * @param theta Angle
+ * @param Gamma Lorentz factor
+ * @param Gamma_th Thermal Lorentz factor
+ * @param B Magnetic field strength
+ * @param mass Mass
+ * <!-- ************************************************************************************** -->
+ */
+void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, Real t_comv, Real r, Real theta, Real Gamma,
+                      Real Gamma_th, Real B, Real mass);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -324,25 +388,6 @@ inline Real compute_radiative_efficiency(Real rad_const, Real t_comv, Real Gamma
 template <typename State>
 inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& state0);
 
-/**
- * <!-- ************************************************************************************** -->
- * @brief Saves the shock state at a given grid point (i,j,k).
- * @param shock Reference to the Shock object to store the state
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param k Grid index for time
- * @param state Current state of the system
- * @param Gamma_downstr Downstream Lorentz factor
- * @param Gamma_upstr Upstream Lorentz factor
- * @param N_downstr Downstream total number of shocked particles per solid angle
- * @param n_upstr Upstream number density
- * @param sigma_upstr Upstream magnetization
- * @return The total pressure in the downstream region
- * <!-- ************************************************************************************** -->
- */
-template <typename State>
-Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
-                      Real Gamma_upstr, Real N_downstr, Real n_upstr, Real sigma_upstr);
 /**
  * <!-- ************************************************************************************** -->
  * @brief Computes the swept-up mass for a shock based on the equation system and current state.
@@ -371,6 +416,21 @@ Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
 template <typename Eqn>
 Real compute_dec_time(Eqn const& eqn, Real t_max);
 
+/**
+ * @brief Computes the thermal energy density for a given internal energy, particle number, and particle numberdensity.
+ * @param U Internal energy density
+ * @param N Total particle number
+ * @param n Particle number density
+ * @return The thermal energy density
+ */
+Real compute_thermal_energy_density(Real U, Real mass, Real n);
+
+Real compute_comv_orderd_B(Real compression, Real rho_upstr, Real sigma);
+
+Real compute_compression(Real Gamma_upstr, Real Gamma_downstr, Real sigma);
+
+Real compute_downstr_B(Real eps_B, Real rho_upstr, Real B_upstr, Real Gamma_th, Real comp_ratio);
+
 //========================================================================================================
 //                                  template function implementation
 //========================================================================================================
@@ -380,36 +440,9 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
     xt::view(shock.r, i, j, xt::all()) = state0.r;
     xt::view(shock.theta, i, j, xt::all()) = state0.theta;
     xt::view(shock.Gamma, i, j, xt::all()) = 1;
-    xt::view(shock.Gamma_rel, i, j, xt::all()) = 1;
+    xt::view(shock.Gamma_th, i, j, xt::all()) = 1;
     xt::view(shock.B, i, j, xt::all()) = 0;
-    xt::view(shock.proton_num, i, j, xt::all()) = 0;
-}
-
-template <typename State>
-Real save_shock_state(Shock& shock, size_t i, size_t j, size_t k, State const& state, Real Gamma_downstr,
-                      Real Gamma_upstr, Real N_downstr, Real n_upstr, Real sigma_upstr) {
-    Real Gamma_rel = compute_rel_Gamma(Gamma_upstr, Gamma_downstr);
-    Real ad_idx = adiabatic_idx(Gamma_rel);
-    Real ratio_u = compute_4vel_jump(Gamma_rel, sigma_upstr);
-    Real pB_upstr = compute_upstr_mag_p(n_upstr, sigma_upstr);
-    Real pB_downstr = pB_upstr * ratio_u * ratio_u;
-    Real n_downstr = n_upstr * ratio_u;
-
-    Real e_th = compute_downstr_eth(Gamma_rel, n_downstr);
-
-    if constexpr (HasU<State>) {
-        Real V_comv = N_downstr / n_downstr;
-        e_th = state.u / V_comv;
-    }
-
-    shock.t_comv(i, j, k) = state.t_comv;
-    shock.r(i, j, k) = state.r;
-    shock.theta(i, j, k) = state.theta;
-    shock.Gamma(i, j, k) = Gamma_downstr;
-    shock.Gamma_rel(i, j, k) = Gamma_rel;
-    shock.B(i, j, k) = compute_comv_weibel_B(shock.rad.eps_B, e_th) + std::sqrt(pB_downstr * 8 * con::pi);
-    shock.proton_num(i, j, k) = N_downstr;
-    return (ad_idx - 1) * e_th + pB_downstr;
+    xt::view(shock.N_p, i, j, xt::all()) = 0;
 }
 
 template <typename Eqn>

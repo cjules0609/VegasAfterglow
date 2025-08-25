@@ -183,6 +183,8 @@ void test_FRS() {
 int main() {
     test_FRS();
 
+    return 0;
+
     double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
     // double xi[] = {100};
     double sigma[] = {0, 0.01, 0.05, 0.1, 1, 10, 100};

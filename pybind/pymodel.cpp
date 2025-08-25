@@ -222,12 +222,12 @@ auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, boo
 }
 
 void save_shock_details(Shock const& shock, ArrayDict& detail_dict, std::string suffix) {
-    detail_dict["Gamma_downstr" + suffix] = shock.Gamma;
-    detail_dict["Gamma_rel" + suffix] = shock.Gamma_rel;
+    detail_dict["Gamma" + suffix] = shock.Gamma;
+    detail_dict["Gamma_th" + suffix] = shock.Gamma_th;
     detail_dict["r" + suffix] = shock.r / unit::cm;
     detail_dict["t_comv" + suffix] = shock.t_comv / unit::sec;
     detail_dict["B" + suffix] = shock.B / unit::Gauss;
-    detail_dict["N_p" + suffix] = shock.proton_num;
+    detail_dict["N_p" + suffix] = shock.N_p;
     detail_dict["theta" + suffix] = shock.theta;
 }
 
@@ -281,7 +281,7 @@ void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array
                                    PyRadiation rad, ArrayDict& detail_dict, std::string suffix) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
-    detail_dict["EAT" + suffix] = obs.time / unit::sec;
+    detail_dict["t_obs" + suffix] = obs.time / unit::sec;
     detail_dict["Doppler" + suffix] = xt::exp2(obs.lg2_doppler);
     // detail_dict["Omega" + suffix] = xt::exp2(obs.lg2_emission_area);
 

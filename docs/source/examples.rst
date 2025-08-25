@@ -236,10 +236,10 @@ Magnetar Spin-down
     from VegasAfterglow import Magnetar
 
     # Create a tophat jet with magnetar spin-down energy injection; Luminosity 1e46 erg/s, t_0 = 100 seconds, and q = 2
-    jet = TophatJet(theta_c=0.05, E_iso=1e53, Gamma0=300, magnetar=Magnetar(L_0=1e46, t_0=100, q=2))
+    jet = TophatJet(theta_c=0.05, E_iso=1e53, Gamma0=300, magnetar=Magnetar(L0=1e46, t0=100, q=2))
 
 .. note::
-    The magnetar spin-down injection is implemented in the default form L_0*(1+t/t_0)^(-q) for theta < theta_c. You can pass the `magnetar` argument to the power-law and Gaussian jet as well.
+    The magnetar spin-down injection is implemented in the default form L0*(1+t/t0)^(-q) for theta < theta_c. You can pass the `magnetar` argument to the power-law and Gaussian jet as well.
 
 
 User-Defined Jet

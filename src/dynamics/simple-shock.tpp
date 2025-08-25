@@ -22,8 +22,6 @@ SimpleShockEqn<Ejecta, Medium>::SimpleShockEqn(Medium const& medium, Ejecta cons
     if constexpr (HasSigma<Ejecta>) {
         m_shell /= 1 + ejecta.sigma0(phi, theta0);
     }
-    rad_const = 16. / 3 * con::mp * con::sigmaT * con::c / (con::me * con::me) * (rad.p - 2) / (rad.p - 1) * rad.eps_e *
-                rad.eps_B / rad.xi_e;
 }
 
 template <typename Ejecta, typename Medium>
@@ -49,9 +47,10 @@ void SimpleShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff,
 
     Real rho = medium.rho(phi, state.theta, state.r);
     Real dm_dt_swept = state.r * state.r * rho * diff.r;
+    Real e_th = (state.Gamma - 1) * 4 * state.Gamma * rho * con::c2;
 
-    Real eps_rad = compute_radiative_efficiency(rad_const, state.t_comv, state.Gamma, rho, rad.eps_e, rad.p);
-    
+    Real eps_rad = compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad);
+
     diff.Gamma = dGamma_dt(eps_rad, dm_dt_swept, state, diff);
 }
 

@@ -31,7 +31,7 @@ struct ForwardState {
     union {
         struct {
             Real Gamma;   ///< Lorentz factor
-            Real u;       ///< internal energy density
+            Real U_th;    ///< internal energy per solid angle
             Real r;       ///< radius
             Real t_comv;  ///< comoving time
             Real theta;   ///< angle
@@ -118,8 +118,8 @@ class ForwardShockEqn {
      * @return The time derivative of Gamma
      * <!-- ************************************************************************************** -->
      */
-    inline Real dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
-                          Real ad_idx) const noexcept;
+    inline Real compute_dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
+                                  Real ad_idx) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
@@ -135,13 +135,12 @@ class ForwardShockEqn {
      * @return The time derivative of internal energy
      * <!-- ************************************************************************************** -->
      */
-    inline Real dU_dt(Real eps_rad, Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
-                      Real ad_idx) const noexcept;
+    inline Real compute_dU_dt(Real eps_rad, Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
+                              Real ad_idx) const noexcept;
 
     Real const dOmega0{0};  ///< Initial solid angle element
     Real const theta_s{0};  ///< Critical angle for jet spreading
     Real m_shell{0};        ///< Ejecta mass per solid angle
-    Real rad_const{0};      ///< Radiative constant 'C' where  t_comv*Gamma*(Gamma-1)^2*rho* C ~= gamma_m/gamma_c
 };
 
 /**
