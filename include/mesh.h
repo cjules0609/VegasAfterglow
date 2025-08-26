@@ -9,6 +9,7 @@
 
 #include <cmath>
 
+#include "boost/numeric/odeint.hpp"
 #include "macros.h"
 #include "physics.h"
 #include "xtensor/containers/xadapt.hpp"
@@ -157,9 +158,9 @@ Array boundary_to_center_log(Array const& boundary);
  * @param theta_cut Maximum theta value to include
  * @param theta_view Viewing angle
  * @param z Redshift
- * @param phi_resol Number of grid points per degree in phi (default: 0.1)
- * @param theta_resol Number of grid points per degree in theta (default: 1)
- * @param t_resol Number of grid points per decade in time (default: 5)
+ * @param phi_ppd Points per degree in phi direction
+ * @param theta_ppd Points per degree in theta direction
+ * @param t_ppd Points per decade in time direction
  * @param is_axisymmetric Whether the jet is axisymmetric (default: true)
  * @param phi_view Viewing angle (default: 0)
  * @return A Coord object with the constructed grid
@@ -169,8 +170,8 @@ Array boundary_to_center_log(Array const& boundary);
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta>
-Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol = 0.25,
-                Real theta_resol = 1, Real t_resol = 3, bool is_axisymmetric = true, Real phi_view = 0);
+Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_ppd = 0.5,
+                Real theta_ppd = 1, Real t_ppd = 5, bool is_axisymmetric = true, Real phi_view = 0);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -178,14 +179,14 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
  * @tparam Ejecta Type of the jet/ejecta class
  * @param jet The jet/ejecta object
  * @param gamma_cut Lorentz factor cutoff value
- * @param phi_resol Azimuthal resolution
- * @param theta_resol Polar resolution
+ * @param phi_ppd Azimuthal resolution (points per degree)
+ * @param theta_ppd Polar resolution (points per degree)
  * @param is_axisymmetric Flag for axisymmetric jets
  * @return Angle (in radians) at which the jet's Lorentz factor drops to gamma_cut
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta>
-Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric);
+Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_ppd, Real theta_ppd, bool is_axisymmetric);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -221,7 +222,6 @@ void boundary_to_center_log(Arr1 const& boundary, Arr2& center) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }
 }
-
 template <typename Ejecta>
 Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric) {
     // binary search for the edge of the jet
@@ -293,6 +293,51 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
 }
 
 template <typename Ejecta>
+Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t theta_num, Real theta_v) {
+    using namespace boost::numeric::odeint;
+    constexpr Real rtol = 1e-6;
+    constexpr size_t sample_num = 200;
+    Array theta_i = xt::linspace(theta_min, theta_max, sample_num);
+    Array CDF_i = xt::zeros<Real>({sample_num});
+
+    auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<Real>());
+    stepper.initialize(0, theta_min, (theta_max - theta_min) / 1e3);
+
+    auto eqn = [&jet, theta_v](Real const& cdf, Real& pdf, Real theta) {
+        Real Gamma = jet.Gamma0(0, theta);
+        Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
+        Real a = (1 - beta) / (1 - beta * std::cos(theta - theta_v));
+        pdf = a * Gamma * std::sqrt(Gamma * (Gamma - 1)) * std::sin(theta);
+    };
+
+    for (size_t k = 1; stepper.current_time() <= theta_max;) {
+        stepper.do_step(eqn);
+        while (k < theta_i.size() && stepper.current_time() > theta_i(k)) {
+            stepper.calc_state(theta_i(k), CDF_i(k));
+            ++k;
+        }
+    }
+
+    Array CDF_out = xt::linspace(CDF_i.front(), CDF_i.back(), theta_num);
+    Array theta_out = xt::zeros<Real>({theta_num});
+
+    for (size_t k = 0; k < theta_num; ++k) {
+        for (size_t j = 0; j < sample_num; ++j) {
+            if (CDF_out(k) <= CDF_i(j)) {
+                if (j == 0) {
+                    theta_out(k) = theta_i(j);
+                } else {
+                    Real slope = (theta_i(j) - theta_i(j - 1)) / (CDF_i(j) - CDF_i(j - 1));
+                    theta_out(k) = theta_i(j - 1) + slope * (CDF_out(k) - CDF_i(j - 1));
+                }
+                break;
+            }
+        }
+    }
+    return theta_out;
+}
+
+template <typename Ejecta>
 Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol,
                 Real theta_resol, Real t_resol, bool is_axisymmetric, Real phi_view) {
     // constexpr size_t min_grid_size = 24;
@@ -306,12 +351,13 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
         find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);  // Determine the jet edge angle.
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 32);
-    coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
+    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 10);
+    // coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
+    coord.theta = adaptive_theta(jet, theta_min, theta_max, theta_num, theta_view);  // Generate theta grid adaptively.
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
-    size_t t_num = std::max<size_t>(static_cast<size_t>(std::log10(t_max / t_min) * t_resol), 24);
+    size_t t_num = std::max<size_t>(static_cast<size_t>(std::log10(t_max / t_min) * t_resol), 10);
 
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_num;
     coord.t = xt::zeros<Real>({phi_size_needed, theta_num, t_num});

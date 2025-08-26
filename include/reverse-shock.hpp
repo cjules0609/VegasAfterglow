@@ -22,7 +22,7 @@ template <typename Ejecta, typename Medium>
 struct ReverseState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< Whether ejecta has mass injection
     static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< Whether ejecta has energy injection
-    static constexpr size_t array_size = 11;
+    static constexpr size_t array_size = 12;
 
     MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)
 
@@ -31,9 +31,10 @@ struct ReverseState {
             Real Gamma;   ///< Lorentz factor of the shocked region
             Real x4;      ///< Comoving frame width of the region 4
             Real x3;      ///< Comoving frame width of the region 3
+            Real m2;      ///< Shocked medium mass per solid angle
             Real m3;      ///< Shocked ejecta mass per solid angle
-            Real U3_th;   ///< internal energy per solid angle in region 2
             Real U2_th;   ///< internal energy per solid angle in region 3
+            Real U3_th;   ///< internal energy per solid angle in region 2
             Real r;       ///< Radius
             Real t_comv;  ///< Comoving time
             Real theta;   ///< Angular coordinate theta
@@ -126,6 +127,8 @@ class FRShockEqn {
     inline Real compute_dx3_dt(State const& state, State const& diff, Real t) const noexcept;
 
     inline Real compute_dx4_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dm2_dt(State const& state, State const& diff, Real t) const noexcept;
 
     inline Real compute_dm3_dt(State const& state, State const& diff, Real t) const noexcept;
 

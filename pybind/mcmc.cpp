@@ -175,9 +175,9 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
     Medium medium;
     if (config.medium == "ism") {
         Real n_ism = param.n_ism / unit::cm3;
-        std::tie(medium.rho, medium.mass) = evn::ISM(n_ism);
+        medium.rho = evn::ISM(n_ism);
     } else if (config.medium == "wind") {
-        std::tie(medium.rho, medium.mass) = evn::wind(param.A_star);
+        medium.rho = evn::wind(param.A_star);
     } else {
         std::cerr << "Error: Unknown medium type" << std::endl;
     }
@@ -188,10 +188,10 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Obse
         jet.Gamma0 = math::tophat(theta_c, Gamma0);
     } else if (config.jet == "gaussian") {
         jet.eps_k = math::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+        jet.Gamma0 = math::gaussian_plus_one(theta_c, Gamma0 - 1);
     } else if (config.jet == "powerlaw") {
         jet.eps_k = math::powerlaw(theta_c, E_iso / (4 * con::pi), param.k_jet);
-        jet.Gamma0 = math::powerlaw(theta_c, Gamma0, param.k_jet);
+        jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, param.k_jet);
     } else {
         std::cerr << "Error: Unknown jet type" << std::endl;
     }

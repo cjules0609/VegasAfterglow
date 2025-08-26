@@ -30,7 +30,7 @@ auto test_reverse_shock(double xi, double sigma, bool output = true) {
     std::cout << "T0: " << jet.T0 / unit::sec << ' ' << xi << ' ' << sigma << ' '
               << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.001, 1, 100);
+    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z);
 
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
@@ -144,7 +144,7 @@ void test_FRS() {
     std::cout << "FRS:" << sedov_length(E_iso, n_ism) / (2 * con::c * std::pow(Gamma0, 8. / 3)) / unit::sec << ' '
               << shell_thickness_param(E_iso, n_ism, Gamma0, jet.T0) << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.3, 5, 10);
+    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e_rs, eps_B_rs);
@@ -183,20 +183,22 @@ void test_FRS() {
 int main() {
     test_FRS();
 
-    return 0;
-
-    double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
+    /*double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
     // double xi[] = {100};
     double sigma[] = {0, 0.01, 0.05, 0.1, 1, 10, 100};
+
+    // double sigma[] = {0};
 
     for (auto x : xi) {
         for (auto s : sigma) {
             test_reverse_shock(x, s);
         }
-    }
+    }*/
 
     double xi2[] = {0.001, 0.01, 0.1, 1, 5, 10, 100, 1000, 10000};
-    Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
+    // Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
+
+    double sigma2[] = {0, 0, 0, 0, 0, 0};
 
     for (auto x : xi2) {
         std::ofstream out("rshock-data/crossing-time-" + std::to_string(x) + ".txt");

@@ -138,7 +138,7 @@ The ``resolutions`` parameter in ``Model()`` controls computational accuracy vs 
      - Speed
      - Accuracy
    * - Initial exploration
-     - ``(0.1, 3, 5)``
+     - ``(0.1, 2, 5)``
      - Very Fast
      - Low
    * - Standard calculations

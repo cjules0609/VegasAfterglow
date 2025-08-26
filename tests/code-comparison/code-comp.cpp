@@ -45,7 +45,7 @@ void lc_gen(std::string folder_name, bool out = false) {
 
     if (jet_type == "Gaussian") {
         jet.eps_k = math::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
+        jet.Gamma0 = math::gaussian_plus_one(theta_c, Gamma0 - 1);
     } else if (jet_type == "tophat") {
         jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
         jet.Gamma0 = math::tophat(theta_c, Gamma0);

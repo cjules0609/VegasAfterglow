@@ -45,7 +45,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     m.def("Wind", &PyWind, py::arg("A_star"));
 
-    py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc, TernaryFunc>(), py::arg("rho"), py::arg("mass"));
+    py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc>(), py::arg("rho"));
 
     // Observer bindings
     py::class_<PyObserver>(m, "Observer")
@@ -62,7 +62,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
                       Real, bool>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
-             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 3., 10.),
+             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 3, 10),
              py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())

@@ -13,10 +13,12 @@ from .types import ModelParams, Setups, ObsData, VegasMC, FitResult
 
 logger = logging.getLogger(__name__)
 
+
 class _log_prob:
     """
     Thread-safe log-probability callable for emcee.
     """
+
     def __init__(
         self,
         data: ObsData,
@@ -77,7 +79,7 @@ class MultiThreadEmcee:
         self,
         data: ObsData,
         base_cfg: Setups,
-        resolution: Tuple[float, float, float] = (0.5, 1, 5),
+        resolution: Tuple[float, float, float] = (0.3, 1, 10),
         total_steps: int = 10_000,
         burn_frac: float = 0.2,
         thin: int = 1,
@@ -92,7 +94,8 @@ class MultiThreadEmcee:
         cfg = self._make_cfg(base_cfg, *resolution)
 
         # 2) prepare log-prob
-        log_prob = _log_prob(data, cfg, self.to_params, self.pl, self.pu, self.model_cls)
+        log_prob = _log_prob(data, cfg, self.to_params,
+                             self.pl, self.pu, self.model_cls)
 
         # 3) initialize walker positions
         spread = 0.05 * (self.pu - self.pl)
@@ -103,7 +106,8 @@ class MultiThreadEmcee:
         if moves is None:
             moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
 
-        logger.info("🚀 Running coarse MCMC at resolution %s for %d steps", resolution, total_steps)
+        logger.info(
+            "🚀 Running coarse MCMC at resolution %s for %d steps", resolution, total_steps)
         with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
             sampler = emcee.EnsembleSampler(
                 self.nwalkers, self.ndim, log_prob, pool=pool, moves=moves
@@ -112,38 +116,40 @@ class MultiThreadEmcee:
 
         # 5) extract & filter
         burn = int(burn_frac * total_steps)
-        chain = sampler.get_chain(discard = burn, thin = thin)
-        logp  = sampler.get_log_prob(discard = burn, thin = thin)
+        chain = sampler.get_chain(discard=burn, thin=thin)
+        logp = sampler.get_log_prob(discard=burn, thin=thin)
         chain, logp, _ = self._filter_bad_walkers(chain, logp)
 
         # 6) flatten & find top k fits
         flat_chain = chain.reshape(-1, self.ndim)
-        flat_logp  = logp.reshape(-1)
-        
+        flat_logp = logp.reshape(-1)
+
         # Find top k unique parameter combinations
-        sorted_idx = np.argsort(flat_logp)[::-1]  # Sort by log prob (descending)
-        
+        # Sort by log prob (descending)
+        sorted_idx = np.argsort(flat_logp)[::-1]
+
         # Round parameters to avoid floating point precision issues
         rounded_params = np.round(flat_chain[sorted_idx], decimals=12)
-        
+
         # Find unique parameter combinations while preserving sort order
         _, unique_idx = np.unique(rounded_params, axis=0, return_index=True)
-        unique_idx = np.sort(unique_idx)[:top_k]  # Keep original sort order, limit to top_k
-        
+        # Keep original sort order, limit to top_k
+        unique_idx = np.sort(unique_idx)[:top_k]
+
         final_idx = sorted_idx[unique_idx]
         top_k_params = flat_chain[final_idx]
         top_k_log_probs = flat_logp[final_idx]
-        
-        logger.info("🎯 Found %d unique fits with log probabilities: %.2f to %.2f", 
-                   len(top_k_params), top_k_log_probs[0], top_k_log_probs[-1])
+
+        logger.info("🎯 Found %d unique fits with log probabilities: %.2f to %.2f",
+                    len(top_k_params), top_k_log_probs[0], top_k_log_probs[-1])
 
         # 8) return FitResult
         return FitResult(
-            samples       = chain,
-            log_probs     = logp,
-            labels        = self.labels,
-            top_k_params  = top_k_params,
-            top_k_log_probs = top_k_log_probs
+            samples=chain,
+            log_probs=logp,
+            labels=self.labels,
+            top_k_params=top_k_params,
+            top_k_log_probs=top_k_log_probs
         )
 
     def _make_cfg(self, base_cfg: Setups, phi: float, theta: float, t: float) -> Setups:
@@ -157,9 +163,9 @@ class MultiThreadEmcee:
                     setattr(cfg, attr, getattr(base_cfg, attr))
                 except Exception:
                     pass
-        cfg.t_resol     = t
+        cfg.t_resol = t
         cfg.theta_resol = theta
-        cfg.phi_resol   = phi
+        cfg.phi_resol = phi
         return cfg
 
     @staticmethod
@@ -173,9 +179,10 @@ class MultiThreadEmcee:
         """
         nsteps, nwalkers, _ = chain.shape
         mean_lp = np.mean(logp, axis=0)
-        median  = np.median(mean_lp)
-        mad     = np.median(np.abs(mean_lp - median))
-        cutoff  = median - threshold_mad * mad
-        good    = mean_lp > cutoff
-        logger.info("🎯 Filtered %d / %d bad walkers (cutoff=%.2f)", np.sum(~good), nwalkers, cutoff)
+        median = np.median(mean_lp)
+        mad = np.median(np.abs(mean_lp - median))
+        cutoff = median - threshold_mad * mad
+        good = mean_lp > cutoff
+        logger.info("🎯 Filtered %d / %d bad walkers (cutoff=%.2f)",
+                    np.sum(~good), nwalkers, cutoff)
         return chain[:, good, :], logp[:, good], good

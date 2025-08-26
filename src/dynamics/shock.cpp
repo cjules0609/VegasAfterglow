@@ -74,37 +74,3 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
         return std::sqrt(uds);
     }
 }
-
-void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, Real t_comv, Real r, Real theta, Real Gamma,
-                      Real Gamma_th, Real B, Real mass) {
-    shock.t_comv(i, j, k) = t_comv;
-    shock.r(i, j, k) = r;
-    shock.theta(i, j, k) = theta;
-    shock.Gamma(i, j, k) = Gamma;
-    shock.Gamma_th(i, j, k) = Gamma_th;
-    shock.B(i, j, k) = B;
-    shock.N_p(i, j, k) = mass / con::mp;
-}
-
-Real compute_4vel_jump(Real gamma_rel, Real sigma_upstr) {
-    Real u_down_s_ = compute_downstr_4vel(gamma_rel, sigma_upstr);
-    Real u_up_s_ = compute_upstr_4vel(u_down_s_, gamma_rel);
-    Real ratio_u = u_up_s_ / u_down_s_;
-    if (u_down_s_ == 0.) {
-        ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)
-    }
-    return ratio_u;
-}
-
-Real compute_compression(Real Gamma_upstr, Real Gamma_downstr, Real sigma_upstr) {
-    Real Gamma_rel = compute_rel_Gamma(Gamma_upstr, Gamma_downstr);
-    return compute_4vel_jump(Gamma_rel, sigma_upstr);
-}
-
-Real compute_downstr_B(Real eps_B, Real rho_upstr, Real B_upstr, Real Gamma_th, Real comp_ratio) {
-    Real rho_downstr = rho_upstr * comp_ratio;
-
-    Real e_th = (Gamma_th - 1) * rho_downstr * con::c2;
-
-    return compute_comv_weibel_B(eps_B, e_th) + B_upstr * comp_ratio;
-}

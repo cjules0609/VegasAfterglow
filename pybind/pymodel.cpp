@@ -122,7 +122,6 @@ Ejecta PyTwoComponentJet(Real theta_n, Real E_iso_n, Real Gamma0_n, Real theta_w
 Medium PyISM(Real n_ism) {
     Medium medium;
     medium.rho = [=](Real phi, Real theta, Real r) { return n_ism * 1.67e-24; };
-    medium.mass = [=](Real phi, Real theta, Real r) { return n_ism * (1.67e-24 / 3) * r * r * r; };
 
     return medium;
 }
@@ -130,9 +129,6 @@ Medium PyISM(Real n_ism) {
 Medium PyWind(Real A_star) {
     Medium medium;
     medium.rho = [=](Real phi, Real theta, Real r) { return A_star * 5e11 / (r * r); };
-    medium.mass = [=](Real phi, Real theta, Real r) {
-        return A_star * 5e11 * r;  // Integrated mass per solid angle
-    };
     return medium;
 }
 
@@ -156,9 +152,6 @@ void convert_unit(Ejecta& jet, Medium& medium) {
     medium.rho = [=](Real phi, Real theta, Real r) {
         return rho_cgs(phi, theta, r / unit::cm) * (unit::g / unit::cm3);
     };
-
-    auto mass_cgs = medium.mass;
-    medium.mass = [=](Real phi, Real theta, Real r) { return mass_cgs(phi, theta, r / unit::cm) * unit::g; };
 }
 
 void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,

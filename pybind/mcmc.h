@@ -65,9 +65,9 @@ struct ConfigParams {
     double z{0};
     std::string medium{"ism"};
     std::string jet{"tophat"};
-    Real phi_resol{0.25};
+    Real phi_resol{0.3};
     Real theta_resol{1};
-    Real t_resol{3};
+    Real t_resol{10};
     double rtol{1e-5};
     bool reverse_shock{false};
     bool forward_SSC{false};

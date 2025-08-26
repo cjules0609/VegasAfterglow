@@ -21,22 +21,23 @@ struct SimpleState {
     static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< whether Ejecta class has dmdt method
     static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< whether Ejecta class has dedt method
     /// use least fixed array size for integrator efficiency
-    static constexpr size_t array_size = 4 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
+    static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
     MAKE_THIS_ODEINT_STATE(SimpleState, data, array_size)
 
     union {
         struct {
             Real Gamma;   ///< Lorentz factor
+            Real m2;      ///< swept mass
             Real r;       ///< radius
             Real t_comv;  ///< comoving time
             Real theta;   ///< angle
 
             // shell energy density per solid angle
-            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell;
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_jet;
 
             // shell mass per solid angle
-            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell;
+            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_jet;
         };
         array_type data;
     };
@@ -105,17 +106,16 @@ class SimpleShockEqn {
      * @brief Computes the derivative of Gamma with respect to engine time t.
      * @details Calculates the rate of change of the Lorentz factor based on swept-up mass and energy injection.
      * @param eps_rad radiative efficiency
-     * @param dm_dt_swept Rate of swept-up mass
      * @param state Current state of the system
      * @param diff Current derivatives
      * @return The time derivative of Gamma
      * <!-- ************************************************************************************** -->
      */
-    Real dGamma_dt(Real eps_rad, Real dm_dt_swept, State const& state, State const& diff) const noexcept;
+    Real dGamma_dt(Real eps_rad, State const& state, State const& diff) const noexcept;
 
     Real const dOmega0{0};  ///< Initial solid angle
     Real const theta_s{0};  ///< Critical angle for jet spreading
-    Real m_shell{0};        ///< Ejecta mass per solid angle
+    Real m_jet0{0};         ///< Ejecta mass per solid angle
 };
 
 #include "../src/dynamics/simple-shock.tpp"

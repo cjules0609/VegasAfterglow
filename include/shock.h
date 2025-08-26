@@ -96,6 +96,18 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma);
 
 /**
  * <!-- ************************************************************************************** -->
+ * @brief Computes the upstream four-velocity from downstream four-velocity and relative Lorentz factor.
+ * @param u_down Downstream four-velocity
+ * @param gamma_rel Relative Lorentz factor
+ * @return The upstream four-velocity in the shock frame
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_upstr_4vel(Real u_down, Real gamma_rel) {
+    return std::sqrt((1 + u_down * u_down) * std::fabs(gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
+}
+
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Computes the ratio of upstream to downstream four-velocity across the shock front.
  * @param gamma_rel Relative Lorentz factor between upstream and downstream regions
  * @param sigma Magnetization parameter (ratio of magnetic to rest-mass energy density)
@@ -104,7 +116,15 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma);
  *          and jump conditions for density, pressure, and magnetic field.
  * <!-- ************************************************************************************** -->
  */
-Real compute_4vel_jump(Real gamma_rel, Real sigma);
+inline Real compute_4vel_jump(Real gamma_rel, Real sigma_upstr) {
+    Real u_down_s_ = compute_downstr_4vel(gamma_rel, sigma_upstr);
+    Real u_up_s_ = compute_upstr_4vel(u_down_s_, gamma_rel);
+    Real ratio_u = u_up_s_ / u_down_s_;
+    if (u_down_s_ == 0.) {
+        ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)
+    }
+    return ratio_u;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -197,19 +217,7 @@ inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 -
  * @return The upstream magnetic field
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_upstr_B(Real rho_up, Real sigma) { return std::sqrt(4 * con::pi * sigma * rho_up * con::c2); }
-
-/**
- * <!-- ************************************************************************************** -->
- * @brief Computes the upstream four-velocity from downstream four-velocity and relative Lorentz factor.
- * @param u_down Downstream four-velocity
- * @param gamma_rel Relative Lorentz factor
- * @return The upstream four-velocity in the shock frame
- * <!-- ************************************************************************************** -->
- */
-inline Real compute_upstr_4vel(Real u_down, Real gamma_rel) {
-    return std::sqrt((1 + u_down * u_down) * std::fabs(gamma_rel * gamma_rel - 1)) + u_down * gamma_rel;
-}
+inline Real compute_upstr_B(Real rho_up, Real sigma) { return std::sqrt((4 * con::pi * con::c2) * sigma * rho_up); }
 
 /**
  * <!-- ************************************************************************************** -->
@@ -359,6 +367,16 @@ inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadPar
 
 /**
  * <!-- ************************************************************************************** -->
+ * @brief Computes the thermal Lorentz factor from the thermal energy and mass.
+ * @param U_th Thermal energy
+ * @param mass Mass
+ * @return The thermal Lorentz factor
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_Gamma_therm(Real U_th, Real mass) { return mass ? U_th / (mass * con::c2) + 1 : 1; }
+
+/**
+ * <!-- ************************************************************************************** -->
  * @brief Saves the current state of the shock.
  * @param shock Reference to the Shock object to be updated
  * @param i Grid index for phi
@@ -373,8 +391,50 @@ inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadPar
  * @param mass Mass
  * <!-- ************************************************************************************** -->
  */
-void save_shock_state(Shock& shock, size_t i, size_t j, size_t k, Real t_comv, Real r, Real theta, Real Gamma,
-                      Real Gamma_th, Real B, Real mass);
+
+inline void write_shock_state(Shock& shock, size_t i, size_t j, size_t k, Real t_comv, Real r, Real theta, Real Gamma,
+                              Real Gamma_th, Real B, Real mass) {
+    shock.t_comv(i, j, k) = t_comv;
+    shock.r(i, j, k) = r;
+    shock.theta(i, j, k) = theta;
+    shock.Gamma(i, j, k) = Gamma;
+    shock.Gamma_th(i, j, k) = Gamma_th;
+    shock.B(i, j, k) = B;
+    shock.N_p(i, j, k) = mass / con::mp;
+}
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the compression ratio across the shock.
+ * @param Gamma_upstr Lorentz factor upstream
+ * @param Gamma_downstr Lorentz factor downstream
+ * @param sigma_upstr Upstream magnetization
+ * @return The compression ratio
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_compression(Real Gamma_upstr, Real Gamma_downstr, Real sigma_upstr) {
+    Real Gamma_rel = compute_rel_Gamma(Gamma_upstr, Gamma_downstr);
+    return compute_4vel_jump(Gamma_rel, sigma_upstr);
+}
+
+/**
+ * <!-- ************************************************************************************** -->
+ * @brief Computes the downstream magnetic field strength.
+ * @param eps_B Magnetic energy fraction
+ * @param rho_upstr Upstream rest mass density
+ * @param B_upstr Upstream magnetic field strength
+ * @param Gamma_th Thermal Lorentz factor
+ * @param comp_ratio Compression ratio
+ * @return The downstream magnetic field strength
+ * <!-- ************************************************************************************** -->
+ */
+inline Real compute_downstr_B(Real eps_B, Real rho_upstr, Real B_upstr, Real Gamma_th, Real comp_ratio) {
+    Real rho_downstr = rho_upstr * comp_ratio;
+
+    Real e_th = (Gamma_th - 1) * rho_downstr * con::c2;
+
+    return compute_comv_weibel_B(eps_B, e_th) + B_upstr * comp_ratio;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -390,21 +450,6 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
 
 /**
  * <!-- ************************************************************************************** -->
- * @brief Computes the swept-up mass for a shock based on the equation system and current state.
- * @tparam Eqn Type of the equation system
- * @param eqn The equation system containing medium properties and other parameters
- * @param state The current state of the system
- * @return The swept-up mass per solid angle
- * @details Handles both cases where mass profile is provided or calculated.
- * <!-- ************************************************************************************** -->
- */
-template <typename Eqn>
-Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
-    return eqn.medium.mass(eqn.phi, state.theta, state.r);
-}
-
-/**
- * <!-- ************************************************************************************** -->
  * @brief Computes the deceleration time for the shock based on the equation system and time bounds.
  * @tparam Eqn Type of the equation system
  * @param eqn The equation system containing ejecta and medium properties
@@ -415,21 +460,6 @@ Real compute_swept_mass(Eqn const& eqn, typename Eqn::State const& state) {
  */
 template <typename Eqn>
 Real compute_dec_time(Eqn const& eqn, Real t_max);
-
-/**
- * @brief Computes the thermal energy density for a given internal energy, particle number, and particle numberdensity.
- * @param U Internal energy density
- * @param N Total particle number
- * @param n Particle number density
- * @return The thermal energy density
- */
-Real compute_thermal_energy_density(Real U, Real mass, Real n);
-
-Real compute_comv_orderd_B(Real compression, Real rho_upstr, Real sigma);
-
-Real compute_compression(Real Gamma_upstr, Real Gamma_downstr, Real sigma);
-
-Real compute_downstr_B(Real eps_B, Real rho_upstr, Real B_upstr, Real Gamma_th, Real comp_ratio);
 
 //========================================================================================================
 //                                  template function implementation
@@ -445,6 +475,7 @@ inline void set_stopping_shock(size_t i, size_t j, Shock& shock, State const& st
     xt::view(shock.N_p, i, j, xt::all()) = 0;
 }
 
+/*
 template <typename Eqn>
 Real compute_dec_time(Eqn const& eqn, Real t_max) {
     Real e_k = eqn.ejecta.eps_k(eqn.phi, eqn.theta0);
@@ -467,4 +498,4 @@ Real compute_dec_time(Eqn const& eqn, Real t_max) {
     }
     Real t_dec = r_dec * (1 - beta) / (beta * con::c);
     return t_dec;
-}
+}*/

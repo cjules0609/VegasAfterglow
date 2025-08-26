@@ -188,7 +188,7 @@ class PyModel {
      */
     PyModel(Ejecta jet, Medium medium, PyObserver observer, PyRadiation fwd_rad,
             std::optional<PyRadiation> rvs_rad = std::nullopt,
-            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 2., 5.), Real rtol = 1e-5,
+            std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 1, 10), Real rtol = 1e-5,
             bool axisymmetric = true)
         : jet(jet),
           medium(medium),
@@ -285,8 +285,8 @@ class PyModel {
     std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
     Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
     Real phi_resol{0.3};                     ///< Azimuthal resolution: number of points per degree
-    Real theta_resol{2};                     ///< Polar resolution: number of points per degree
-    Real t_resol{5};                         ///< Time resolution: number of points per decade
+    Real theta_resol{1};                     ///< Polar resolution: number of points per degree
+    Real t_resol{10};                        ///< Time resolution: number of points per decade
     Real rtol{1e-5};                         ///< Relative tolerance
     bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet
 };

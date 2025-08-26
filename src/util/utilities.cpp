@@ -83,19 +83,19 @@ Real interp(Real xi, Array const& x, Array const& y, bool lo_extrap, bool hi_ext
         std::cout << "incorrect array size for interpolation!\n";
         return 0;
     }
-    auto x_back = x[x.size() - 1];
-    auto y_back = y[y.size() - 1];
+    auto x_back = x(x.size() - 1);
+    auto y_back = y(y.size() - 1);
 
-    if (xi < x[0]) {
-        return (!lo_extrap || x[0] == xi) ? y[0] : point_interp(x[0], x[1], y[0], y[1], xi);
+    if (xi < x(0)) {
+        return (!lo_extrap || x(0) == xi) ? y(0) : point_interp(x(0), x(1), y(0), y(1), xi);
     } else if (xi > x_back) {
         return (!hi_extrap || x_back == xi) ? y_back
-                                            : point_interp(x[x.size() - 2], x_back, y[y.size() - 2], y_back, xi);
+                                            : point_interp(x(x.size() - 2), x_back, y(y.size() - 2), y_back, xi);
     } else {
         auto it = std::lower_bound(x.begin(), x.end(), xi);
         size_t idx = it - x.begin();
-        if (*it == xi) return y[idx];  // Exact match
-        return point_interp(x[idx - 1], x[idx], y[idx - 1], y[idx], xi);
+        if (*it == xi) return y(idx);  // Exact match
+        return point_interp(x(idx - 1), x(idx), y(idx - 1), y(idx), xi);
     }
 }
 

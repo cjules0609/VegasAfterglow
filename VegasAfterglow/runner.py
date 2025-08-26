@@ -6,12 +6,13 @@ from .types import FitResult, ParamDef, Scale
 from .types import ObsData, Setups, ModelParams, VegasMC
 from .sampler import MultiThreadEmcee
 
+
 class Fitter:
     """
     High-level MCMC interface for fitting an afterglow model.
     """
 
-    def __init__(self, data: ObsData, config: Setups,num_workers: Optional[int] = None):
+    def __init__(self, data: ObsData, config: Setups, num_workers: Optional[int] = None):
         """
         Parameters
         ----------
@@ -25,12 +26,12 @@ class Fitter:
         self.num_workers = num_workers
         # placeholders to be set in fit()
         self._param_defs = None
-        self._to_params  = None
+        self._to_params = None
 
     def fit(
         self,
         param_defs: Sequence[ParamDef],
-        resolution: Tuple[float, float, float] = (0.5, 1, 5),
+        resolution: Tuple[float, float, float] = (0.3, 1, 10),
         total_steps: int = 10_000,
         burn_frac: float = 0.3,
         thin: int = 1,
@@ -67,7 +68,8 @@ class Fitter:
             *(
                 (
                     pd.name,
-                    (0.5*(np.log10(pd.lower)+np.log10(pd.upper))  if pd.scale is Scale.LOG else 0.5*(pd.lower + pd.upper)),
+                    (0.5*(np.log10(pd.lower)+np.log10(pd.upper))
+                     if pd.scale is Scale.LOG else 0.5*(pd.lower + pd.upper)),
                     (np.log10(pd.lower) if pd.scale is Scale.LOG else pd.lower),
                     (np.log10(pd.upper) if pd.scale is Scale.LOG else pd.upper),
                 )
@@ -76,14 +78,24 @@ class Fitter:
             )
         )
         init = np.array(inits)
-        pl   = np.array(lowers)
-        pu   = np.array(uppers)
+        pl = np.array(lowers)
+        pu = np.array(uppers)
+
+        # Validate that all parameter names are valid ModelParams attributes
+        p_test = ModelParams()
+        for pd in defs:
+            try:
+                getattr(p_test, pd.name)
+            except AttributeError:
+                raise AttributeError(
+                    f"'{pd.name}' is not a valid MCMC parameter")
 
         # 2) build a fast transformation closure
         def to_params(x: np.ndarray) -> ModelParams:
             p = ModelParams()
             i = 0
             for pd in defs:
+
                 if pd.scale is Scale.FIXED:
                     # fixed param: always pd.init
                     setattr(p, pd.name, 0.5*(pd.lower+pd.upper))
@@ -96,7 +108,7 @@ class Fitter:
                     setattr(p, pd.name, real)
                     i += 1
             return p
-        
+
         self._to_params = to_params
 
         mcmc = MultiThreadEmcee(
@@ -115,7 +127,7 @@ class Fitter:
             top_k=top_k
         )
         return result
-    
+
     def _with_resolution(self, resolution: Tuple[float, float, float]) -> Setups:
         """
         Clone self.config (without pickle) and override t/theta/phi grids.
@@ -133,13 +145,13 @@ class Fitter:
         # override grids
         cfg.phi_resol, cfg.theta_resol, cfg.t_resol = resolution
         return cfg
-    
+
     def light_curves(
         self,
         best_params: np.ndarray,
         t: np.ndarray,
         nu: np.ndarray,
-        resolution: Optional[Tuple[float, float, float]] = (0.25, 1, 3)
+        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10)
     ) -> np.ndarray:
         """
         Compute light curves at the best-fit parameters.
@@ -173,7 +185,7 @@ class Fitter:
         best_params: np.ndarray,
         nu: np.ndarray,
         t: np.ndarray,
-        resolution: Optional[Tuple[float, float, float]] = (0.25, 1, 3)
+        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10)
     ) -> np.ndarray:
         """
         Compute spectra at the best-fit parameters.

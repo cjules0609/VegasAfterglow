@@ -30,7 +30,7 @@ Setting up a simple afterglow model
     rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3, xi_e=1)
 
     # Combine all components into a complete afterglow model
-    model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.3,3,5))
+    model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.3,1,10))
 
     # Define time range for light curve calculation
     times = np.logspace(2, 8, 200)  
@@ -135,15 +135,9 @@ User-Defined Medium
     def density(phi, theta, r):# r in cm, phi and theta in radians
         return m_p # n_ism =  1 cm^-3
         #return whatever density profile (g/cm^3) you want as a function of phi, theta, and r
-        
-    def swept_mass(phi, theta, r):# r in cm, phi and theta in radians
-        return m_p * r * r * r / 3
-        #return the swept up mass PER SOLID ANGLE (g) over r (\int_0^r rho*r*r dr).
-        #you may keep the consistency of the mass profile with the density profile
-        #the purpose of providing the extra mass profile is to reduce the extra computations.
     
     # Create a user-defined medium
-    medium = Medium(rho=density, mass=swept_mass)
+    medium = Medium(rho=density)
 
     #..other settings
     model = Model(medium=medium, ...)
@@ -287,7 +281,7 @@ Those profiles are optional and will be set to zero function if not provided.
 
     # the user-defined jet structure could be spiky, if the default resolution may not resolve the jet structure, if that is the case, you can try a finer resolution (phi_ppd, theta_ppd, t_ppd)
     # where phi_ppd is the number of points per degree in the phi direction, theta_ppd is the number of points per degree in the theta direction, and t_ppd is the number of points per decade in the time direction    .
-    
+
 .. note::
     Setting user-defined structured jet in the Python level is OK for light curve and spectrum calculation. However, it is not recommended for MCMC parameter fitting if you do care about the performance.
     The reason is that setting user-defined profiles in the Python level leads to a large overhead due to the Python-C++ inter-process communication.

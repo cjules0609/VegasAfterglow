@@ -308,6 +308,11 @@ namespace math {
         return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
     }
 
+    inline auto gaussian_plus_one(Real theta_c, Real height) noexcept {
+        Real spread = 2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread) + 1; };
+    }
+
     /**
      * <!-- ************************************************************************************** -->
      * @brief Returns a power-law profile function for jet properties
@@ -319,6 +324,10 @@ namespace math {
      */
     inline auto powerlaw(Real theta_c, Real height, Real k) noexcept {
         return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
+    }
+
+    inline auto powerlaw_plus_one(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)) + 1; };
     }
 
     /**

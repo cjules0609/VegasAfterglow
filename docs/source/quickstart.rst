@@ -159,7 +159,7 @@ Similar to the light curve generation, let's set up the physical components of o
     rad = Radiation(eps_e=1e-1, eps_B=1e-3, p=2.3)
 
     # Include resolution parameters for detailed internal tracking
-    model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.1,5,10))
+    model = Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, resolutions=(0.3,1,10))
 
 Accessing Simulation Quantities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -493,7 +493,7 @@ Initialize the ``Fitter`` class with your data and configuration, then run the M
     # Run the MCMC fitting
     result = fitter.fit(
         param_defs=mc_params,          # Parameter definitions
-        resolution=(0.1, 1, 5),        # Grid resolution (see more details in `Examples`)
+        resolution=(0.3, 1, 10),        # Grid resolution (see more details in `Examples`)
         total_steps=10000,             # Total number of MCMC steps
         burn_frac=0.3,                 # Fraction of steps to discard as burn-in
         thin=1                         # Thinning factor

@@ -33,7 +33,7 @@ concept HasSigma = requires(T t) {
 
 template <typename T>
 concept HasU = requires(T t) {
-    { t.u };
+    { t.U2_th };
 };
 
 template <typename T>
