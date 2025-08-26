@@ -373,7 +373,13 @@ inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadPar
  * @return The thermal Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_Gamma_therm(Real U_th, Real mass) { return mass ? U_th / (mass * con::c2) + 1 : 1; }
+inline Real compute_Gamma_therm(Real U_th, Real mass) {
+    if (mass == 0) [[unlikely]] {
+        return 1;
+    } else {
+        return U_th / (mass * con::c2) + 1;
+    }
+}
 
 /**
  * <!-- ************************************************************************************** -->

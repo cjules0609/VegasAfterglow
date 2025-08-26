@@ -44,7 +44,7 @@ Real compute_downstr_4vel(Real gamma_rel, Real sigma) {
     Real gamma_m_1 = gamma_rel - 1;  // (gamma_rel - 1)
     Real ad_idx_m_2 = ad_idx - 2;    // (ad_idx - 2)
     Real ad_idx_m_1 = ad_idx - 1;    // (ad_idx - 1)
-    if (std::abs(sigma) <= 1e-6) {
+    if (sigma <= con::sigma_cut) {
         return std::sqrt(std::fabs(gamma_m_1 * ad_idx_m_1 * ad_idx_m_1 / (-ad_idx * ad_idx_m_2 * gamma_m_1 + 2)));
     } else {
         Real gamma_sq = gamma_rel * gamma_rel;  // gamma_rel^2

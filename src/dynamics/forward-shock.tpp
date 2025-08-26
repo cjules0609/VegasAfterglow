@@ -147,7 +147,6 @@ void save_fwd_shock_state(size_t i, size_t j, size_t k, Eqn const& eqn, State co
     Real rho = eqn.medium.rho(eqn.phi, state.theta, state.r);
 
     Real U_th = 0;
-
     if constexpr (HasU<State>) {
         U_th = state.U2_th;
     } else {
