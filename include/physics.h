@@ -123,7 +123,7 @@ inline Real gamma_to_beta(Real gamma) { return std::sqrt(gamma * gamma - 1) / ga
  * @return Adiabatic index
  * <!-- ************************************************************************************** -->
  */
-inline Real adiabatic_idx(Real gamma) { return (4 * gamma + 1) / (3 * gamma); }
+inline Real adiabatic_idx(Real gamma) { return 4.0 / 3.0 + 1 / (3 * gamma); }
 
 /**
  * <!-- ************************************************************************************** -->

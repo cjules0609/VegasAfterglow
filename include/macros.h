@@ -93,7 +93,8 @@ namespace con {
     constexpr Real Omega_m = 0.27;                                       ///< Matter density parameter in ΛCDM cosmology
     constexpr Real Omega_L = 0.73;                                 ///< Dark energy density parameter in ΛCDM cosmology
     constexpr Real H0 = 67.66 * unit::km / unit::sec / unit::Mpc;  ///< Hubble constant in code units
-    constexpr Real Gamma_cut = 1 + 1e-7;                           ///< Cutoff Lorentz factor value
+    constexpr Real Gamma_cut = 1 + 1e-6;                           ///< Cutoff Lorentz factor value
     constexpr Real inf = std::numeric_limits<Real>::infinity();    ///< Infinity value
     constexpr Real sigma_cut = 1e-6;                               ///< Cutoff magnetization value
+    constexpr Real min_obs_time = 0.1 * unit::sec;                 ///< Minimum observer time
 }  // namespace con

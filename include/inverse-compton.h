@@ -162,6 +162,9 @@ struct ICPhoton {
 
     Electrons electrons;
 
+   private:
+    void generate_grid();
+
     Array nu0;  // input frequency nu0 grid value
 
     Array dnu0;
@@ -181,6 +184,7 @@ struct ICPhoton {
     static constexpr size_t nu_grid_per_order{5};  // Number of gamma bins
 
     bool KN{false};  // Klein-Nishina flag
+    bool generated{false};
 };
 
 /// Defines a 3D grid (using xt::xtensor) for storing ICPhoton objects.
@@ -240,9 +244,10 @@ void KN_cooling(ElectronGrid<Electrons>& electron, PhotonGrid<Photons>& photon, 
 
 template <typename Electrons, typename Photons>
 ICPhoton<Electrons, Photons>::ICPhoton(Electrons const& electrons, Photons const& photons, bool KN) noexcept
-    : electrons(electrons), photons(photons), KN(KN) {
-    constexpr Real IC_nu_min = 1e6 * unit::Hz;
+    : electrons(electrons), photons(photons), KN(KN) {}
 
+template <typename Electrons, typename Photons>
+void ICPhoton<Electrons, Photons>::generate_grid() {
     Real gamma_min = std::min(electrons.gamma_m, electrons.gamma_c);
     Real gamma_max = electrons.gamma_M * 10;
     size_t gamma_size = static_cast<size_t>(std::log10(gamma_max / gamma_min) * gamma_grid_per_order);
@@ -251,31 +256,20 @@ ICPhoton<Electrons, Photons>::ICPhoton(Electrons const& electrons, Photons const
     Real nu_max = photons.nu_M * 10;
     size_t nu_size = static_cast<size_t>(std::log10(nu_max / nu_min) * nu_grid_per_order);
 
-    Array nu0_boundary = xt::logspace(std::log10(nu_min), std::log10(nu_max), nu_size + 1);
-    Array gamma_boundary = xt::logspace(std::log10(gamma_min), std::log10(gamma_max), gamma_size + 1);
+    logspace_boundary_center(std::log2(nu_min), std::log2(nu_max), nu_size, nu0, dnu0);
 
-    nu0 = Array({nu_size}, 0);
-    dnu0 = Array({nu_size}, 0);
+    logspace_boundary_center(std::log2(gamma_min), std::log2(gamma_max), gamma_size, gamma, dgamma);
+
     I_nu = Array({nu_size}, -1);
-    gamma = Array({gamma_size}, 0);
-    dgamma = Array({gamma_size}, 0);
     column_den = Array({gamma_size}, -1);
     IC_tab = MeshGrid({gamma_size, nu_size}, -1);
-
-    for (size_t i = 0; i < nu_size; ++i) {
-        nu0(i) = std::sqrt(nu0_boundary(i) * nu0_boundary(i + 1));   // centre value of nu0
-        dnu0(i) = std::fabs(nu0_boundary(i + 1) - nu0_boundary(i));  // width of nu0 bin
-    }
-
-    for (size_t i = 0; i < gamma_size; ++i) {
-        gamma(i) = std::sqrt(gamma_boundary(i) * gamma_boundary(i + 1));   // centre value of gamma
-        dgamma(i) = std::fabs(gamma_boundary(i + 1) - gamma_boundary(i));  // width of gamma bin
-    }
+    generated = true;
 }
 
 template <typename Electrons, typename Photons>
 Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
-    /// A constant used in the IC photon calculation, defined as √2/3.
+    if (generated == false) generate_grid();
+
     Real IC_I_nu = 0;
 
     size_t gamma_size = gamma.size();
@@ -283,6 +277,9 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
 
     for (int i = gamma_size - 1; i >= 0; --i) {
         Real gamma_i = gamma(i);
+
+        Real upscatter = 4 * gamma_i * gamma_i * IC_x0;
+
         if (column_den(i) < 0) {
             column_den(i) = electrons.compute_column_den(gamma_i);
         }
@@ -306,18 +303,17 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
                 }
             }
 
-            if (4 * gamma_i * gamma_i * IC_x0 * nu0_j < nu) {
+            if (upscatter * nu0_j < nu) {
                 if (j != nu_size - 1) {
                     // IC_I_nu += IC_tab(i, j + 1);
                     IC_I_nu += IC_tab(i, j + 1) + (IC_tab(i, j) - IC_tab(i, j + 1)) / (nu0(j + 1) - nu0(j)) *
-                                                      (nu0(j + 1) - nu / (4 * gamma_i * gamma_i * IC_x0));
+                                                      (nu0(j + 1) - nu / upscatter);
                 }
                 break;
             }
         }
         if (j < 0) {
-            IC_I_nu += IC_tab(i, 0) + (IC_tab(i, 0) - IC_tab(i, 1)) / (nu0(1) - nu0(0)) *
-                                          (nu0(0) - nu / (4 * gamma_i * gamma_i * IC_x0));
+            IC_I_nu += IC_tab(i, 0) + (IC_tab(i, 0) - IC_tab(i, 1)) / (nu0(1) - nu0(0)) * (nu0(0) - nu / upscatter);
         }
     }
 

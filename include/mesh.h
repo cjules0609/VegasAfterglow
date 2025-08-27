@@ -170,7 +170,7 @@ Array boundary_to_center_log(Array const& boundary);
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta>
-Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_ppd = 0.5,
+Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_ppd = 0.3,
                 Real theta_ppd = 1, Real t_ppd = 5, bool is_axisymmetric = true, Real phi_view = 0);
 
 /**
@@ -222,6 +222,28 @@ void boundary_to_center_log(Arr1 const& boundary, Arr2& center) {
         center[i] = std::sqrt(boundary[i] * boundary[i + 1]);
     }
 }
+
+template <typename Arr>
+void logspace_boundary_center(Real lg2_min, Real lg2_max, size_t size, Arr& center, Array& bin_width) {
+    center = Arr::from_shape({size});
+    bin_width = Array::from_shape({size});
+    if (size == 0) return;
+
+    const Real dlg2 = (lg2_max - lg2_min) / static_cast<Real>(size);
+
+    const Real r = std::exp2(dlg2);
+    const Real s = std::sqrt(r);
+    const Real w = r - 1.;
+
+    Real left = std::exp2(lg2_min);
+
+    for (std::size_t i = 0; i < size; ++i) {
+        center(i) = left * s;
+        bin_width(i) = left * w;
+        left *= r;
+    }
+}
+
 template <typename Ejecta>
 Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric) {
     // binary search for the edge of the jet
@@ -292,72 +314,96 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
     return theta_s;
 }
 
-template <typename Ejecta>
-Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t theta_num, Real theta_v) {
+template <typename Func>
+Array inverse_CFD_sampling(Func&& pdf, Real min, Real max, size_t num) {
     using namespace boost::numeric::odeint;
     constexpr Real rtol = 1e-6;
     constexpr size_t sample_num = 200;
-    Array theta_i = xt::linspace(theta_min, theta_max, sample_num);
+    Array x_i = xt::linspace(min, max, sample_num);
     Array CDF_i = xt::zeros<Real>({sample_num});
 
     auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<Real>());
-    stepper.initialize(0, theta_min, (theta_max - theta_min) / 1e3);
+    stepper.initialize(0, min, (max - min) / 1e3);
 
-    auto eqn = [&jet, theta_v](Real const& cdf, Real& pdf, Real theta) {
+    for (size_t k = 1; stepper.current_time() <= max;) {
+        stepper.do_step(pdf);
+        while (k < x_i.size() && stepper.current_time() > x_i(k)) {
+            stepper.calc_state(x_i(k), CDF_i(k));
+            ++k;
+        }
+    }
+
+    Array CDF_out = xt::linspace(CDF_i.front(), CDF_i.back(), num);
+    Array x_out = xt::zeros<Real>({num});
+
+    for (size_t k = 0; k < num; ++k) {
+        for (size_t j = 0; j < sample_num; ++j) {
+            if (CDF_out(k) <= CDF_i(j)) {
+                if (j == 0) {
+                    x_out(k) = x_i(j);
+                } else {
+                    Real slope = (x_i(j) - x_i(j - 1)) / (CDF_i(j) - CDF_i(j - 1));
+                    x_out(k) = x_i(j - 1) + slope * (CDF_out(k) - CDF_i(j - 1));
+                }
+                break;
+            }
+        }
+    }
+    return x_out;
+}
+
+template <typename Ejecta>
+Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t theta_num, Real theta_v) {
+    auto eqn = [=, &jet](Real const& cdf, Real& pdf, Real theta) {
         Real Gamma = jet.Gamma0(0, theta);
         Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
         Real a = (1 - beta) / (1 - beta * std::cos(theta - theta_v));
         pdf = a * Gamma * std::sqrt(Gamma * (Gamma - 1)) * std::sin(theta);
     };
 
-    for (size_t k = 1; stepper.current_time() <= theta_max;) {
-        stepper.do_step(eqn);
-        while (k < theta_i.size() && stepper.current_time() > theta_i(k)) {
-            stepper.calc_state(theta_i(k), CDF_i(k));
-            ++k;
-        }
-    }
+    return inverse_CFD_sampling(eqn, theta_min, theta_max, theta_num);
+}
 
-    Array CDF_out = xt::linspace(CDF_i.front(), CDF_i.back(), theta_num);
-    Array theta_out = xt::zeros<Real>({theta_num});
+template <typename Ejecta>
+Array adaptive_phi(Ejecta const& jet, size_t phi_num, Real theta_v, Real theta_max, bool is_axisymmetric) {
+    if ((theta_v == 0 && is_axisymmetric) || theta_v > theta_max) {
+        return xt::linspace(0., 2 * con::pi, phi_num);
+    } else {
+        Real cos2 = std::cos(theta_v);
+        cos2 = cos2 * cos2;
+        Real sin2 = 1 - cos2;
 
-    for (size_t k = 0; k < theta_num; ++k) {
-        for (size_t j = 0; j < sample_num; ++j) {
-            if (CDF_out(k) <= CDF_i(j)) {
-                if (j == 0) {
-                    theta_out(k) = theta_i(j);
-                } else {
-                    Real slope = (theta_i(j) - theta_i(j - 1)) / (CDF_i(j) - CDF_i(j - 1));
-                    theta_out(k) = theta_i(j - 1) + slope * (CDF_out(k) - CDF_i(j - 1));
-                }
-                break;
-            }
-        }
+        auto eqn = [=, &jet](Real const& cdf, Real& pdf, Real phi) {
+            Real Gamma = jet.Gamma0(phi, theta_v);
+            Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
+            Real a = (1 - beta) / (1 - beta * (std::cos(phi) * sin2 + cos2));
+            pdf = a * Gamma * std::sqrt(Gamma * (Gamma - 1));
+        };
+
+        return inverse_CFD_sampling(eqn, 0, 2 * con::pi, phi_num);
     }
-    return theta_out;
 }
 
 template <typename Ejecta>
 Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real theta_view, Real z, Real phi_resol,
                 Real theta_resol, Real t_resol, bool is_axisymmetric, Real phi_view) {
-    // constexpr size_t min_grid_size = 24;
     Coord coord;
     coord.theta_view = theta_view;
 
-    size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
-    coord.phi = xt::linspace(0., 2 * con::pi, phi_num);  // Generate phi grid linearly spaced.
-
-    Real jet_edge =
-        find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);  // Determine the jet edge angle.
+    Real jet_edge = find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 10);
+    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 64);
     // coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
-    coord.theta = adaptive_theta(jet, theta_min, theta_max, theta_num, theta_view);  // Generate theta grid adaptively.
+    coord.theta = adaptive_theta(jet, theta_min, theta_max, theta_num, theta_view);
 
-    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());  // Maximum observation time.
-    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());  // Minimum observation time.
-    size_t t_num = std::max<size_t>(static_cast<size_t>(std::log10(t_max / t_min) * t_resol), 10);
+    size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
+    // coord.phi = xt::linspace(0., 2 * con::pi, phi_num);
+    coord.phi = adaptive_phi(jet, phi_num, theta_view, theta_max, is_axisymmetric);
+
+    Real t_max = *std::max_element(t_obs.begin(), t_obs.end());
+    Real t_min = *std::min_element(t_obs.begin(), t_obs.end());
+    size_t t_num = std::max<size_t>(static_cast<size_t>(std::log10(t_max / t_min) * t_resol), 24);
 
     size_t phi_size_needed = is_axisymmetric ? 1 : phi_num;
     coord.t = xt::zeros<Real>({phi_size_needed, theta_num, t_num});
@@ -366,7 +412,8 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
             Real b = gamma_to_beta(jet.Gamma0(coord.phi(i), coord.theta(j)));
             // Real theta_max = coord.theta(j) + theta_view;
             Real theta_max = coord.theta.back() + theta_view;
-            Real t_start = 0.99 * t_min * (1 - b) / (1 - std::cos(theta_max) * b) / (1 + z);
+            Real t_start =
+                std::max<Real>(0.99 * t_min * (1 - b) / (1 - std::cos(theta_max) * b) / (1 + z), 1e-2 * unit::sec);
             Real t_end = 1.01 * t_max / (1 + z);
             xt::view(coord.t, i, j, xt::all()) = xt::logspace(std::log10(t_start), std::log10(t_end), t_num);
         }

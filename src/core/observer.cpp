@@ -33,7 +33,8 @@ void Observer::calc_solid_angle(Coord const& coord, Shock const& shock) {
     // precompute the dcos to avoid recomputing in axisymmetric jet
     static thread_local MeshGrid3d dcos;
     if (dcos.shape() != shock.theta.shape()) {
-        dcos.resize(shock.theta.shape());
+        // dcos.resize(shock.theta.shape());
+        dcos = MeshGrid3d::from_shape(shock.theta.shape());
     }
 
     int last = theta_grid - 1;
@@ -69,8 +70,10 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
 
     static thread_local MeshGrid3d cos_theta, sin_theta;
     if (cos_theta.shape() != shock.theta.shape()) {
-        cos_theta.resize(shock.theta.shape());
-        sin_theta.resize(shock.theta.shape());
+        // cos_theta.resize(shock.theta.shape());
+        // sin_theta.resize(shock.theta.shape());
+        cos_theta = MeshGrid3d::from_shape(shock.theta.shape());
+        sin_theta = MeshGrid3d::from_shape(shock.theta.shape());
     }
 
     size_t shock_phi_size = shock.theta.shape(0);
@@ -145,10 +148,15 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     this->one_plus_z = 1 + redshift;
     this->lg2_one_plus_z = std::log2(one_plus_z);
 
-    time.resize({eff_phi_grid, theta_size, t_size});
+    /*time.resize({eff_phi_grid, theta_size, t_size});
     lg2_t.resize({eff_phi_grid, theta_size, t_size});
     lg2_doppler.resize({eff_phi_grid, theta_size, t_size});
-    lg2_emission_area.resize({eff_phi_grid, theta_size, t_size});
+    lg2_emission_area.resize({eff_phi_grid, theta_size, t_size});*/
+
+    time = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_t = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_doppler = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_emission_area = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
     calc_t_obs(coord, shock);

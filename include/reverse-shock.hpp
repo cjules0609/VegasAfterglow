@@ -115,6 +115,12 @@ class FRShockEqn {
      */
     Real compute_shell_sigma(State const& state) const;
 
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Saves the state of the system at the crossing point.
+     * @param state Current state of the system
+     * <!-- ************************************************************************************** -->
+     */
     void save_cross_state(State const& state);
 
    private:

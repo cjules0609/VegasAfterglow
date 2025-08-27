@@ -31,7 +31,10 @@ void tests(Real phi_resol, Real theta_resol, Real t_resol, Real n_ism, Real eps_
     rad_fwd.eps_B = eps_B;
     rad_fwd.p = p;
 
+    RadParams rad_rev = rad_fwd;
+
     Shock f_shock = generate_fwd_shock(coord, medium, jet, rad_fwd);
+    // auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rev);
 
     Observer obs;
 

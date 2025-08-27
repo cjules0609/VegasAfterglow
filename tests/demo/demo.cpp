@@ -81,18 +81,21 @@ void test_spreading() {
     write_npz("spreading-data/shock", shock);
 }
 
-void test_grid() {
+void test_ic(Real theta_c_) {
     Real E_iso = 1e51 * unit::erg;
-    Real theta_c = 10 * unit::deg;
-    Real theta_v = 20 * unit::deg;
+    Real theta_c = theta_c_ * unit::deg;
+    Real theta_v = 0;
 
     Real n_ism = 1 / unit::cm3;
-    Real eps_e = 1e-2;
-    Real eps_B = 1e-3;
+
     Real Gamma0 = 300;
     Real z = 0;
 
-    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e8 * unit::sec), 130);
+    RadParams rad_fwd;
+    rad_fwd.eps_e = 1e-2;
+    rad_fwd.eps_B = 1e-3;
+
+    Array t_obs = xt::logspace(std::log10(0.1 * unit::sec), std::log10(1e8 * unit::sec), 5);
 
     ISM medium(n_ism);
 
@@ -101,14 +104,25 @@ void test_grid() {
     jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
     jet.Gamma0 = math::tophat(theta_c, Gamma0);
 
-    // jet.eps_k = math::gaussian(theta_c, E_iso);
-    // jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-
-    jet.spreading = true;
-
     Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z);
 
-    write_npz("coord", coord);
+    auto shock = generate_fwd_shock(coord, medium, jet, rad_fwd);
+
+    auto elec = generate_syn_electrons(shock);
+
+    auto photons = generate_syn_photons(shock, elec);
+
+    auto ic = generate_IC_photons(elec, photons, false);
+
+    Observer obs;
+
+    Real lumi_dist = 1;
+
+    obs.observe(coord, shock, lumi_dist, z);
+
+    auto flux = obs.specific_flux(t_obs, 1e17 * unit::Hz, ic);
+
+    // write_npz("spreading-data/shock", shock);
 }
 
 void test_FRS() {
@@ -144,7 +158,7 @@ void test_FRS() {
     std::cout << "FRS:" << sedov_length(E_iso, n_ism) / (2 * con::c * std::pow(Gamma0, 8. / 3)) / unit::sec << ' '
               << shell_thickness_param(E_iso, n_ism, Gamma0, jet.T0) << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z);
+    Coord coord = auto_grid(jet, t_obs, con::pi / 2, theta_v, z, 0.5, 100, 20);
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e_rs, eps_B_rs);
@@ -181,6 +195,12 @@ void test_FRS() {
 }
 
 int main() {
+    for (Real i = 1; i < 10;) {
+        test_ic(i);
+        i += 0.1;
+    }
+
+    return 0;
     test_FRS();
 
     /*double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
@@ -207,8 +227,6 @@ int main() {
             out << x << ' ' << s << ' ' << t_cross << ' ' << duration << ' ' << t_dec << std::endl;
         }
     }
-
-    test_spreading();
 
     return 0;
 }

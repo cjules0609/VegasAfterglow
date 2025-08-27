@@ -114,16 +114,18 @@ Real ForwardShockEqn<Ejecta, Medium>::compute_dU_dt(Real eps_rad, State const& s
 
 template <typename Ejecta, typename Medium>
 void ForwardShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
-    state.Gamma = ejecta.Gamma0(phi, theta0);
+    Real Gamma4 = ejecta.Gamma0(phi, theta0);
 
-    Real beta0 = gamma_to_beta(state.Gamma);
-    state.r = beta0 * con::c * t0 / (1 - beta0);
+    Real beta4 = gamma_to_beta(Gamma4);
+    state.r = beta4 * con::c * t0 / (1 - beta4);
+
+    state.t_comv = state.r / std::sqrt(Gamma4 * Gamma4 - 1) / con::c;
+
+    state.theta = theta0;
 
     state.m2 = medium.rho(phi, theta0, state.r) * state.r * state.r * state.r / 3;
 
-    state.t_comv = state.r / std::sqrt(state.Gamma * state.Gamma - 1) / con::c;
-
-    state.theta = theta0;
+    state.Gamma = Gamma4;
 
     if constexpr (State::energy_inject) {
         state.eps_jet = ejecta.eps_k(phi, theta0);
@@ -133,7 +135,9 @@ void ForwardShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) cons
         state.m_jet = m_jet0;
     }
 
-    state.U2_th = (state.Gamma - 1) * state.m2 * con::c2;
+    Real ad_idx = adiabatic_idx(state.Gamma);
+
+    state.U2_th = (state.Gamma - 1) * state.m2 * con::c2 / ad_idx;
 }
 
 template <typename Eqn, typename State>
@@ -204,12 +208,15 @@ Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const&
     Shock shock(phi_size_needed, theta_size, t_size, rad_params);
 
     for (size_t i = 0; i < phi_size_needed; ++i) {
-        Real theta_s =
-            jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
+        Real theta_s = 0;
+        if (jet.spreading) {
+            theta_s =
+                jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
+        }
         for (size_t j = 0; j < theta_size; ++j) {
             auto eqn = ForwardShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
             // auto eqn = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_params, theta_s);
-            //         Solve the shock shell for this theta slice
+            //          Solve the shock shell for this theta slice
             grid_solve_fwd_shock(i, j, xt::view(coord.t, i, j, xt::all()), shock, eqn, rtol);
         }
     }

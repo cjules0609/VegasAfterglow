@@ -135,7 +135,7 @@ inline Real compute_4vel_jump(Real gamma_rel, Real sigma_upstr) {
  */
 inline Real compute_sound_speed(Real Gamma_rel) {
     Real ad_idx = adiabatic_idx(Gamma_rel);
-    return std::sqrt(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx)) * con::c;
+    return std::sqrt(std::fabs(ad_idx * (ad_idx - 1) * (Gamma_rel - 1) / (1 + (Gamma_rel - 1) * ad_idx))) * con::c;
 }
 
 /**
@@ -221,20 +221,6 @@ inline Real compute_upstr_B(Real rho_up, Real sigma) { return std::sqrt((4 * con
 
 /**
  * <!-- ************************************************************************************** -->
- * @brief Computes the downstream number density from upstream density, relative Lorentz factor, and magnetization.
- * @param n_up_str Upstream number density
- * @param gamma_rel Relative Lorentz factor
- * @param sigma Magnetization parameter
- * @return The downstream number density
- * @details Uses the shock jump conditions to determine the density of the downstream region.
- * <!-- ************************************************************************************** -->
- */
-inline Real compute_downstr_num_den(Real n_up_str, Real gamma_rel, Real sigma) {
-    return n_up_str * compute_4vel_jump(gamma_rel, sigma);
-}
-
-/**
- * <!-- ************************************************************************************** -->
  * @brief Computes the relative Lorentz factor between two frames with given Lorentz factors.
  * @param gamma1 First frame's Lorentz factor
  * @param gamma2 Second frame's Lorentz factor
@@ -270,18 +256,8 @@ inline Real compute_rel_Gamma(Real gamma1, Real gamma2, Real beta1, Real beta2) 
 inline Real compute_Gamma_from_relative(Real gamma4, Real gamma_rel) {
     Real b = -2 * gamma4 * gamma_rel;
     Real c = gamma4 * gamma4 + gamma_rel * gamma_rel - 1;
-    return (-b - std::sqrt(b * b - 4 * c)) / 2;
+    return (-b - std::sqrt(std::fabs(b * b - 4 * c))) / 2;
 }
-
-/**
- * <!-- ************************************************************************************** -->
- * @brief Computes the downstream thermal energy density.
- * @param gamma_rel Relative Lorentz factor
- * @param rho_downstr Downstream density
- * @return The thermal energy density in the downstream region
- * <!-- ************************************************************************************** -->
- */
-inline Real compute_downstr_eth(Real gamma_rel, Real rho_downstr) { return rho_downstr * (gamma_rel - 1) * con::c2; }
 
 /**
  * <!-- ************************************************************************************** -->
@@ -328,37 +304,24 @@ inline Real compute_shell_spreading_rate(Real Gamma_rel, Real dtdt_comv) {
     Real cs = compute_sound_speed(Gamma_rel);
     return cs * dtdt_comv;
 }
-/**
- * <!-- ************************************************************************************** -->
- * @brief Computes the number density in region 4 (unshocked ejecta).
- * @param dEdOmega Energy per solid angle
- * @param Gamma0 Initial Lorentz factor
- * @param r Radius
- * @param D_jet Jet thickness
- * @param sigma Magnetization parameter
- * @return The number density in region 4
- * <!-- ************************************************************************************** -->
- */
-inline Real compute_region4_num_den(Real dEdOmega, Real Gamma0, Real r, Real D_jet, Real sigma) {
-    return dEdOmega / ((Gamma0 * con::mp * con::c2 * r * r * D_jet) * (1 + sigma));
-}
 
 /**
  * <!-- ************************************************************************************** -->
  * @brief Computes the radiative efficiency based on the radiative constant, comoving time, Lorentz factor, and density.
  * @param t_comv Comoving time
- * @param Gamma Lorentz factor
+ * @param Gamma_th Thermal Lorentz factor
  * @param u    internal energy density
  * @param rad  Radiation parameters
  * @return The radiative efficiency
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadParams const& rad) {  //
-    Real gamma_m = (rad.p - 2) / (rad.p - 1) * rad.eps_e * (Gamma - 1) * con::mp / con::me / rad.xi_e + 1;
+inline Real compute_radiative_efficiency(Real t_comv, Real Gamma_th, Real u, RadParams const& rad) {  //
+    Real gamma_m = (rad.p - 2) / (rad.p - 1) * rad.eps_e * (Gamma_th - 1) * con::mp / con::me / rad.xi_e + 1;
     Real gamma_c = (6 * con::pi * con::me * con::c / con::sigmaT) / (rad.eps_B * u * t_comv);
+    gamma_c = 0.5 * (gamma_c + std::sqrt(gamma_c * gamma_c + 4));
 
-    Real g_m_g_c = gamma_m / gamma_c;  // gamma_m/gamma_c
-    if (g_m_g_c < 1 && rad.p > 2) {    // slow cooling
+    Real g_m_g_c = std::fabs(gamma_m / gamma_c);  // gamma_m/gamma_c
+    if (g_m_g_c < 1 && rad.p > 2) {               // slow cooling
         return rad.eps_e * fast_pow(g_m_g_c, rad.p - 2);
     } else {  // fast cooling or p<=2
         return rad.eps_e;
@@ -373,11 +336,16 @@ inline Real compute_radiative_efficiency(Real t_comv, Real Gamma, Real u, RadPar
  * @return The thermal Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_Gamma_therm(Real U_th, Real mass) {
+inline Real compute_Gamma_therm(Real U_th, Real mass, bool limiter = false) {
     if (mass == 0) [[unlikely]] {
         return 1;
-    } else {
-        return U_th / (mass * con::c2) + 1;
+    } else [[likely]] {
+        Real Gamma_th = U_th / (mass * con::c2) + 1;
+        if (limiter && Gamma_th < con::Gamma_cut) {
+            return 1;
+        } else {
+            return Gamma_th;
+        }
     }
 }
 
