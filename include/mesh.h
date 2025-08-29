@@ -358,7 +358,8 @@ Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t t
         Real Gamma = jet.Gamma0(0, theta);
         Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
         Real a = (1 - beta) / (1 - beta * std::cos(theta - theta_v));
-        pdf = a * Gamma * std::sqrt(Gamma * (Gamma - 1)) * std::sin(theta);
+        pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma) * std::sin(theta);
+        // pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma) * std::sin(theta);
     };
 
     return inverse_CFD_sampling(eqn, theta_min, theta_max, theta_num);
@@ -377,7 +378,8 @@ Array adaptive_phi(Ejecta const& jet, size_t phi_num, Real theta_v, Real theta_m
             Real Gamma = jet.Gamma0(phi, theta_v);
             Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
             Real a = (1 - beta) / (1 - beta * (std::cos(phi) * sin2 + cos2));
-            pdf = a * Gamma * std::sqrt(Gamma * (Gamma - 1));
+            pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma);
+            // pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma / a);
         };
 
         return inverse_CFD_sampling(eqn, 0, 2 * con::pi, phi_num);
@@ -393,7 +395,7 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     Real jet_edge = find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 64);
+    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 32);
     // coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
     coord.theta = adaptive_theta(jet, theta_min, theta_max, theta_num, theta_view);
 

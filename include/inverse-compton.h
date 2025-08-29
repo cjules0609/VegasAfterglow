@@ -305,7 +305,6 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
 
             if (upscatter * nu0_j < nu) {
                 if (j != nu_size - 1) {
-                    // IC_I_nu += IC_tab(i, j + 1);
                     IC_I_nu += IC_tab(i, j + 1) + (IC_tab(i, j) - IC_tab(i, j + 1)) / (nu0(j + 1) - nu0(j)) *
                                                       (nu0(j + 1) - nu / upscatter);
                 }

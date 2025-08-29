@@ -295,6 +295,10 @@ namespace math {
         return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight : 0; };
     }
 
+    inline auto tophat_plus_one(Real theta_c, Real hight) noexcept {
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight + 1 : 1; };
+    }
+
     /**
      * <!-- ************************************************************************************** -->
      * @brief Returns a Gaussian profile function for jet properties
@@ -304,13 +308,13 @@ namespace math {
      * <!-- ************************************************************************************** -->
      */
     inline auto gaussian(Real theta_c, Real height) noexcept {
-        Real spread = 2 * theta_c * theta_c;
-        return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
+        Real spread = -2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(theta * theta / spread); };
     }
 
     inline auto gaussian_plus_one(Real theta_c, Real height) noexcept {
-        Real spread = 2 * theta_c * theta_c;
-        return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread) + 1; };
+        Real spread = -2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(theta * theta / spread) + 1; };
     }
 
     /**
@@ -330,14 +334,68 @@ namespace math {
         return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)) + 1; };
     }
 
+    inline auto step_powerlaw(Real theta_c, Real height_c, Real height_w, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c;
+            } else {
+                return height_w / (1 + fast_pow(theta / theta_c, k));
+            }
+        };
+    }
+
+    inline auto step_powerlaw_plus_one(Real theta_c, Real height_c, Real height_w, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c + 1;
+            } else {
+                return height_w / (1 + fast_pow(theta / theta_c, k)) + 1;
+            }
+        };
+    }
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Returns a two-component profile function for jet properties
+     * @param theta_c Core angle
+     * @param theta_w Wing angle
+     * @param height_c Height at core
+     * @param height_w Height at wing
+     * @return Function implementing a two-component profile
+     * <!-- ************************************************************************************** -->
+     */
+    inline auto two_component(Real theta_c, Real theta_w, Real height_c, Real height_w) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c;
+            } else if (theta <= theta_w) {
+                return height_w;
+            } else {
+                return 0.;
+            }
+        };
+    }
+
+    inline auto two_component_plus_one(Real theta_c, Real theta_w, Real height_c, Real height_w) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c + 1;
+            } else if (theta <= theta_w) {
+                return height_w + 1;
+            } else {
+                return 1.;
+            }
+        };
+    }
+
     /**
      * <!-- ************************************************************************************** -->
      * @brief Creates a constant injection profile: returns 1 regardless of time
      * @return Function that always returns 1
      * <!-- ************************************************************************************** -->
      */
-    inline auto const_injection() noexcept {
-        return [=](Real t) noexcept { return 1.; };
+    inline auto const_injection(Real height) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return height; };
     }
 
     /**
@@ -347,8 +405,8 @@ namespace math {
      * @return Function implementing a step function
      * <!-- ************************************************************************************** -->
      */
-    inline auto step_injection(Real t0) noexcept {
-        return [=](Real t) noexcept { return t > t0 ? 1. : 0.; };
+    inline auto step_injection(Real t0, Real height_low, Real height_high) noexcept {
+        return [=](Real t) noexcept { return t > t0 ? height_high : height_low; };
     }
 
     /**
@@ -359,8 +417,8 @@ namespace math {
      * @return Function implementing a square wave
      * <!-- ************************************************************************************** -->
      */
-    inline auto square_injection(Real t0, Real t1) noexcept {
-        return [=](Real t) noexcept { return t > t0 && t < t1 ? 1. : 0.; };
+    inline auto square_injection(Real t0, Real t1, Real height_high, Real height_low) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return t > t0 && t < t1 ? height_high : height_low; };
     }
 
     /**
@@ -371,8 +429,29 @@ namespace math {
      * @return Function implementing a power-law decay
      * <!-- ************************************************************************************** -->
      */
-    inline auto powerlaw_injection(Real t0, Real q) noexcept {
-        return [=](Real t) noexcept { return fast_pow(1 + t / t0, -q); };
+    inline auto powerlaw_injection(Real t0, Real q, Real hight) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return hight * fast_pow(1 + t / t0, -q); };
+    }
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Creates a magnetar injection profile: returns a power-law decay for theta < theta_c
+     * @param t0 Reference time
+     * @param q Power-law decay index
+     * @param L0 Normalization factor
+     * @param theta_c Critical angle
+     * @return Function implementing a magnetar injection profile
+     * <!-- ************************************************************************************** -->
+     */
+    inline auto magnetar_injection(Real t0, Real q, Real L0, Real theta_c) {
+        return [=](Real phi, Real theta, Real t) noexcept {
+            if (theta <= theta_c) {
+                Real tt = 1 + t / t0;
+                return L0 * fast_pow(tt, -q);
+            } else {
+                return 0.;
+            }
+        };
     }
 }  // namespace math
 

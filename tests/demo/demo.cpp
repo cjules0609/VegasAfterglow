@@ -120,7 +120,7 @@ void test_ic(Real theta_c_) {
 
     obs.observe(coord, shock, lumi_dist, z);
 
-    auto flux = obs.specific_flux(t_obs, 1e17 * unit::Hz, ic);
+    auto flux = obs.specific_flux(t_obs, 1e22 * unit::Hz, ic);
 
     // write_npz("spreading-data/shock", shock);
 }

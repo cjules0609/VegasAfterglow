@@ -168,10 +168,9 @@ Now, let's access the internal simulation quantities using the ``details`` metho
 
 .. code-block:: python
 
-    times = np.logspace(-2, 8, 100)  
 
-    # Get the simulation details
-    details = model.details(times)
+    # Get the simulation details over a time range
+    details = model.details(t_min=1e0, t_max=1e8)
 
     # Print the keys of the internal quantities
     print("Simulation details:", details.keys())

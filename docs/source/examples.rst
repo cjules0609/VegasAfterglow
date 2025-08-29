@@ -122,6 +122,24 @@ Wind Medium
     #..other settings
     model = Model(medium=wind, ...)
 
+Stratified Medium
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    from VegasAfterglow import Wind
+
+    # Create a stratified stellar wind medium;
+    # smooth transited stratified medium. Inner region, n(r) = n_0, middle region n(r) \propto 1/r^2, outer region n(r)=n_ism
+    # A = 0 (default): fallback to n = n_ism
+    # n_0 = inf (default): wind bubble, from wind profile to ism profile
+    # A = 0 & n_0 = inf: pure wind;
+    wind = Wind(A_star=0.1, n_ism = 1, n_0 = 1e-3)  
+
+    #..other settings
+    model = Model(medium=wind, ...)
+
+
 User-Defined Medium
 ^^^^^^^^^^^^^^^^^^^
 
@@ -190,9 +208,9 @@ Two-Component Jet
 
     # Create a two-component jet
     jet = TwoComponentJet(
-        theta_n=0.05,        # Narrow component angular size (radians)
-        E_iso_n=1e53,        # Isotropic-equivalent energy of the narrow component (ergs)
-        Gamma0_n=300,        # Initial Lorentz factor of the narrow component
+        theta_c=0.05,        # Narrow component angular size (radians)
+        E_iso_c=1e53,        # Isotropic-equivalent energy of the narrow component (ergs)
+        Gamma0_c=300,        # Initial Lorentz factor of the narrow component
         theta_w=0.1,         # Wide component angular size (radians)
         E_iso_w=1e52,        # Isotropic-equivalent energy of the wide component (ergs)
         Gamma0_w=100         # Initial Lorentz factor of the wide component

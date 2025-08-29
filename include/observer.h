@@ -217,6 +217,7 @@ class Observer {
         Real slope{0};        ///< Slope for logarithmic interpolation
         Real lg2_I_nu_lo{0};  ///< Lower boundary of specific intensity (log2 scale)
         Real lg2_I_nu_hi{0};  ///< Upper boundary of specific intensity (log2 scale)
+        Real last_lg2_nu{0};  ///< Last log2 frequency (for interpolation)
         size_t last_hi{0};    ///< Index for the upper boundary in the grid
     };
 
@@ -279,13 +280,21 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
 template <typename... PhotonGrid>
 bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
                               PhotonGrid&... photons) noexcept {
+    if (state.last_hi == k + 1 && state.last_lg2_nu == lg2_nu_obs) {
+        if (!std::isfinite(state.slope)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     Real lg2_t_ratio = lg2_t(i, j, k + 1) - lg2_t(i, j, k);
 
     size_t eff_i = i * jet_3d;
 
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
-    if (state.last_hi != 0 && k == state.last_hi) {
+    if (state.last_hi != 0 && k == state.last_hi && lg2_nu_obs == state.last_lg2_nu) {
         state.lg2_I_nu_lo = state.lg2_I_nu_hi;
     } else {
         Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
@@ -304,6 +313,7 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
     }
 
     state.last_hi = k + 1;
+    state.last_lg2_nu = lg2_nu_obs;
     return true;
 }
 
@@ -317,7 +327,6 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
 
     MeshGrid F_nu({nu_len, t_obs_len}, 0);
 
-    InterpState state;
     for (size_t l = 0; l < nu_len; l++) {
         // Loop over effective phi and theta grid points.
         for (size_t i = 0; i < eff_phi_grid; i++) {
@@ -326,6 +335,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                 size_t t_idx = 0;
                 iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
 
+                InterpState state;
                 for (size_t k = 0; k < t_grid - 1 && t_idx < t_obs_len; k++) {
                     Real lg2_t_hi = lg2_t(i, j, k + 1);
                     if (lg2_t_hi < lg2_t_obs(t_idx)) {
@@ -371,13 +381,13 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
             iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
 
             size_t k = 0;
+            InterpState state;
             while (t_idx < t_obs_len && k < t_grid - 1) {
                 Real lg2_t_hi = lg2_t(i, j, k + 1);
                 if (lg2_t_hi < lg2_t_obs(t_idx)) {
                     k++;
                     continue;
                 } else {
-                    InterpState state;
                     if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
                         F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                     }

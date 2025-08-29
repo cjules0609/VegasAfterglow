@@ -81,7 +81,8 @@ class Wind {
      * @param A_star Wind density parameter in standard units
      * <!-- ************************************************************************************** -->
      */
-    Wind(Real A_star) noexcept : A(A_star * 5e11 * unit::g / unit::cm) {}
+    Wind(Real A_star, Real n_ism = 0, Real n0 = con::inf) noexcept
+        : A(A_star * 5e11 * unit::g / unit::cm), rho_ism(n_ism * con::mp), r02(A / (n0 * con::mp)) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -92,10 +93,13 @@ class Wind {
      * @return Density value at radius r (= A/r²)
      * <!-- ************************************************************************************** -->
      */
-    inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r * r); }
+
+    inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r02 + r * r) + rho_ism; }
 
    private:
-    Real A{0};  ///< Wind density parameter in physical units
+    Real A{0};        ///< Wind density parameter in physical units
+    Real rho_ism{0};  ///< ISM density floor
+    Real r02{0};      ///< Radius where ISM transitions to
 };
 
 /**
@@ -116,25 +120,29 @@ namespace evn {
     inline auto ISM(Real n_ism) {
         Real rho = n_ism * con::mp;
 
-        return [rho](Real phi, Real theta, Real r) noexcept { return rho; };
+        return [=](Real phi, Real theta, Real r) noexcept { return rho; };
     };
 
     /**
      * <!-- ************************************************************************************** -->
      * @brief Creates a stellar wind medium profile
      * @param A_star Wind parameter in standard units
+     * @param n_ism Number density of the ISM [cm^-3]
+     * @param n0 Number density of inner region [cm^-3]
      * @return functions for density calculation
      * @details Converts A_star to proper units (A_star * 5e11 g/cm) and returns functions that compute
      *          density = A/r² and mass = A*r, representing a steady-state stellar wind where density
      *          falls off as 1/r²
      * <!-- ************************************************************************************** -->
      */
-    inline auto wind(Real A_star) {
+    inline auto wind(Real A_star, Real n_ism = 0, Real n0 = con::inf) {
         // Convert A_star to proper units: A_star * 5e11 g/cm
         Real A = A_star * 5e11 * unit::g / unit::cm;
+        Real rho_ism = n_ism * con::mp;
+        Real r02 = A / (n0 * con::mp);
 
         // Return a function that computes density = A/r^2
         // This represents a steady-state stellar wind where density falls off as 1/r^2
-        return [A](Real phi, Real theta, Real r) noexcept { return A / (r * r); };
+        return [=](Real phi, Real theta, Real r) noexcept { return A / (r02 + r * r) + rho_ism; };
     }
 }  // namespace evn

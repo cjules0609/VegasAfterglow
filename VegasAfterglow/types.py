@@ -2,7 +2,8 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Sequence, Tuple, Callable, Any, Optional
 from enum import Enum
-from .VegasAfterglowC import ModelParams, Setups, ObsData, VegasMC, Ejecta, Wind, Medium, ISM, TophatJet, GaussianJet, PowerLawJet, TwoComponentJet, Radiation, Observer, Model, Magnetar
+from .VegasAfterglowC import ModelParams, Setups, ObsData, VegasMC, Ejecta, Wind, Medium, ISM, TophatJet, GaussianJet, PowerLawJet, TwoComponentJet, StepPowerLawJet, Radiation, Observer, Model, Magnetar
+
 
 @dataclass
 class FitResult:
@@ -15,10 +16,12 @@ class FitResult:
     top_k_params: np.ndarray
     top_k_log_probs: np.ndarray
 
+
 class Scale(Enum):
     LINEAR = "linear"
-    LOG    = "log"
-    FIXED  = "fixed"
+    LOG = "log"
+    FIXED = "fixed"
+
 
 @dataclass
 class ParamDef:

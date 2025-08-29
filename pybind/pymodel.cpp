@@ -15,20 +15,13 @@
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
                    std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = [=](Real phi, Real theta) { return theta < theta_c ? E_iso : 0.; };
-    jet.Gamma0 = [=](Real phi, Real theta) { return theta < theta_c ? Gamma0 : 1.; };
+    jet.eps_k = math::tophat(theta_c, E_iso);
+    jet.Gamma0 = math::tophat_plus_one(theta_c, Gamma0 - 1);
     jet.spreading = spreading;
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = [=](Real phi, Real theta, Real t) {
-            if (theta <= theta_c) {
-                Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 * std::pow(tt, -magnetar->q);
-            } else {
-                return 0.;
-            }
-        };
+        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
     }
 
     return jet;
@@ -37,21 +30,13 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real d
 Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
                      std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    Real norm = -1 / (2 * theta_c * theta_c);
-    jet.eps_k = [=](Real phi, Real theta) { return E_iso * fast_exp(norm * theta * theta); };
-    jet.Gamma0 = [=](Real phi, Real theta) { return (Gamma0 - 1) * fast_exp(norm * theta * theta) + 1; };
+    jet.eps_k = math::gaussian(theta_c, E_iso);
+    jet.Gamma0 = math::gaussian_plus_one(theta_c, Gamma0 - 1);
     jet.spreading = spreading;
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = [=](Real phi, Real theta, Real t) {
-            if (theta <= theta_c) {
-                Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 * std::pow(tt, -magnetar->q);
-            } else {
-                return 0.;
-            }
-        };
+        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
     }
 
     return jet;
@@ -60,60 +45,46 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
 Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real duration,
                      std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = [=](Real phi, Real theta) { return E_iso / (1 + fast_pow(theta / theta_c, k)); };
-    jet.Gamma0 = [=](Real phi, Real theta) { return (Gamma0 - 1) / (1 + fast_pow(theta / theta_c, k)) + 1; };
+    jet.eps_k = math::powerlaw(theta_c, E_iso, k);
+    jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, k);
     jet.spreading = spreading;
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = [=](Real phi, Real theta, Real t) {
-            if (theta <= theta_c) {
-                Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 * std::pow(tt, -magnetar->q);
-            } else {
-                return 0.;
-            }
-        };
+        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
     }
 
     return jet;
 }
 
-Ejecta PyTwoComponentJet(Real theta_n, Real E_iso_n, Real Gamma0_n, Real theta_w, Real E_iso_w, Real Gamma0_w,
-                         bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k, bool spreading,
+                         Real duration, std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = [=](Real phi, Real theta) {
-        if (theta <= theta_n) {
-            return E_iso_n;
-        } else if (theta <= theta_w) {
-            return E_iso_w;
-        } else {
-            return 0.;
-        }
-    };
-
-    jet.Gamma0 = [=](Real phi, Real theta) {
-        if (theta <= theta_n) {
-            return Gamma0_n;
-        } else if (theta <= theta_w) {
-            return Gamma0_w;
-        } else {
-            return 1.0;  // Default Lorentz factor outside the jet
-        }
-    };
+    jet.eps_k = math::step_powerlaw(theta_c, E_c, E_w, k);
+    jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma_c - 1, Gamma_w - 1, k);
 
     jet.spreading = spreading;
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = [=](Real phi, Real theta, Real t) {
-            if (theta <= theta_w) {
-                Real tt = 1 + t / magnetar->t_0;
-                return magnetar->L_0 * std::pow(tt, -magnetar->q);
-            } else {
-                return 0.;
-            }
-        };
+        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+    }
+
+    return jet;
+}
+
+Ejecta PyTwoComponentJet(Real theta_c, Real E_iso_c, Real Gamma0_c, Real theta_w, Real E_iso_w, Real Gamma0_w,
+                         bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
+    Ejecta jet;
+    jet.eps_k = math::two_component(theta_c, theta_w, E_iso_c, E_iso_w);
+
+    jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0_c - 1, Gamma0_w - 1);
+
+    jet.spreading = spreading;
+    jet.T0 = duration;
+
+    if (magnetar) {
+        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
     }
 
     return jet;
@@ -126,9 +97,13 @@ Medium PyISM(Real n_ism) {
     return medium;
 }
 
-Medium PyWind(Real A_star) {
+Medium PyWind(Real A_star, Real n_ism, Real n_0) {
     Medium medium;
-    medium.rho = [=](Real phi, Real theta, Real r) { return A_star * 5e11 / (r * r); };
+
+    Real rho_ism = n_ism * 1.67e-24;
+    Real r02 = A_star * 5e11 / (n_0 * 1.67e-24);
+
+    medium.rho = [=](Real phi, Real theta, Real r) { return A_star * 5e11 / (r02 + r * r) + rho_ism; };
     return medium;
 }
 
@@ -293,8 +268,8 @@ void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array
     save_photon_details(syn_ph, detail_dict, suffix);
 }
 
-auto PyModel::details(PyArray const& t_obs_cgs) -> ArrayDict {
-    Array t_obs = t_obs_cgs * unit::sec;
+auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
+    Array t_obs = xt::logspace(std::log10(t_min * unit::sec), std::log10(t_max * unit::sec), 10);
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 

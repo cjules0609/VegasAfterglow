@@ -80,10 +80,27 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
                      std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
+ * @brief Creates a step power-law jet model: a pencil beam core and powerlaw wing with jump at theta_c
+ *
+ * @param theta_c Core angle of the jet [radians]
+ * @param E_c Isotropic-equivalent energy of the core region [erg]
+ * @param Gamma_c Initial Lorentz factor of the core region
+ * @param E_w Isotropic-equivalent energy of the wing region at theta_c [erg]
+ * @param Gamma_w Initial Lorentz factor of the wing region at theta_c
+ * @param k Power-law index
+ * @param spreading Whether to include jet lateral spreading
+ * @param duration Engine activity time [seconds]
+ * @param magnetar Optional magnetar model
+ * @return Ejecta Configured jet with step power-law profile
+ */
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k, bool spreading,
+                         Real duration, std::optional<PyMagnetar> magnetar);
+
+/**
  * @brief Creates a two-component jet model with different properties for narrow and wide components
- * @param theta_n Core angle of the narrow component [radians]
- * @param E_iso_n Isotropic-equivalent energy of the narrow component [erg]
- * @param Gamma0_n Initial Lorentz factor of the narrow component
+ * @param theta_c Core angle of the narrow component [radians]
+ * @param E_iso_c Isotropic-equivalent energy of the narrow component [erg]
+ * @param Gamma0_c Initial Lorentz factor of the narrow component
  * @param theta_w Core angle of the wide component [radians]
  * @param E_iso_w Isotropic-equivalent energy of the wide component [erg]
  * @param Gamma0_w Initial Lorentz factor of the wide component
@@ -92,7 +109,7 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured two-component jet with specified properties
  */
-Ejecta PyTwoComponentJet(Real theta_n, Real E_iso_n, Real Gamma0_n, Real theta_w, Real E_iso_w, Real Gamma0_w,
+Ejecta PyTwoComponentJet(Real theta_c, Real E_iso_c, Real Gamma0_c, Real theta_w, Real E_iso_w, Real Gamma0_w,
                          bool spreading = false, Real duration = 1, std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
@@ -107,9 +124,11 @@ Medium PyISM(Real n_ism);
  * @brief Creates a wind environment with density profile ρ ∝ r^-2
  *
  * @param A_star Wind parameter in units of 5×10^11 g/cm, typical for Wolf-Rayet stars
+ * @param n_ism Number density of the ISM [cm^-3]
+ * @param n_0 Number density of the inner uniform region [cm^-3]
  * @return Medium Configured medium with wind properties
  */
-Medium PyWind(Real A_star);
+Medium PyWind(Real A_star, Real n_ism = 0, Real n_0 = con::inf);
 
 /**
  * @brief Class representing the observer configuration
@@ -232,10 +251,11 @@ class PyModel {
 
     /**
      * @brief Get details of the model configuration
-     *
+     * @param t_min Minimum observer time [seconds]
+     * @param t_max Maximum observer time [seconds]
      * @return ArrayDict Dictionary with model details such as shock, electron and photon grids.
      */
-    ArrayDict details(PyArray const& t);
+    ArrayDict details(Real t_min, Real t_max);
 
    private:
     /**

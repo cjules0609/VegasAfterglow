@@ -31,9 +31,13 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
           py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
-    m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_n"), py::arg("E_iso_n"), py::arg("Gamma0_n"),
+    m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
           py::arg("theta_w"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("spreading") = false,
           py::arg("duration") = 1, py::arg("magnetar") = py::none());
+
+    m.def("StepPowerLawJet", &PyStepPowerLawJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
+          py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("k"), py::arg("spreading") = false, py::arg("duration") = 1,
+          py::arg("magnetar") = py::none());
 
     py::class_<Ejecta>(m, "Ejecta")
         .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("E_iso"),
@@ -43,7 +47,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Medium bindings
     m.def("ISM", &PyISM, py::arg("n_ism"));
 
-    m.def("Wind", &PyWind, py::arg("A_star"));
+    m.def("Wind", &PyWind, py::arg("A_star"), py::arg("n_ism") = 0, py::arg("n_0") = con::inf);
 
     py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc>(), py::arg("rho"));
 
@@ -70,7 +74,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::call_guard<py::gil_scoped_release>())
         .def("specific_flux_sorted_series", &PyModel::specific_flux_sorted_series, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
-        .def("details", &PyModel::details, py::arg("t_obs"), py::call_guard<py::gil_scoped_release>());
+        .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
+             py::call_guard<py::gil_scoped_release>());
 
     //========================================================================================================
     //                                 MCMC bindings
@@ -78,26 +83,36 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Parameters for MCMC modeling
     py::class_<Params>(m, "ModelParams")
         .def(py::init<>())
+        .def_readwrite("theta_v", &Params::theta_v)
+
+        .def_readwrite("n_ism", &Params::n_ism)
+        .def_readwrite("n0", &Params::n0)
+        .def_readwrite("A_star", &Params::A_star)
+
         .def_readwrite("E_iso", &Params::E_iso)
         .def_readwrite("Gamma0", &Params::Gamma0)
         .def_readwrite("theta_c", &Params::theta_c)
-        .def_readwrite("theta_v", &Params::theta_v)
+        .def_readwrite("k", &Params::k)
+        .def_readwrite("tau", &Params::duration)
+
+        .def_readwrite("E_iso_w", &Params::E_iso_w)
+        .def_readwrite("Gamma0_w", &Params::Gamma0_w)
         .def_readwrite("theta_w", &Params::theta_w)
+
+        .def_readwrite("L0", &Params::L0)
+        .def_readwrite("t0", &Params::t0)
+        .def_readwrite("q", &Params::q)
+
         .def_readwrite("p", &Params::p)
         .def_readwrite("eps_e", &Params::eps_e)
         .def_readwrite("eps_B", &Params::eps_B)
-        .def_readwrite("n_ism", &Params::n_ism)
-        .def_readwrite("A_star", &Params::A_star)
         .def_readwrite("xi_e", &Params::xi_e)
-        .def_readwrite("k_jet", &Params::k_jet)
-        .def("__repr__", [](const Params &p) {
-            return "<Params E_iso=" + std::to_string(p.E_iso) + ", Gamma0=" + std::to_string(p.Gamma0) +
-                   ", theta_c=" + std::to_string(p.theta_c) + ", theta_v=" + std::to_string(p.theta_v) +
-                   ", theta_w=" + std::to_string(p.theta_w) + ", p=" + std::to_string(p.p) +
-                   ", eps_e=" + std::to_string(p.eps_e) + ", eps_B=" + std::to_string(p.eps_B) +
-                   ", n_ism=" + std::to_string(p.n_ism) + ", A_star=" + std::to_string(p.A_star) +
-                   ", xi_e=" + std::to_string(p.xi_e) + ", k_jet=" + std::to_string(p.k_jet) + ">";
-        });
+
+        .def_readwrite("p_r", &Params::p_r)
+        .def_readwrite("eps_e_r", &Params::eps_e_r)
+        .def_readwrite("eps_B_r", &Params::eps_B_r)
+        .def_readwrite("xi_e_r", &Params::xi_e_r);
+
     // Parameters for modeling that are not used in the MCMC
     py::class_<ConfigParams>(m, "Setups")
         .def(py::init<>())
@@ -109,12 +124,12 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("phi_resol", &ConfigParams::phi_resol)
         .def_readwrite("theta_resol", &ConfigParams::theta_resol)
         .def_readwrite("rtol", &ConfigParams::rtol)
-        .def("__repr__", [](const ConfigParams &c) {
-            return "<ConfigParams lumi_dist=" + std::to_string(c.lumi_dist) + ", z=" + std::to_string(c.z) +
-                   ", medium='" + c.medium + "', jet='" + c.jet + "', t_resol=" + std::to_string(c.t_resol) +
-                   ", phi_resol=" + std::to_string(c.phi_resol) + ", theta_resol=" + std::to_string(c.theta_resol) +
-                   ", rtol=" + std::to_string(c.rtol) + ">";
-        });
+        .def_readwrite("rvs_shock", &ConfigParams::rvs_shock)
+        .def_readwrite("fwd_SSC", &ConfigParams::fwd_SSC)
+        .def_readwrite("rvs_SSC", &ConfigParams::rvs_SSC)
+        .def_readwrite("IC_cooling", &ConfigParams::IC_cooling)
+        .def_readwrite("KN", &ConfigParams::KN)
+        .def_readwrite("magnetar", &ConfigParams::magnetar);
 
     // MultiBandData bindings
     py::class_<MultiBandData>(m, "ObsData")

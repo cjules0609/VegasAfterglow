@@ -1,4 +1,4 @@
-from .types import ModelParams, Setups, ObsData, VegasMC, FitResult, ParamDef, Scale, TophatJet, GaussianJet, PowerLawJet, TwoComponentJet, ISM, Wind, Medium, Ejecta, Model, Radiation, Observer, Magnetar
+from .types import ModelParams, Setups, ObsData, VegasMC, FitResult, ParamDef, Scale, TophatJet, GaussianJet, PowerLawJet, TwoComponentJet, StepPowerLawJet, ISM, Wind, Medium, Ejecta, Model, Radiation, Observer, Magnetar
 from .runner import Fitter
 
 __all__ = [
@@ -17,6 +17,7 @@ __all__ = [
     "GaussianJet",
     "PowerLawJet",
     "TwoComponentJet",
+    "StepPowerLawJet",
     "Ejecta",
     "Model",
     "Radiation",
