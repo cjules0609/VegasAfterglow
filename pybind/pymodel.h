@@ -70,14 +70,15 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = fal
  * @param theta_c Core angle of the jet [radians]
  * @param E_iso Isotropic-equivalent energy at the center [erg]
  * @param Gamma0 Initial Lorentz factor at the center
- * @param k Power-law index
+ * @param k_e Power-law index for energy
+ * @param k_g Power-law index for Lorentz factor
  * @param spreading Whether to include jet lateral spreading
  * @param duration Engine activity time [seconds]
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with power-law profile
  */
-Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading = false, Real duration = 1,
-                     std::optional<PyMagnetar> magnetar = std::nullopt);
+Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, bool spreading = false,
+                     Real duration = 1, std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
  * @brief Creates a step power-law jet model: a pencil beam core and powerlaw wing with jump at theta_c
@@ -87,14 +88,15 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
  * @param Gamma_c Initial Lorentz factor of the core region
  * @param E_w Isotropic-equivalent energy of the wing region at theta_c [erg]
  * @param Gamma_w Initial Lorentz factor of the wing region at theta_c
- * @param k Power-law index
+ * @param k_e Power-law index for energy
+ * @param k_g Power-law index for Lorentz factor
  * @param spreading Whether to include jet lateral spreading
  * @param duration Engine activity time [seconds]
  * @param magnetar Optional magnetar model
  * @return Ejecta Configured jet with step power-law profile
  */
-Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k, bool spreading,
-                         Real duration, std::optional<PyMagnetar> magnetar);
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k_e, Real k_g,
+                         bool spreading, Real duration, std::optional<PyMagnetar> magnetar);
 
 /**
  * @brief Creates a two-component jet model with different properties for narrow and wide components

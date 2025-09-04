@@ -42,11 +42,11 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
     return jet;
 }
 
-Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreading, Real duration,
+Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, bool spreading, Real duration,
                      std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::powerlaw(theta_c, E_iso, k);
-    jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, k);
+    jet.eps_k = math::powerlaw(theta_c, E_iso, k_e);
+    jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, k_g);
     jet.spreading = spreading;
     jet.T0 = duration;
 
@@ -57,11 +57,11 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k, bool spreadi
     return jet;
 }
 
-Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k, bool spreading,
-                         Real duration, std::optional<PyMagnetar> magnetar) {
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k_e, Real k_g,
+                         bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::step_powerlaw(theta_c, E_c, E_w, k);
-    jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma_c - 1, Gamma_w - 1, k);
+    jet.eps_k = math::step_powerlaw(theta_c, E_c, E_w, k_e);
+    jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma_c - 1, Gamma_w - 1, k_g);
 
     jet.spreading = spreading;
     jet.T0 = duration;

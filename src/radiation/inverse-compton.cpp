@@ -127,10 +127,19 @@ Real compton_cross_section(Real nu) {
     } else if (x > 1e2) {
         return 3. / 8 * con::sigmaT * (log(2 * x) + 0.5) / x;
     } else {
-        Real log_term = log(1 + 2 * x);
-        Real term1 = 1 + 2 * x;
-        return 0.75 * con::sigmaT *
-               ((1 + x) / (x * x * x) * (2 * x * (1 + x) / term1 - log_term) + log_term / (2 * x) -
-                (1 + 3 * x) / (term1 * term1));
+        Real l = std::log1p(2.0 * x);  // log(1+2x)
+        Real invx = 1.0 / x;
+        Real invx2 = invx * invx;
+        Real term1 = 1.0 + 2.0 * x;
+        Real invt1 = 1.0 / term1;
+        Real invt1_2 = invt1 * invt1;
+
+        // ((1+x)/x^3) * (2x(1+x)/(1+2x) - log(1+2x)) + log(1+2x)/(2x) - (1+3x)/(1+2x)^2
+        Real a = (1.0 + x) * invx2 * invx;           // (1+x)/x^3
+        Real b = (2.0 * x * (1.0 + x)) * invt1 - l;  // bracket
+        Real c = 0.5 * l * invx;                     // log_term/(2x)
+        Real d = (1.0 + 3.0 * x) * invt1_2;          // (1+3x)/(1+2x)^2
+
+        return 0.75 * con::sigmaT * (a * b + c - d);
     }
 }

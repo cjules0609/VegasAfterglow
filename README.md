@@ -737,51 +737,59 @@ Use the best-fit parameters to generate model predictions
 ```python
 # Define time and frequency ranges for predictions
 t_out = np.logspace(2, 9, 150)
-bands = [2.4e17, 4.84e14, 1.4e14] 
 
-# Generate light curves with the best-fit model
-lc_best = fitter.light_curves(result.best_params, t_out, bands)
+nu_out = np.logspace(16,20,150)
 
-nu_out = np.logspace(6, 20, 150)
-times = [3000]
+best_params = result.top_k_params[0]
+
+# Generate model light curves at the specified bands using the best-fit parameters
+lc = fitter.specific_flux(best_params, t_out, band)
+
 # Generate model spectra at the specified times using the best-fit parameters
-spec_best = fitter.spectra(result.best_params, nu_out, times)
+spec = fitter.specific_flux(best_params, times, nu_out)
 ```
 
 Now you can plot the best-fit model:
 
 ```python
-def draw_bestfit(t, lc_fit, nu, spec_fit):
-    # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(4.5, 7.5))
-    
-    # Plot light curves
-    shifts = [1, 1, 200]
+# Function to plot model light curves along with observed data
+def draw_bestfit(t,lc_fit, nu, spec_fit):
+    lc_files = ["data/ep.csv", "data/r.csv", "data/vt-r.csv"]
+    spec_files = ["data/ep-spec.csv"]
+    nus = [2.4e17, 4.84e14, 1.4e14]
+    ts = [3000]
+
+    fig =plt.figure(figsize=(4.5, 7.5))
+
+    ax1 = fig.add_subplot(211)
+    ax2 = fig.add_subplot(212)
+
+    shift = [1,1,200]
     colors = ['blue', 'orange', 'green']
-    
-    for i in range(len(lc_files)):
-        df = pd.read_csv(lc_files[i])
-        ax1.errorbar(df["t"], df["Fv_obs"] * shifts[i], df["Fv_err"] * shifts[i], 
-                    fmt='o', color=colors[i], label=lc_files[i])
-        ax1.plot(t, np.array(lc_fit[i]) * shifts[i], color=colors[i], lw=1)
+    for i, file, sft, c in zip(range(len(lc_files)), lc_files, shift, colors ):
+        df = pd.read_csv(file)
+        ax1.errorbar(df["t"], df["Fv_obs"]*sft, df["Fv_err"]*sft, fmt='o',markersize=4,label=file, color=c,markeredgecolor='k', markeredgewidth=.4)
+        ax1.plot(t, np.array(lc_fit[i,:])*sft, color=c,lw=1)
 
-    # Plot spectra
-    for i in range(len(spec_files)):
-        df = pd.read_csv(spec_files[i])
-        ax2.errorbar(df["nu"], df["Fv_obs"] * shifts[i], df["Fv_err"] * shifts[i], 
-                    fmt='o', color=colors[i], label=spec_files[i])
-        ax2.plot(nu, np.array(spec_fit[0]) * shifts[i], color=colors[i], lw=1)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlabel('t [s]')
+    ax1.set_ylabel(r'$F_\nu$ [erg/cm$^2$/s/Hz]')
+    ax1.legend()
+  
+    for i, file, sft, c in zip(range(len(spec_files)), spec_files, shift, colors ):
+        df = pd.read_csv(file)
+        ax2.errorbar(df["nu"], df["Fv_obs"]*sft, df["Fv_err"]*sft, fmt='o',markersize=4,label=file, color=c,markeredgecolor='k', markeredgewidth=.4)
+        ax2.plot(nu, np.array(spec_fit[:,i])*sft, color=c,lw=1)
 
-    # Configure axes
-    for ax, xlabel, ylabel in [(ax1, 't [s]', r'$F_\nu$ [erg/cm$^2$/s/Hz]'),
-                              (ax2, r'$\nu$ [Hz]', r'$F_\nu$ [erg/cm$^2$/s/Hz]')]:
-        ax.set_xscale('log'); ax.set_yscale('log')
-        ax.set_xlabel(xlabel); ax.set_ylabel(ylabel)
-        ax.legend()
-
+    ax2.set_xscale('log')
+    ax2.set_yscale('log')
+    ax2.set_xlabel(r'$\nu$ [Hz]')
+    ax2.set_ylabel(r'$F_\nu$ [erg/cm$^2$/s/Hz]')
+    ax2.legend()
     plt.tight_layout()
 
-draw_bestfit(t_out, lc_best, nu_out, spec_best)
+draw_bestfit(t_out, lc, nu_out, spec)
 ```
 
 Corner plots are essential for visualizing parameter correlations and posterior distributions:

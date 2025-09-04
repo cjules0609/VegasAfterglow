@@ -195,9 +195,9 @@ void test_FRS() {
 }
 
 int main() {
-    for (Real i = 1; i < 10;) {
+    for (Real i = 1; i < 30;) {
         test_ic(i);
-        i += 0.1;
+        i += 0.01;
     }
 
     return 0;

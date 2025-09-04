@@ -193,7 +193,8 @@ Power-Law Jet
         theta_c=0.05,         # Core angular size (radians)
         E_iso=1e53,           # Isotropic-equivalent energy (ergs)
         Gamma0=300,           # Initial Lorentz factor
-        k=2.0                 # Power-law index
+        k_e=2.0,              # Power-law index for energy angular dependence
+        k_g=2.0               # Power-law index for Lorentz factor angular dependence
     )
 
     #..other settings
@@ -401,44 +402,6 @@ MCMC Parameter Fitting
 
 .. code-block:: python
 
-    from VegasAfterglow import ObsData, Fitter, ParamDef, Scale
-
-    # Create observation data object
-    data = ObsData()
-
-    # Add some observational data (light curves)
-    t_data = np.array([1e3, 2e3, 5e3, 1e4, 2e4])  # Time in seconds
-    flux_data = np.array([1e-26, 8e-27, 5e-27, 3e-27, 2e-27])  # Specific flux
-    flux_err = np.array([1e-28, 8e-28, 5e-28, 3e-28, 2e-28])  # Flux error
     
-    # Add a light curve at optical frequency (5e14 Hz)
-    data.add_light_curve(nu=5e14, t=t_data, flux=flux_data, flux_err=flux_err)
-    
-    # Define parameters with priors
-    params = [
-        ParamDef("E_iso",      1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
-        ParamDef("Gamma0",        5,  1000,  Scale.LOG),       # Lorentz factor at the core
-        ParamDef("theta_c",     0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
-        ParamDef("theta_v",     0.0,   0.0,  Scale.FIXED),     # Viewing angle [rad]
-        ParamDef("p",             2,     3,  Scale.LINEAR),    # Shocked electron power law index
-        ParamDef("eps_e",      1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
-        ParamDef("eps_B",      1e-4,   0.5,  Scale.LOG),       # Magnetic field energy fraction
-        ParamDef("A_star",     1e-3,     1,  Scale.LOG),       # Wind parameter
-        ParamDef("xi_e",       1e-3,     1,  Scale.LOG),       # Electron acceleration fraction
-    ]
-    
-    # Create the fitter with default model setup
-    fitter = Fitter(data=data, params=params)
-    
-    # Run MCMC
-    samples, log_probs = fitter.run_mcmc(
-        n_walkers=32,  # Number of walkers
-        n_steps=1000,  # Number of steps per walker
-        n_burn=200,    # Number of burn-in steps to discard
-        progress=True  # Show progress bar
-    )
-    
-    # Plot the posterior distributions
-    fitter.plot_corner()
 
 

@@ -260,10 +260,21 @@ void ICPhoton<Electrons, Photons>::generate_grid() {
 
     logspace_boundary_center(std::log2(gamma_min), std::log2(gamma_max), gamma_size, gamma, dgamma);
 
-    I_nu = Array({nu_size}, -1);
-    column_den = Array({gamma_size}, -1);
+    // I_nu = Array({nu_size}, -1);
+    // column_den = Array({gamma_size}, -1);
     IC_tab = MeshGrid({gamma_size, nu_size}, -1);
     generated = true;
+
+    I_nu = Array::from_shape({nu_size});
+    column_den = Array::from_shape({gamma_size});
+
+    for (size_t i = 0; i < gamma_size; ++i) {
+        column_den(i) = electrons.compute_column_den(gamma(i));
+    }
+
+    for (size_t j = 0; j < nu_size; ++j) {
+        I_nu(j) = photons.compute_I_nu(nu0(j));
+    }
 }
 
 template <typename Electrons, typename Photons>
@@ -275,48 +286,43 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
     size_t gamma_size = gamma.size();
     size_t nu_size = nu0.size();
 
-    for (int i = gamma_size - 1; i >= 0; --i) {
+    const auto sigma =
+        KN ? +[](Real nu_comv) { return compton_cross_section(nu_comv); } : +[](Real) { return con::sigmaT; };
+
+    for (size_t i = gamma_size; i-- > 0;) {
         Real gamma_i = gamma(i);
-
         Real upscatter = 4 * gamma_i * gamma_i * IC_x0;
+        Real Ndgamma = column_den(i) * dgamma(i);
 
-        if (column_den(i) < 0) {
-            column_den(i) = electrons.compute_column_den(gamma_i);
-        }
-        int j = nu_size - 1;
-        for (; j >= 0; --j) {
+        if (nu > upscatter * nu0.back()) continue;
+
+        bool extrapolate = true;
+        for (size_t j = nu_size; j-- > 0;) {
             Real nu0_j = nu0(j);
-            if (I_nu(j) < 0) {
-                I_nu(j) = photons.compute_I_nu(nu0_j);
-            }
+
             if (IC_tab(i, j) < 0) {  // integral at (gamma(i), nu(j)) has not been evaluated
                 Real nu_comv = gamma_i * nu0_j;
-                Real sigma = con::sigmaT;
-                if (KN) {
-                    sigma = compton_cross_section(nu_comv);
-                }
-                Real grid_value = column_den(i) * I_nu(j) * sigma / (4 * nu_comv * nu_comv) * dnu0(j) * dgamma(i);
-                if (j != nu_size - 1) {
-                    IC_tab(i, j) = IC_tab(i, j + 1) + grid_value;
-                } else {
-                    IC_tab(i, j) = grid_value;
-                }
+                Real inv = 1 / nu_comv;
+
+                Real grid_value = I_nu(j) * sigma(nu_comv) * inv * inv * dnu0(j);
+                IC_tab(i, j) = (j != nu_size - 1) ? (IC_tab(i, j + 1) + grid_value) : grid_value;
             }
 
             if (upscatter * nu0_j < nu) {
-                if (j != nu_size - 1) {
-                    IC_I_nu += IC_tab(i, j + 1) + (IC_tab(i, j) - IC_tab(i, j + 1)) / (nu0(j + 1) - nu0(j)) *
-                                                      (nu0(j + 1) - nu / upscatter);
-                }
+                IC_I_nu += Ndgamma * (IC_tab(i, j + 1) + (IC_tab(i, j) - IC_tab(i, j + 1)) / (nu0(j + 1) - nu0(j)) *
+                                                             (nu0(j + 1) - nu / upscatter));
+
+                extrapolate = false;
                 break;
             }
         }
-        if (j < 0) {
-            IC_I_nu += IC_tab(i, 0) + (IC_tab(i, 0) - IC_tab(i, 1)) / (nu0(1) - nu0(0)) * (nu0(0) - nu / upscatter);
+        if (extrapolate) {
+            IC_I_nu += Ndgamma *
+                       (IC_tab(i, 0) + (IC_tab(i, 0) - IC_tab(i, 1)) / (nu0(1) - nu0(0)) * (nu0(0) - nu / upscatter));
         }
     }
 
-    return IC_I_nu * nu;
+    return IC_I_nu * nu / 4;
 }
 
 template <typename Electrons, typename Photons>

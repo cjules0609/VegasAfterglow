@@ -15,12 +15,16 @@
 #include "mesh.h"
 #include "pybind.h"
 #include "utilities.h"
+
+using ArrayDict = std::unordered_map<std::string, xt::xarray<Real>>;
 struct MultiBandData {
     double estimate_chi2() const;
 
-    void add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err);
+    void add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
+                         std::optional<PyArray> weights);
 
-    void add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err);
+    void add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err,
+                      std::optional<PyArray> weights);
 
     void fill_data_arrays();
 
@@ -28,10 +32,11 @@ struct MultiBandData {
     Array frequencies;
     Array fluxes;
     Array errors;
+    Array weights;
     Array model_fluxes;
 
    private:
-    std::vector<std::tuple<double, double, double, double>> tuple_data;
+    std::vector<std::tuple<double, double, double, double, double>> tuple_data;
 };
 
 struct Params {
@@ -44,7 +49,8 @@ struct Params {
     double E_iso{1e52};
     double Gamma0{300};
     double theta_c{0.1};
-    double k{2};
+    double k_e{2};
+    double k_g{2};
     double duration{1 * unit::sec};
 
     double E_iso_w{1e52};
@@ -89,8 +95,7 @@ struct MultiBandModel {
 
     void configure(ConfigParams const& param);
     double estimate_chi2(Params const& param);
-    PyGrid light_curves(Params const& param, PyArray const& t, PyArray const& nu);
-    PyGrid spectra(Params const& param, PyArray const& nu, PyArray const& t);
+    PyGrid specific_flux(Params const& param, PyArray const& t, PyArray const& nu);
 
    private:
     template <typename View>
@@ -121,10 +126,9 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Arra
     // create model
     Medium medium;
     if (config.medium == "ism") {
-        Real n_ism = param.n_ism / unit::cm3;
-        medium.rho = evn::ISM(n_ism);
+        medium.rho = evn::ISM(param.n_ism / unit::cm3);
     } else if (config.medium == "wind") {
-        medium.rho = evn::wind(param.A_star, param.n_ism, param.n0);
+        medium.rho = evn::wind(param.A_star, param.n_ism / unit::cm3, param.n0 / unit::cm3);
     } else {
         std::cerr << "Error: Unknown medium type" << std::endl;
     }
@@ -138,14 +142,14 @@ void MultiBandModel::build_system(Params const& param, Array const& t_eval, Arra
         jet.eps_k = math::gaussian(theta_c, eps_iso);
         jet.Gamma0 = math::gaussian_plus_one(theta_c, Gamma0 - 1);
     } else if (config.jet == "powerlaw") {
-        jet.eps_k = math::powerlaw(theta_c, eps_iso, param.k);
-        jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, param.k);
+        jet.eps_k = math::powerlaw(theta_c, eps_iso, param.k_e);
+        jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, param.k_g);
     } else if (config.jet == "twocomponent") {
         jet.eps_k = math::two_component(theta_c, theta_w, eps_iso, eps_iso_w);
         jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0 - 1, Gamma0_w - 1);
     } else if (config.jet == "steppowerlaw") {
-        jet.eps_k = math::step_powerlaw(theta_c, eps_iso, eps_iso_w, param.k);
-        jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma0 - 1, Gamma0_w - 1, param.k);
+        jet.eps_k = math::step_powerlaw(theta_c, eps_iso, eps_iso_w, param.k_e);
+        jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma0 - 1, Gamma0_w - 1, param.k_g);
     } else {
         std::cerr << "Error: Unknown jet type" << std::endl;
     }

@@ -28,16 +28,16 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     m.def("GaussianJet", &PyGaussianJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
           py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
-    m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k"),
-          py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
+    m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k_e"),
+          py::arg("k_g"), py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
           py::arg("theta_w"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("spreading") = false,
           py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     m.def("StepPowerLawJet", &PyStepPowerLawJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
-          py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("k"), py::arg("spreading") = false, py::arg("duration") = 1,
-          py::arg("magnetar") = py::none());
+          py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("k_e"), py::arg("k_g"), py::arg("spreading") = false,
+          py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
     py::class_<Ejecta>(m, "Ejecta")
         .def(py::init<BinaryFunc, BinaryFunc, BinaryFunc, TernaryFunc, TernaryFunc, bool, Real>(), py::arg("E_iso"),
@@ -92,7 +92,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("E_iso", &Params::E_iso)
         .def_readwrite("Gamma0", &Params::Gamma0)
         .def_readwrite("theta_c", &Params::theta_c)
-        .def_readwrite("k", &Params::k)
+        .def_readwrite("k_e", &Params::k_e)
+        .def_readwrite("k_g", &Params::k_g)
         .def_readwrite("tau", &Params::duration)
 
         .def_readwrite("E_iso_w", &Params::E_iso_w)
@@ -135,9 +136,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     py::class_<MultiBandData>(m, "ObsData")
         .def(py::init<>())
         .def("add_light_curve", &MultiBandData::add_light_curve, py::arg("nu_cgs"), py::arg("t_cgs"),
-             py::arg("Fnu_cgs"), py::arg("Fnu_err"))
+             py::arg("Fnu_cgs"), py::arg("Fnu_err"), py::arg("weights") = py::none())
         .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t_cgs"), py::arg("nu_cgs"), py::arg("Fnu_cgs"),
-             py::arg("Fnu_err"));
+             py::arg("Fnu_err"), py::arg("weights") = py::none());
 
     // MultiBandModel bindings
     py::class_<MultiBandModel>(m, "VegasMC")
@@ -145,8 +146,6 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def("set", &MultiBandModel::configure, py::arg("param"))
         .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
              py::call_guard<py::gil_scoped_release>())
-        .def("light_curves", &MultiBandModel::light_curves, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"),
-             py::call_guard<py::gil_scoped_release>())
-        .def("spectra", &MultiBandModel::spectra, py::arg("param"), py::arg("nu_cgs"), py::arg("t_cgs"),
+        .def("specific_flux", &MultiBandModel::specific_flux, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"),
              py::call_guard<py::gil_scoped_release>());
 }

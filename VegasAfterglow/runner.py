@@ -146,7 +146,7 @@ class Fitter:
         cfg.phi_resol, cfg.theta_resol, cfg.t_resol = resolution
         return cfg
 
-    def light_curves(
+    def specific_flux(
         self,
         best_params: np.ndarray,
         t: np.ndarray,
@@ -178,38 +178,4 @@ class Fitter:
 
         model = VegasMC(self.data)
         model.set(cfg_local)
-        return model.light_curves(p, t, nu)
-
-    def spectra(
-        self,
-        best_params: np.ndarray,
-        nu: np.ndarray,
-        t: np.ndarray,
-        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10)
-    ) -> np.ndarray:
-        """
-        Compute spectra at the best-fit parameters.
-
-        Parameters
-        ----------
-        best_params : 1D numpy array
-            The vector returned in FitResult.best_params.
-        nu : 1D numpy array
-            Frequencies at which to evaluate.
-        t : 1D numpy array
-            Times at which to evaluate.
-
-        Returns
-        -------
-        array_like
-            Shape (t.size, n_nu)
-        """
-        if self._to_params is None:
-            raise RuntimeError("Call .fit(...) before .spectra()")
-
-        cfg_local = self._with_resolution(resolution)
-        p = self._to_params(best_params)
-
-        model = VegasMC(self.data)
-        model.set(cfg_local)
-        return model.spectra(p, nu, t)
+        return model.specific_flux(p, t, nu)

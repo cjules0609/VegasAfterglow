@@ -20,26 +20,42 @@ double MultiBandData::estimate_chi2() const {
         double error = errors(i);
         if (error == 0) continue;
         double diff = fluxes(i) - model_fluxes(i);
-        chi_square += (diff * diff) / (error * error);
+        chi_square += weights(i) * (diff * diff) / (error * error);
     }
     return chi_square;
 }
 
-void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err) {
+void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
+                                    std::optional<PyArray> weights) {
     assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
+
+    Array w = xt::ones<Real>({t.size()});
+
+    if (weights) {
+        w = *weights;
+        assert(t.size() == w.size() && "weights array inconsistent length!");
+    }
 
     for (size_t i = 0; i < t.size(); i++) {
         tuple_data.push_back(std::make_tuple(t(i) * unit::sec, nu * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
-                                             Fv_err(i) * unit::flux_den_cgs));
+                                             Fv_err(i) * unit::flux_den_cgs, w(i)));
     }
 }
 
-void MultiBandData::add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err) {
+void MultiBandData::add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err,
+                                 std::optional<PyArray> weights) {
     assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
+
+    Array w = xt::ones<Real>({nu.size()});
+
+    if (weights) {
+        w = *weights;
+        assert(nu.size() == w.size() && "weights array inconsistent length!");
+    }
 
     for (size_t i = 0; i < nu.size(); i++) {
         tuple_data.push_back(std::make_tuple(t * unit::sec, nu(i) * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
-                                             Fv_err(i) * unit::flux_den_cgs));
+                                             Fv_err(i) * unit::flux_den_cgs, w(i)));
     }
 }
 
@@ -52,14 +68,19 @@ void MultiBandData::fill_data_arrays() {
     fluxes = Array::from_shape({len});
     errors = Array::from_shape({len});
     model_fluxes = Array::from_shape({len});
+    weights = Array::from_shape({len});
 
+    Real weight_sum = 0;
     for (size_t i = 0; i < len; ++i) {
         times(i) = std::get<0>(tuple_data[i]);
         frequencies(i) = std::get<1>(tuple_data[i]);
         fluxes(i) = std::get<2>(tuple_data[i]);
         errors(i) = std::get<3>(tuple_data[i]);
+        weights(i) = std::get<4>(tuple_data[i]);
         model_fluxes(i) = 0;  // Placeholder for model fluxes
+        weight_sum += weights(i);
     }
+    weights /= (weight_sum / len);
 }
 
 MultiBandModel::MultiBandModel(MultiBandData const& data) : obs_data(data) {
@@ -78,7 +99,7 @@ double MultiBandModel::estimate_chi2(Params const& param) {
     return obs_data.estimate_chi2();
 }
 
-auto MultiBandModel::light_curves(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
+auto MultiBandModel::specific_flux(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
     Array t_bins = t * unit::sec;
 
     MeshGrid F_nu = MeshGrid::from_shape({nu.size(), t.size()});
@@ -92,20 +113,4 @@ auto MultiBandModel::light_curves(Params const& param, PyArray const& t, PyArray
     // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
     pybind11::gil_scoped_acquire acquire;
     return F_nu / unit::flux_den_cgs;
-}
-
-auto MultiBandModel::spectra(Params const& param, PyArray const& nu, PyArray const& t) -> PyGrid {
-    Array t_bins = t * unit::sec;
-
-    MeshGrid F_nu = MeshGrid::from_shape({nu.size(), t.size()});
-
-    for (size_t i = 0; i < nu.size(); ++i) {
-        Array nus = Array({t.size()}, nu(i) * unit::Hz);
-        auto view = xt::view(F_nu, i, xt::all());
-        build_system(param, t_bins, nus, view);
-    }
-
-    // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
-    pybind11::gil_scoped_acquire acquire;
-    return xt::transpose(F_nu / unit::flux_den_cgs);
 }
