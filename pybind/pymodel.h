@@ -243,13 +243,16 @@ class PyModel {
     ArrayDict specific_flux_series(PyArray const& t, PyArray const& nu);
 
     /**
-     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, sorted by t_i.
+     * @brief Calculate specific flux at given time and frequency (t_i,nu_i) series, with exposure time.
      *
      * @param t Observer time array [seconds]
      * @param nu Observer frequency array [Hz]
+     * @param expo_time Exposure time array [seconds]
+     * @param num_points Number of points to sample within each exposure time
      * @return FluxDict Dictionary with synchrotron and IC flux components
      */
-    ArrayDict specific_flux_sorted_series(PyArray const& t, PyArray const& nu);
+    ArrayDict specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
+                                             size_t num_points = 10);
 
     /**
      * @brief Get details of the model configuration
@@ -297,8 +300,8 @@ class PyModel {
      * @param detail_dict Output detail dictionary
      * @param suffix Key suffix for detail components
      */
-    void single_shock_details(Shock const& shock, Coord const& coord, Array const& t, Observer& obs, PyRadiation rad,
-                              ArrayDict& detail_dict, std::string suffix);
+    void single_evo_details(Shock const& shock, Coord const& coord, Array const& t, Observer& obs, PyRadiation rad,
+                            ArrayDict& detail_dict, std::string suffix);
 
     Ejecta jet;                              ///< Jet model
     Medium medium;                           ///< Circumburst medium

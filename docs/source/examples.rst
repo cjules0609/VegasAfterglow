@@ -220,6 +220,27 @@ Two-Component Jet
     #..other settings
     model = Model(jet=jet, ...)
 
+Step Power-Law Jet
+^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    from VegasAfterglow import StepPowerLawJet
+
+    # Create a step power-law structured jet (uniform core with sharp transition)
+    jet = StepPowerLawJet(
+        theta_c=0.05,        # Core angular size (radians)
+        E_iso_c=1e53,        # Isotropic-equivalent energy of the core component (ergs)
+        Gamma0_c=300,        # Initial Lorentz factor of the core component
+        E_iso_w=1e52,        # Isotropic-equivalent energy of the wide component (ergs)
+        Gamma0_w=100,        # Initial Lorentz factor of the wide component
+        k_e=2.0,             # Power-law index for energy angular dependence
+        k_g=2.0              # Power-law index for Lorentz factor angular dependence
+    )
+
+    #..other settings
+    model = Model(jet=jet, ...)
+
 Jet with Spreading
 ^^^^^^^^^^^^^
 
@@ -394,13 +415,7 @@ Self-Synchrotron Compton Radiation
 
     (IC_cooling = True, KN = True, SSC = True): The IC radiation is calculated based on synchrotron spectrum with both IC cooling and Klein-Nishina correction.
   
-Advanced Features
------------------
 
-MCMC Parameter Fitting
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
 
     
 

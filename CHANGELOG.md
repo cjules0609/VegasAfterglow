@@ -5,6 +5,58 @@ All notable changes to VegasAfterglow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.0] - 2025-09-06
+
+### Major Features & Enhancements
+
+#### **Advanced MCMC Framework**
+- **More model availability**: All built-in jet and medium models now supported in MCMC fitting, including reverse shock, inverse Compton, magnetar injection and etc. See documentations for detials.
+
+#### **Adaptive Mesh Generation**
+- **Dynamic Grid Optimization**: New adaptive angular grid generation based on jet properties and viewing angles. Grid points distributed according to Doppler boosting factors for optimal efficiency
+- **Performance Gains**: ~5x faster convergence for reverse shocks.
+
+#### **New Jet Models**
+- **StepPowerLawJet**: Uniform core with sharp transition to power-law wings for realistic jet structures
+- **Enhanced TwoComponentJet**: Separate narrow and wide components with independent energy and Lorentz factor profiles
+- **Improved PowerLawJet**: Split power-law indices for energy (`k_e`) and Lorentz factor (`k_g`) angular dependence
+
+### **Performance & Computational Improvements**
+
+#### **Shock Physics Enhancements**
+- **Variable Naming Standardization**: Major refactoring for clarity (`EAT_fwd` → `t_obs_fwd`, `Gamma_rel` → `Gamma_th`)
+- **Reverse Shock Optimization**: Major code refactoring for reverse shock dynamics. A unified model for shock crossing and post-crossing evolution.
+- **Better Crossing Dynamics**: Track the internal energy evolution during shock crossing for improved accuracy with more accurate shock heating and adiabatic cooling. -- `The adiabatic cooling and detailed shock heating treatment lead to even weaker reverse shock emission`.
+
+#### **Numerical & Memory Optimizations**
+- **Memory Efficiency**: Reduced memory footprint through optimized array operations and memory access patterns
+- **Grid Pre-computation**: Enhanced caching strategies for frequently used calculations
+
+###  **Enhanced Python Interface**
+
+#### **Data Management Improvements**
+- **MultiBandData Redesign**: Unified handling of light curves and spectra with flexible weighting
+- **Series Calculations**: New methods for calculating flux at specific time-frequency pairs
+- **Memory-Efficient Storage**: Optimized data structures for large multi-wavelength datasets
+
+###  **Development & Build System**
+
+#### **Code Quality Enhancements**
+- **Enhanced Template System**: Improved compile-time type checking and memory management
+- **Better Documentation**: Comprehensive API documentation with detailed parameter descriptions
+- **Updated Examples**: New MCMC tutorials with real data fitting demonstrations
+
+### **API Changes & Migration**
+
+#### **Parameter Interface Updates**
+- **Magnetar Parameters**: Consistent `L0/t0` naming (changed from `L_0/t_0`) for improved usability
+- **Resolution Parameters**: Default resolution changed to `(0.3, 1, 10)` for optimal performance/accuracy balance
+
+---
+
+**Migration Notes**: This release includes some API changes. Most existing code will work with minimal modifications. See the documentation for detailed migration guidance.
+
+
 ## [v0.2.8] - 2025-08-15
 
 ### Improved
@@ -249,6 +301,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Features |
 |---------|--------------|--------------|
+| v0.3.0  | 2025-09-06   | **Major Release**: Advanced MCMC framework, adaptive mesh generation, new jet models, 3-10x performance improvements |
 | v0.2.8  | 2025-08-15   | Inverse Compton performance optimization (~10x), interface improvements |
 | v0.2.7  | 2025-07-31   | Internal quantities evolution interface, performance fixes |
 | v0.2.6  | 2025-07-19   | Two-component jet support |

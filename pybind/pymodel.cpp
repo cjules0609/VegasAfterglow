@@ -11,6 +11,7 @@
 #include <numeric>
 
 #include "afterglow.h"
+#include "xtensor/misc/xsort.hpp"
 
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
                    std::optional<PyMagnetar> magnetar) {
@@ -245,8 +246,8 @@ void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std:
     detail_dict["I_nu_max" + suffix] /= (unit::erg / (unit::Hz * unit::sec * unit::cm2));
 }
 
-void PyModel::single_shock_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,
-                                   PyRadiation rad, ArrayDict& detail_dict, std::string suffix) {
+void PyModel::single_evo_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,
+                                 PyRadiation rad, ArrayDict& detail_dict, std::string suffix) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
     detail_dict["t_obs" + suffix] = obs.time / unit::sec;
@@ -286,7 +287,7 @@ auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
 
         save_shock_details(fwd_shock, details_dict, "_fwd");
 
-        single_shock_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
 
         return details_dict;
     } else {
@@ -297,70 +298,105 @@ auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
 
         save_shock_details(rvs_shock, details_dict, "_rvs");
 
-        single_shock_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
 
-        single_shock_details(rvs_shock, coord, t_obs, observer, rvs_rad, details_dict, "_rvs");
+        single_evo_details(rvs_shock, coord, t_obs, observer, rvs_rad, details_dict, "_rvs");
 
         return details_dict;
     }
 }
 
-auto PyModel::specific_flux_sorted_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    Array t_obs = t * unit::sec;
-    Array nu_obs = nu * unit::Hz;
-    bool serilized = true;
-
-    if (t_obs.size() != nu_obs.size()) {
-        throw std::invalid_argument(
-            "time and frequency arrays must have the same size\n"
-            "If you intend to get matrix-like output, use the generic `specific_flux` instead");
+template <typename Array>
+bool is_ascending(Array const& arr) {
+    for (size_t i = 1; i < arr.size(); ++i) {
+        if (arr(i) < arr(i - 1)) {
+            return false;
+        }
     }
-
-    return compute_specific_flux(t_obs, nu_obs, serilized);
+    return true;
 }
 
 auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    Array t_obs = t * unit::sec;
-    Array nu_obs = nu * unit::Hz;
-    bool serilized = true;
-
-    if (t_obs.size() != nu_obs.size()) {
+    if (t.size() != nu.size()) {
         throw std::invalid_argument(
             "time and frequency arrays must have the same size\n"
             "If you intend to get matrix-like output, use the generic `specific_flux` instead");
+    } else if (is_ascending(t) == false) {
+        throw std::invalid_argument("time array must be in ascending order");
     }
 
-    // Create sorted indices to handle random order
-    std::vector<size_t> sorted_indices(t_obs.size());
-    std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
-    std::sort(sorted_indices.begin(), sorted_indices.end(),
-              [&t_obs](size_t i, size_t j) { return t_obs(i) < t_obs(j); });
+    Array t_obs = t * unit::sec;
+    Array nu_obs = nu * unit::Hz;
+    bool serialized = true;
 
-    // Create sorted arrays
-    Array t_sorted = xt::zeros<Real>({t_obs.size()});
-    Array nu_sorted = xt::zeros<Real>({nu_obs.size()});
-    for (size_t i = 0; i < sorted_indices.size(); ++i) {
-        t_sorted(i) = t_obs(sorted_indices[i]);
-        nu_sorted(i) = nu_obs(sorted_indices[i]);
+    return compute_specific_flux(t_obs, nu_obs, serialized);
+}
+
+auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
+                                             size_t num_points) -> ArrayDict {
+    if (t.size() != nu.size() || t.size() != expo_time.size()) {
+        throw std::invalid_argument("time, frequency, and exposure time arrays must have the same size\n");
+    } else if (num_points < 2) {
+        throw std::invalid_argument("num_points must be at least 2 to sample within each exposure time\n");
     }
 
-    // Compute flux with sorted arrays
-    ArrayDict sorted_flux_dict = compute_specific_flux(t_sorted, nu_sorted, serilized);
+    size_t total_points = t.size() * num_points;
+    Array t_obs = Array::from_shape({total_points});
+    Array nu_obs = Array::from_shape({total_points});
+    std::vector<size_t> idx(total_points);
 
-    // Reorder results back to original order
-    ArrayDict flux_dict;
-    for (auto const& [key, sorted_flux] : sorted_flux_dict) {
-        Array reordered_flux = xt::zeros<Real>({sorted_flux.size()});
-        for (size_t i = 0; i < sorted_indices.size(); ++i) {
-            reordered_flux(sorted_indices[i]) = sorted_flux(i);
+    for (size_t i = 0, j = 0; i < t.size() && j < total_points; ++i) {
+        Real t_start = t(i);
+        Real dt = expo_time(i) / (num_points - 1);
+
+        for (size_t k = 0; k < num_points && j < total_points; ++k, ++j) {
+            t_obs(j) = t_start + k * dt;
+            nu_obs(j) = nu(i);
+            idx[j] = i;
         }
-        flux_dict[key] = reordered_flux;
     }
 
-    return flux_dict;
+    std::vector<size_t> sort_indices(total_points);
+    std::iota(sort_indices.begin(), sort_indices.end(), 0);
+    std::sort(sort_indices.begin(), sort_indices.end(), [&t_obs](size_t i, size_t j) { return t_obs(i) < t_obs(j); });
+
+    Array t_obs_sorted = Array::from_shape({total_points});
+    Array nu_obs_sorted = Array::from_shape({total_points});
+    std::vector<size_t> idx_sorted(idx.size());
+
+    for (size_t i = 0; i < sort_indices.size(); ++i) {
+        size_t orig_idx = sort_indices[i];
+        t_obs_sorted(i) = t_obs(orig_idx);
+        nu_obs_sorted(i) = nu_obs(orig_idx);
+        idx_sorted[i] = idx[orig_idx];
+    }
+
+    t_obs_sorted *= unit::sec;
+    nu_obs_sorted *= unit::Hz;
+
+    bool serialized = true;
+
+    auto result = compute_specific_flux(t_obs_sorted, nu_obs_sorted, serialized);
+
+    for (auto& [key, val] : result) {
+        Array summed = xt::zeros<Real>({t.size()});
+
+        for (size_t j = 0; j < val.size(); j++) {
+            size_t orig_time_idx = idx_sorted[j];
+            summed(orig_time_idx) += val(j);
+        }
+
+        summed /= static_cast<Real>(num_points);
+        result[key] = summed;
+    }
+    return result;
 }
 
 auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> ArrayDict {
+    if (is_ascending(t) == false) {
+        throw std::invalid_argument("time array must be in ascending order");
+    }
+
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
     bool return_trace = false;

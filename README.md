@@ -12,7 +12,7 @@
 
 <div align="left">
 
-**[Latest Release Notes](CHANGELOG.md#v028---2025-08-15)** | **[Full Changelog](CHANGELOG.md)** | **[Install Now](#installation)**
+**[Latest Release Notes](CHANGELOG.md#v030---2025-09-06)** | **[Full Changelog](CHANGELOG.md)** | **[Install Now](#installation)**
 </div>
 
 **VegasAfterglow** is a high-performance C++ framework with a user-friendly Python interface designed for the comprehensive modeling of afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations.
@@ -604,12 +604,14 @@ t_data = [1e3, 2e3, 5e3, 1e4, 2e4]  # Time in seconds
 flux_data = [1e-26, 8e-27, 5e-27, 3e-27, 2e-27]  # Specific flux in erg/cm²/s/Hz
 flux_err = [1e-28, 8e-28, 5e-28, 3e-28, 2e-28]  # Specific flux error in erg/cm²/s/Hz
 data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err)
+# You can also assign weights to each data point to account for systematic uncertainties or correlations. You don't need to worry about the weights' normalization, the code will normalize them automatically.
+#data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err, weights=np.ones(len(t_data)))
 
 # For spectra
 nu_data = [...]  # Frequencies in Hz
 spectrum_data = [...] # Specific flux values in erg/cm²/s/Hz
 spectrum_err = [...]   # Specific flux errors in erg/cm²/s/Hz
-data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_err)
+data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_err, weights=np.ones(len(nu_data)))
 ```
 
 ```python
@@ -636,7 +638,7 @@ for t, fname in zip(times, spec_files):
 
 > **Note:** The `ObsData` interface is designed to be flexible. You can mix and match different data sources, and add multiple light curves at different frequencies as well as multiple spectra at different times.
 
-The `Setups` class defines the global properties and environment for your model. These settings remain fixed during the MCMC process.
+The `Setups` class defines the global properties and environment for your model. These settings remain fixed during the MCMC process. Check the [documentation](https://yihanwangastro.github.io/VegasAfterglow/docs/index.html) for all available options.
 
 ```python
 cfg = Setups()
@@ -646,8 +648,8 @@ cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]
 cfg.z = 1.58               # Redshift
 
 # Physical model configuration
-cfg.medium = "wind"        # Ambient medium: "wind", "ism" (Interstellar Medium) or "user" (user-defined)
-cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
+cfg.medium = "wind"        # Ambient medium: "wind", "ism", etc. (see documentation)
+cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat", etc. (see documentation)
 ```
 
 These settings affect how the model is calculated but are not varied during the MCMC process.
@@ -680,7 +682,7 @@ mc_params = [
 - `Scale.FIXED`: Keep parameter fixed at the initial value - use for parameters you don't want to vary
 
 **Parameter Choices:**
-The parameters you include depend on your model configuration:
+The parameters you include depend on your model configuration (See documentation for all options):
 
 - For "wind" medium: use `A_star` parameter
 - For "ISM" medium: use `n_ism` parameter instead

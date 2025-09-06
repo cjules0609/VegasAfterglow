@@ -72,8 +72,8 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::call_guard<py::gil_scoped_release>())
         .def("specific_flux_series", &PyModel::specific_flux_series, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
-        .def("specific_flux_sorted_series", &PyModel::specific_flux_sorted_series, py::arg("t"), py::arg("nu"),
-             py::call_guard<py::gil_scoped_release>())
+        .def("specific_flux_series_with_expo", &PyModel::specific_flux_series_with_expo, py::arg("t"), py::arg("nu"),
+             py::arg("expo_time"), py::arg("num_points") = 10, py::call_guard<py::gil_scoped_release>())
         .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
              py::call_guard<py::gil_scoped_release>());
 

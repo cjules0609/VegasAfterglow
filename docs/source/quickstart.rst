@@ -404,6 +404,8 @@ VegasAfterglow provides flexible options for loading observational data through 
     flux_data = [1e-26, 8e-27, 5e-27, 3e-27, 2e-27]  # Specific flux in erg/cm²/s/Hz
     flux_err = [1e-28, 8e-28, 5e-28, 3e-28, 2e-28]  # Specific flux error in erg/cm²/s/Hz
     data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err)
+    # You can also assign weights to each data point to account for systematic uncertainties or correlations. You don't need to worry about the weights' normalization, the code will normalize them automatically.
+    #data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err, weights=np.ones(len(t_data)))
 
     # For spectra
     nu_data = [...]  # Frequencies in Hz
@@ -446,8 +448,8 @@ The ``Setups`` class defines the global properties and environment for your mode
     cfg.z = 1.58               # Redshift
 
     # Physical model configuration
-    cfg.medium = "wind"        # Ambient medium: "wind", "ism" (Interstellar Medium) or "user" (user-defined)
-    cfg.jet = "powerlaw"       # Jet structure: "powerlaw", "gaussian", "tophat" or "user" (user-defined)
+    cfg.medium = "wind"        
+    cfg.jet = "powerlaw"      
 
 
 These settings affect how the model is calculated but are not varied during the MCMC process.

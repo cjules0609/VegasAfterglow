@@ -357,9 +357,10 @@ Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t t
     auto eqn = [=, &jet](Real const& cdf, Real& pdf, Real theta) {
         Real Gamma = jet.Gamma0(0, theta);
         Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
+        // Real D = 1 / (Gamma * (1 - beta * std::cos(theta - theta_v)));
         Real a = (1 - beta) / (1 - beta * std::cos(theta - theta_v));
         pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma) * std::sin(theta);
-        // pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma) * std::sin(theta);
+        // pdf = D * std::sin(theta);
     };
 
     return inverse_CFD_sampling(eqn, theta_min, theta_max, theta_num);
@@ -377,13 +378,38 @@ Array adaptive_phi(Ejecta const& jet, size_t phi_num, Real theta_v, Real theta_m
         auto eqn = [=, &jet](Real const& cdf, Real& pdf, Real phi) {
             Real Gamma = jet.Gamma0(phi, theta_v);
             Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
+            // Real D = 1 / (Gamma * (1 - beta * (std::cos(phi) * sin2 + cos2)));
             Real a = (1 - beta) / (1 - beta * (std::cos(phi) * sin2 + cos2));
             pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma);
-            // pdf = a * Gamma * std::sqrt((Gamma - 1) * Gamma / a);
+            // pdf = D * std::sqrt((Gamma - 1) * Gamma);
         };
 
         return inverse_CFD_sampling(eqn, 0, 2 * con::pi, phi_num);
     }
+}
+
+template <typename Arr>
+Array merge_grids(Arr const& arr1, Arr const& arr2) {
+    std::vector<Real> result;
+    result.reserve(arr1.size() + arr2.size());
+
+    size_t i = 0, j = 0;
+    auto add_unique = [&](Real val) {
+        if (result.empty() || result.back() != val) result.push_back(val);
+    };
+
+    while (i < arr1.size() && j < arr2.size()) {
+        if (arr1[i] <= arr2[j]) {
+            add_unique(arr1[i++]);
+            if (arr1[i - 1] == arr2[j]) j++;
+        } else {
+            add_unique(arr2[j++]);
+        }
+    }
+    while (i < arr1.size()) add_unique(arr1[i++]);
+    while (j < arr2.size()) add_unique(arr2[j++]);
+
+    return xt::adapt(result);
 }
 
 template <typename Ejecta>
@@ -395,13 +421,20 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     Real jet_edge = find_jet_edge(jet, con::Gamma_cut, phi_resol, theta_resol, is_axisymmetric);
     Real theta_min = 1e-6;
     Real theta_max = std::min(jet_edge, theta_cut);
-    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 32);
-    // coord.theta = xt::linspace(theta_min, theta_max, theta_num);  //
-    coord.theta = adaptive_theta(jet, theta_min, theta_max, theta_num, theta_view);
+
+    size_t theta_num = std::max<size_t>(static_cast<size_t>((theta_max - theta_min) * 180 / con::pi * theta_resol), 56);
+    size_t uniform_theta_num = static_cast<size_t>(theta_num * 0.3);
+    size_t adaptive_theta_num = theta_num - uniform_theta_num;
+
+    Array uniform_theta = xt::linspace(theta_min, theta_max, uniform_theta_num);
+    coord.theta = merge_grids(uniform_theta, adaptive_theta(jet, theta_min, theta_max, adaptive_theta_num, theta_view));
 
     size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
-    // coord.phi = xt::linspace(0., 2 * con::pi, phi_num);
-    coord.phi = adaptive_phi(jet, phi_num, theta_view, theta_max, is_axisymmetric);
+    size_t uniform_phi_num = static_cast<size_t>(phi_num * 0.3);
+    size_t adaptive_phi_num = phi_num - uniform_phi_num;
+
+    Array uniform_phi = xt::linspace(0., 2 * con::pi, uniform_phi_num);
+    coord.phi = merge_grids(uniform_phi, adaptive_phi(jet, phi_num, theta_view, theta_max, is_axisymmetric));
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());
