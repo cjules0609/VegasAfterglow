@@ -69,6 +69,8 @@ Real FRShockEqn<Ejecta, Medium>::compute_dGamma_dt(State const& state, State con
 template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_dU2_dt(State const& state, State const& diff, Real t) const noexcept {
     Real e_th = (state.Gamma - 1) * 4 * state.Gamma * medium.rho(phi, state.theta, state.r) * con::c2;
+    // Real V_comv = state.r * state.r * state.r / (12 * state.Gamma * state.Gamma);
+    // Real e_th = state.U2_th / V_comv;
     Real eps_rad = compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_fwd);
 
     Real ad_idx = adiabatic_idx(state.Gamma);
@@ -86,8 +88,8 @@ Real FRShockEqn<Ejecta, Medium>::compute_dU3_dt(State const& state, State const&
     Real ad_idx = adiabatic_idx(Gamma34);
     Real adiabatic_cooling = compute_adiabatic_cooling_rate2(ad_idx, state.r, state.x3, state.U3_th, diff.r, diff.x3);
 
-    Real shock_heating = compute_shock_heating_rate(Gamma34, diff.m3);
     if (state.m3 < state.m4 || diff.m4 > 0) {  // reverse shock still crossing
+        Real shock_heating = compute_shock_heating_rate(Gamma34, diff.m3);
         Real eps_rad = 0;  ////compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_rvs);
         return (1 - eps_rad) * shock_heating + adiabatic_cooling;
     } else {

@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### **Shock Physics Enhancements**
 - **Variable Naming Standardization**: Major refactoring for clarity (`EAT_fwd` → `t_obs_fwd`, `Gamma_rel` → `Gamma_th`)
 - **Reverse Shock Optimization**: Major code refactoring for reverse shock dynamics. A unified model for shock crossing and post-crossing evolution.
-- **Better Crossing Dynamics**: Track the internal energy evolution during shock crossing for improved accuracy with more accurate shock heating and adiabatic cooling. -- `The adiabatic cooling and detailed shock heating treatment lead to even weaker reverse shock emission`.
+- **Better Crossing Dynamics**: Track the internal energy evolution during shock crossing for improved accuracy with more accurate shock heating and adiabatic cooling. **Note: The enhanced adiabatic cooling and detailed shock heating treatment leads to significantly weaker reverse shock emission compared to previous versions.**
 
 #### **Numerical & Memory Optimizations**
 - **Memory Efficiency**: Reduced memory footprint through optimized array operations and memory access patterns
@@ -49,12 +49,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### **API Changes & Migration**
 
 #### **Parameter Interface Updates**
-- **Magnetar Parameters**: Consistent `L0/t0` naming (changed from `L_0/t_0`) for improved usability
-- **Resolution Parameters**: Default resolution changed to `(0.3, 1, 10)` for optimal performance/accuracy balance
+- **PowerLawJet**: Split single `k` parameter into separate `k_e` (energy) and `k_g` (Lorentz factor) indices for more flexible modeling
+- **TwoComponentJet**: Parameter names changed from `theta_n, E_iso_n, Gamma0_n` to `theta_c, E_iso_c, Gamma0_c` for consistency
+- **StepPowerLawJet**: New jet model with parameters `(theta_c, E_iso_c, Gamma0_c, E_iso_w, Gamma0_w, k_e, k_g)`
+- **Wind Medium**: Extended with optional `n_ism` and `n_0` parameters for stratified medium modeling: `Wind(A_star, n_ism=0, n_0=inf)`
+- **Medium Class**: Simplified from `Medium(rho, mass)` to `Medium(rho)` - removed separate mass parameter
+- **Model Methods**: 
+  - Removed `specific_flux_sorted_series()` method
+  - Added `specific_flux_series_with_expo(t, nu, expo_time, num_points=10)` for exposure time averaging
+  - Changed `details(t_obs)` to `details(t_min, t_max)` interface
+- **Resolution Parameters**: Default resolution changed from `(0.3, 3.0, 5.0)` to `(0.3, 1, 10)` for optimal performance/accuracy balance
+- **MCMC Parameters**: Major restructuring with new parameters for all jet types, medium configurations, and reverse shock physics
+  - Added: `theta_v, n_ism, n0, A_star, k_e, k_g, duration, E_iso_w, Gamma0_w, theta_w, L0, t0, q`
+  - Added reverse shock parameters: `p_r, eps_e_r, eps_B_r, xi_e_r`
+  - Removed: `k_jet` parameter (replaced by `k_e, k_g`)
+- **MCMC Data Handling**: Enhanced `MultiBandData` with optional `weights` parameter for both light curves and spectra
+- **MCMC Model Interface**: Replaced separate `light_curves()` and `spectra()` methods with unified `specific_flux()` method
 
 ---
 
 **Migration Notes**: This release includes some API changes. Most existing code will work with minimal modifications. See the documentation for detailed migration guidance.
+
+**⚠️ Important Physics Changes**: The improved reverse shock dynamics now produce significantly weaker reverse shock emission due to enhanced adiabatic cooling and detailed shock heating treatment. Users fitting reverse shock data may need to re-evaluate their models and parameters.
 
 
 ## [v0.2.8] - 2025-08-15
@@ -301,7 +317,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Release Date | Key Features |
 |---------|--------------|--------------|
-| v0.3.0  | 2025-09-06   | **Major Release**: Advanced MCMC framework, adaptive mesh generation, new jet models, 3-10x performance improvements |
+| v1.0.0  | 2025-09-06   | **Major Release**: Advanced MCMC framework, adaptive mesh generation, new jet models |
 | v0.2.8  | 2025-08-15   | Inverse Compton performance optimization (~10x), interface improvements |
 | v0.2.7  | 2025-07-31   | Internal quantities evolution interface, performance fixes |
 | v0.2.6  | 2025-07-19   | Two-component jet support |

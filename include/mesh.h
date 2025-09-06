@@ -353,7 +353,7 @@ Array inverse_CFD_sampling(Func&& pdf, Real min, Real max, size_t num) {
 }
 
 template <typename Ejecta>
-Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t theta_num, Real theta_v) {
+Array adaptive_theta_grid(Ejecta const& jet, Real theta_min, Real theta_max, size_t theta_num, Real theta_v) {
     auto eqn = [=, &jet](Real const& cdf, Real& pdf, Real theta) {
         Real Gamma = jet.Gamma0(0, theta);
         Real beta = std::sqrt(std::fabs(Gamma * Gamma - 1)) / Gamma;
@@ -367,7 +367,7 @@ Array adaptive_theta(Ejecta const& jet, Real theta_min, Real theta_max, size_t t
 }
 
 template <typename Ejecta>
-Array adaptive_phi(Ejecta const& jet, size_t phi_num, Real theta_v, Real theta_max, bool is_axisymmetric) {
+Array adaptive_phi_grid(Ejecta const& jet, size_t phi_num, Real theta_v, Real theta_max, bool is_axisymmetric) {
     if ((theta_v == 0 && is_axisymmetric) || theta_v > theta_max) {
         return xt::linspace(0., 2 * con::pi, phi_num);
     } else {
@@ -427,14 +427,19 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
     size_t adaptive_theta_num = theta_num - uniform_theta_num;
 
     Array uniform_theta = xt::linspace(theta_min, theta_max, uniform_theta_num);
-    coord.theta = merge_grids(uniform_theta, adaptive_theta(jet, theta_min, theta_max, adaptive_theta_num, theta_view));
+    Array adaptive_theta = adaptive_theta_grid(jet, theta_min, theta_max, adaptive_theta_num, theta_view);
+    coord.theta = merge_grids(uniform_theta, adaptive_theta);
+
+    // coord.theta = uniform_theta;
 
     size_t phi_num = std::max<size_t>(static_cast<size_t>(360 * phi_resol), 1);
     size_t uniform_phi_num = static_cast<size_t>(phi_num * 0.3);
     size_t adaptive_phi_num = phi_num - uniform_phi_num;
 
     Array uniform_phi = xt::linspace(0., 2 * con::pi, uniform_phi_num);
-    coord.phi = merge_grids(uniform_phi, adaptive_phi(jet, phi_num, theta_view, theta_max, is_axisymmetric));
+    Array adaptive_phi = adaptive_phi_grid(jet, adaptive_phi_num, theta_view, theta_max, is_axisymmetric);
+    coord.phi = merge_grids(uniform_phi, adaptive_phi);
+    // coord.phi = uniform_phi;
 
     Real t_max = *std::max_element(t_obs.begin(), t_obs.end());
     Real t_min = *std::min_element(t_obs.begin(), t_obs.end());

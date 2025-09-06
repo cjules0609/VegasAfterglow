@@ -124,9 +124,9 @@ void convert_unit(Ejecta& jet, Medium& medium) {
 
     jet.T0 *= unit::sec;
 
-    auto rho_cgs = medium.rho;
+    auto rho_cgs = medium.rho;  // number density from python side
     medium.rho = [=](Real phi, Real theta, Real r) {
-        return rho_cgs(phi, theta, r / unit::cm) * (unit::g / unit::cm3);
+        return rho_cgs(phi, theta, r / unit::cm) * (unit::g / unit::cm3);  // convert to density
     };
 }
 

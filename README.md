@@ -327,11 +327,8 @@ If you want to calculate flux at specific time-frequency pairs (t_i, nu_i) inste
 times = np.logspace(2, 8, 200)  
 frequencies = np.logspace(9, 17, 200)  
 
-# For random order time arrays - more flexible but slightly slower
+# For time-frequency pairs (times array must be in ascending order)
 results = model.specific_flux_series(times, frequencies)
-
-# For ascending order time arrays - higher performance
-results = model.specific_flux_sorted_series(times, frequencies)
 
 # The returned results is a dictionary containing arrays of the same shape as the input
 print("Result keys:", results.keys())  # e.g., ['syn', 'IC'] depending on your model
@@ -340,8 +337,8 @@ print("Shape:", results['syn'].shape)  # Same shape as input arrays
 
 **Key differences:**
 - `specific_flux()`: Calculates flux on a time-frequency grid (NxM output from N times and M frequencies)
-- `specific_flux_series()`: Calculates flux at paired time-frequency points (N output from N time-frequency pairs), accepts random order time arrays
-- `specific_flux_sorted_series()`: Same as above but requires ascending order time arrays for optimal performance
+- `specific_flux_series()`: Calculates flux at paired time-frequency points (N output from N time-frequency pairs), requires ascending order time arrays
+- `specific_flux_series_with_expo()`: Same as above but with exposure time averaging for realistic observational scenarios
 
 </details>
 
