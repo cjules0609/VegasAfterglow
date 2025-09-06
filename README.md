@@ -91,7 +91,7 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 - **Ultra-fast Light Curve Computation:** Generates a 100-point single-frequency light curve (forward shock & synchrotron only) from a structured jet viewed off-axis in approximately 1 millisecond on an Apple M2 chip with a single core.
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
-  - ~20 seconds for on-axis structured jet scenarios
+  - ~50 seconds for on-axis structured jet scenarios
   
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
@@ -150,13 +150,7 @@ git clone https://github.com/YihanWangAstro/VegasAfterglow.git
 cd VegasAfterglow
 ```
 
-2. Compile the static library:
-
-```bash
-make lib
-```
-
-3. (Optional) Compile and run tests:
+2. Compile and run tests:
 
 ```bash
 make tests
@@ -342,7 +336,6 @@ print("Shape:", results['syn'].shape)  # Same shape as input arrays
 
 </details>
 
-These examples demonstrate the core functionality of VegasAfterglow for modeling GRB afterglows. The code is designed to be highly efficient, allowing for rapid exploration of parameter space and comparison with observational data.
 
 
 ### Internal Quantities Evolution
@@ -425,7 +418,7 @@ This code creates a comprehensive multi-panel figure displaying the temporal evo
 
 ```python
 keys =['Gamma_fwd', 'B_fwd', 'N_p_fwd','r_fwd','N_e_fwd','P_nu_max_fwd']
-ylabels = [r'$\Gamma$', r'$B^\prime$ [G]', r'$N_p$', r'$r$ [cm]', r'$N_e$', r'$P_{\nu, \rm max}^\prime$ [erg/s/Hz]']
+ylabels = [r'$\Gamma$', r'$B^\prime$ [G]', r'$N_p$', r'$r$ [cm]', r'$N_e$', r'$I_{\nu, \rm max}^\prime$ [erg/s/Hz]']
 
 frames = ['t_src', 't_comv_fwd', 't_obs_fwd']
 titles = ['source frame', 'comoving frame', 'observer frame']
