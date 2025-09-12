@@ -50,12 +50,12 @@ struct InverseComptonY {
     InverseComptonY() noexcept;
 
     // Member variables
-    Real nu_hat_m{0};     ///< Frequency threshold for minimum electrons
-    Real nu_hat_c{0};     ///< Frequency threshold for cooling electrons
-    Real gamma_hat_m{0};  ///< Lorentz factor threshold for minimum energy electrons
-    Real gamma_hat_c{0};  ///< Lorentz factor threshold for cooling electrons
-    Real Y_T{0};          ///< Thomson scattering Y parameter
-    size_t regime{0};     ///< Indicator for the operating regime (1=fast IC cooling, 2=slow IC cooling, 3=special case)
+    Real nu_hat_m{0};    ///< Frequency threshold for minimum electrons
+    Real nu_hat_c{0};    ///< Frequency threshold for cooling electrons
+    Real gamma_hat_m{0}; ///< Lorentz factor threshold for minimum energy electrons
+    Real gamma_hat_c{0}; ///< Lorentz factor threshold for cooling electrons
+    Real Y_T{0};         ///< Thomson scattering Y parameter
+    size_t regime{0};    ///< Indicator for the operating regime (1=fast IC cooling, 2=slow IC cooling, 3=special case)
 
     /**
      * <!-- ************************************************************************************** -->
@@ -87,7 +87,7 @@ struct InverseComptonY {
      * @return The Thomson Y parameter
      * <!-- ************************************************************************************** -->
      */
-    static Real compute_Y_Thompson(InverseComptonY const& Ys);  ///< Returns Y_T parameter
+    static Real compute_Y_Thompson(InverseComptonY const& Ys); ///< Returns Y_T parameter
 
     /**
      * <!-- ************************************************************************************** -->
@@ -135,7 +135,7 @@ Real compton_cross_section(Real nu);
  */
 template <typename Electrons, typename Photons>
 struct ICPhoton {
-   public:
+  public:
     /// Default constructor
     ICPhoton() = default;
 
@@ -162,28 +162,28 @@ struct ICPhoton {
 
     Electrons electrons;
 
-   private:
+  private:
     void generate_grid();
 
-    Array nu0;  // input frequency nu0 grid value
+    Array nu0; // input frequency nu0 grid value
 
     Array dnu0;
 
-    Array I_nu;  // input I_nu
+    Array I_nu; // input I_nu
 
-    Array gamma;  // gamma grid boundary values
+    Array gamma; // gamma grid boundary values
 
     Array dgamma;
 
-    Array column_den;  // electron column density
+    Array column_den; // electron column density
 
     MeshGrid IC_tab;
 
-    static constexpr size_t gamma_grid_per_order{7};  // Number of frequency bins
+    static constexpr size_t gamma_grid_per_order{7}; // Number of frequency bins
 
-    static constexpr size_t nu_grid_per_order{5};  // Number of gamma bins
+    static constexpr size_t nu_grid_per_order{5}; // Number of gamma bins
 
-    bool KN{false};  // Klein-Nishina flag
+    bool KN{false}; // Klein-Nishina flag
     bool generated{false};
 };
 
@@ -279,7 +279,8 @@ void ICPhoton<Electrons, Photons>::generate_grid() {
 
 template <typename Electrons, typename Photons>
 Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
-    if (generated == false) generate_grid();
+    if (generated == false)
+        generate_grid();
 
     Real IC_I_nu = 0;
 
@@ -294,13 +295,14 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
         Real upscatter = 4 * gamma_i * gamma_i * IC_x0;
         Real Ndgamma = column_den(i) * dgamma(i);
 
-        if (nu > upscatter * nu0.back()) continue;
+        if (nu > upscatter * nu0.back())
+            continue;
 
         bool extrapolate = true;
         for (size_t j = nu_size; j-- > 0;) {
             Real nu0_j = nu0(j);
 
-            if (IC_tab(i, j) < 0) {  // integral at (gamma(i), nu(j)) has not been evaluated
+            if (IC_tab(i, j) < 0) { // integral at (gamma(i), nu(j)) has not been evaluated
                 Real nu_comv = gamma_i * nu0_j;
                 Real inv = 1 / nu_comv;
 

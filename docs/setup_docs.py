@@ -12,9 +12,9 @@ from pathlib import Path
 def check_command(command, package=None):
     """Check if a command is available on the system."""
     try:
-        subprocess.run([command, '--version'], 
-                      stdout=subprocess.PIPE, 
-                      stderr=subprocess.PIPE, 
+        subprocess.run([command, '--version'],
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
                       check=False)
         return True
     except FileNotFoundError:
@@ -84,33 +84,33 @@ def create_directories():
         docs_dir / 'build',
         docs_dir / 'doxygen'
     ]
-    
+
     for dir_path in dirs:
         dir_path.mkdir(parents=True, exist_ok=True)
         print(f"Created directory: {dir_path}")
 
 def main():
     print("Setting up documentation tools for VegasAfterglow...")
-    
+
     # Install Python dependencies
     install_python_deps()
-    
+
     # Check external tools
     doxygen_installed = check_doxygen()
     graphviz_installed = check_graphviz()
     sphinx_installed = check_sphinx()
     breathe_installed = check_breathe()
-    
+
     # Create necessary directories
     create_directories()
-    
+
     # Summary
     print("\nSetup Summary:")
     print(f"Doxygen: {'Installed' if doxygen_installed else 'Not installed'}")
     print(f"Graphviz: {'Installed' if graphviz_installed else 'Not installed'}")
     print(f"Sphinx: {'Installed' if sphinx_installed else 'Not installed'}")
     print(f"Breathe: {'Installed' if breathe_installed else 'Not installed'}")
-    
+
     if all([doxygen_installed, graphviz_installed, sphinx_installed, breathe_installed]):
         print("\nAll documentation tools are installed!")
         print("You can now build the documentation with:")
@@ -119,8 +119,8 @@ def main():
     else:
         print("\nSome documentation tools are missing. Please install them before building the documentation.")
         return 1
-    
+
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

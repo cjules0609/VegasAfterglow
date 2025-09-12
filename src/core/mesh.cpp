@@ -13,7 +13,8 @@
 #include "macros.h"
 
 bool is_linear_scale(Array const& arr, Real tolerance) {
-    if (arr.size() < 2) return false;  // At least two elements are needed.
+    if (arr.size() < 2)
+        return false; // At least two elements are needed.
 
     Real diff = arr[1] - arr[0];
     for (size_t i = 2; i < arr.size(); ++i) {
@@ -25,7 +26,8 @@ bool is_linear_scale(Array const& arr, Real tolerance) {
 }
 
 bool is_log_scale(Array const& arr, Real tolerance) {
-    if (arr.size() < 2) return false;  // At least two elements are needed.
+    if (arr.size() < 2)
+        return false; // At least two elements are needed.
 
     Real ratio = arr[1] / arr[0];
     for (size_t i = 2; i < arr.size(); ++i) {

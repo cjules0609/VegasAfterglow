@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 class BetterMock(MagicMock):
     # Add a proper __all__ attribute
     __all__ = ['ModelParams', 'Setups', 'ObsData', 'VegasMC']
-    
+
     # Add documentation strings
     @classmethod
     def __getattr__(cls, name):
@@ -246,4 +246,4 @@ dl.cpp.class {
     border: 1px solid #eee;
     border-radius: 5px;
 }
-""") 
+""")

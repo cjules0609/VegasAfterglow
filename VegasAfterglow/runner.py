@@ -1,10 +1,10 @@
 # src/vegasglow/runner.py
-import numpy as np
-from typing import Sequence, Tuple, Callable, Optional
+from typing import Optional, Sequence, Tuple
 
-from .types import FitResult, ParamDef, Scale
-from .types import ObsData, Setups, ModelParams, VegasMC
+import numpy as np
+
 from .sampler import MultiThreadEmcee
+from .types import FitResult, ModelParams, ObsData, ParamDef, Scale, Setups, VegasMC
 
 
 class Fitter:
@@ -12,7 +12,9 @@ class Fitter:
     High-level MCMC interface for fitting an afterglow model.
     """
 
-    def __init__(self, data: ObsData, config: Setups, num_workers: Optional[int] = None):
+    def __init__(
+        self, data: ObsData, config: Setups, num_workers: Optional[int] = None
+    ):
         """
         Parameters
         ----------
@@ -35,14 +37,14 @@ class Fitter:
         total_steps: int = 10_000,
         burn_frac: float = 0.3,
         thin: int = 1,
-        top_k: int = 10
+        top_k: int = 10,
     ) -> FitResult:
         """
         Run the MCMC sampler.
 
         Parameters
         ----------
-        param_bounds :
+        param_defs :
             A sequence of (name, init, lower, upper) for each free parameter.
         resolution :
             (t_grid, theta_grid, phi_grid) for the coarse MCMC stage.
@@ -68,8 +70,11 @@ class Fitter:
             *(
                 (
                     pd.name,
-                    (0.5*(np.log10(pd.lower)+np.log10(pd.upper))
-                     if pd.scale is Scale.LOG else 0.5*(pd.lower + pd.upper)),
+                    (
+                        0.5 * (np.log10(pd.lower) + np.log10(pd.upper))
+                        if pd.scale is Scale.LOG
+                        else 0.5 * (pd.lower + pd.upper)
+                    ),
                     (np.log10(pd.lower) if pd.scale is Scale.LOG else pd.lower),
                     (np.log10(pd.upper) if pd.scale is Scale.LOG else pd.upper),
                 )
@@ -87,22 +92,20 @@ class Fitter:
             try:
                 getattr(p_test, pd.name)
             except AttributeError:
-                raise AttributeError(
-                    f"'{pd.name}' is not a valid MCMC parameter")
+                raise AttributeError(f"'{pd.name}' is not a valid MCMC parameter")
 
         # 2) build a fast transformation closure
         def to_params(x: np.ndarray) -> ModelParams:
             p = ModelParams()
             i = 0
             for pd in defs:
-
                 if pd.scale is Scale.FIXED:
                     # fixed param: always pd.init
-                    setattr(p, pd.name, 0.5*(pd.lower+pd.upper))
+                    setattr(p, pd.name, 0.5 * (pd.lower + pd.upper))
                 else:
                     v = x[i]
                     if pd.scale is Scale.LOG:
-                        real = 10 ** v
+                        real = 10**v
                     else:
                         real = v
                     setattr(p, pd.name, real)
@@ -115,7 +118,7 @@ class Fitter:
             param_config=(labels, init, pl, pu),
             to_params=to_params,
             model_cls=VegasMC,
-            num_workers=self.num_workers
+            num_workers=self.num_workers,
         )
         result: FitResult = mcmc.run(
             data=self.data,
@@ -124,7 +127,7 @@ class Fitter:
             total_steps=total_steps,
             burn_frac=burn_frac,
             thin=thin,
-            top_k=top_k
+            top_k=top_k,
         )
         return result
 
@@ -151,7 +154,7 @@ class Fitter:
         best_params: np.ndarray,
         t: np.ndarray,
         nu: np.ndarray,
-        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10)
+        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10),
     ) -> np.ndarray:
         """
         Compute light curves at the best-fit parameters.
@@ -179,3 +182,44 @@ class Fitter:
         model = VegasMC(self.data)
         model.set(cfg_local)
         return model.specific_flux(p, t, nu)
+
+    def flux(
+        self,
+        best_params: np.ndarray,
+        t: np.ndarray,
+        nu_min: float,
+        nu_max: float,
+        num_points: int,
+        resolution: Optional[Tuple[float, float, float]] = (0.3, 1, 10),
+    ) -> np.ndarray:
+        """
+        Compute light curves at the best-fit parameters.
+
+        Parameters
+        ----------
+        best_params : 1D numpy array
+            The vector returned in FitResult.best_params.
+        t : 1D numpy array
+            Times at which to evaluate.
+        nu_min : float
+            Minimum frequency at which to evaluate.
+        nu_max : float
+            Maximum frequency at which to evaluate.
+        num_points : int
+            Number of points to sample between nu_min and nu_max.
+
+        Returns
+        -------
+        array_like
+            Shape (n_bands, t.size)
+        """
+
+        if self._to_params is None:
+            raise RuntimeError("Call .fit(...) before .light_curves()")
+
+        cfg_local = self._with_resolution(resolution)
+        p = self._to_params(best_params)
+
+        model = VegasMC(self.data)
+        model.set(cfg_local)
+        return model.flux(p, t, nu_min, nu_max, num_points)

@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **StepPowerLawJet**: New jet model with parameters `(theta_c, E_iso_c, Gamma0_c, E_iso_w, Gamma0_w, k_e, k_g)`
 - **Wind Medium**: Extended with optional `n_ism` and `n_0` parameters for stratified medium modeling: `Wind(A_star, n_ism=0, n_0=inf)`
 - **Medium Class**: Simplified from `Medium(rho, mass)` to `Medium(rho)` - removed separate mass parameter
-- **Model Methods**: 
+- **Model Methods**:
   - Removed `specific_flux_sorted_series()` method
   - Added `specific_flux_series_with_expo(t, nu, expo_time, num_points=10)` for exposure time averaging
   - Changed `details(t_obs)` to `details(t_min, t_max)` interface

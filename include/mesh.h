@@ -53,15 +53,15 @@ using MaskGrid = xt::xtensor<int, 3>;
  * <!-- ************************************************************************************** -->
  */
 class Coord {
-   public:
+  public:
     /// Default constructor
     Coord() = default;
 
-    Array phi;           ///< Array of azimuthal angles (phi) in radians
-    Array theta;         ///< Array of polar angles (theta) in radians
-    MeshGrid3d t;        ///< Array of engine time points
-    Real theta_view{0};  ///< Viewing angle
-    Real phi_view{0};    ///< Viewing angle
+    Array phi;          ///< Array of azimuthal angles (phi) in radians
+    Array theta;        ///< Array of polar angles (theta) in radians
+    MeshGrid3d t;       ///< Array of engine time points
+    Real theta_view{0}; ///< Viewing angle
+    Real phi_view{0};   ///< Viewing angle
 
     /**
      * <!-- ************************************************************************************** -->
@@ -227,7 +227,8 @@ template <typename Arr>
 void logspace_boundary_center(Real lg2_min, Real lg2_max, size_t size, Arr& center, Array& bin_width) {
     center = Arr::from_shape({size});
     bin_width = Array::from_shape({size});
-    if (size == 0) return;
+    if (size == 0)
+        return;
 
     const Real dlg2 = (lg2_max - lg2_min) / static_cast<Real>(size);
 
@@ -248,7 +249,7 @@ template <typename Ejecta>
 Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta_resol, bool is_axisymmetric) {
     // binary search for the edge of the jet
     if (jet.Gamma0(0, con::pi / 2) >= gamma_cut) {
-        return con::pi / 2;  // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
+        return con::pi / 2; // If the Lorentz factor at pi/2 is above the cut, the jet extends to pi/2.
     }
     Real low = 0;
     Real hi = con::pi / 2;
@@ -275,7 +276,7 @@ Real find_jet_edge(Ejecta const& jet, Real gamma_cut, Real phi_resol, Real theta
         for (int j = theta_num - 1; j >= 0; --j) {
             if (jet.Gamma0(phi[i], theta[j]) >= gamma_cut) {
                 theta_edge = theta[j];
-                break;  // Found the edge for this phi, no need to check lower theta values
+                break; // Found the edge for this phi, no need to check lower theta values
             } else {
                 theta_edge = theta[j];
             }
@@ -300,7 +301,7 @@ Real jet_spreading_edge(Ejecta const& jet, Medium const& medium, Real phi, Real 
         Real th_hi = std::min(theta + step, theta_max);
         Real dG = (jet.Gamma0(phi, th_hi) - jet.Gamma0(phi, th_lo)) / (th_hi - th_lo);
         // Real drho = (medium.rho(phi, th_hi, r0) - medium.rho(phi, th_lo, r0)) / (th_hi - th_lo);
-        Real dp = dG;  //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
+        Real dp = dG; //(2 * G - 1) * rho * dG + (G - 1) * G * drho;
 
         if (dp < dp_min) {
             dp_min = dp;
@@ -395,19 +396,23 @@ Array merge_grids(Arr const& arr1, Arr const& arr2) {
 
     size_t i = 0, j = 0;
     auto add_unique = [&](Real val) {
-        if (result.empty() || result.back() != val) result.push_back(val);
+        if (result.empty() || result.back() != val)
+            result.push_back(val);
     };
 
     while (i < arr1.size() && j < arr2.size()) {
         if (arr1[i] <= arr2[j]) {
             add_unique(arr1[i++]);
-            if (arr1[i - 1] == arr2[j]) j++;
+            if (arr1[i - 1] == arr2[j])
+                j++;
         } else {
             add_unique(arr2[j++]);
         }
     }
-    while (i < arr1.size()) add_unique(arr1[i++]);
-    while (j < arr2.size()) add_unique(arr2[j++]);
+    while (i < arr1.size())
+        add_unique(arr1[i++]);
+    while (j < arr2.size())
+        add_unique(arr2[j++]);
 
     return xt::adapt(result);
 }
@@ -459,5 +464,5 @@ Coord auto_grid(Ejecta const& jet, Array const& t_obs, Real theta_cut, Real thet
         }
     }
 
-    return coord;  // Construct coordinate object.
+    return coord; // Construct coordinate object.
 }

@@ -26,13 +26,13 @@ struct PyMagnetar {
     /**
      * @brief Construct a new PyMagnetar object
      *
-     * @param L_0 Luminosity at t = t_0 [erg/s]
-     * @param t_0 Time at which luminosity is L_0 [s]
+     * @param L0 Luminosity at t = t0 [erg/s]
+     * @param t0 Time at which luminosity is L0 [s]
      */
-    PyMagnetar(Real L_0, Real t_0, Real q = 2) : L_0(L_0), t_0(t_0), q(q) {}
+    PyMagnetar(Real L0, Real t0, Real q = 2) : L0(L0), t0(t0), q(q) {}
 
-    Real L_0;
-    Real t_0;
+    Real L0;
+    Real t0;
     Real q;
 };
 
@@ -136,7 +136,7 @@ Medium PyWind(Real A_star, Real n_ism = 0, Real n_0 = con::inf);
  * @brief Class representing the observer configuration
  */
 class PyObserver {
-   public:
+  public:
     /**
      * @brief Construct observer with given parameters
      *
@@ -148,17 +148,17 @@ class PyObserver {
     PyObserver(Real lumi_dist, Real z, Real theta_obs, Real phi_obs = 0)
         : lumi_dist(lumi_dist * unit::cm), z(z), theta_obs(theta_obs), phi_obs(phi_obs) {}
 
-    Real lumi_dist{1e28};  ///< Luminosity distance [internal units]
-    Real z{0};             ///< Redshift
-    Real theta_obs{0};     ///< Viewing angle [radians]
-    Real phi_obs{0};       ///< Azimuthal angle [radians]
+    Real lumi_dist{1e28}; ///< Luminosity distance [internal units]
+    Real z{0};            ///< Redshift
+    Real theta_obs{0};    ///< Viewing angle [radians]
+    Real phi_obs{0};      ///< Azimuthal angle [radians]
 };
 
 /**
  * @brief Class representing radiation parameters for synchrotron and IC emission
  */
 class PyRadiation {
-   public:
+  public:
     /**
      * @brief Construct radiation model with given microphysical parameters
      *
@@ -175,9 +175,9 @@ class PyRadiation {
         : rad(RadParams{eps_e, eps_B, p, xi_e}), IC_cooling(IC_cooling), SSC(SSC), KN(KN) {}
 
     RadParams rad;
-    bool IC_cooling{false};  ///< Whether to include IC cooling
-    bool SSC{false};         ///< Whether to include SSC
-    bool KN{false};          ///< Whether to include KN
+    bool IC_cooling{false}; ///< Whether to include IC cooling
+    bool SSC{false};        ///< Whether to include SSC
+    bool KN{false};         ///< Whether to include KN
 };
 
 /**
@@ -195,7 +195,7 @@ void convert_unit(Ejecta& jet, Medium& medium);
  * @brief Main model class for afterglow calculations
  */
 class PyModel {
-   public:
+  public:
     /**
      * @brief Construct afterglow model with given components
      *
@@ -262,7 +262,7 @@ class PyModel {
      */
     ArrayDict details(Real t_min, Real t_max);
 
-   private:
+  private:
     /**
      * @brief Internal specific flux calculation method using natural units
      *
@@ -303,15 +303,15 @@ class PyModel {
     void single_evo_details(Shock const& shock, Coord const& coord, Array const& t, Observer& obs, PyRadiation rad,
                             ArrayDict& detail_dict, std::string suffix);
 
-    Ejecta jet;                              ///< Jet model
-    Medium medium;                           ///< Circumburst medium
-    PyObserver obs_setup;                    ///< Observer configuration
-    PyRadiation fwd_rad;                     ///< Forward shock radiation parameters
-    std::optional<PyRadiation> rvs_rad_opt;  ///< Optional reverse shock radiation parameters
-    Real theta_w{con::pi / 2};               ///< Maximum polar angle to calculate
-    Real phi_resol{0.3};                     ///< Azimuthal resolution: number of points per degree
-    Real theta_resol{1};                     ///< Polar resolution: number of points per degree
-    Real t_resol{10};                        ///< Time resolution: number of points per decade
-    Real rtol{1e-5};                         ///< Relative tolerance
-    bool axisymmetric{true};                 ///< Whether to assume axisymmetric jet
+    Ejecta jet;                             ///< Jet model
+    Medium medium;                          ///< Circumburst medium
+    PyObserver obs_setup;                   ///< Observer configuration
+    PyRadiation fwd_rad;                    ///< Forward shock radiation parameters
+    std::optional<PyRadiation> rvs_rad_opt; ///< Optional reverse shock radiation parameters
+    Real theta_w{con::pi / 2};              ///< Maximum polar angle to calculate
+    Real phi_resol{0.3};                    ///< Azimuthal resolution: number of points per degree
+    Real theta_resol{1};                    ///< Polar resolution: number of points per degree
+    Real t_resol{10};                       ///< Time resolution: number of points per decade
+    Real rtol{1e-5};                        ///< Relative tolerance
+    bool axisymmetric{true};                ///< Whether to assume axisymmetric jet
 };

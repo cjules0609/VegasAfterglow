@@ -20,26 +20,26 @@
  */
 template <typename Ejecta, typename Medium>
 struct ReverseState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< Whether ejecta has mass injection
-    static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< Whether ejecta has energy injection
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;   ///< Whether ejecta has mass injection
+    static constexpr bool energy_inject = HasDedt<Ejecta>; ///< Whether ejecta has energy injection
     static constexpr size_t array_size = 12;
 
     MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)
 
     union {
         struct {
-            Real Gamma;   ///< Lorentz factor of the shocked region
-            Real x4;      ///< Comoving frame width of the region 4
-            Real x3;      ///< Comoving frame width of the region 3
-            Real m2;      ///< Shocked medium mass per solid angle
-            Real m3;      ///< Shocked ejecta mass per solid angle
-            Real U2_th;   ///< internal energy per solid angle in region 3
-            Real U3_th;   ///< internal energy per solid angle in region 2
-            Real r;       ///< Radius
-            Real t_comv;  ///< Comoving time
-            Real theta;   ///< Angular coordinate theta
-            Real eps4;    ///< energy  per solid angle in region 4
-            Real m4;      ///< mass per solid angle in region 4
+            Real Gamma;  ///< Lorentz factor of the shocked region
+            Real x4;     ///< Comoving frame width of the region 4
+            Real x3;     ///< Comoving frame width of the region 3
+            Real m2;     ///< Shocked medium mass per solid angle
+            Real m3;     ///< Shocked ejecta mass per solid angle
+            Real U2_th;  ///< internal energy per solid angle in region 3
+            Real U3_th;  ///< internal energy per solid angle in region 2
+            Real r;      ///< Radius
+            Real t_comv; ///< Comoving time
+            Real theta;  ///< Angular coordinate theta
+            Real eps4;   ///< energy  per solid angle in region 4
+            Real m4;     ///< mass per solid angle in region 4
         };
         array_type data;
     };
@@ -55,7 +55,7 @@ struct ReverseState {
  */
 template <typename Ejecta, typename Medium>
 class FRShockEqn {
-   public:
+  public:
     using State = ReverseState<Ejecta, Medium>;
 
     /**
@@ -71,18 +71,18 @@ class FRShockEqn {
     FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, RadParams const& rad_fwd,
                RadParams const& rad_rvs);
 
-    Medium const& medium;     ///< Reference to the medium properties
-    Ejecta const& ejecta;     ///< Reference to the jet properties
-    RadParams const rad_fwd;  ///< Radiation parameters for forward shock
-    RadParams const rad_rvs;  ///< Radiation parameters for reverse shock
-    Real const phi{0};        ///< Angular coordinate phi
-    Real const theta0{0};     ///< Angular coordinate theta
-    Real Gamma4{1};           ///< Initial Lorentz factor of the jet
-    Real u_x{0};              ///< Reverse shock crossed four velocity
-    Real r_x{0};              ///< Reverse shock crossed radius
-    Real B3_ordered_x{0};     ///< Ordered magnetic field in region 3 at crossing
-    Real V3_comv_x{0};        ///< Comoving Volume in region 3 at crossing
-    Real rho3_x{0};           ///< Density in region 3 at crossing
+    Medium const& medium;    ///< Reference to the medium properties
+    Ejecta const& ejecta;    ///< Reference to the jet properties
+    RadParams const rad_fwd; ///< Radiation parameters for forward shock
+    RadParams const rad_rvs; ///< Radiation parameters for reverse shock
+    Real const phi{0};       ///< Angular coordinate phi
+    Real const theta0{0};    ///< Angular coordinate theta
+    Real Gamma4{1};          ///< Initial Lorentz factor of the jet
+    Real u_x{0};             ///< Reverse shock crossed four velocity
+    Real r_x{0};             ///< Reverse shock crossed radius
+    Real B3_ordered_x{0};    ///< Ordered magnetic field in region 3 at crossing
+    Real V3_comv_x{0};       ///< Comoving Volume in region 3 at crossing
+    Real rho3_x{0};          ///< Density in region 3 at crossing
 
     /**
      * <!-- ************************************************************************************** -->
@@ -123,7 +123,7 @@ class FRShockEqn {
      */
     void save_cross_state(State const& state);
 
-   private:
+  private:
     inline Real compute_dGamma_dt(State const& state, State const& diff, Real t) const noexcept;
 
     inline Real compute_dU2_dt(State const& state, State const& diff, Real t) const noexcept;
@@ -142,9 +142,9 @@ class FRShockEqn {
 
     inline Real compute_dm4_dt(State const& state, State const& diff, Real t) const noexcept;
 
-    Real deps0_dt{0};  ///< Ejecta energy injection rate
-    Real dm0_dt{0};    ///< Ejecta mass injection rate
-    Real u4{0};        ///< Four-velocity of the unshocked ejecta
+    Real deps0_dt{0}; ///< Ejecta energy injection rate
+    Real dm0_dt{0};   ///< Ejecta mass injection rate
+    Real u4{0};       ///< Four-velocity of the unshocked ejecta
 };
 
 /**

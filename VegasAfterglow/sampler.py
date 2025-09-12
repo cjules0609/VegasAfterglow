@@ -1,15 +1,14 @@
 # src/vegasglow/sampler.py
 
-import threading
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Sequence, Tuple, Callable, Type, Optional
+from typing import Callable, Optional, Sequence, Tuple, Type
 
-import numpy as np
 import emcee
-from emcee.moves import DEMove, DESnookerMove, StretchMove
+import numpy as np
 
-from .types import ModelParams, Setups, ObsData, VegasMC, FitResult
+from .types import FitResult, ModelParams, ObsData, Setups, VegasMC
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class MultiThreadEmcee:
         param_config: Tuple[Sequence[str], np.ndarray, np.ndarray, np.ndarray],
         to_params: Callable[[np.ndarray], ModelParams],
         model_cls: Type[VegasMC],
-        num_workers: Optional[int] = None
+        num_workers: Optional[int] = None,
     ):
         self.labels, self.init, self.pl, self.pu = param_config
         self.ndim = len(self.init)
@@ -85,7 +84,7 @@ class MultiThreadEmcee:
         thin: int = 1,
         moves: Optional[Sequence[Tuple[emcee.moves.Move, float]]] = None,
         refine_steps: int = 500,
-        top_k: int = 10
+        top_k: int = 10,
     ) -> FitResult:
         """
         Run coarse MCMC + optional stretch-move refinement at higher resolution.
@@ -94,8 +93,9 @@ class MultiThreadEmcee:
         cfg = self._make_cfg(base_cfg, *resolution)
 
         # 2) prepare log-prob
-        log_prob = _log_prob(data, cfg, self.to_params,
-                             self.pl, self.pu, self.model_cls)
+        log_prob = _log_prob(
+            data, cfg, self.to_params, self.pl, self.pu, self.model_cls
+        )
 
         # 3) initialize walker positions
         spread = 0.05 * (self.pu - self.pl)
@@ -107,7 +107,10 @@ class MultiThreadEmcee:
         #    moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
 
         logger.info(
-            "🚀 Running coarse MCMC at resolution %s for %d steps", resolution, total_steps)
+            "🚀 Running coarse MCMC at resolution %s for %d steps",
+            resolution,
+            total_steps,
+        )
         with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
             sampler = emcee.EnsembleSampler(
                 self.nwalkers, self.ndim, log_prob, pool=pool  # , moves=moves
@@ -140,8 +143,12 @@ class MultiThreadEmcee:
         top_k_params = flat_chain[final_idx]
         top_k_log_probs = flat_logp[final_idx]
 
-        logger.info("🎯 Found %d unique fits with log probabilities: %.2f to %.2f",
-                    len(top_k_params), top_k_log_probs[0], top_k_log_probs[-1])
+        logger.info(
+            "🎯 Found %d unique fits with log probabilities: %.2f to %.2f",
+            len(top_k_params),
+            top_k_log_probs[0],
+            top_k_log_probs[-1],
+        )
 
         # 8) return FitResult
         return FitResult(
@@ -149,7 +156,7 @@ class MultiThreadEmcee:
             log_probs=logp,
             labels=self.labels,
             top_k_params=top_k_params,
-            top_k_log_probs=top_k_log_probs
+            top_k_log_probs=top_k_log_probs,
         )
 
     def _make_cfg(self, base_cfg: Setups, phi: float, theta: float, t: float) -> Setups:
@@ -170,9 +177,7 @@ class MultiThreadEmcee:
 
     @staticmethod
     def _filter_bad_walkers(
-        chain: np.ndarray,
-        logp: np.ndarray,
-        threshold_mad: float = 3.0
+        chain: np.ndarray, logp: np.ndarray, threshold_mad: float = 3.0
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Remove walkers whose mean log-prob is > threshold_mad·MAD below the median.
@@ -183,6 +188,10 @@ class MultiThreadEmcee:
         mad = np.median(np.abs(mean_lp - median))
         cutoff = median - threshold_mad * mad
         good = mean_lp > cutoff
-        logger.info("🎯 Filtered %d / %d bad walkers (cutoff=%.2f)",
-                    np.sum(~good), nwalkers, cutoff)
+        logger.info(
+            "🎯 Filtered %d / %d bad walkers (cutoff=%.2f)",
+            np.sum(~good),
+            nwalkers,
+            cutoff,
+        )
         return chain[:, good, :], logp[:, good], good

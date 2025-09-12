@@ -25,7 +25,8 @@ void write_csv(std::string const& filename, MeshGrid const& grid, Real unit) {
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             file << grid(i, j) / unit;
-            if (j + 1 != shape[1]) file << ",";
+            if (j + 1 != shape[1])
+                file << ",";
         }
         file << "\n";
     }
@@ -36,7 +37,7 @@ void write_csv(std::string const& filename, MeshGrid3d const& grid3d, Real unit)
     if (!file) {
         throw std::runtime_error("Failed to open file: " + filename + ".csv");
     }
-    file << "i,j,k,value\n";  // CSV header
+    file << "i,j,k,value\n"; // CSV header
     auto shape = grid3d.shape();
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {

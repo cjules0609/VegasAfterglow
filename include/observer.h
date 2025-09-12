@@ -26,7 +26,7 @@
  * <!-- ************************************************************************************** -->
  */
 class Observer {
-   public:
+  public:
     /// Default constructor
     Observer() = default;
 
@@ -158,19 +158,19 @@ class Observer {
      */
     void update_required(MaskGrid& required, Array const& t_obs);
 
-    MeshGrid3d lg2_t;              ///< Log2 of observation time grid
-    MeshGrid3d lg2_doppler;        ///< Log2 of Doppler factor grid
-    MeshGrid3d lg2_emission_area;  ///< Log2 of observe frame emission area
-   private:
-    Real one_plus_z{1};      ///< 1 + redshift
-    Real lg2_one_plus_z{0};  ///< Log2(1 + redshift)
-    Real lumi_dist{1};       ///< Luminosity distance
+    MeshGrid3d lg2_t;             ///< Log2 of observation time grid
+    MeshGrid3d lg2_doppler;       ///< Log2 of Doppler factor grid
+    MeshGrid3d lg2_emission_area; ///< Log2 of observe frame emission area
+  private:
+    Real one_plus_z{1};     ///< 1 + redshift
+    Real lg2_one_plus_z{0}; ///< Log2(1 + redshift)
+    Real lumi_dist{1};      ///< Luminosity distance
 
     // Grid dimensions
-    size_t jet_3d{0};        ///< Flag indicating if the jet is non-axis-symmetric (non-zero if true)
-    size_t eff_phi_grid{1};  ///< Effective number of phi grid points
-    size_t theta_grid{0};    ///< Number of theta grid points
-    size_t t_grid{0};        ///< Number of time grid points
+    size_t jet_3d{0};       ///< Flag indicating if the jet is non-axis-symmetric (non-zero if true)
+    size_t eff_phi_grid{1}; ///< Effective number of phi grid points
+    size_t theta_grid{0};   ///< Number of theta grid points
+    size_t t_grid{0};       ///< Number of time grid points
 
     /**
      * <!-- ************************************************************************************** -->
@@ -214,11 +214,11 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     struct InterpState {
-        Real slope{0};        ///< Slope for logarithmic interpolation
-        Real lg2_I_nu_lo{0};  ///< Lower boundary of specific intensity (log2 scale)
-        Real lg2_I_nu_hi{0};  ///< Upper boundary of specific intensity (log2 scale)
-        Real last_lg2_nu{0};  ///< Last log2 frequency (for interpolation)
-        size_t last_hi{0};    ///< Index for the upper boundary in the grid
+        Real slope{0};       ///< Slope for logarithmic interpolation
+        Real lg2_I_nu_lo{0}; ///< Lower boundary of specific intensity (log2 scale)
+        Real lg2_I_nu_hi{0}; ///< Upper boundary of specific intensity (log2 scale)
+        Real last_lg2_nu{0}; ///< Last log2 frequency (for interpolation)
+        size_t last_hi{0};   ///< Index for the upper boundary in the grid
     };
 
     /**

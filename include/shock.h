@@ -25,7 +25,7 @@
  * <!-- ************************************************************************************** -->
  */
 class Shock {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructs a Shock object with the given grid dimensions and energy fractions.
@@ -41,16 +41,16 @@ class Shock {
 
     Shock() noexcept = default;
 
-    MeshGrid3d t_comv;       ///< Comoving time
-    MeshGrid3d r;            ///< Radius
-    MeshGrid3d theta;        ///< Theta for jet spreading
-    MeshGrid3d Gamma;        ///< Bulk Lorentz factor
-    MeshGrid3d Gamma_th;     ///< Downstream internal Lorentz factor
-    MeshGrid3d B;            ///< Comoving magnetic field
-    MeshGrid3d N_p;          ///< Downstream proton number per solid angle
-    MeshGrid injection_idx;  ///< Beyond which grid index there is no electron injection
-    MaskGrid required;       ///< Grid points actually required for final flux calculation
-    RadParams rad;           ///< Radiation parameters
+    MeshGrid3d t_comv;      ///< Comoving time
+    MeshGrid3d r;           ///< Radius
+    MeshGrid3d theta;       ///< Theta for jet spreading
+    MeshGrid3d Gamma;       ///< Bulk Lorentz factor
+    MeshGrid3d Gamma_th;    ///< Downstream internal Lorentz factor
+    MeshGrid3d B;           ///< Comoving magnetic field
+    MeshGrid3d N_p;         ///< Downstream proton number per solid angle
+    MeshGrid injection_idx; ///< Beyond which grid index there is no electron injection
+    MaskGrid required;      ///< Grid points actually required for final flux calculation
+    RadParams rad;          ///< Radiation parameters
 
     /// Returns grid dimensions as a tuple
     auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }
@@ -65,10 +65,10 @@ class Shock {
      */
     void resize(size_t phi_size, size_t theta_size, size_t t_size);
 
-   private:
-    size_t phi_size{0};    ///< Number of grid points in phi direction
-    size_t theta_size{0};  ///< Number of grid points in theta direction
-    size_t t_size{0};      ///< Number of grid points in time direction
+  private:
+    size_t phi_size{0};   ///< Number of grid points in phi direction
+    size_t theta_size{0}; ///< Number of grid points in theta direction
+    size_t t_size{0};     ///< Number of grid points in time direction
 };
 
 /**
@@ -121,7 +121,7 @@ inline Real compute_4vel_jump(Real gamma_rel, Real sigma_upstr) {
     Real u_up_s_ = compute_upstr_4vel(u_down_s_, gamma_rel);
     Real ratio_u = u_up_s_ / u_down_s_;
     if (u_down_s_ == 0.) {
-        ratio_u = 4 * gamma_rel;  // (g_hat*gamma_rel+1)/(g_hat-1)
+        ratio_u = 4 * gamma_rel; // (g_hat*gamma_rel+1)/(g_hat-1)
     }
     return ratio_u;
 }
@@ -146,7 +146,9 @@ inline Real compute_sound_speed(Real Gamma_rel) {
  * @return The effective Lorentz factor
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_effective_Gamma(Real adx, Real Gamma) { return (adx * Gamma * Gamma - adx + 1) / Gamma; }
+inline Real compute_effective_Gamma(Real adx, Real Gamma) {
+    return (adx * Gamma * Gamma - adx + 1) / Gamma;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -169,7 +171,9 @@ inline Real compute_effective_Gamma_dGamma(Real adx, Real Gamma) {
  * @return The comoving magnetic field strength
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_comv_weibel_B(Real eps_B, Real e_thermal) { return std::sqrt(8 * con::pi * eps_B * e_thermal); }
+inline Real compute_comv_weibel_B(Real eps_B, Real e_thermal) {
+    return std::sqrt(8 * con::pi * eps_B * e_thermal);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -178,7 +182,9 @@ inline Real compute_comv_weibel_B(Real eps_B, Real e_thermal) { return std::sqrt
  * @return The rate of change of radius with respect to observer time
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_dr_dt(Real beta) { return (beta * con::c) / (1 - beta); }
+inline Real compute_dr_dt(Real beta) {
+    return (beta * con::c) / (1 - beta);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -207,7 +213,9 @@ inline Real compute_dtheta_dt(Real theta_s, Real theta, Real drdt, Real r, Real 
  * @return The rate of change of comoving time with respect to observer time
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 - beta)); };
+inline Real compute_dt_dt_comv(Real Gamma, Real beta) {
+    return 1 / (Gamma * (1 - beta));
+};
 
 /**
  * <!-- ************************************************************************************** -->
@@ -217,7 +225,9 @@ inline Real compute_dt_dt_comv(Real Gamma, Real beta) { return 1 / (Gamma * (1 -
  * @return The upstream magnetic field
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_upstr_B(Real rho_up, Real sigma) { return std::sqrt((4 * con::pi * con::c2) * sigma * rho_up); }
+inline Real compute_upstr_B(Real rho_up, Real sigma) {
+    return std::sqrt((4 * con::pi * con::c2) * sigma * rho_up);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -267,7 +277,9 @@ inline Real compute_Gamma_from_relative(Real gamma4, Real gamma_rel) {
  * @return The shock heating rate
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_shock_heating_rate(Real Gamma_rel, Real mdot) { return mdot * (Gamma_rel - 1) * con::c2; }
+inline Real compute_shock_heating_rate(Real Gamma_rel, Real mdot) {
+    return mdot * (Gamma_rel - 1) * con::c2;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -315,15 +327,15 @@ inline Real compute_shell_spreading_rate(Real Gamma_rel, Real dtdt_comv) {
  * @return The radiative efficiency
  * <!-- ************************************************************************************** -->
  */
-inline Real compute_radiative_efficiency(Real t_comv, Real Gamma_th, Real u, RadParams const& rad) {  //
+inline Real compute_radiative_efficiency(Real t_comv, Real Gamma_th, Real u, RadParams const& rad) { //
     Real gamma_m = (rad.p - 2) / (rad.p - 1) * rad.eps_e * (Gamma_th - 1) * con::mp / con::me / rad.xi_e + 1;
     Real gamma_c = (6 * con::pi * con::me * con::c / con::sigmaT) / (rad.eps_B * u * t_comv);
     gamma_c = 0.5 * (gamma_c + std::sqrt(gamma_c * gamma_c + 4));
 
-    Real g_m_g_c = std::fabs(gamma_m / gamma_c);  // gamma_m/gamma_c
-    if (g_m_g_c < 1 && rad.p > 2) {               // slow cooling
+    Real g_m_g_c = std::fabs(gamma_m / gamma_c); // gamma_m/gamma_c
+    if (g_m_g_c < 1 && rad.p > 2) {              // slow cooling
         return rad.eps_e * fast_pow(g_m_g_c, rad.p - 2);
-    } else {  // fast cooling or p<=2
+    } else { // fast cooling or p<=2
         return rad.eps_e;
     }
 }

@@ -59,7 +59,7 @@ Use Doxygen-style comments for C++ code:
 /**
  * @brief Brief description of the function/class
  * @details Detailed description
- * 
+ *
  * @param param1 Description of first parameter
  * @param param2 Description of second parameter
  * @return Description of return value
@@ -83,21 +83,21 @@ Comments in .cpp implementation files are now fully included in the documentatio
 ```cpp
 void MyClass::complexMethod(int param1, double param2) {
     // Implementation comments will be included in the documentation
-    
+
     /*
      * Longer implementation comments will also be visible
      * in the documentation.
      */
-    
+
     // Step 1: Initialize calculation
     double result = 0.0;
-    
+
     // Step 2: Complex algorithm explanation here
     for (int i = 0; i < param1; i++) {
         // This algorithm uses the following approach...
         result += std::sin(i * param2);
     }
-    
+
     return result;
 }
 ```
@@ -127,7 +127,7 @@ Example for comprehensive class documentation:
  * @class MyClass
  * @brief Brief description of the class
  * @details Detailed description of the class and its purpose
- * 
+ *
  * This class provides functionality for...
  * Usage example:
  * @code
@@ -142,7 +142,7 @@ public:
      * @param param1 Description of parameter
      */
     MyClass(int param1);
-    
+
     /**
      * @brief Method description
      * @param param Description of parameter
@@ -163,13 +163,13 @@ Use Google-style docstrings for Python code:
 ```python
 def function(param1, param2):
     """Brief description of the function.
-    
+
     Detailed description of the function.
-    
+
     Args:
         param1: Description of first parameter
         param2: Description of second parameter
-        
+
     Returns:
         Description of return value
     """
@@ -232,4 +232,4 @@ This is particularly useful for viewing implementation-specific comments that de
 ## Customizing Documentation
 
 - Edit `source/conf.py` to modify Sphinx configuration
-- Edit `Doxyfile` to modify Doxygen configuration 
+- Edit `Doxyfile` to modify Doxygen configuration

@@ -16,7 +16,7 @@
  * <!-- ************************************************************************************** -->
  */
 class Medium {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with density function
@@ -41,7 +41,7 @@ class Medium {
  * <!-- ************************************************************************************** -->
  */
 class ISM {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with particle number density in cm^-3
@@ -61,8 +61,8 @@ class ISM {
      */
     inline Real rho(Real phi, Real theta, Real r) const noexcept { return rho_; }
 
-   private:
-    Real rho_{0};  ///< Mass density (particle number density × proton mass)
+  private:
+    Real rho_{0}; ///< Mass density (particle number density × proton mass)
 };
 
 /**
@@ -74,7 +74,7 @@ class ISM {
  * <!-- ************************************************************************************** -->
  */
 class Wind {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with wind parameter A_star (in standard units)
@@ -96,10 +96,10 @@ class Wind {
 
     inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r02 + r * r) + rho_ism; }
 
-   private:
-    Real A{0};        ///< Wind density parameter in physical units
-    Real rho_ism{0};  ///< ISM density floor
-    Real r02{0};      ///< Radius where ISM transitions to
+  private:
+    Real A{0};       ///< Wind density parameter in physical units
+    Real rho_ism{0}; ///< ISM density floor
+    Real r02{0};     ///< Radius where ISM transitions to
 };
 
 /**
@@ -145,4 +145,4 @@ namespace evn {
         // This represents a steady-state stellar wind where density falls off as 1/r^2
         return [=](Real phi, Real theta, Real r) noexcept { return A / (r02 + r * r) + rho_ism; };
     }
-}  // namespace evn
+} // namespace evn

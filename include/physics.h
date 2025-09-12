@@ -114,7 +114,9 @@ Real calc_engine_duration(Real E_iso, Real n_ism, Real Gamma0, Real xi);
  * @return Velocity fraction (beta = v/c)
  * <!-- ************************************************************************************** -->
  */
-inline Real gamma_to_beta(Real gamma) { return std::sqrt(gamma * gamma - 1) / gamma; }
+inline Real gamma_to_beta(Real gamma) {
+    return std::sqrt(gamma * gamma - 1) / gamma;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -123,7 +125,9 @@ inline Real gamma_to_beta(Real gamma) { return std::sqrt(gamma * gamma - 1) / ga
  * @return Adiabatic index
  * <!-- ************************************************************************************** -->
  */
-inline Real adiabatic_idx(Real gamma) { return 4.0 / 3.0 + 1 / (3 * gamma); }
+inline Real adiabatic_idx(Real gamma) {
+    return 4.0 / 3.0 + 1 / (3 * gamma);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -164,8 +168,8 @@ inline Real RS_crossing_radius(Real E_iso, Real n_ism, Real engine_dura) {
  * <!-- ************************************************************************************** -->
  */
 struct RadParams {
-    Real eps_e{0.1};   ///< Electron energy fraction
-    Real eps_B{0.01};  ///< Magnetic field energy fraction
-    Real p{2.3};       ///< Electron energy distribution index
-    Real xi_e{1};      ///< Electron self-absorption parameter
+    Real eps_e{0.1};  ///< Electron energy fraction
+    Real eps_B{0.01}; ///< Magnetic field energy fraction
+    Real p{2.3};      ///< Electron energy distribution index
+    Real xi_e{1};     ///< Electron self-absorption parameter
 };

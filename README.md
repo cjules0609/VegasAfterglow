@@ -92,7 +92,7 @@ VegasAfterglow delivers exceptional computational performance through deep optim
 
 - **Rapid MCMC Exploration:** Enables parameter estimation with 10,000 MCMC steps for 8 parameters on 20 data points across multi-wavelength light curves and spectra on an 8-core Apple M2 chip in:
   - ~50 seconds for on-axis structured jet scenarios
-  
+
 This level of performance is achieved through optimized algorithm implementation and efficient memory access patterns, facilitating comprehensive Bayesian inference on standard laptop hardware in seconds to minutes rather than hours or days. The accelerated convergence speed enables rapid iteration through different physical models and makes VegasAfterglow suitable for both detailed analysis of individual GRB events and large-scale population studies.
 
 <br clear="right"/>
@@ -168,7 +168,7 @@ The following development tools are required:
   - **Linux**: GCC 10+ or Clang 13+
   - **macOS**: Apple Clang 13+ (with Xcode 13+) or GCC 10+ (via Homebrew)
   - **Windows**: MSVC 19.29+ (Visual Studio 2019 16.10+) or MinGW-w64 with GCC 10+
-  
+
 - **Build tools**:
   - Make (GNU Make 4.0+ recommended)
 
@@ -226,10 +226,10 @@ Now, let's compute and plot multi-wavelength light curves to see how the aftergl
 
 ```python
 # 1. Create logarithmic time array from 10² to 10⁸ seconds (100s to ~3yrs)
-times = np.logspace(2, 8, 100)  
+times = np.logspace(2, 8, 100)
 
 # 2. Define observing frequencies (radio, optical, X-ray bands in Hz)
-bands = np.array([1e9, 1e14, 1e17])  
+bands = np.array([1e9, 1e14, 1e17])
 
 # 3. Calculate the afterglow emission at each time and frequency
 # NOTE: times array must be in ascending order, frequencies can be in random order
@@ -238,7 +238,7 @@ results = model.specific_flux(times, bands)
 # 4. Visualize the multi-wavelength light curves
 plt.figure(figsize=(4.8, 3.6),dpi=200)
 
-# 5. Plot each frequency band 
+# 5. Plot each frequency band
 for i, nu in enumerate(bands):
     exp = int(np.floor(np.log10(nu)))
     base = nu / 10**exp
@@ -249,7 +249,7 @@ def add_note(plt):
     plt.annotate(r'$\nu_m=\nu_a$',xy=(8e5, 2e-25), xytext=(7.5e4, 5e-24), arrowprops=dict(arrowstyle='->'))
     plt.annotate(r'$\nu=\nu_a$',xy=(4e6, 4e-25), xytext=(7.5e5, 5e-24), arrowprops=dict(arrowstyle='->'))
 
-add_note(plt)   
+add_note(plt)
 plt.xlabel('Time (s)')
 plt.ylabel('Flux Density (erg/cm²/s/Hz)')
 plt.legend()
@@ -271,10 +271,10 @@ Running the light curve script will produce this figure showing the afterglow ev
 We can also examine how the broadband spectrum evolves at different times after the burst:
 
 ```python
-# 1. Define broad frequency range (10⁵ to 10²² Hz) 
-frequencies = np.logspace(5, 22, 100)  
+# 1. Define broad frequency range (10⁵ to 10²² Hz)
+frequencies = np.logspace(5, 22, 100)
 
-# 2. Select specific time epochs for spectral snapshots 
+# 2. Select specific time epochs for spectral snapshots
 epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
 # 3. Calculate spectra at each epoch
@@ -318,8 +318,8 @@ If you want to calculate flux at specific time-frequency pairs (t_i, nu_i) inste
 
 ```python
 # Define time and frequency arrays (must be the same length)
-times = np.logspace(2, 8, 200)  
-frequencies = np.logspace(9, 17, 200)  
+times = np.logspace(2, 8, 200)
+frequencies = np.logspace(9, 17, 200)
 
 # For time-frequency pairs (times array must be in ascending order)
 results = model.specific_flux_series(times, frequencies)
@@ -434,7 +434,7 @@ for i, frame in enumerate(frames):
             plt.title(titles[i])
         plt.loglog(details[frame][0, 0, :], details[key][0, 0, :], color='k',lw=2.5)
         plt.loglog(details[frame][0, 0, :], details[key][0, 0, :], color=colors[i])
-        
+
         plt.xlabel(xlabels[i])
         plt.ylabel(ylabels[j])
 
@@ -511,13 +511,13 @@ r     = details['r_fwd'][0,:,:]
 D     = details['Doppler_fwd'][0,:,:]
 
 # Polar contour plot
-scale = 3.0  
+scale = 3.0
 c = ax.contourf(theta*scale, r, np.log10(D), levels=30, cmap='viridis')
 
-ax.set_rscale('log')  
-true_ticks = np.linspace(0, 0.3, 6)             
-ax.set_xticks(true_ticks * scale)               
-ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])  
+ax.set_rscale('log')
+true_ticks = np.linspace(0, 0.3, 6)
+ax.set_xticks(true_ticks * scale)
+ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])
 ax.set_xlim(0,0.3*scale)
 ax.set_ylabel(r'$\theta$ [rad]')
 ax.set_xlabel(r'$r$ [cm]')
@@ -542,13 +542,13 @@ theta = details['theta_fwd'][0,:,:]
 r     = details['r_fwd'][0,:,:]
 t_obs = details['t_obs_fwd'][0,:,:]
 
-scale = 3.0  
+scale = 3.0
 c = ax.contourf(theta*scale, r, np.log10(t_obs), levels=30, cmap='viridis')
 
-ax.set_rscale('log')  
-true_ticks = np.linspace(0, 0.3, 6)             
-ax.set_xticks(true_ticks * scale)               
-ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])  
+ax.set_rscale('log')
+true_ticks = np.linspace(0, 0.3, 6)
+ax.set_xticks(true_ticks * scale)
+ax.set_xticklabels([f"{t:.2f}" for t in true_ticks])
 ax.set_xlim(0,0.3*scale)
 ax.set_ylabel(r'$\theta$ [rad]')
 ax.set_xlabel(r'$r$ [cm]')
@@ -634,7 +634,7 @@ The `Setups` class defines the global properties and environment for your model.
 cfg = Setups()
 
 # Source properties
-cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]  
+cfg.lumi_dist = 3.364e28    # Luminosity distance [cm]
 cfg.z = 1.58               # Redshift
 
 # Physical model configuration
@@ -768,7 +768,7 @@ def draw_bestfit(t,lc_fit, nu, spec_fit):
     ax1.set_xlabel('t [s]')
     ax1.set_ylabel(r'$F_\nu$ [erg/cm$^2$/s/Hz]')
     ax1.legend()
-  
+
     for i, file, sft, c in zip(range(len(spec_files)), spec_files, shift, colors ):
         df = pd.read_csv(file)
         ax2.errorbar(df["nu"], df["Fv_obs"]*sft, df["Fv_err"]*sft, fmt='o',markersize=4,label=file, color=c,markeredgecolor='k', markeredgewidth=.4)

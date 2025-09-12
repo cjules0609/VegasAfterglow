@@ -21,8 +21,8 @@
  */
 template <typename Ejecta, typename Medium>
 struct ForwardState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< whether Ejecta class has dmdt method
-    static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< whether Ejecta class has dedt method
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;   ///< whether Ejecta class has dmdt method
+    static constexpr bool energy_inject = HasDedt<Ejecta>; ///< whether Ejecta class has dedt method
     /// use least fixed array size for integrator efficiency
     static constexpr size_t array_size = 6 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
@@ -30,12 +30,12 @@ struct ForwardState {
 
     union {
         struct {
-            Real Gamma;   ///< Lorentz factor
-            Real m2;      ///< swept mass
-            Real U2_th;   ///< internal energy per solid angle
-            Real r;       ///< radius
-            Real t_comv;  ///< comoving time
-            Real theta;   ///< angle
+            Real Gamma;  ///< Lorentz factor
+            Real m2;     ///< swept mass
+            Real U2_th;  ///< internal energy per solid angle
+            Real r;      ///< radius
+            Real t_comv; ///< comoving time
+            Real theta;  ///< angle
 
             /// shell energy density per solid angle
             [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_jet;
@@ -61,7 +61,7 @@ struct ForwardState {
  */
 template <typename Ejecta, typename Medium>
 class ForwardShockEqn {
-   public:
+  public:
     using State = ForwardState<Ejecta, Medium>;
 
     /**
@@ -100,13 +100,13 @@ class ForwardShockEqn {
      */
     void set_init_state(State& state, Real t0) const noexcept;
 
-    Medium const& medium;  ///< Reference to the ambient medium properties
-    Ejecta const& ejecta;  ///< Reference to the ejecta properties
-    Real const phi{0};     ///< Angular coordinate phi in the jet frame
-    Real const theta0{0};  ///< Initial angular coordinate theta
-    RadParams const rad;   ///< Radiation parameters
+    Medium const& medium; ///< Reference to the ambient medium properties
+    Ejecta const& ejecta; ///< Reference to the ejecta properties
+    Real const phi{0};    ///< Angular coordinate phi in the jet frame
+    Real const theta0{0}; ///< Initial angular coordinate theta
+    RadParams const rad;  ///< Radiation parameters
 
-   private:
+  private:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Computes the derivative of Gamma with respect to engine time t.
@@ -133,9 +133,9 @@ class ForwardShockEqn {
      */
     inline Real compute_dU_dt(Real eps_rad, State const& state, State const& diff, Real ad_idx) const noexcept;
 
-    Real const dOmega0{0};  ///< Initial solid angle element
-    Real const theta_s{0};  ///< Critical angle for jet spreading
-    Real m_jet0{0};         ///< Ejecta mass per solid angle
+    Real const dOmega0{0}; ///< Initial solid angle element
+    Real const theta_s{0}; ///< Critical angle for jet spreading
+    Real m_jet0{0};        ///< Ejecta mass per solid angle
 };
 
 /**

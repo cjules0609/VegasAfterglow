@@ -22,16 +22,16 @@
  */
 struct SynElectrons {
     // All values in comoving frame
-    Real gamma_m{0};     ///< Minimum electron Lorentz factor
-    Real gamma_c{0};     ///< Cooling electron Lorentz factor
-    Real gamma_a{0};     ///< Self-absorption Lorentz factor
-    Real gamma_M{0};     ///< Maximum electron Lorentz factor
-    Real p{2.3};         ///< Power-law index for the electron energy distribution
-    Real N_e{0};         ///< shock electron number PER SOLID ANGLE
-    Real column_den{0};  ///< Column number density
-    Real Y_c{0};         ///< Inverse Compton Y parameter at cooling frequency
-    size_t regime{0};    ///< Regime indicator (1-6, determines spectral shape)
-    InverseComptonY Ys;  ///< InverseComptonY parameters for this electron population
+    Real gamma_m{0};    ///< Minimum electron Lorentz factor
+    Real gamma_c{0};    ///< Cooling electron Lorentz factor
+    Real gamma_a{0};    ///< Self-absorption Lorentz factor
+    Real gamma_M{0};    ///< Maximum electron Lorentz factor
+    Real p{2.3};        ///< Power-law index for the electron energy distribution
+    Real N_e{0};        ///< shock electron number PER SOLID ANGLE
+    Real column_den{0}; ///< Column number density
+    Real Y_c{0};        ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};   ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys; ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->
@@ -52,7 +52,7 @@ struct SynElectrons {
      */
     Real compute_column_den(Real gamma) const;
 
-   private:
+  private:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Calculates the comoving electron energy spectrum at a given Lorentz factor.
@@ -73,21 +73,21 @@ struct SynElectrons {
  */
 struct SynPhotons {
     // All values in comoving frame
-    Real I_nu_max{0};  ///< Maximum specific synchrotron power PER SOLID ANGLE
-    Real nu_m{0};      ///< Characteristic frequency corresponding to gamma_m
-    Real nu_c{0};      ///< Cooling frequency corresponding to gamma_c
-    Real nu_a{0};      ///< Self-absorption frequency
-    Real nu_M{0};      ///< Maximum photon frequency
-    Real p{2.3};       ///< Power-law index for the electron energy distribution
+    Real I_nu_max{0}; ///< Maximum specific synchrotron power PER SOLID ANGLE
+    Real nu_m{0};     ///< Characteristic frequency corresponding to gamma_m
+    Real nu_c{0};     ///< Cooling frequency corresponding to gamma_c
+    Real nu_a{0};     ///< Self-absorption frequency
+    Real nu_M{0};     ///< Maximum photon frequency
+    Real p{2.3};      ///< Power-law index for the electron energy distribution
 
-    Real log2_I_nu_max{0};  ///< Log2 of I_nu_max (for computational efficiency)
-    Real log2_nu_m{0};      ///< Log2 of nu_m
-    Real log2_nu_c{0};      ///< Log2 of nu_c
-    Real log2_nu_a{0};      ///< Log2 of nu_a
-    Real log2_nu_M{0};      ///< Log2 of nu_M
-    Real Y_c{0};            ///< Inverse Compton Y parameter at cooling frequency
-    size_t regime{0};       ///< Regime indicator (1-6, determines spectral shape)
-    InverseComptonY Ys;     ///< InverseComptonY parameters for this electron population
+    Real log2_I_nu_max{0}; ///< Log2 of I_nu_max (for computational efficiency)
+    Real log2_nu_m{0};     ///< Log2 of nu_m
+    Real log2_nu_c{0};     ///< Log2 of nu_c
+    Real log2_nu_a{0};     ///< Log2 of nu_a
+    Real log2_nu_M{0};     ///< Log2 of nu_M
+    Real Y_c{0};           ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};      ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys;    ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->
@@ -97,7 +97,7 @@ struct SynPhotons {
      * @return The synchrotron specific intensity at the specified frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_I_nu(Real nu) const;  ///< Linear power PER SOLID ANGLE
+    Real compute_I_nu(Real nu) const; ///< Linear power PER SOLID ANGLE
 
     /**
      * <!-- ************************************************************************************** -->
@@ -107,7 +107,7 @@ struct SynPhotons {
      * @return Base-2 logarithm of synchrotron specific intensity
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_I_nu(Real log2_nu) const;  ///<  Log2 specific intensity (for computational efficiency)
+    Real compute_log2_I_nu(Real log2_nu) const; ///<  Log2 specific intensity (for computational efficiency)
 
     /**
      * <!-- ************************************************************************************** -->
@@ -117,12 +117,12 @@ struct SynPhotons {
      */
     void update_constant();
 
-   private:
+  private:
     // Cached calculation constants for spectral computations
     // Optimized calculation constants
-    Real C1_{0};  ///< Cached spectral coefficient 1
-    Real C2_{0};  ///< Cached spectral coefficient 2
-    Real C3_{0};  ///< Cached spectral coefficient 3
+    Real C1_{0}; ///< Cached spectral coefficient 1
+    Real C2_{0}; ///< Cached spectral coefficient 2
+    Real C3_{0}; ///< Cached spectral coefficient 3
 
     // Log2 of calculation constants for faster computation
     Real log2_C1_{0};

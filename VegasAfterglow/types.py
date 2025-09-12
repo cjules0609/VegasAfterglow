@@ -1,8 +1,28 @@
-import numpy as np
 from dataclasses import dataclass
-from typing import Sequence, Tuple, Callable, Any, Optional
 from enum import Enum
-from .VegasAfterglowC import ModelParams, Setups, ObsData, VegasMC, Ejecta, Wind, Medium, ISM, TophatJet, GaussianJet, PowerLawJet, TwoComponentJet, StepPowerLawJet, Radiation, Observer, Model, Magnetar
+from typing import Sequence
+
+import numpy as np
+
+from .VegasAfterglowC import (  # noqa: F401
+    ISM,
+    Ejecta,
+    GaussianJet,
+    Magnetar,
+    Medium,
+    Model,
+    ModelParams,
+    ObsData,
+    Observer,
+    PowerLawJet,
+    Radiation,
+    Setups,
+    StepPowerLawJet,
+    TophatJet,
+    TwoComponentJet,
+    VegasMC,
+    Wind,
+)
 
 
 @dataclass
@@ -10,6 +30,7 @@ class FitResult:
     """
     The result of an MCMC fit.
     """
+
     samples: np.ndarray
     log_probs: np.ndarray
     labels: Sequence[str]
@@ -30,7 +51,8 @@ class ParamDef:
     scale=LOG means we sample log10(x), then transform via 10**v.
     scale=FIXED means this param never appears in the sampler.
     """
-    name:   str
-    lower:  float
-    upper:  float
-    scale:  Scale = Scale.LINEAR
+
+    name: str
+    lower: float
+    upper: float
+    scale: Scale = Scale.LINEAR

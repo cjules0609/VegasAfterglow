@@ -20,7 +20,7 @@
  * <!-- ************************************************************************************** -->
  */
 class Ejecta {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
@@ -73,7 +73,7 @@ class Ejecta {
  * <!-- ************************************************************************************** -->
  */
 class TophatJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
@@ -107,13 +107,13 @@ class TophatJet {
      */
     inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
-    Real T0{1 * unit::sec};  ///< Duration of the ejecta in seconds
-    bool spreading{false};   ///< Flag indicating if the ejecta spreads laterally during evolution
+    Real T0{1 * unit::sec}; ///< Duration of the ejecta in seconds
+    bool spreading{false};  ///< Flag indicating if the ejecta spreads laterally during evolution
 
-   private:
-    Real const theta_c_{0};  ///< Core angle of the jet
-    Real const eps_k_{0};    ///< Energy per solid angle within the core
-    Real const Gamma0_{1};   ///< Initial Lorentz factor within the core
+  private:
+    Real const theta_c_{0}; ///< Core angle of the jet
+    Real const eps_k_{0};   ///< Energy per solid angle within the core
+    Real const Gamma0_{1};  ///< Initial Lorentz factor within the core
 };
 
 /**
@@ -125,7 +125,7 @@ class TophatJet {
  * <!-- ************************************************************************************** -->
  */
 class GaussianJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
@@ -170,10 +170,10 @@ class GaussianJet {
     /// Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
-   private:
-    Real const norm_{0};    ///< Normalization factor for Gaussian distribution
-    Real const eps_k_{0};   ///< Peak energy per solid angle at center
-    Real const Gamma0_{1};  ///< Peak Lorentz factor at center
+  private:
+    Real const norm_{0};   ///< Normalization factor for Gaussian distribution
+    Real const eps_k_{0};  ///< Peak energy per solid angle at center
+    Real const Gamma0_{1}; ///< Peak Lorentz factor at center
 };
 
 /**
@@ -185,7 +185,7 @@ class GaussianJet {
  * <!-- ************************************************************************************** -->
  */
 class PowerLawJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, initial Lorentz factor, and power-law index
@@ -229,12 +229,12 @@ class PowerLawJet {
     /// Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
-   private:
-    Real const theta_c_{0};  ///< Core angle of the jet
-    Real const eps_k_{0};    ///< Energy per solid angle at the core
-    Real const Gamma0_{1};   ///< Initial Lorentz factor at the core
-    Real const k_e_{2};      ///< Power-law index for energy angular dependence
-    Real const k_g_{2};      ///< Power-law index for Lorentz factor angular dependence
+  private:
+    Real const theta_c_{0}; ///< Core angle of the jet
+    Real const eps_k_{0};   ///< Energy per solid angle at the core
+    Real const Gamma0_{1};  ///< Initial Lorentz factor at the core
+    Real const k_e_{2};     ///< Power-law index for energy angular dependence
+    Real const k_g_{2};     ///< Power-law index for Lorentz factor angular dependence
 };
 
 /**
@@ -290,16 +290,16 @@ namespace math {
      * <!-- ************************************************************************************** -->
      * @brief Returns a tophat function: constant within the core angle, zero outside
      * @param theta_c Core angle
-     * @param hight Height (value inside the core)
+     * @param height Height (value inside the core)
      * @return Function implementing a tophat profile
      * <!-- ************************************************************************************** -->
      */
-    inline auto tophat(Real theta_c, Real hight) noexcept {
-        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight : 0; };
+    inline auto tophat(Real theta_c, Real height) noexcept {
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? height : 0; };
     }
 
-    inline auto tophat_plus_one(Real theta_c, Real hight) noexcept {
-        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight + 1 : 1; };
+    inline auto tophat_plus_one(Real theta_c, Real height) noexcept {
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? height + 1 : 1; };
     }
 
     /**
@@ -456,7 +456,7 @@ namespace math {
             }
         };
     }
-}  // namespace math
+} // namespace math
 
 /**
  * <!-- ************************************************************************************** -->

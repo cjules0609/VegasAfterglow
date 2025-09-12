@@ -10,8 +10,34 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "xtensor-python/pytensor.hpp"  // Import pytensor.hpp
+#include "xtensor-python/pytensor.hpp" // Import pytensor.hpp
 
 namespace py = pybind11;
 using PyArray = xt::pytensor<double, 1>;
 using PyGrid = xt::pytensor<double, 2>;
+
+template <typename Array>
+bool is_ascending(Array const& arr) {
+    if (arr.size() <= 1)
+        return true;
+    for (size_t i = 1; i < arr.size(); ++i) {
+        if (arr(i) < arr(i - 1)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Array>
+bool safe_array_access(const Array& arr, size_t index) {
+    return index < arr.size();
+}
+
+template <typename Array>
+size_t safe_array_size(const Array& arr) {
+    try {
+        return arr.size();
+    } catch (...) {
+        return 0;
+    }
+}

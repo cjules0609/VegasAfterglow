@@ -11,12 +11,12 @@ This directory contains the official logo assets for the VegasAfterglow project.
 
 The VegasAfterglow logo represents:
 
-1. **Gamma-ray Burst Afterglow**: 
-   - Central burst (yellow-orange) 
+1. **Gamma-ray Burst Afterglow**:
+   - Central burst (yellow-orange)
    - Expanding radiation waves (blue/purple/pink concentric circles)
    - Directional jets (curved yellow lines)
 
-2. **Speed & Computational Efficiency**: 
+2. **Speed & Computational Efficiency**:
    - Multiple lightning bolt symbols (teal) representing ultra-fast computation
    - Speed lines in background suggesting rapid movement
    - "ms" (milliseconds) indicator highlighting the extremely fast processing time
@@ -61,4 +61,4 @@ Primary colors used in the logo:
 - Wave Blues/Purples: #3282b8, #5c6cff, #bb86fc
 - Wave Pink: #ff5e78
 - Speed & Computational Elements: #00ffcc (bright teal)
-- Text: #ffffff 
+- Text: #ffffff

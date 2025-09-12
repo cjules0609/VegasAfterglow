@@ -5,7 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 
-#define FORCE_IMPORT_ARRAY  // numpy C api loading, must before any xtensor-python headers
+#define FORCE_IMPORT_ARRAY // numpy C api loading, must before any xtensor-python headers
 #include "pybind.h"
 
 #include "mcmc.h"
@@ -135,17 +135,27 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // MultiBandData bindings
     py::class_<MultiBandData>(m, "ObsData")
         .def(py::init<>())
-        .def("add_light_curve", &MultiBandData::add_light_curve, py::arg("nu_cgs"), py::arg("t_cgs"),
-             py::arg("Fnu_cgs"), py::arg("Fnu_err"), py::arg("weights") = py::none())
+        .def("add_light_curve",
+             py::overload_cast<double, PyArray const&, PyArray const&, PyArray const&, std::optional<PyArray>>(
+                 &MultiBandData::add_light_curve),
+             py::arg("nu_cgs"), py::arg("t_cgs"), py::arg("Fnu_cgs"), py::arg("Fnu_err"),
+             py::arg("weights") = py::none())
+        .def("add_light_curve",
+             py::overload_cast<double, double, size_t, PyArray const&, PyArray const&, PyArray const&,
+                               std::optional<PyArray>>(&MultiBandData::add_light_curve),
+             py::arg("nu_min_cgs"), py::arg("nu_max_cgs"), py::arg("num_points"), py::arg("t_cgs"), py::arg("Fnu_cgs"),
+             py::arg("Fnu_err"), py::arg("weights") = py::none())
         .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t_cgs"), py::arg("nu_cgs"), py::arg("Fnu_cgs"),
              py::arg("Fnu_err"), py::arg("weights") = py::none());
 
     // MultiBandModel bindings
     py::class_<MultiBandModel>(m, "VegasMC")
-        .def(py::init<MultiBandData const &>(), py::arg("obs_data"))
+        .def(py::init<MultiBandData const&>(), py::arg("obs_data"))
         .def("set", &MultiBandModel::configure, py::arg("param"))
         .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
              py::call_guard<py::gil_scoped_release>())
         .def("specific_flux", &MultiBandModel::specific_flux, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"),
-             py::call_guard<py::gil_scoped_release>());
+             py::call_guard<py::gil_scoped_release>())
+        .def("flux", &MultiBandModel::flux, py::arg("param"), py::arg("t_cgs"), py::arg("nu_min_cgs"),
+             py::arg("nu_max_cgs"), py::arg("num_points"), py::call_guard<py::gil_scoped_release>());
 }

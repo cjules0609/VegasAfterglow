@@ -8,6 +8,7 @@
 #include "pymodel.h"
 
 #include <algorithm>
+#include <cassert>
 #include <numeric>
 
 #include "afterglow.h"
@@ -22,7 +23,7 @@ Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real d
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+        jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
 
     return jet;
@@ -37,7 +38,7 @@ Ejecta PyGaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+        jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
 
     return jet;
@@ -52,7 +53,7 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+        jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
 
     return jet;
@@ -68,7 +69,7 @@ Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Ga
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+        jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
 
     return jet;
@@ -85,7 +86,7 @@ Ejecta PyTwoComponentJet(Real theta_c, Real E_iso_c, Real Gamma0_c, Real theta_w
     jet.T0 = duration;
 
     if (magnetar) {
-        jet.deps_dt = math::magnetar_injection(magnetar->t_0, magnetar->q, magnetar->L_0, theta_c);
+        jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
 
     return jet;
@@ -124,9 +125,9 @@ void convert_unit(Ejecta& jet, Medium& medium) {
 
     jet.T0 *= unit::sec;
 
-    auto rho_cgs = medium.rho;  // number density from python side
+    auto rho_cgs = medium.rho; // number density from python side
     medium.rho = [=](Real phi, Real theta, Real r) {
-        return rho_cgs(phi, theta, r / unit::cm) * (unit::g / unit::cm3);  // convert to density
+        return rho_cgs(phi, theta, r / unit::cm) * (unit::g / unit::cm3); // convert to density
     };
 }
 
@@ -306,24 +307,11 @@ auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
     }
 }
 
-template <typename Array>
-bool is_ascending(Array const& arr) {
-    for (size_t i = 1; i < arr.size(); ++i) {
-        if (arr(i) < arr(i - 1)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    if (t.size() != nu.size()) {
-        throw std::invalid_argument(
-            "time and frequency arrays must have the same size\n"
-            "If you intend to get matrix-like output, use the generic `specific_flux` instead");
-    } else if (is_ascending(t) == false) {
-        throw std::invalid_argument("time array must be in ascending order");
-    }
+    assert(t.size() == nu.size() &&
+           "time and frequency arrays must have the same size\nIf you intend to get matrix-like output, use the "
+           "generic `specific_flux` instead");
+    assert(is_ascending(t) && "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
@@ -334,11 +322,9 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> Array
 
 auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
                                              size_t num_points) -> ArrayDict {
-    if (t.size() != nu.size() || t.size() != expo_time.size()) {
-        throw std::invalid_argument("time, frequency, and exposure time arrays must have the same size\n");
-    } else if (num_points < 2) {
-        throw std::invalid_argument("num_points must be at least 2 to sample within each exposure time\n");
-    }
+    assert(t.size() == nu.size() && t.size() == expo_time.size() &&
+           "time, frequency, and exposure time arrays must have the same size");
+    assert(num_points >= 2 && "num_points must be at least 2 to sample within each exposure time");
 
     size_t total_points = t.size() * num_points;
     Array t_obs = Array::from_shape({total_points});
@@ -393,9 +379,7 @@ auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu
 }
 
 auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    if (is_ascending(t) == false) {
-        throw std::invalid_argument("time array must be in ascending order");
-    }
+    assert(is_ascending(t) && "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;

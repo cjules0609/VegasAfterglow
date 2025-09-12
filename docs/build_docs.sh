@@ -43,4 +43,3 @@ echo "=== Adding source code browsing capability ==="
 cp -r doxygen/html build/html/doxygen
 
 echo "=== Documentation build complete ==="
-

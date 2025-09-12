@@ -41,19 +41,33 @@ concept HasMass = requires(T t) {
     { t.mass(0.0, 0.0, 0.0) };
 };
 
-#define MAKE_THIS_ODEINT_STATE(classname, data, array_size)                  \
-    using array_type = std::array<Real, array_size>;                         \
-    using value_type = typename array_type::value_type;                      \
-    using iterator = typename array_type::iterator;                          \
-    using const_iterator = typename array_type::const_iterator;              \
-    classname() : data{} {};                                                 \
-    constexpr size_t size() const noexcept { return array_size; }            \
-    constexpr iterator begin() noexcept { return data.begin(); }             \
-    constexpr iterator end() noexcept { return data.end(); }                 \
-    constexpr const_iterator begin() const noexcept { return data.begin(); } \
-    constexpr const_iterator end() const noexcept { return data.end(); }     \
-    constexpr value_type& operator[](size_t i) noexcept { return data[i]; }  \
-    constexpr const value_type& operator[](size_t i) const noexcept { return data[i]; }
+#define MAKE_THIS_ODEINT_STATE(classname, data, array_size)                                                            \
+    using array_type = std::array<Real, array_size>;                                                                   \
+    using value_type = typename array_type::value_type;                                                                \
+    using iterator = typename array_type::iterator;                                                                    \
+    using const_iterator = typename array_type::const_iterator;                                                        \
+    classname() : data{} {};                                                                                           \
+    constexpr size_t size() const noexcept {                                                                           \
+        return array_size;                                                                                             \
+    }                                                                                                                  \
+    constexpr iterator begin() noexcept {                                                                              \
+        return data.begin();                                                                                           \
+    }                                                                                                                  \
+    constexpr iterator end() noexcept {                                                                                \
+        return data.end();                                                                                             \
+    }                                                                                                                  \
+    constexpr const_iterator begin() const noexcept {                                                                  \
+        return data.begin();                                                                                           \
+    }                                                                                                                  \
+    constexpr const_iterator end() const noexcept {                                                                    \
+        return data.end();                                                                                             \
+    }                                                                                                                  \
+    constexpr value_type& operator[](size_t i) noexcept {                                                              \
+        return data[i];                                                                                                \
+    }                                                                                                                  \
+    constexpr const value_type& operator[](size_t i) const noexcept {                                                  \
+        return data[i];                                                                                                \
+    }
 
 void print_array(Array const& arr);
 
@@ -88,7 +102,7 @@ namespace func {
     // Always returns 1 regardless of the input.
     inline constexpr auto one_3d = [](Real phi, Real theta, Real t) constexpr noexcept { return 1.; };
     inline constexpr auto one_2d = [](Real phi, Real theta) constexpr noexcept { return 1.; };
-}  // namespace func
+} // namespace func
 
 /**
  * <!-- ************************************************************************************** -->
@@ -106,7 +120,9 @@ namespace func {
  * @return a^(5/2)
  * <!-- ************************************************************************************** -->
  */
-inline Real pow52(Real a) { return std::sqrt(a * a * a * a * a); }
+inline Real pow52(Real a) {
+    return std::sqrt(a * a * a * a * a);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -115,7 +131,9 @@ inline Real pow52(Real a) { return std::sqrt(a * a * a * a * a); }
  * @return a^(4/3)
  * <!-- ************************************************************************************** -->
  */
-inline Real pow43(Real a) { return std::cbrt(a * a * a * a); }
+inline Real pow43(Real a) {
+    return std::cbrt(a * a * a * a);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -124,7 +142,9 @@ inline Real pow43(Real a) { return std::cbrt(a * a * a * a); }
  * @return a^(2/3)
  * <!-- ************************************************************************************** -->
  */
-inline Real pow23(Real a) { return std::cbrt(a * a); }
+inline Real pow23(Real a) {
+    return std::cbrt(a * a);
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -133,7 +153,9 @@ inline Real pow23(Real a) { return std::cbrt(a * a); }
  * @return 1 if x > 0, otherwise 0
  * <!-- ************************************************************************************** -->
  */
-inline Real stepFunc(Real x) { return x > 0 ? 1 : 0; }
+inline Real stepFunc(Real x) {
+    return x > 0 ? 1 : 0;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -142,7 +164,9 @@ inline Real stepFunc(Real x) { return x > 0 ? 1 : 0; }
  * @return Frequency in Hertz
  * <!-- ************************************************************************************** -->
  */
-inline Real eVtoHz(Real eV) { return eV / con::h; }
+inline Real eVtoHz(Real eV) {
+    return eV / con::h;
+}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -351,9 +375,12 @@ inline Real fast_exp(Real x) {
  */
 inline double fast_log(double x) {
 #ifdef EXTREME_SPEED
-    if (x <= 0.) return -std::numeric_limits<double>::infinity();
-    if (std::isnan(x)) return std::numeric_limits<double>::quiet_NaN();
-    if (x == std::numeric_limits<double>::infinity()) return std::numeric_limits<double>::infinity();
+    if (x <= 0.)
+        return -std::numeric_limits<double>::infinity();
+    if (std::isnan(x))
+        return std::numeric_limits<double>::quiet_NaN();
+    if (x == std::numeric_limits<double>::infinity())
+        return std::numeric_limits<double>::infinity();
 
     uint64_t bits;
     std::memcpy(&bits, &x, sizeof(x));
@@ -379,16 +406,16 @@ inline double fast_log2(double val) {
 #ifdef EXTREME_SPEED
     int64_t* const exp_ptr = reinterpret_cast<int64_t*>(&val);
     int64_t x = *exp_ptr;
-    int log2 = ((x >> 52) & 0x7FF) - 1023;  // extract exponent bits
+    int log2 = ((x >> 52) & 0x7FF) - 1023; // extract exponent bits
 
     // Step 2: Normalize mantissa to [1.0, 2.0)
-    x &= ~(0x7FFLL << 52);  // clear exponent bits
-    x |= (1023LL << 52);    // set exponent to 0
-    *exp_ptr = x;           // val is now normalized to [1.0, 2.0)
+    x &= ~(0x7FFLL << 52); // clear exponent bits
+    x |= (1023LL << 52);   // set exponent to 0
+    *exp_ptr = x;          // val is now normalized to [1.0, 2.0)
     double mantissa = val;
 
     // Step 3: Polynomial approximation of log2(mantissa) in [1, 2)
-    double y = mantissa - 1.0;  // small value in [0, 1)
+    double y = mantissa - 1.0; // small value in [0, 1)
     double log2_mantissa =
         y * (1.44269504088896340736 + y * (-0.721347520444482371076 + y * (0.479381953382630073738)));
 
@@ -445,4 +472,6 @@ inline double fast_exp2(double x) {
  * @return a^b
  * <!-- ************************************************************************************** -->
  */
-inline Real fast_pow(Real a, Real b) { return fast_exp2(b * fast_log2(a)); }
+inline Real fast_pow(Real a, Real b) {
+    return fast_exp2(b * fast_log2(a));
+}
