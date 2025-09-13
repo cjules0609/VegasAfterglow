@@ -10,7 +10,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "xtensor-python/pytensor.hpp" // Import pytensor.hpp
+#include "xtensor-python/pytensor.hpp"
 
 namespace py = pybind11;
 using PyArray = xt::pytensor<double, 1>;
@@ -26,18 +26,4 @@ bool is_ascending(Array const& arr) {
         }
     }
     return true;
-}
-
-template <typename Array>
-bool safe_array_access(const Array& arr, size_t index) {
-    return index < arr.size();
-}
-
-template <typename Array>
-size_t safe_array_size(const Array& arr) {
-    try {
-        return arr.size();
-    } catch (...) {
-        return 0;
-    }
 }

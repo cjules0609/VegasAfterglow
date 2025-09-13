@@ -7,6 +7,7 @@ from typing import Callable, Optional, Sequence, Tuple, Type
 
 import emcee
 import numpy as np
+from emcee.moves import DEMove, DESnookerMove
 
 from .types import FitResult, ModelParams, ObsData, Setups, VegasMC
 
@@ -103,8 +104,8 @@ class MultiThreadEmcee:
         pos = np.clip(pos, self.pl + 1e-8, self.pu - 1e-8)
 
         # 4) default moves
-        # if moves is None:
-        #    moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
+        if moves is None:
+            moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
 
         logger.info(
             "🚀 Running coarse MCMC at resolution %s for %d steps",
@@ -113,7 +114,7 @@ class MultiThreadEmcee:
         )
         with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
             sampler = emcee.EnsembleSampler(
-                self.nwalkers, self.ndim, log_prob, pool=pool  # , moves=moves
+                self.nwalkers, self.ndim, log_prob, pool=pool, moves=moves
             )
             sampler.run_mcmc(pos, total_steps, progress=True)
 

@@ -1,6 +1,6 @@
 # VegasAfterglow
 
-<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="270"/>
+<img align="left" src="https://github.com/YihanWangAstro/VegasAfterglow/raw/main/assets/logo.svg" alt="VegasAfterglow Logo" width="350"/>
 
 [![C++ Version](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![PyPI version](https://img.shields.io/pypi/v/VegasAfterglow.svg)](https://pypi.org/project/VegasAfterglow/)
@@ -15,8 +15,7 @@
 **[Latest Release Notes](CHANGELOG.md#v030---2025-09-06)** | **[Full Changelog](CHANGELOG.md)** | **[Install Now](#installation)**
 </div>
 
-**VegasAfterglow** is a high-performance C++ framework with a user-friendly Python interface designed for the comprehensive modeling of afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations.
-
+**VegasAfterglow** is a high-performance C++ framework with a user-friendly Python interface designed for the comprehensive modeling of afterglows. It achieves exceptional computational efficiency, enabling the generation of multi-wavelength light curves in milliseconds and facilitating robust Markov Chain Monte Carlo (MCMC) parameter inference in seconds to minutes. The framework incorporates advanced models for shock dynamics (both forward and reverse shocks), diverse radiation mechanisms (synchrotron with self-absorption, and inverse Compton scattering with Klein-Nishina corrections), and complex structured jet configurations. For lightweight afterglow modeling, one can also consider the [PyFRS](https://github.com/leiwh/PyFRS) package.
 <br clear="left"/>
 
 ---
