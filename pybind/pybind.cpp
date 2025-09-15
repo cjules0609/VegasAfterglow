@@ -31,6 +31,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k_e"),
           py::arg("k_g"), py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
+    m.def("PowerLawWing", &PyPowerLawWing, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k_e"),
+          py::arg("k_g"), py::arg("spreading") = false, py::arg("duration") = 1);
+
     m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
           py::arg("theta_w"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("spreading") = false,
           py::arg("duration") = 1, py::arg("magnetar") = py::none());
@@ -146,7 +149,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::arg("nu_min_cgs"), py::arg("nu_max_cgs"), py::arg("num_points"), py::arg("t_cgs"), py::arg("Fnu_cgs"),
              py::arg("Fnu_err"), py::arg("weights") = py::none())
         .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t_cgs"), py::arg("nu_cgs"), py::arg("Fnu_cgs"),
-             py::arg("Fnu_err"), py::arg("weights") = py::none());
+             py::arg("Fnu_err"), py::arg("weights") = py::none())
+        .def("logscale_screen", &MultiBandData::logscale_screen, py::arg("t"), py::arg("data_density"))
+        .def("data_points_num", &MultiBandData::data_points_num);
 
     // MultiBandModel bindings
     py::class_<MultiBandModel>(m, "VegasMC")

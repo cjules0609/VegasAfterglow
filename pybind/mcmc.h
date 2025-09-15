@@ -33,15 +33,19 @@ struct MultiBandData {
     double estimate_chi2() const;
 
     void add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
-                         std::optional<PyArray> weights);
+                         std::optional<PyArray> weights = std::nullopt);
 
     void add_light_curve(double nu_min, double nu_max, size_t num_points, PyArray const& t, PyArray const& Fv_obs,
-                         PyArray const& Fv_err, std::optional<PyArray> weights);
+                         PyArray const& Fv_err, std::optional<PyArray> weights = std::nullopt);
 
     void add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err,
-                      std::optional<PyArray> weights);
+                      std::optional<PyArray> weights = std::nullopt);
+
+    std::vector<size_t> logscale_screen(PyArray const& data, size_t num_order);
 
     void fill_data_arrays();
+
+    size_t data_points_num() const;
 
     Array times;
     Array frequencies;

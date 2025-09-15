@@ -8,10 +8,10 @@
 #include "pymodel.h"
 
 #include <algorithm>
-#include <cassert>
 #include <numeric>
 
 #include "afterglow.h"
+#include "error_handling.h"
 #include "xtensor/misc/xsort.hpp"
 
 Ejecta PyTophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading, Real duration,
@@ -55,6 +55,16 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
     if (magnetar) {
         jet.deps_dt = math::magnetar_injection(magnetar->t0, magnetar->q, magnetar->L0, theta_c);
     }
+
+    return jet;
+}
+
+Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, bool spreading, Real duration) {
+    Ejecta jet;
+    jet.eps_k = math::powerlaw_wing(theta_c, E_w, k_e);
+    jet.Gamma0 = math::powerlaw_wing_plus_one(theta_c, Gamma_w - 1, k_g);
+    jet.spreading = spreading;
+    jet.T0 = duration;
 
     return jet;
 }
@@ -308,10 +318,11 @@ auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
 }
 
 auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    assert(t.size() == nu.size() &&
-           "time and frequency arrays must have the same size\nIf you intend to get matrix-like output, use the "
-           "generic `specific_flux` instead");
-    assert(is_ascending(t) && "time array must be in ascending order");
+    AFTERGLOW_REQUIRE(
+        t.size() == nu.size(),
+        "time and frequency arrays must have the same size\nIf you intend to get matrix-like output, use the "
+        "generic `specific_flux` instead");
+    AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
@@ -322,9 +333,9 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> Array
 
 auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
                                              size_t num_points) -> ArrayDict {
-    assert(t.size() == nu.size() && t.size() == expo_time.size() &&
-           "time, frequency, and exposure time arrays must have the same size");
-    assert(num_points >= 2 && "num_points must be at least 2 to sample within each exposure time");
+    AFTERGLOW_REQUIRE(t.size() == nu.size() && t.size() == expo_time.size(),
+                      "time, frequency, and exposure time arrays must have the same size");
+    AFTERGLOW_REQUIRE(num_points >= 2, "num_points must be at least 2 to sample within each exposure time");
 
     size_t total_points = t.size() * num_points;
     Array t_obs = Array::from_shape({total_points});
@@ -379,7 +390,7 @@ auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu
 }
 
 auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> ArrayDict {
-    assert(is_ascending(t) && "time array must be in ascending order");
+    AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;

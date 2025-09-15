@@ -81,6 +81,20 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
                      Real duration = 1, std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
+ * @brief Creates a power-law wing jet model: a pencil beam core and powerlaw wing without jump at theta_c
+*
+* @param theta_c Core angle of the jet [radians]
+ * @param E_iso Isotropic-equivalent energy at the center [erg]
+ * @param Gamma0 Initial Lorentz factor at the center
+ * @param k_e Power-law index for energy
+ * @param k_g Power-law index for Lorentz factor
+* @param spreading Whether to include jet lateral spreading
+ * @param duration Engine activity time [seconds]
+ * @return Ejecta Configured jet with power-law wing profile
+ */
+Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, bool spreading = false,
+                      Real duration = 1);
+/**
  * @brief Creates a step power-law jet model: a pencil beam core and powerlaw wing with jump at theta_c
  *
  * @param theta_c Core angle of the jet [radians]

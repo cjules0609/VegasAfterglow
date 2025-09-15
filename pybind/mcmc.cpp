@@ -8,12 +8,76 @@
 #include "mcmc.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <vector>
 
+#include "error_handling.h"
 #include "pybind.h"
+
+std::vector<size_t> MultiBandData::logscale_screen(PyArray const& data, size_t num_order) {
+    size_t total_size = data.size();
+
+    if (num_order == 0) {
+        std::vector<size_t> indices(total_size);
+        std::iota(indices.begin(), indices.end(), 0);
+        return indices;
+    }
+
+    double log_start = std::log10(static_cast<double>(data(0)));
+    double log_end = std::log10(static_cast<double>(data(total_size - 1)));
+    double log_range = log_end - log_start;
+    size_t total_points = static_cast<size_t>(std::ceil(log_range * num_order)) + 1;
+
+    if (total_points >= total_size) {
+        std::vector<size_t> indices(total_size);
+        std::iota(indices.begin(), indices.end(), 0);
+        return indices;
+    }
+
+    std::vector<size_t> indices;
+    indices.reserve(total_points);
+
+    // Always include first point
+    indices.push_back(0);
+
+    double step = log_range / (total_points - 1);
+
+    for (size_t i = 1; i < total_points - 1; ++i) {
+        double log_target = log_start + i * step;
+        double target_value = std::pow(10.0, log_target);
+
+        // Find closest index to target value
+        size_t best_idx = 1;
+        double min_diff = std::abs(static_cast<double>(data(1)) - target_value);
+
+        for (size_t j = 2; j < total_size - 1; ++j) {
+            double diff = std::abs(static_cast<double>(data(j)) - target_value);
+            if (diff < min_diff) {
+                min_diff = diff;
+                best_idx = j;
+            }
+        }
+
+        double log_diff = std::abs(std::log10(static_cast<double>(data(best_idx))) - log_target);
+        double max_log_tolerance = 0.5 / num_order; // Scale tolerance with sampling density
+
+        if (log_diff <= max_log_tolerance && std::find(indices.begin(), indices.end(), best_idx) == indices.end()) {
+            indices.push_back(best_idx);
+        }
+    }
+
+    // Always include last point
+    if (total_size > 1) {
+        indices.push_back(total_size - 1);
+    }
+
+    std::sort(indices.begin(), indices.end());
+    indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+
+    return indices;
+}
 
 double FluxData::estimate_chi2() const {
     double chi_square = 0;
@@ -60,14 +124,20 @@ Ejecta MultiBandModel::select_jet(Params const& param) {
     } else if (config.jet == "powerlaw") {
         jet.eps_k = math::powerlaw(theta_c, eps_iso, param.k_e);
         jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, param.k_g);
-    } else if (config.jet == "twocomponent") {
+    } else if (config.jet == "powerlaw_wing") {
+        jet.eps_k = math::powerlaw_wing(theta_c, eps_iso_w, param.k_e);
+        jet.Gamma0 = math::powerlaw_wing_plus_one(theta_c, Gamma0_w - 1, param.k_g);
+    } else if (config.jet == "uniform") {
+        jet.eps_k = math::tophat(con::pi / 2, eps_iso);
+        jet.Gamma0 = math::tophat_plus_one(con::pi / 2, Gamma0 - 1);
+    } else if (config.jet == "two_component") {
         jet.eps_k = math::two_component(theta_c, theta_w, eps_iso, eps_iso_w);
         jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0 - 1, Gamma0_w - 1);
-    } else if (config.jet == "steppowerlaw") {
+    } else if (config.jet == "step_powerlaw") {
         jet.eps_k = math::step_powerlaw(theta_c, eps_iso, eps_iso_w, param.k_e);
         jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma0 - 1, Gamma0_w - 1, param.k_g);
     } else {
-        assert(false && "Unknown jet type");
+        AFTERGLOW_ENSURE(false, "Unknown jet type");
     }
 
     if (config.magnetar == true) {
@@ -84,23 +154,23 @@ Medium MultiBandModel::select_medium(Params const& param) {
     } else if (config.medium == "wind") {
         medium.rho = evn::wind(param.A_star, param.n_ism / unit::cm3, param.n0 / unit::cm3);
     } else {
-        assert(false && "Unknown medium type");
+        AFTERGLOW_ENSURE(false, "Unknown medium type");
     }
     return medium;
 }
 
 void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
                                     std::optional<PyArray> weights) {
-    assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
+    AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
 
     Array w = xt::ones<Real>({t.size()});
 
     if (weights) {
         w = *weights;
-        assert(t.size() == w.size() && "weights array inconsistent length!");
+        AFTERGLOW_REQUIRE(t.size() == w.size(), "weights array inconsistent length!");
     }
 
-    for (size_t i = 0; i < t.size(); i++) {
+    for (size_t i = 0; i < t.size(); ++i) {
         tuple_data.push_back(std::make_tuple(t(i) * unit::sec, nu * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
                                              Fv_err(i) * unit::flux_den_cgs, w(i)));
     }
@@ -108,15 +178,15 @@ void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& 
 
 void MultiBandData::add_light_curve(double nu_min, double nu_max, size_t num_points, PyArray const& t,
                                     PyArray const& Fv_obs, PyArray const& Fv_err, std::optional<PyArray> weights) {
-    assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
-    assert(is_ascending(t) && "Time array must be in ascending order!");
-    assert(nu_min < nu_max && "nu_min must be less than nu_max!");
+    AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
+    AFTERGLOW_REQUIRE(is_ascending(t), "Time array must be in ascending order!");
+    AFTERGLOW_REQUIRE(nu_min < nu_max, "nu_min must be less than nu_max!");
 
     Array w = xt::ones<Real>({t.size()});
 
     if (weights) {
         w = *weights;
-        assert(t.size() == w.size() && "weights array inconsistent length!");
+        AFTERGLOW_REQUIRE(t.size() == w.size(), "weights array inconsistent length!");
 
         size_t len = w.size();
         Real weight_sum = 0;
@@ -134,19 +204,27 @@ void MultiBandData::add_light_curve(double nu_min, double nu_max, size_t num_poi
 
 void MultiBandData::add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err,
                                  std::optional<PyArray> weights) {
-    assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
+    AFTERGLOW_REQUIRE(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size(), "spectrum array inconsistent length!");
 
     Array w = xt::ones<Real>({nu.size()});
 
     if (weights) {
         w = *weights;
-        assert(nu.size() == w.size() && "weights array inconsistent length!");
+        AFTERGLOW_REQUIRE(nu.size() == w.size(), "weights array inconsistent length!");
     }
 
-    for (size_t i = 0; i < nu.size(); i++) {
+    for (size_t i = 0; i < nu.size(); ++i) {
         tuple_data.push_back(std::make_tuple(t * unit::sec, nu(i) * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
                                              Fv_err(i) * unit::flux_den_cgs, w(i)));
     }
+}
+
+size_t MultiBandData::data_points_num() const {
+    size_t num = tuple_data.size();
+    for (auto& d : flux_data) {
+        num += d.t.size();
+    }
+    return num;
 }
 
 void MultiBandData::fill_data_arrays() {
@@ -188,7 +266,8 @@ void MultiBandData::fill_data_arrays() {
 MultiBandModel::MultiBandModel(MultiBandData const& data) : obs_data(data) {
     obs_data.fill_data_arrays();
 
-    assert((obs_data.times.size() > 0 || obs_data.fluxes.size() > 0) && "No observation time data provided!");
+    AFTERGLOW_REQUIRE((obs_data.times.size() > 0 || obs_data.flux_data.size() > 0),
+                      "No observation time data provided!");
 }
 
 void MultiBandModel::configure(ConfigParams const& param) {
@@ -269,7 +348,7 @@ auto MultiBandModel::flux(Params const& param, PyArray const& t, double nu_min, 
     -> PyArray {
     Array t_bins = t * unit::sec;
     Array nu_bins = xt::logspace(std::log10(nu_min * unit::Hz), std::log10(nu_max * unit::Hz), num_points);
-    Array F_nu;
+    Array F_nu = Array::from_shape({t.size()});
 
     Observer obs;
     SynPhotonGrid f_photons;

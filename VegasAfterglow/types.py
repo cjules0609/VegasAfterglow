@@ -15,6 +15,7 @@ from .VegasAfterglowC import (  # noqa: F401
     ObsData,
     Observer,
     PowerLawJet,
+    PowerLawWing,
     Radiation,
     Setups,
     StepPowerLawJet,

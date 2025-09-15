@@ -49,7 +49,18 @@ The ``ObsData`` class handles multi-wavelength observational data:
                          Fnu_cgs=flux_data, Fnu_err=flux_err,
                          weights=weights)
 
-    # Method 2: Load from CSV files
+    # Method 2: Add frequency-integrated light curve (broadband flux)
+    # For instruments with wide frequency coverage (e.g., BAT, LAT, Fermi)
+    nu_min = 1e17  # Lower frequency bound [Hz]
+    nu_max = 1e19  # Upper frequency bound [Hz]
+    num_points = 5  # Number of frequency points for integration
+
+    data.add_light_curve(nu_min_cgs=nu_min, nu_max_cgs=nu_max,
+                         num_points=num_points, t_cgs=t_data,
+                         Fnu_cgs=flux_data, Fnu_err=flux_err,
+                         weights=weights)
+
+    # Method 3: Load from CSV files
     bands = [2.4e17, 4.84e14, 1.4e14]  # X-ray, optical, near-IR
     lc_files = ["data/xray.csv", "data/optical.csv", "data/nir.csv"]
 
@@ -180,7 +191,7 @@ Jet Structure Variations
 
     cfg = Setups()
     cfg.medium = "ism"
-    cfg.jet = "twocomponent"  # Two-component jet
+    cfg.jet = "two_component"  # Two-component jet
 
     params = [
         # Narrow component
@@ -208,7 +219,7 @@ Jet Structure Variations
 
     cfg = Setups()
     cfg.medium = "ism"
-    cfg.jet = "steppowerlaw"  # Step power-law jet
+    cfg.jet = "step_powerlaw"  # Step power-law jet
 
     params = [
         # Core component (uniform)
@@ -649,13 +660,22 @@ Model Predictions
     t_model = np.logspace(2, 8, 200)
     nu_model = np.array([1e9, 5e14, 2e17])  # Radio, optical, X-ray
 
-    # Light curves
+    # Light curves at specific frequencies
     lc_model = fitter.specific_flux(result.best_params, t_model, nu_model)
 
     # Spectra at specific times
     nu_spec = np.logspace(8, 20, 100)
     times_spec = [1000, 10000]
     spec_model = fitter.specific_flux(result.best_params, times_spec, nu_spec)
+
+    # Frequency-integrated flux (broadband light curves)
+    # Useful for comparing with instruments like Swift/BAT, Fermi/LAT
+    nu_min_broad = 1e17  # Lower frequency bound [Hz]
+    nu_max_broad = 1e19  # Upper frequency bound [Hz]
+    num_freq_points = 5  # Number of frequency points for integration
+
+    flux_integrated = fitter.flux(result.best_params, t_model,
+                                  nu_min_broad, nu_max_broad, num_freq_points)
 
 Visualization
 ^^^^^^^^^^^^^

@@ -337,6 +337,26 @@ namespace math {
         return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)) + 1; };
     }
 
+    inline auto powerlaw_wing(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return 0.;
+            } else {
+                return height / (1 + fast_pow(theta / theta_c, k));
+            }
+        };
+    }
+
+    inline auto powerlaw_wing_plus_one(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return 1.;
+            } else {
+                return height / (1 + fast_pow(theta / theta_c, k)) + 1;
+            }
+        };
+    }
+
     inline auto step_powerlaw(Real theta_c, Real height_c, Real height_w, Real k) noexcept {
         return [=](Real phi, Real theta) noexcept {
             if (theta <= theta_c) {
