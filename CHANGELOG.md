@@ -5,6 +5,114 @@ All notable changes to VegasAfterglow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.1] - 2025-09-15
+
+### Added
+
+#### **Enhanced MCMC Capabilities**
+- **Frequency Integrated Flux Support**: Added support for frequency-integrated observations in MCMC fitting framework
+  - New `MultiBandData.add_light_curve()` overload for broadband flux measurements over frequency ranges
+  - Enables modeling of bolometric observations and filter-integrated measurements
+  - Improved handling of observational data where effective frequency depends on spectral shape
+
+#### **Documentation & Examples**
+- **Comprehensive API Documentation**: Added extensive documentation with detailed physics explanations
+  - Complete parameter descriptions with units and typical ranges
+  - Detailed method documentation with usage examples
+  - Enhanced code examples demonstrating advanced features
+
+### Changed
+
+#### **⚠️ BREAKING: Return Object Interface Redesign**
+- **Named Member Access**: Replaced dictionary-style access with structured object interfaces for better usability and IDE support
+  - **specific_flux()** methods now return `FluxDict` objects with named members:
+    - `results.total` (total flux array)
+    - `results.fwd.sync` (forward shock synchrotron)
+    - `results.fwd.ssc` (forward shock SSC)
+    - `results.rvs.sync` (reverse shock synchrotron)
+    - `results.rvs.ssc` (reverse shock SSC)
+  - **details()** method now returns `SimulationDetails` objects with named members:
+    - `details.phi`, `details.theta`, `details.t_src` (coordinate arrays)
+    - `details.fwd.*` (forward shock quantities: `t_obs`, `Gamma`, `r`, `B_comv`, etc.)
+    - `details.rvs.*` (reverse shock quantities, if enabled)
+  - **Enhanced Type Safety**: All return objects have well-defined attributes for better development experience
+
+#### **API Consistency Improvements**
+- **Parameter Naming Standardization**: Major cleanup of parameter names across all interfaces for consistency
+  - **ConfigParams**: `fwd_SSC` → `fwd_ssc`, `rvs_SSC` → `rvs_ssc`, `IC_cooling` → `ssc_cooling`, `KN` → `kn`
+  - **PyRadiation**: `IC_cooling` → `ssc_cooling`, `SSC` → `ssc`, `KN` → `kn`
+  - **Model Constructor**: `forward_rad` → `fwd_rad`, `reverse_rad` → `rvs_rad`
+  - All parameter names now follow consistent snake_case convention
+
+#### **Enhanced Code Documentation**
+- **Comprehensive Comments**: Added detailed documentation to all major classes and structures
+  - Complete parameter descriptions with physics context
+  - Method documentation with detailed explanations
+  - Consistent documentation style following project conventions
+
+### Fixed
+
+#### **Interface Consistency**
+- **Documentation Updates**: Updated all documentation and examples to reflect new parameter names
+  - README.md examples updated with new parameter conventions
+  - Tutorial documentation fully synchronized with API changes
+  - All code examples verified for consistency
+
+### Migration Notes
+
+**Parameter Name Changes**: This release standardizes parameter naming conventions. Update your code as follows:
+
+**For MCMC Configuration (ConfigParams/Setups):**
+```python
+# Old names → New names
+cfg.fwd_SSC = True    → cfg.fwd_ssc = True
+cfg.rvs_SSC = True    → cfg.rvs_ssc = True
+cfg.IC_cooling = True → cfg.ssc_cooling = True
+cfg.KN = True         → cfg.kn = True
+```
+
+**For Radiation Physics (PyRadiation/Radiation):**
+```python
+# Old names → New names
+Radiation(eps_e=0.1, eps_B=0.01, p=2.3, IC_cooling=True, SSC=True, KN=True)
+# becomes:
+Radiation(eps_e=0.1, eps_B=0.01, p=2.3, ssc_cooling=True, ssc=True, kn=True)
+```
+
+**For Model Constructor:**
+```python
+# Old names → New names
+Model(jet=jet, medium=medium, observer=obs, forward_rad=rad, reverse_rad=rad_rvs)
+# becomes:
+Model(jet=jet, medium=medium, observer=obs, fwd_rad=rad, rvs_rad=rad_rvs)
+```
+
+**For Return Object Access (BREAKING CHANGE):**
+```python
+# OLD: Dictionary-style access (no longer supported)
+results = model.specific_flux(times, frequencies)
+sync_flux = results['sync']  #  No longer works
+
+# NEW: Named member access
+results = model.specific_flux(times, frequencies)
+total_flux = results.total              # New way
+sync_flux = results.fwd.sync           # New way
+ssc_flux = results.fwd.ssc             # New way
+rvs_sync = results.rvs.sync            # New way (if reverse shock enabled)
+
+# OLD: Dictionary-style details access
+details = model.details(t_min, t_max)
+gamma = details['Gamma_fwd']     # No longer works
+
+# NEW: Named member access
+details = model.details(t_min, t_max)
+gamma = details.fwd.Gamma              # New way
+time_obs = details.fwd.t_obs           # New way
+coordinates = details.theta            # New way
+```
+
+---
+
 ## [v1.0.0] - 2025-09-06
 
 ### Major Features & Enhancements
