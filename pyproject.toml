@@ -38,9 +38,9 @@ build.verbose = false
 
 [tool.setuptools_scm]
 write_to = "VegasAfterglow/_version.py"
-version_scheme = "release-branch-semver"
 
-sdist.include = [
+[tool.scikit-build.sdist]
+include = [
   "LICENSE",
   "README.md",
   "CMakeLists.txt",
