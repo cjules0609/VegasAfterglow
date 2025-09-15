@@ -232,7 +232,7 @@ bands = np.array([1e9, 1e14, 1e17])
 
 # 3. Calculate the afterglow emission at each time and frequency
 # NOTE: times array must be in ascending order, frequencies can be in random order
-results = model.specific_flux(times, bands)
+results = model.flux_density_grid(times, bands)
 
 # 4. Visualize the multi-wavelength light curves
 plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -278,7 +278,7 @@ epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
 # 3. Calculate spectra at each epoch
 # NOTE: epochs array must be in ascending order, frequencies can be in random order
-results = model.specific_flux(epochs, frequencies)
+results = model.flux_density_grid(epochs, frequencies)
 
 # 4. Plot broadband spectra at each epoch
 plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -321,7 +321,7 @@ times = np.logspace(2, 8, 200)
 frequencies = np.logspace(9, 17, 200)
 
 # For time-frequency pairs (times array must be in ascending order)
-results = model.specific_flux_series(times, frequencies)
+results = model.flux_density(times, frequencies)
 
 # The returned results is a FluxDict object with different flux components
 print("Result attributes:", dir(results))  # Shows .fwd, .rvs, .total attributes
@@ -330,9 +330,9 @@ print("Forward shock shape:", results.fwd.sync.shape)  # Forward shock synchrotr
 ```
 
 **Key differences:**
-- `specific_flux()`: Calculates flux on a time-frequency grid (NxM output from N times and M frequencies)
-- `specific_flux_series()`: Calculates flux at paired time-frequency points (N output from N time-frequency pairs), requires ascending order time arrays
-- `specific_flux_series_with_expo()`: Same as above but with exposure time averaging for realistic observational scenarios
+- `flux_density_grid()`: Calculates flux on a time-frequency grid (NxM output from N times and M frequencies)
+- `flux_density()`: Calculates flux at paired time-frequency points (N output from N time-frequency pairs), requires ascending order time arrays
+- `flux_density_exposures()`: Same as above but with exposure time averaging for realistic observational scenarios
 
 **Return value structure:**
 All flux calculation methods return a `FluxDict` object with:
@@ -619,15 +619,15 @@ data = ObsData()
 t_data = [1e3, 2e3, 5e3, 1e4, 2e4]  # Time in seconds
 flux_data = [1e-26, 8e-27, 5e-27, 3e-27, 2e-27]  # Specific flux in erg/cm²/s/Hz
 flux_err = [1e-28, 8e-28, 5e-28, 3e-28, 2e-28]  # Specific flux error in erg/cm²/s/Hz
-data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err)
+data.add_flux_density(nu=4.84e14, t=t_data, f_nu=flux_data, err=flux_err)  # All quantities in CGS units
 # You can also assign weights to each data point to account for systematic uncertainties or correlations. You don't need to worry about the weights' normalization, the code will normalize them automatically.
-#data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data, Fnu_cgs=flux_data, Fnu_err=flux_err, weights=np.ones(len(t_data)))
+#data.add_flux_density(nu=4.84e14, t=t_data, f_nu=flux_data, err=flux_err, weights=np.ones(len(t_data)))
 
 # For spectra
 nu_data = [...]  # Frequencies in Hz
 spectrum_data = [...] # Specific flux values in erg/cm²/s/Hz
 spectrum_err = [...]   # Specific flux errors in erg/cm²/s/Hz
-data.add_spectrum(t_cgs=3000, nu_cgs=nu_data, Fnu_cgs=spectrum_data, Fnu_err=spectrum_err, weights=np.ones(len(nu_data)))
+data.add_spectrum(t=3000, nu=nu_data, f_nu=spectrum_data, err=spectrum_err, weights=np.ones(len(nu_data)))  # All quantities in CGS units
 ```
 
 ```python
@@ -641,7 +641,7 @@ lc_files = ["data/ep.csv", "data/r.csv", "data/vt-r.csv"]
 # Load light curves from files
 for nu, fname in zip(bands, lc_files):
     df = pd.read_csv(fname)
-    data.add_light_curve(nu_cgs=nu, t_cgs=df["t"], Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
+    data.add_flux_density(nu=nu, t=df["t"], f_nu=df["Fv_obs"], err=df["Fv_err"])  # All quantities in CGS units
 
 times = [3000] # Example: time in seconds
 spec_files = ["data/ep-spec.csv"]
@@ -649,7 +649,7 @@ spec_files = ["data/ep-spec.csv"]
 # Load spectra from files
 for t, fname in zip(times, spec_files):
     df = pd.read_csv(fname)
-    data.add_spectrum(t_cgs=t, nu_cgs=df["nu"], Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
+    data.add_spectrum(t=t, nu=df["nu"], f_nu=df["Fv_obs"], err=df["Fv_err"])  # All quantities in CGS units
 ```
 
 > **Note:** The `ObsData` interface is designed to be flexible. You can mix and match different data sources, and add multiple light curves at different frequencies as well as multiple spectra at different times.
@@ -761,10 +761,10 @@ nu_out = np.logspace(16,20,150)
 best_params = result.top_k_params[0]
 
 # Generate model light curves at the specified bands using the best-fit parameters
-lc = fitter.specific_flux(best_params, t_out, band)
+lc = fitter.flux_density_grid(best_params, t_out, band)
 
 # Generate model spectra at the specified times using the best-fit parameters
-spec = fitter.specific_flux(best_params, times, nu_out)
+spec = fitter.flux_density_grid(best_params, times, nu_out)
 ```
 
 Now you can plot the best-fit model:

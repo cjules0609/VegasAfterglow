@@ -5,6 +5,77 @@ All notable changes to VegasAfterglow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.2] - 2025-09-15
+
+### Changed
+
+#### **⚠️ BREAKING: Python Interface Method Name Updates**
+- **Standardized Method Names**: Updated method names across Python interfaces for consistency and clarity
+  - **PyModel Methods**:
+    - `specific_flux()` → `flux_density_grid()` (multi-dimensional flux density calculations)
+    - `specific_flux_series()` → `flux_density()` (time-series flux density calculations)
+    - `specific_flux_series_with_expo()` → `flux_density_exposures()` (exposure-averaged flux density)
+  - **VegasMC Methods**:
+    - `specific_flux()` → `flux_density_grid()` (matches PyModel interface)
+
+#### **⚠️ BREAKING: Data Input Parameter Name Cleanup**
+- **ObsData Interface**: Simplified parameter names by removing explicit "_cgs" suffixes for cleaner API
+  - **Method**: `add_flux_density(nu, t, f_nu, err, weights=None)`
+    - Previous: `add_flux_density(nu_cgs, t_cgs, Fnu_cgs, Fnu_err, weights=None)`
+    - Updated: `add_flux_density(nu, t, f_nu, err, weights=None)`
+  - **Method**: `add_flux(nu_min, nu_max, num_points, t, flux, err, weights=None)`
+    - Previous: `add_flux(nu_min, nu_max, num_points, t_cgs, F, F_err, weights=None)`
+    - Updated: `add_flux(nu_min, nu_max, num_points, t, flux, err, weights=None)`
+  - **Method**: `add_spectrum(t, nu, f_nu, err, weights=None)`
+    - Previous: `add_spectrum(t_cgs, nu_cgs, Fnu_cgs, Fnu_err, weights=None)`
+    - Updated: `add_spectrum(t, nu, f_nu, err, weights=None)`
+
+### Added
+
+#### **Enhanced Documentation**
+- **CGS Unit Documentation**: Added comprehensive CGS unit documentation across all interfaces
+  - Added docstrings to pybind11 methods specifying CGS units for all physical quantities
+  - Updated all examples in README, documentation, and notebooks with clear CGS unit comments
+  - Consistent unit documentation: `nu [Hz]`, `t [s]`, `f_nu [erg/cm²/s/Hz]`, `flux [erg/cm²/s]`
+
+### Migration Notes
+
+**Method Name Changes**: Update your method calls as follows:
+
+**For PyModel/Model objects:**
+```python
+# Old method names → New method names
+results = model.specific_flux(t, nu)              → results = model.flux_density_grid(t, nu)
+flux = model.specific_flux_series(t, nu)          → flux = model.flux_density(t, nu)
+flux = model.specific_flux_series_with_expo(...)  → flux = model.flux_density_exposures(...)
+```
+
+**For VegasMC objects:**
+```python
+# Old method names → New method names
+results = vegasmc.specific_flux(params, t, nu)    → results = vegasmc.flux_density_grid(params, t, nu)
+```
+
+**For ObsData methods:**
+```python
+# Old parameter names → New parameter names
+data.add_flux_density(nu_cgs=1e14, t_cgs=times, Fnu_cgs=flux, Fnu_err=errors)
+# becomes:
+data.add_flux_density(nu=1e14, t=times, f_nu=flux, err=errors)  # All quantities in CGS units
+
+data.add_spectrum(t_cgs=1000, nu_cgs=freqs, Fnu_cgs=spectrum, Fnu_err=errors)
+# becomes:
+data.add_spectrum(t=1000, nu=freqs, f_nu=spectrum, err=errors)  # All quantities in CGS units
+
+data.add_flux(nu_min=1e14, nu_max=1e15, num_points=5, t_cgs=times, F=flux, F_err=errors)
+# becomes:
+data.add_flux(nu_min=1e14, nu_max=1e15, num_points=5, t=times, flux=flux, err=errors)  # All quantities in CGS units
+```
+
+**Important**: All physical quantities are still expected in CGS units as before - only the parameter names have been simplified for a cleaner interface.
+
+---
+
 ## [v1.0.1] - 2025-09-15
 
 ### Added

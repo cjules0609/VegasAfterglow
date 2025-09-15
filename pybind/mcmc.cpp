@@ -159,8 +159,8 @@ Medium MultiBandModel::select_medium(Params const& param) {
     return medium;
 }
 
-void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
-                                    std::optional<PyArray> weights) {
+void MultiBandData::add_flux_density(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
+                                     std::optional<PyArray> weights) {
     AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
 
     Array w = xt::ones<Real>({t.size()});
@@ -176,8 +176,8 @@ void MultiBandData::add_light_curve(double nu, PyArray const& t, PyArray const& 
     }
 }
 
-void MultiBandData::add_light_curve(double nu_min, double nu_max, size_t num_points, PyArray const& t,
-                                    PyArray const& Fv_obs, PyArray const& Fv_err, std::optional<PyArray> weights) {
+void MultiBandData::add_flux(double nu_min, double nu_max, size_t num_points, PyArray const& t, PyArray const& Fv_obs,
+                             PyArray const& Fv_err, std::optional<PyArray> weights) {
     AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
     AFTERGLOW_REQUIRE(is_ascending(t), "Time array must be in ascending order!");
     AFTERGLOW_REQUIRE(nu_min < nu_max, "nu_min must be less than nu_max!");
@@ -312,7 +312,7 @@ double MultiBandModel::estimate_chi2(Params const& param) {
     return obs_data.estimate_chi2();
 }
 
-auto MultiBandModel::specific_flux(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
+auto MultiBandModel::flux_density_grid(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
     Array t_bins = t * unit::sec;
     Array nu_bins = nu * unit::Hz;
     MeshGrid F_nu = MeshGrid::from_shape({nu.size(), t.size()});

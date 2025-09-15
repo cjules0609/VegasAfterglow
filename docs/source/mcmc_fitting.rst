@@ -40,14 +40,14 @@ The ``ObsData`` class handles multi-wavelength observational data:
     flux_err = [1e-28, 8e-28, 5e-28, 3e-28, 2e-28]   # Error bars
 
     # Add light curve at R-band frequency
-    data.add_light_curve(nu_cgs=4.84e14, t_cgs=t_data,
-                         Fnu_cgs=flux_data, Fnu_err=flux_err)
+    data.add_flux_density(nu=4.84e14, t=t_data,
+                         f_nu=flux_data, err=flux_err)  # All quantities in CGS units
 
     # Optional: Add weights for systematic uncertainties, normalization handled internally
     weights = np.ones(len(t_data))  # Equal weights
-    data.add_light_curve(nu_cgs=2.4e17, t_cgs=t_data,
-                         Fnu_cgs=flux_data, Fnu_err=flux_err,
-                         weights=weights)
+    data.add_flux_density(nu=2.4e17, t=t_data,
+                         f_nu=flux_data, err=flux_err,
+                         weights=weights)  # All quantities in CGS units
 
     # Method 2: Add frequency-integrated light curve (broadband flux)
     # For instruments with wide frequency coverage (e.g., BAT, LAT, Fermi)
@@ -55,10 +55,10 @@ The ``ObsData`` class handles multi-wavelength observational data:
     nu_max = 1e19  # Upper frequency bound [Hz]
     num_points = 5  # Number of frequency points for integration
 
-    data.add_light_curve(nu_min_cgs=nu_min, nu_max_cgs=nu_max,
-                         num_points=num_points, t_cgs=t_data,
-                         Fnu_cgs=flux_data, Fnu_err=flux_err,
-                         weights=weights)
+    data.add_flux(nu_min=nu_min, nu_max=nu_max,
+                         num_points=num_points, t=t_data,
+                         flux=flux_data, err=flux_err,
+                         weights=weights)  # All quantities in CGS units
 
     # Method 3: Load from CSV files
     bands = [2.4e17, 4.84e14, 1.4e14]  # X-ray, optical, near-IR
@@ -66,8 +66,8 @@ The ``ObsData`` class handles multi-wavelength observational data:
 
     for nu, fname in zip(bands, lc_files):
         df = pd.read_csv(fname)
-        data.add_light_curve(nu_cgs=nu, t_cgs=df["t"],
-                             Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
+        data.add_flux_density(nu=nu, t=df["t"],
+                             f_nu=df["Fv_obs"], err=df["Fv_err"])  # All quantities in CGS units
 
     # Add spectra at specific times
     spec_times = [1000, 10000]  # seconds
@@ -75,8 +75,8 @@ The ``ObsData`` class handles multi-wavelength observational data:
 
     for t, fname in zip(spec_times, spec_files):
         df = pd.read_csv(fname)
-        data.add_spectrum(t_cgs=t, nu_cgs=df["nu"],
-                          Fnu_cgs=df["Fv_obs"], Fnu_err=df["Fv_err"])
+        data.add_spectrum(t=t, nu=df["nu"],
+                          f_nu=df["Fv_obs"], err=df["Fv_err"])  # All quantities in CGS units
 
 Global Configuration
 ^^^^^^^^^^^^^^^^^^^^
@@ -661,12 +661,12 @@ Model Predictions
     nu_model = np.array([1e9, 5e14, 2e17])  # Radio, optical, X-ray
 
     # Light curves at specific frequencies
-    lc_model = fitter.specific_flux(result.best_params, t_model, nu_model)
+    lc_model = fitter.flux_density_grid(result.best_params, t_model, nu_model)
 
     # Spectra at specific times
     nu_spec = np.logspace(8, 20, 100)
     times_spec = [1000, 10000]
-    spec_model = fitter.specific_flux(result.best_params, times_spec, nu_spec)
+    spec_model = fitter.flux_density_grid(result.best_params, times_spec, nu_spec)
 
     # Frequency-integrated flux (broadband light curves)
     # Useful for comparing with instruments like Swift/BAT, Fermi/LAT

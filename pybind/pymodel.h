@@ -426,7 +426,7 @@ class PyModel {
      * @return PyFlux Structure with synchrotron and inverse Compton flux components
      * <!-- ************************************************************************************** -->
      */
-    PyFlux specific_flux(PyArray const& t, PyArray const& nu);
+    PyFlux flux_density_grid(PyArray const& t, PyArray const& nu);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -439,7 +439,7 @@ class PyModel {
      * @return PyFlux Structure with synchrotron and inverse Compton flux components
      * <!-- ************************************************************************************** -->
      */
-    PyFlux specific_flux_series(PyArray const& t, PyArray const& nu);
+    PyFlux flux_density(PyArray const& t, PyArray const& nu);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -455,8 +455,8 @@ class PyModel {
      * @return PyFlux Structure with synchrotron and inverse Compton flux components
      * <!-- ************************************************************************************** -->
      */
-    PyFlux specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
-                                          size_t num_points = 10);
+    PyFlux flux_density_exposures(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
+                                  size_t num_points = 10);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -486,7 +486,7 @@ class PyModel {
      * <!-- ************************************************************************************** -->
      */
     template <typename Func>
-    PyFlux compute_specific_flux(Array const& t, Array const& nu, Func&& flux_func);
+    PyFlux compute_flux_density(Array const& t, Array const& nu, Func&& flux_func);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -598,7 +598,7 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
 }
 
 template <typename Func>
-auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, Func&& flux_func) -> PyFlux {
+auto PyModel::compute_flux_density(Array const& t_obs, Array const& nu_obs, Func&& flux_func) -> PyFlux {
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 

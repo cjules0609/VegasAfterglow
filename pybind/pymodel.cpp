@@ -272,11 +272,11 @@ void PyFlux::calc_total() {
     }
 }
 
-auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> PyFlux {
+auto PyModel::flux_density(PyArray const& t, PyArray const& nu) -> PyFlux {
     AFTERGLOW_REQUIRE(
         t.size() == nu.size(),
-        "time and frequency arrays must have the same size\nIf you intend to get matrix-like output, use the "
-        "generic `specific_flux` instead");
+        "time and frequency arrays must have the same size\nIf you intend to get grid-like output, use the "
+        "generic `flux_density_grid` instead");
     AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
@@ -286,7 +286,7 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> PyFlu
         return obs.specific_flux_series(t, nu, grids...);
     };
 
-    auto result = compute_specific_flux(t_obs, nu_obs, flux_func);
+    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
     result.calc_total();
     return result;
 }
@@ -310,7 +310,6 @@ auto PyModel::generate_exposure_sampling(PyArray const& t, PyArray const& nu, Py
         }
     }
 
-    // Sort by time for computation efficiency
     std::vector<size_t> sort_indices(total_points);
     std::iota(sort_indices.begin(), sort_indices.end(), 0);
     std::sort(sort_indices.begin(), sort_indices.end(), [&t_obs](size_t i, size_t j) { return t_obs(i) < t_obs(j); });
@@ -352,29 +351,26 @@ void PyModel::average_exposure_flux(PyFlux& result, std::vector<size_t> const& i
     average_component(result.rvs.ssc);
 }
 
-auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
-                                             size_t num_points) -> PyFlux {
+auto PyModel::flux_density_exposures(PyArray const& t, PyArray const& nu, PyArray const& expo_time, size_t num_points)
+    -> PyFlux {
     AFTERGLOW_REQUIRE(t.size() == nu.size() && t.size() == expo_time.size(),
                       "time, frequency, and exposure time arrays must have the same size");
     AFTERGLOW_REQUIRE(num_points >= 2, "num_points must be at least 2 to sample within each exposure time");
 
-    // Generate sampling points
     auto sampling = generate_exposure_sampling(t, nu, expo_time, num_points);
 
-    // Compute flux at all sampling points
     auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
         return obs.specific_flux_series(t, nu, grids...);
     };
-    auto result = compute_specific_flux(sampling.t_obs_sorted, sampling.nu_obs_sorted, flux_func);
+    auto result = compute_flux_density(sampling.t_obs_sorted, sampling.nu_obs_sorted, flux_func);
 
-    // Average flux over exposure time
     average_exposure_flux(result, sampling.idx_sorted, t.size(), num_points);
 
     result.calc_total();
     return result;
 }
 
-auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> PyFlux {
+auto PyModel::flux_density_grid(PyArray const& t, PyArray const& nu) -> PyFlux {
     AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
@@ -384,7 +380,7 @@ auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> PyFlux {
         return obs.specific_flux(t, nu, grids...);
     };
 
-    auto result = compute_specific_flux(t_obs, nu_obs, flux_func);
+    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
     result.calc_total();
     return result;
 }

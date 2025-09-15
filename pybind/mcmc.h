@@ -94,8 +94,8 @@ struct MultiBandData {
      * @param weights Optional statistical weights for each measurement
      * <!-- ************************************************************************************** -->
      */
-    void add_light_curve(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
-                         std::optional<PyArray> weights = std::nullopt);
+    void add_flux_density(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
+                          std::optional<PyArray> weights = std::nullopt);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -112,8 +112,8 @@ struct MultiBandData {
      * @param weights Optional statistical weights for each measurement
      * <!-- ************************************************************************************** -->
      */
-    void add_light_curve(double nu_min, double nu_max, size_t num_points, PyArray const& t, PyArray const& Fv_obs,
-                         PyArray const& Fv_err, std::optional<PyArray> weights = std::nullopt);
+    void add_flux(double nu_min, double nu_max, size_t num_points, PyArray const& t, PyArray const& Fv_obs,
+                  PyArray const& Fv_err, std::optional<PyArray> weights = std::nullopt);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -317,7 +317,7 @@ struct MultiBandModel {
      * @return PyGrid Flux prediction grid with time-frequency dimensions
      * <!-- ************************************************************************************** -->
      */
-    PyGrid specific_flux(Params const& param, PyArray const& t, PyArray const& nu);
+    PyGrid flux_density_grid(Params const& param, PyArray const& t, PyArray const& nu);
 
     /**
      * <!-- ************************************************************************************** -->

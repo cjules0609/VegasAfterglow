@@ -149,7 +149,7 @@ class Fitter:
         cfg.phi_resol, cfg.theta_resol, cfg.t_resol = resolution
         return cfg
 
-    def specific_flux(
+    def flux_density_grid(
         self,
         best_params: np.ndarray,
         t: np.ndarray,
@@ -181,7 +181,7 @@ class Fitter:
 
         model = VegasMC(self.data)
         model.set(cfg_local)
-        return model.specific_flux(p, t, nu)
+        return model.flux_density_grid(p, t, nu)
 
     def flux(
         self,

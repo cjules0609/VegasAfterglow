@@ -71,12 +71,16 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("fwd_rad"),
              py::arg("rvs_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 1, 10),
              py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
-        .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"),
+
+        .def("flux_density_grid", &PyModel::flux_density_grid, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
-        .def("specific_flux_series", &PyModel::specific_flux_series, py::arg("t"), py::arg("nu"),
+
+        .def("flux_density", &PyModel::flux_density, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
-        .def("specific_flux_series_with_expo", &PyModel::specific_flux_series_with_expo, py::arg("t"), py::arg("nu"),
+
+        .def("flux_density_exposures", &PyModel::flux_density_exposures, py::arg("t"), py::arg("nu"),
              py::arg("expo_time"), py::arg("num_points") = 10, py::call_guard<py::gil_scoped_release>())
+
         .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
              py::call_guard<py::gil_scoped_release>());
 
@@ -176,29 +180,35 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // MultiBandData bindings
     py::class_<MultiBandData>(m, "ObsData")
         .def(py::init<>())
-        .def("add_light_curve",
-             py::overload_cast<double, PyArray const&, PyArray const&, PyArray const&, std::optional<PyArray>>(
-                 &MultiBandData::add_light_curve),
-             py::arg("nu_cgs"), py::arg("t_cgs"), py::arg("Fnu_cgs"), py::arg("Fnu_err"),
-             py::arg("weights") = py::none())
-        .def("add_light_curve",
-             py::overload_cast<double, double, size_t, PyArray const&, PyArray const&, PyArray const&,
-                               std::optional<PyArray>>(&MultiBandData::add_light_curve),
-             py::arg("nu_min_cgs"), py::arg("nu_max_cgs"), py::arg("num_points"), py::arg("t_cgs"), py::arg("Fnu_cgs"),
-             py::arg("Fnu_err"), py::arg("weights") = py::none())
-        .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t_cgs"), py::arg("nu_cgs"), py::arg("Fnu_cgs"),
-             py::arg("Fnu_err"), py::arg("weights") = py::none())
+
+        .def("add_flux_density", &MultiBandData::add_flux_density, py::arg("nu"), py::arg("t"), py::arg("f_nu"),
+             py::arg("err"), py::arg("weights") = py::none(),
+             "Add flux density data. All quantities in CGS units: nu [Hz], t [s], f_nu [erg/cm²/s/Hz]")
+
+        .def("add_flux", &MultiBandData::add_flux, py::arg("nu_min"), py::arg("nu_max"), py::arg("num_points"),
+             py::arg("t"), py::arg("flux"), py::arg("err"), py::arg("weights") = py::none(),
+             "Add broadband flux data. All quantities in CGS units: nu [Hz], t [s], flux [erg/cm²/s]")
+
+        .def("add_spectrum", &MultiBandData::add_spectrum, py::arg("t"), py::arg("nu"), py::arg("f_nu"), py::arg("err"),
+             py::arg("weights") = py::none(),
+             "Add spectrum data. All quantities in CGS units: t [s], nu [Hz], f_nu [erg/cm²/s/Hz]")
+
         .def("logscale_screen", &MultiBandData::logscale_screen, py::arg("t"), py::arg("data_density"))
+
         .def("data_points_num", &MultiBandData::data_points_num);
 
     // MultiBandModel bindings
     py::class_<MultiBandModel>(m, "VegasMC")
         .def(py::init<MultiBandData const&>(), py::arg("obs_data"))
+
         .def("set", &MultiBandModel::configure, py::arg("param"))
+
         .def("estimate_chi2", &MultiBandModel::estimate_chi2, py::arg("param"),
              py::call_guard<py::gil_scoped_release>())
-        .def("specific_flux", &MultiBandModel::specific_flux, py::arg("param"), py::arg("t_cgs"), py::arg("nu_cgs"),
+
+        .def("flux_density_grid", &MultiBandModel::flux_density_grid, py::arg("param"), py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
-        .def("flux", &MultiBandModel::flux, py::arg("param"), py::arg("t_cgs"), py::arg("nu_min_cgs"),
-             py::arg("nu_max_cgs"), py::arg("num_points"), py::call_guard<py::gil_scoped_release>());
+
+        .def("flux", &MultiBandModel::flux, py::arg("param"), py::arg("t"), py::arg("nu_min"), py::arg("nu_max"),
+             py::arg("num_points"), py::call_guard<py::gil_scoped_release>());
 }

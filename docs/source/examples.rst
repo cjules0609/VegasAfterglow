@@ -40,7 +40,7 @@ Setting up a simple afterglow model
 
     # Calculate the afterglow emission at each time and frequency
     # NOTE that the times array needs to be in ascending order
-    results = model.specific_flux(times, bands)
+    results = model.flux_density_grid(times, bands)
 
     # Visualize the multi-wavelength light curves
     plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -62,7 +62,7 @@ Setting up a simple afterglow model
     epochs = np.array([1e2, 1e3, 1e4, 1e5 ,1e6, 1e7, 1e8])
 
     # Calculate spectra at each epoch
-    results = model.specific_flux(epochs, frequencies)
+    results = model.flux_density_grid(epochs, frequencies)
 
     # Plot broadband spectra at each epoch
     plt.figure(figsize=(4.8, 3.6),dpi=200)
@@ -97,7 +97,7 @@ Suppose you want to calculate the flux at specific time-frequency pairs (t_i, nu
     # Define observing frequencies (must be the same length as times)
     bands = np.logspace(9,17, 200)
 
-    results = model.specific_flux_series(times, bands) #times array could be random order
+    results = model.flux_density(times, bands) #times array could be random order
 
     # the returned results is a FluxDict object with arrays of the same shape as the input times and bands.
 
@@ -118,7 +118,7 @@ For observations with finite exposure times, you can calculate time-averaged flu
     expo_time = np.ones_like(times) * 100  # 100-second exposures
 
     # Calculate time-averaged flux with 20 sample points per exposure
-    results = model.specific_flux_series_with_expo(times, bands, expo_time, num_points=20)
+    results = model.flux_density_exposures(times, bands, expo_time, num_points=20)
 
     # The returned results is a FluxDict object with arrays of the same shape as input times and bands
     # Each flux value represents the average over the corresponding exposure time
@@ -373,7 +373,7 @@ Reverse Shock Emission
 
     bands = np.array([1e9, 1e14, 1e17])
 
-    results = model.specific_flux(times, bands)
+    results = model.flux_density_grid(times, bands)
 
     plt.figure(figsize=(4.8, 3.6),dpi=200)
 
@@ -418,7 +418,7 @@ Self-Synchrotron Compton Radiation
 
     bands = np.array([1e9, 1e14, 1e17])
 
-    results = model.specific_flux(times, bands)
+    results = model.flux_density_grid(times, bands)
 
     plt.figure(figsize=(4.8, 3.6),dpi=200)
 
