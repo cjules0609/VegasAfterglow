@@ -141,183 +141,138 @@ void convert_unit(Ejecta& jet, Medium& medium) {
     };
 }
 
-void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
-                                    Observer& obs, PyRadiation rad, ArrayDict& flux_dict, std::string suffix,
-                                    bool serilized) {
-    obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
-
-    auto syn_e = generate_syn_electrons(shock);
-
-    auto syn_ph = generate_syn_photons(shock, syn_e);
-
-    if (rad.IC_cooling) {
-        if (rad.KN) {
-            KN_cooling(syn_e, syn_ph, shock);
-        } else {
-            Thomson_cooling(syn_e, syn_ph, shock);
-        }
-    }
-
-    if (rad.SSC) {
-        auto IC_ph = generate_IC_photons(syn_e, syn_ph, rad.KN);
-
-        if (serilized) {
-            flux_dict["IC" + suffix] = obs.specific_flux_series(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
-        } else {
-            flux_dict["IC" + suffix] = obs.specific_flux(t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
-        }
-    }
-
-    if (serilized) {
-        flux_dict["syn" + suffix] = obs.specific_flux_series(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
-    } else {
-        flux_dict["syn" + suffix] = obs.specific_flux(t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
-    }
-}
-
-auto PyModel::compute_specific_flux(Array const& t_obs, Array const& nu_obs, bool serilized) -> ArrayDict {
-    Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
-                            t_resol, axisymmetric);
-
-    ArrayDict flux_dict;
-
-    Observer observer;
-
-    if (!rvs_rad_opt) {
-        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
-
-        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "", serilized);
-
-        return flux_dict;
-    } else {
-        auto rvs_rad = *rvs_rad_opt;
-        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
-
-        single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux_dict, "", serilized);
-
-        single_shock_emission(rvs_shock, coord, t_obs, nu_obs, observer, rvs_rad, flux_dict, "_rvs", serilized);
-
-        return flux_dict;
-    }
-}
-
-void save_shock_details(Shock const& shock, ArrayDict& detail_dict, std::string suffix) {
-    detail_dict["Gamma" + suffix] = shock.Gamma;
-    detail_dict["Gamma_th" + suffix] = shock.Gamma_th;
-    detail_dict["r" + suffix] = shock.r / unit::cm;
-    detail_dict["t_comv" + suffix] = shock.t_comv / unit::sec;
-    detail_dict["B" + suffix] = shock.B / unit::Gauss;
-    detail_dict["N_p" + suffix] = shock.N_p;
-    detail_dict["theta" + suffix] = shock.theta;
+void save_shock_details(Shock const& shock, PyShock& details) {
+    details.Gamma = shock.Gamma;
+    details.Gamma_th = shock.Gamma_th;
+    details.r = shock.r / unit::cm;
+    details.t_comv = shock.t_comv / unit::sec;
+    details.B_comv = shock.B / unit::Gauss;
+    details.N_p = shock.N_p;
+    details.theta = shock.theta;
 }
 
 template <typename ElectronGrid>
-void save_electron_details(ElectronGrid const& electrons, ArrayDict& detail_dict, std::string suffix) {
+void save_electron_details(ElectronGrid const& electrons, PyShock& details) {
     auto shape = electrons.shape();
-    detail_dict["gamma_m" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["gamma_c" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["gamma_a" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["gamma_M" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["N_e" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
+    details.gamma_m = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.gamma_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.gamma_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.gamma_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.N_e = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             for (size_t k = 0; k < shape[2]; ++k) {
-                detail_dict["gamma_a" + suffix](i, j, k) = electrons(i, j, k).gamma_a;
-                detail_dict["gamma_m" + suffix](i, j, k) = electrons(i, j, k).gamma_m;
-                detail_dict["gamma_c" + suffix](i, j, k) = electrons(i, j, k).gamma_c;
-                detail_dict["gamma_M" + suffix](i, j, k) = electrons(i, j, k).gamma_M;
-                detail_dict["N_e" + suffix](i, j, k) = electrons(i, j, k).N_e;
+                details.gamma_a(i, j, k) = electrons(i, j, k).gamma_a;
+                details.gamma_m(i, j, k) = electrons(i, j, k).gamma_m;
+                details.gamma_c(i, j, k) = electrons(i, j, k).gamma_c;
+                details.gamma_M(i, j, k) = electrons(i, j, k).gamma_M;
+                details.N_e(i, j, k) = electrons(i, j, k).N_e;
             }
         }
     }
 }
 template <typename PhotonGrid>
-void save_photon_details(PhotonGrid const& photons, ArrayDict& detail_dict, std::string suffix) {
+void save_photon_details(PhotonGrid const& photons, PyShock& details) {
     auto shape = photons.shape();
-    detail_dict["nu_m" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["nu_c" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["nu_a" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["nu_M" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
-    detail_dict["I_nu_max" + suffix] = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
+    details.nu_m = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.nu_c = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.nu_a = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.nu_M = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.I_nu_max = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
             for (size_t k = 0; k < shape[2]; ++k) {
-                detail_dict["nu_a" + suffix](i, j, k) = photons(i, j, k).nu_a;
-                detail_dict["nu_m" + suffix](i, j, k) = photons(i, j, k).nu_m;
-                detail_dict["nu_c" + suffix](i, j, k) = photons(i, j, k).nu_c;
-                detail_dict["nu_M" + suffix](i, j, k) = photons(i, j, k).nu_M;
-                detail_dict["I_nu_max" + suffix](i, j, k) = photons(i, j, k).I_nu_max;
+                details.nu_a(i, j, k) = photons(i, j, k).nu_a / unit::Hz;
+                details.nu_m(i, j, k) = photons(i, j, k).nu_m / unit::Hz;
+                details.nu_c(i, j, k) = photons(i, j, k).nu_c / unit::Hz;
+                details.nu_M(i, j, k) = photons(i, j, k).nu_M / unit::Hz;
+                details.I_nu_max(i, j, k) =
+                    photons(i, j, k).I_nu_max / (unit::erg / (unit::Hz * unit::sec * unit::cm2));
             }
         }
     }
-    detail_dict["nu_m" + suffix] /= unit::Hz;
-    detail_dict["nu_c" + suffix] /= unit::Hz;
-    detail_dict["nu_a" + suffix] /= unit::Hz;
-    detail_dict["nu_M" + suffix] /= unit::Hz;
-    detail_dict["I_nu_max" + suffix] /= (unit::erg / (unit::Hz * unit::sec * unit::cm2));
 }
 
 void PyModel::single_evo_details(Shock const& shock, Coord const& coord, Array const& t_obs, Observer& obs,
-                                 PyRadiation rad, ArrayDict& detail_dict, std::string suffix) {
+                                 PyRadiation rad, PyShock& details) {
     obs.observe(coord, shock, obs_setup.lumi_dist, obs_setup.z);
 
-    detail_dict["t_obs" + suffix] = obs.time / unit::sec;
-    detail_dict["Doppler" + suffix] = xt::exp2(obs.lg2_doppler);
-    // detail_dict["Omega" + suffix] = xt::exp2(obs.lg2_emission_area);
+    details.t_obs = obs.time / unit::sec;
+    details.Doppler = xt::exp2(obs.lg2_doppler);
 
     auto syn_e = generate_syn_electrons(shock);
 
     auto syn_ph = generate_syn_photons(shock, syn_e);
 
-    if (rad.IC_cooling) {
-        if (rad.KN) {
+    if (rad.ssc_cooling) {
+        if (rad.kn) {
             KN_cooling(syn_e, syn_ph, shock);
         } else {
             Thomson_cooling(syn_e, syn_ph, shock);
         }
     }
-    save_electron_details(syn_e, detail_dict, suffix);
-    save_photon_details(syn_ph, detail_dict, suffix);
+    save_electron_details(syn_e, details);
+    save_photon_details(syn_ph, details);
 }
 
-auto PyModel::details(Real t_min, Real t_max) -> ArrayDict {
+auto PyModel::details(Real t_min, Real t_max) -> PyDetails {
     Array t_obs = xt::logspace(std::log10(t_min * unit::sec), std::log10(t_max * unit::sec), 10);
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
-    ArrayDict details_dict;
+    PyDetails details;
 
-    details_dict["phi"] = coord.phi;
-    details_dict["theta"] = coord.theta;
-    details_dict["t_src"] = coord.t / unit::sec;
+    details.phi = coord.phi;
+    details.theta = coord.theta;
+    details.t_src = coord.t / unit::sec;
 
     Observer observer;
 
     if (!rvs_rad_opt) {
         auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
 
-        save_shock_details(fwd_shock, details_dict, "_fwd");
+        save_shock_details(fwd_shock, details.fwd);
 
-        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details.fwd);
 
-        return details_dict;
+        return details;
     } else {
         auto rvs_rad = *rvs_rad_opt;
         auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
 
-        save_shock_details(fwd_shock, details_dict, "_fwd");
+        save_shock_details(fwd_shock, details.fwd);
 
-        save_shock_details(rvs_shock, details_dict, "_rvs");
+        save_shock_details(rvs_shock, details.rvs);
 
-        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details_dict, "_fwd");
+        single_evo_details(fwd_shock, coord, t_obs, observer, fwd_rad, details.fwd);
 
-        single_evo_details(rvs_shock, coord, t_obs, observer, rvs_rad, details_dict, "_rvs");
+        single_evo_details(rvs_shock, coord, t_obs, observer, rvs_rad, details.rvs);
 
-        return details_dict;
+        return details;
     }
 }
 
-auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> ArrayDict {
+void PyFlux::calc_total() {
+    total = xt::zeros<Real>(fwd.sync.shape());
+    if (fwd.sync.size() > 0) {
+        total += fwd.sync;
+    }
+    if (fwd.ssc.size() > 0) {
+        total += fwd.ssc;
+    }
+    if (rvs.sync.size() > 0) {
+        total += rvs.sync;
+    }
+    if (rvs.ssc.size() > 0) {
+        total += rvs.ssc;
+    }
+}
+
+auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> PyFlux {
     AFTERGLOW_REQUIRE(
         t.size() == nu.size(),
         "time and frequency arrays must have the same size\nIf you intend to get matrix-like output, use the "
@@ -326,22 +281,24 @@ auto PyModel::specific_flux_series(PyArray const& t, PyArray const& nu) -> Array
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
-    bool serialized = true;
 
-    return compute_specific_flux(t_obs, nu_obs, serialized);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
+        return obs.specific_flux_series(t, nu, grids...);
+    };
+
+    auto result = compute_specific_flux(t_obs, nu_obs, flux_func);
+    result.calc_total();
+    return result;
 }
 
-auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
-                                             size_t num_points) -> ArrayDict {
-    AFTERGLOW_REQUIRE(t.size() == nu.size() && t.size() == expo_time.size(),
-                      "time, frequency, and exposure time arrays must have the same size");
-    AFTERGLOW_REQUIRE(num_points >= 2, "num_points must be at least 2 to sample within each exposure time");
-
+auto PyModel::generate_exposure_sampling(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
+                                         size_t num_points) -> ExposureSampling {
     size_t total_points = t.size() * num_points;
     Array t_obs = Array::from_shape({total_points});
     Array nu_obs = Array::from_shape({total_points});
     std::vector<size_t> idx(total_points);
 
+    // Generate time-frequency samples within each exposure window
     for (size_t i = 0, j = 0; i < t.size() && j < total_points; ++i) {
         Real t_start = t(i);
         Real dt = expo_time(i) / (num_points - 1);
@@ -353,6 +310,7 @@ auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu
         }
     }
 
+    // Sort by time for computation efficiency
     std::vector<size_t> sort_indices(total_points);
     std::iota(sort_indices.begin(), sort_indices.end(), 0);
     std::sort(sort_indices.begin(), sort_indices.end(), [&t_obs](size_t i, size_t j) { return t_obs(i) < t_obs(j); });
@@ -371,30 +329,62 @@ auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu
     t_obs_sorted *= unit::sec;
     nu_obs_sorted *= unit::Hz;
 
-    bool serialized = true;
+    return {std::move(t_obs_sorted), std::move(nu_obs_sorted), std::move(idx_sorted)};
+}
 
-    auto result = compute_specific_flux(t_obs_sorted, nu_obs_sorted, serialized);
-
-    for (auto& [key, val] : result) {
-        Array summed = xt::zeros<Real>({t.size()});
-
-        for (size_t j = 0; j < val.size(); j++) {
-            size_t orig_time_idx = idx_sorted[j];
-            summed(orig_time_idx) += val(j);
+void PyModel::average_exposure_flux(PyFlux& result, std::vector<size_t> const& idx_sorted, size_t original_size,
+                                    size_t num_points) {
+    auto average_component = [&](XTArray& component) {
+        if (component.size() > 0) {
+            Array summed = xt::zeros<Real>({original_size});
+            for (size_t j = 0; j < component.size(); j++) {
+                size_t orig_time_idx = idx_sorted[j];
+                summed(orig_time_idx) += component(j);
+            }
+            summed /= static_cast<Real>(num_points);
+            component = std::move(summed);
         }
+    };
 
-        summed /= static_cast<Real>(num_points);
-        result[key] = summed;
-    }
+    average_component(result.fwd.sync);
+    average_component(result.fwd.ssc);
+    average_component(result.rvs.sync);
+    average_component(result.rvs.ssc);
+}
+
+auto PyModel::specific_flux_series_with_expo(PyArray const& t, PyArray const& nu, PyArray const& expo_time,
+                                             size_t num_points) -> PyFlux {
+    AFTERGLOW_REQUIRE(t.size() == nu.size() && t.size() == expo_time.size(),
+                      "time, frequency, and exposure time arrays must have the same size");
+    AFTERGLOW_REQUIRE(num_points >= 2, "num_points must be at least 2 to sample within each exposure time");
+
+    // Generate sampling points
+    auto sampling = generate_exposure_sampling(t, nu, expo_time, num_points);
+
+    // Compute flux at all sampling points
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
+        return obs.specific_flux_series(t, nu, grids...);
+    };
+    auto result = compute_specific_flux(sampling.t_obs_sorted, sampling.nu_obs_sorted, flux_func);
+
+    // Average flux over exposure time
+    average_exposure_flux(result, sampling.idx_sorted, t.size(), num_points);
+
+    result.calc_total();
     return result;
 }
 
-auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> ArrayDict {
+auto PyModel::specific_flux(PyArray const& t, PyArray const& nu) -> PyFlux {
     AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
 
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
-    bool return_trace = false;
 
-    return compute_specific_flux(t_obs, nu_obs, return_trace);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
+        return obs.specific_flux(t, nu, grids...);
+    };
+
+    auto result = compute_specific_flux(t_obs, nu_obs, flux_func);
+    result.calc_total();
+    return result;
 }

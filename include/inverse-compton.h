@@ -210,7 +210,7 @@ inline constexpr Real IC_x0 = 0.47140452079103166;
  */
 template <typename Electrons, typename Photons>
 ICPhotonGrid<Electrons, Photons> generate_IC_photons(ElectronGrid<Electrons> const& electron,
-                                                     PhotonGrid<Photons> const& photon, bool KN = true) noexcept;
+                                                     PhotonGrid<Photons> const& photon, bool kn = true) noexcept;
 
 /**
  * <!-- ************************************************************************************** -->

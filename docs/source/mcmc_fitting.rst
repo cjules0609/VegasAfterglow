@@ -97,10 +97,10 @@ The ``Setups`` class defines fixed model properties:
 
     # Physics options
     cfg.rvs_shock = True      # Include reverse shock
-    cfg.fwd_SSC = True        # Forward shock inverse Compton
-    cfg.rvs_SSC = False       # Reverse shock inverse Compton
-    cfg.IC_cooling = True     # IC cooling effects
-    cfg.KN = True             # Klein-Nishina corrections
+    cfg.fwd_ssc = True        # Forward shock inverse Compton
+    cfg.rvs_ssc = False       # Reverse shock inverse Compton
+    cfg.ssc_cooling = True     # IC cooling effects
+    cfg.kn = True             # Klein-Nishina corrections
     cfg.magnetar = True       # Magnetar energy injection
 
     # Numerical parameters
@@ -434,9 +434,9 @@ Inverse Compton Radiation
     cfg = Setups()
     cfg.medium = "ism"        # Default medium
     cfg.jet = "tophat"        # Default jet
-    cfg.fwd_SSC = True        # Forward shock SSC
-    cfg.IC_cooling = True     # IC cooling effects
-    cfg.KN = True             # Klein-Nishina corrections
+    cfg.fwd_ssc = True        # Forward shock SSC
+    cfg.ssc_cooling = True     # IC cooling effects
+    cfg.kn = True             # Klein-Nishina corrections
 
     params = [
         # Standard parameters (same as default)
@@ -459,10 +459,10 @@ Inverse Compton Radiation
     cfg.medium = "ism"
     cfg.jet = "tophat"
     cfg.rvs_shock = True      # Enable reverse shock
-    cfg.fwd_SSC = True        # Forward shock SSC
-    cfg.rvs_SSC = True        # Reverse shock SSC
-    cfg.IC_cooling = True
-    cfg.KN = True
+    cfg.fwd_ssc = True        # Forward shock SSC
+    cfg.rvs_ssc = True        # Reverse shock SSC
+    cfg.ssc_cooling = True
+    cfg.kn = True
 
     params = [
         # Standard parameters with reverse shock
@@ -562,10 +562,10 @@ Complex Model Combinations
     cfg.medium = "wind"       # Stratified medium
     cfg.jet = "gaussian"      # Structured jet
     cfg.rvs_shock = True      # Reverse shock
-    cfg.fwd_SSC = True        # Forward SSC
-    cfg.rvs_SSC = True        # Reverse SSC
-    cfg.IC_cooling = True     # IC cooling
-    cfg.KN = True             # Klein-Nishina
+    cfg.fwd_ssc = True        # Forward SSC
+    cfg.rvs_ssc = True        # Reverse SSC
+    cfg.ssc_cooling = True     # IC cooling
+    cfg.kn = True             # Klein-Nishina
     cfg.magnetar = True       # Energy injection
 
     params = [

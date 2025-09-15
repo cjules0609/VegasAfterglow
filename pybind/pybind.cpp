@@ -62,14 +62,14 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Radiation bindings
     py::class_<PyRadiation>(m, "Radiation")
         .def(py::init<Real, Real, Real, Real, bool, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
-             py::arg("xi_e") = 1, py::arg("IC_cooling") = false, py::arg("SSC") = false, py::arg("KN") = false);
+             py::arg("xi_e") = 1, py::arg("ssc_cooling") = false, py::arg("ssc") = false, py::arg("kn") = false);
 
     // Model bindings
     py::class_<PyModel>(m, "Model")
         .def(py::init<Ejecta, Medium, PyObserver, PyRadiation, std::optional<PyRadiation>, std::tuple<Real, Real, Real>,
                       Real, bool>(),
-             py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("forward_rad"),
-             py::arg("reverse_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 1, 10),
+             py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("fwd_rad"),
+             py::arg("rvs_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 1, 10),
              py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
         .def("specific_flux", &PyModel::specific_flux, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
@@ -79,6 +79,44 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::arg("expo_time"), py::arg("num_points") = 10, py::call_guard<py::gil_scoped_release>())
         .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
              py::call_guard<py::gil_scoped_release>());
+
+    py::class_<Flux>(m, "Flux").def(py::init<>()).def_readwrite("sync", &Flux::sync).def_readwrite("ssc", &Flux::ssc);
+
+    py::class_<PyFlux>(m, "FluxDict")
+        .def(py::init<>())
+        .def_readwrite("fwd", &PyFlux::fwd)
+        .def_readwrite("rvs", &PyFlux::rvs)
+        .def_readwrite("total", &PyFlux::total);
+
+    py::class_<PyShock>(m, "ShockDetails")
+        .def(py::init<>())
+        .def_readwrite("t_comv", &PyShock::t_comv)
+        .def_readwrite("t_obs", &PyShock::t_obs)
+        .def_readwrite("Gamma", &PyShock::Gamma)
+        .def_readwrite("Gamma_th", &PyShock::Gamma_th)
+        .def_readwrite("B_comv", &PyShock::B_comv)
+        .def_readwrite("r", &PyShock::r)
+        .def_readwrite("theta", &PyShock::theta)
+        .def_readwrite("N_p", &PyShock::N_p)
+        .def_readwrite("N_e", &PyShock::N_e)
+        .def_readwrite("gamma_m", &PyShock::gamma_m)
+        .def_readwrite("gamma_c", &PyShock::gamma_c)
+        .def_readwrite("gamma_M", &PyShock::gamma_M)
+        .def_readwrite("gamma_a", &PyShock::gamma_a)
+        .def_readwrite("nu_m", &PyShock::nu_m)
+        .def_readwrite("nu_c", &PyShock::nu_c)
+        .def_readwrite("nu_M", &PyShock::nu_M)
+        .def_readwrite("nu_a", &PyShock::nu_a)
+        .def_readwrite("I_nu_max", &PyShock::I_nu_max)
+        .def_readwrite("Doppler", &PyShock::Doppler);
+
+    py::class_<PyDetails>(m, "SimulationDetails")
+        .def(py::init<>())
+        .def_readwrite("phi", &PyDetails::phi)
+        .def_readwrite("theta", &PyDetails::theta)
+        .def_readwrite("t_src", &PyDetails::t_src)
+        .def_readwrite("fwd", &PyDetails::fwd)
+        .def_readwrite("rvs", &PyDetails::rvs);
 
     //========================================================================================================
     //                                 MCMC bindings
@@ -129,10 +167,10 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("theta_resol", &ConfigParams::theta_resol)
         .def_readwrite("rtol", &ConfigParams::rtol)
         .def_readwrite("rvs_shock", &ConfigParams::rvs_shock)
-        .def_readwrite("fwd_SSC", &ConfigParams::fwd_SSC)
-        .def_readwrite("rvs_SSC", &ConfigParams::rvs_SSC)
-        .def_readwrite("IC_cooling", &ConfigParams::IC_cooling)
-        .def_readwrite("KN", &ConfigParams::KN)
+        .def_readwrite("fwd_ssc", &ConfigParams::fwd_ssc)
+        .def_readwrite("rvs_ssc", &ConfigParams::rvs_ssc)
+        .def_readwrite("ssc_cooling", &ConfigParams::ssc_cooling)
+        .def_readwrite("kn", &ConfigParams::kn)
         .def_readwrite("magnetar", &ConfigParams::magnetar);
 
     // MultiBandData bindings

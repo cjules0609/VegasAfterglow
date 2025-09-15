@@ -275,16 +275,16 @@ Physics Switches
    * - ``rvs_shock``
      - false
      - Include reverse shock emission
-   * - ``fwd_SSC``
+   * - ``fwd_ssc``
      - false
      - Include forward shock synchrotron self-Compton
-   * - ``rvs_SSC``
+   * - ``rvs_ssc``
      - false
      - Include reverse shock synchrotron self-Compton
-   * - ``IC_cooling``
+   * - ``ssc_cooling``
      - false
      - Include inverse Compton cooling
-   * - ``KN``
+   * - ``kn``
      - false
      - Use Klein-Nishina cross-section for IC scattering
    * - ``magnetar``
