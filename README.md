@@ -871,7 +871,13 @@ If you encounter any issues, have questions about the code, or want to request n
    - Create a branch for your changes
    - Submit a pull request with your changes
 
-We value all contributions and aim to respond to issues promptly.
+3. **Email** - For private questions or discussions:
+   - Contact the maintainers directly via email
+   - Yihan Wang: yihan.astro@gmail.com
+   - Bing Zhang: bing.zhang@unlv.edu
+   - Connery Chen: connery.chen@unlv.edu
+
+We value all contributions and aim to respond to issues promptly. All communications are extremely welcome!
 
 ---
 
