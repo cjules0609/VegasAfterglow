@@ -59,21 +59,21 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
     return jet;
 }
 
-Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, bool spreading, Real duration) {
+Ejecta PyPowerLawWing(Real theta_c, Real E_iso_w, Real Gamma0_w, Real k_e, Real k_g, bool spreading, Real duration) {
     Ejecta jet;
-    jet.eps_k = math::powerlaw_wing(theta_c, E_w, k_e);
-    jet.Gamma0 = math::powerlaw_wing_plus_one(theta_c, Gamma_w - 1, k_g);
+    jet.eps_k = math::powerlaw_wing(theta_c, E_iso_w, k_e);
+    jet.Gamma0 = math::powerlaw_wing_plus_one(theta_c, Gamma0_w - 1, k_g);
     jet.spreading = spreading;
     jet.T0 = duration;
 
     return jet;
 }
 
-Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k_e, Real k_g,
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real E_iso_w, Real Gamma0_w, Real k_e, Real k_g,
                          bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::step_powerlaw(theta_c, E_c, E_w, k_e);
-    jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma_c - 1, Gamma_w - 1, k_g);
+    jet.eps_k = math::step_powerlaw(theta_c, E_iso, E_iso_w, k_e);
+    jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma0 - 1, Gamma0_w - 1, k_g);
 
     jet.spreading = spreading;
     jet.T0 = duration;
@@ -85,12 +85,12 @@ Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Ga
     return jet;
 }
 
-Ejecta PyTwoComponentJet(Real theta_c, Real E_iso_c, Real Gamma0_c, Real theta_w, Real E_iso_w, Real Gamma0_w,
+Ejecta PyTwoComponentJet(Real theta_c, Real E_iso, Real Gamma0, Real theta_w, Real E_iso_w, Real Gamma0_w,
                          bool spreading, Real duration, std::optional<PyMagnetar> magnetar) {
     Ejecta jet;
-    jet.eps_k = math::two_component(theta_c, theta_w, E_iso_c, E_iso_w);
+    jet.eps_k = math::two_component(theta_c, theta_w, E_iso, E_iso_w);
 
-    jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0_c - 1, Gamma0_w - 1);
+    jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0 - 1, Gamma0_w - 1);
 
     jet.spreading = spreading;
     jet.T0 = duration;
@@ -109,11 +109,11 @@ Medium PyISM(Real n_ism) {
     return medium;
 }
 
-Medium PyWind(Real A_star, Real n_ism, Real n_0) {
+Medium PyWind(Real A_star, Real n_ism, Real n0) {
     Medium medium;
 
     Real rho_ism = n_ism * 1.67e-24;
-    Real r02 = A_star * 5e11 / (n_0 * 1.67e-24);
+    Real r02 = A_star * 5e11 / (n0 * 1.67e-24);
 
     medium.rho = [=](Real phi, Real theta, Real r) { return A_star * 5e11 / (r02 + r * r) + rho_ism; };
     return medium;
@@ -284,6 +284,22 @@ auto PyModel::flux_density(PyArray const& t, PyArray const& nu) -> PyFlux {
 
     auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
         return obs.specific_flux_series(t, nu, grids...);
+    };
+
+    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
+    result.calc_total();
+    return result;
+}
+
+auto PyModel::flux(PyArray const& t, double nu_min, double nu_max, size_t num_nu) -> PyFlux {
+    AFTERGLOW_REQUIRE(is_ascending(t), "time array must be in ascending order");
+
+    // Generate frequency array
+    Array nu_obs = xt::logspace(std::log10(nu_min * unit::Hz), std::log10(nu_max * unit::Hz), num_nu);
+    Array t_obs = t * unit::sec;
+
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
+        return obs.flux(t, nu, grids...);
     };
 
     auto result = compute_flux_density(t_obs, nu_obs, flux_func);

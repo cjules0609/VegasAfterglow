@@ -488,6 +488,8 @@ The ``ParamDef`` class is used to define the parameters for MCMC exploration. Ea
         ParamDef("E_iso",   1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
         ParamDef("Gamma0",     5,  1000,  Scale.LOG),       # Lorentz factor at the core
         ParamDef("theta_c",  0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
+        ParamDef("k_e",        2,     2,  Scale.FIXED),     # Energy power law index
+        ParamDef("k_g",        2,     2,  Scale.FIXED),     # Lorentz factor power law index
         ParamDef("theta_v",  0.0,   0.0,  Scale.FIXED),     # Viewing angle [rad]
         ParamDef("p",          2,     3,  Scale.LINEAR),    # Shocked electron power law index
         ParamDef("eps_e",   1e-2,   0.5,  Scale.LOG),       # Electron energy fraction

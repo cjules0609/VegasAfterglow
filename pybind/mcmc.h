@@ -143,7 +143,7 @@ struct MultiBandData {
      * @return std::vector<size_t> Indices of selected data points
      * <!-- ************************************************************************************** -->
      */
-    std::vector<size_t> logscale_screen(PyArray const& data, size_t num_order);
+    static std::vector<size_t> logscale_screen(PyArray const& data, size_t num_order);
 
     /**
      * <!-- ************************************************************************************** -->

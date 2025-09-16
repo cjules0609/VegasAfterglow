@@ -223,8 +223,8 @@ Jet Structure Variations
 
     params = [
         # Core component (uniform)
-        ParamDef("E_iso_c", 1e51,  1e54,  Scale.LOG),     # Core energy
-        ParamDef("Gamma0_c",  50,   500,  Scale.LOG),     # Core Lorentz factor
+        ParamDef("E_iso",   1e51,  1e54,  Scale.LOG),     # Core energy
+        ParamDef("Gamma0",    50,   500,  Scale.LOG),     # Core Lorentz factor
         ParamDef("theta_c", 0.01,   0.1,  Scale.LINEAR),  # Core boundary
 
         # Wing component (power-law)

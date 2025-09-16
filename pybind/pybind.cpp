@@ -31,14 +31,14 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     m.def("PowerLawJet", &PyPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k_e"),
           py::arg("k_g"), py::arg("spreading") = false, py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
-    m.def("PowerLawWing", &PyPowerLawWing, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"), py::arg("k_e"),
+    m.def("PowerLawWing", &PyPowerLawWing, py::arg("theta_c"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("k_e"),
           py::arg("k_g"), py::arg("spreading") = false, py::arg("duration") = 1);
 
-    m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
+    m.def("TwoComponentJet", &PyTwoComponentJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
           py::arg("theta_w"), py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("spreading") = false,
           py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
-    m.def("StepPowerLawJet", &PyStepPowerLawJet, py::arg("theta_c"), py::arg("E_iso_c"), py::arg("Gamma0_c"),
+    m.def("StepPowerLawJet", &PyStepPowerLawJet, py::arg("theta_c"), py::arg("E_iso"), py::arg("Gamma0"),
           py::arg("E_iso_w"), py::arg("Gamma0_w"), py::arg("k_e"), py::arg("k_g"), py::arg("spreading") = false,
           py::arg("duration") = 1, py::arg("magnetar") = py::none());
 
@@ -50,7 +50,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Medium bindings
     m.def("ISM", &PyISM, py::arg("n_ism"));
 
-    m.def("Wind", &PyWind, py::arg("A_star"), py::arg("n_ism") = 0, py::arg("n_0") = con::inf);
+    m.def("Wind", &PyWind, py::arg("A_star"), py::arg("n_ism") = 0, py::arg("n0") = con::inf);
 
     py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc>(), py::arg("rho"));
 
@@ -70,12 +70,15 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
                       Real, bool>(),
              py::arg("jet"), py::arg("medium"), py::arg("observer"), py::arg("fwd_rad"),
              py::arg("rvs_rad") = py::none(), py::arg("resolutions") = std::make_tuple(0.3, 1, 10),
-             py::arg("rtol") = 1e-5, py::arg("axisymmetric") = true)
+             py::arg("rtol") = 1e-6, py::arg("axisymmetric") = true)
 
         .def("flux_density_grid", &PyModel::flux_density_grid, py::arg("t"), py::arg("nu"),
              py::call_guard<py::gil_scoped_release>())
 
         .def("flux_density", &PyModel::flux_density, py::arg("t"), py::arg("nu"),
+             py::call_guard<py::gil_scoped_release>())
+
+        .def("flux", &PyModel::flux, py::arg("t"), py::arg("nu_min"), py::arg("nu_max"), py::arg("num_nu"),
              py::call_guard<py::gil_scoped_release>())
 
         .def("flux_density_exposures", &PyModel::flux_density_exposures, py::arg("t"), py::arg("nu"),
@@ -193,7 +196,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
              py::arg("weights") = py::none(),
              "Add spectrum data. All quantities in CGS units: t [s], nu [Hz], f_nu [erg/cm²/s/Hz]")
 
-        .def("logscale_screen", &MultiBandData::logscale_screen, py::arg("t"), py::arg("data_density"))
+        .def_static("logscale_screen", &MultiBandData::logscale_screen, py::arg("t"), py::arg("data_density"))
 
         .def("data_points_num", &MultiBandData::data_points_num);
 

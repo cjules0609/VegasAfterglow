@@ -115,8 +115,8 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
  *          wings, providing a realistic representation of jets with continuous angular
  *          structure transitions.
  * @param theta_c Core opening angle where transition to power-law begins [radians]
- * @param E_iso Isotropic-equivalent energy at the jet center [erg]
- * @param Gamma0 Initial bulk Lorentz factor at the jet center
+ * @param E_iso_w Isotropic-equivalent energy at the theta_c [erg]
+ * @param Gamma0_w Initial bulk Lorentz factor at the theta_c
  * @param k_e Power-law index for energy in the wing region (E ∝ θ^(-k_e))
  * @param k_g Power-law index for Lorentz factor in the wing region (Γ ∝ θ^(-k_g))
  * @param spreading Whether to include lateral jet spreading during expansion (default: false)
@@ -124,7 +124,7 @@ Ejecta PyPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, 
  * @return Ejecta Configured ejecta object representing the power-law wing jet structure
  * <!-- ************************************************************************************** -->
  */
-Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, bool spreading = false,
+Ejecta PyPowerLawWing(Real theta_c, Real E_iso_w, Real Gamma0_w, Real k_e, Real k_g, bool spreading = false,
                       Real duration = 1);
 /**
  * <!-- ************************************************************************************** -->
@@ -134,10 +134,10 @@ Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, 
  *          jets with distinct core and wing components, useful for modeling jets with clear
  *          transitions between high-energy cores and extended lower-energy wings.
  * @param theta_c Core angle of the jet [radians]
- * @param E_c Isotropic-equivalent energy of the core region [erg]
- * @param Gamma_c Initial Lorentz factor of the core region
- * @param E_w Isotropic-equivalent energy of the wing region at theta_c [erg]
- * @param Gamma_w Initial Lorentz factor of the wing region at theta_c
+ * @param E_iso Isotropic-equivalent energy of the core region [erg]
+ * @param Gamma0 Initial Lorentz factor of the core region
+ * @param E_iso_w Isotropic-equivalent energy of the wing region at theta_c [erg]
+ * @param Gamma0_w Initial Lorentz factor of the wing region at theta_c
  * @param k_e Power-law index for energy in wing region (E ∝ θ^(-k_e))
  * @param k_g Power-law index for Lorentz factor in wing region (Γ ∝ θ^(-k_g))
  * @param spreading Whether to include jet lateral spreading during expansion
@@ -146,7 +146,7 @@ Ejecta PyPowerLawWing(Real theta_c, Real E_w, Real Gamma_w, Real k_e, Real k_g, 
  * @return Ejecta Configured jet with step power-law profile
  * <!-- ************************************************************************************** -->
  */
-Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Gamma_w, Real k_e, Real k_g,
+Ejecta PyStepPowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real E_iso_w, Real Gamma0_w, Real k_e, Real k_g,
                          bool spreading, Real duration, std::optional<PyMagnetar> magnetar);
 
 /**
@@ -157,8 +157,8 @@ Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Ga
  *          for representing jets with complex angular structure where different emission
  *          regions have fundamentally different properties and evolution.
  * @param theta_c Core angle of the narrow component [radians]
- * @param E_iso_c Isotropic-equivalent energy of the narrow component [erg]
- * @param Gamma0_c Initial Lorentz factor of the narrow component
+ * @param E_iso Isotropic-equivalent energy of the narrow component [erg]
+ * @param Gamma0 Initial Lorentz factor of the narrow component
  * @param theta_w Core angle of the wide component [radians]
  * @param E_iso_w Isotropic-equivalent energy of the wide component [erg]
  * @param Gamma0_w Initial Lorentz factor of the wide component
@@ -168,7 +168,7 @@ Ejecta PyStepPowerLawJet(Real theta_c, Real E_c, Real Gamma_c, Real E_w, Real Ga
  * @return Ejecta Configured two-component jet with specified properties
  * <!-- ************************************************************************************** -->
  */
-Ejecta PyTwoComponentJet(Real theta_c, Real E_iso_c, Real Gamma0_c, Real theta_w, Real E_iso_w, Real Gamma0_w,
+Ejecta PyTwoComponentJet(Real theta_c, Real E_iso, Real Gamma0, Real theta_w, Real E_iso_w, Real Gamma0_w,
                          bool spreading = false, Real duration = 1, std::optional<PyMagnetar> magnetar = std::nullopt);
 
 /**
@@ -194,11 +194,11 @@ Medium PyISM(Real n_ism);
  *          stars with strong stellar winds.
  * @param A_star Wind parameter A* = Ṁv_w/(4π) in units of 5×10^11 g/cm [dimensionless]
  * @param n_ism Constant density component for large radii [cm^-3] (default: 0)
- * @param n_0 Inner boundary density for stratified wind model [cm^-3] (default: ∞)
+ * @param n0 Inner boundary density for stratified wind model [cm^-3] (default: ∞)
  * @return Medium Configured medium object representing stellar wind properties
  * <!-- ************************************************************************************** -->
  */
-Medium PyWind(Real A_star, Real n_ism = 0, Real n_0 = con::inf);
+Medium PyWind(Real A_star, Real n_ism = 0, Real n0 = con::inf);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -440,6 +440,22 @@ class PyModel {
      * <!-- ************************************************************************************** -->
      */
     PyFlux flux_density(PyArray const& t, PyArray const& nu);
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculate bolometric flux integrated over a frequency range.
+     * @details Computes the total observed flux by integrating the specific flux
+     *          over a specified frequency range [nu_min, nu_max]. This method provides
+     *          bolometric light curves that capture the overall energy output of the
+     *          afterglow across the electromagnetic spectrum.
+     * @param t Observer time array [seconds]
+     * @param nu_min Minimum frequency for integration [Hz]
+     * @param nu_max Maximum frequency for integration [Hz]
+     * @param num_nu Number of frequency sampling points for numerical integration
+     * @return PyFlux Structure with synchrotron and inverse Compton flux components
+     * <!-- ************************************************************************************** -->
+     */
+    PyFlux flux(PyArray const& t, double nu_min, double nu_max, size_t num_nu);
 
     /**
      * <!-- ************************************************************************************** -->

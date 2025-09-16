@@ -30,6 +30,176 @@ class Fitter:
         self._param_defs = None
         self._to_params = None
 
+    def validate_parameters(self, param_defs: Sequence[ParamDef]) -> None:
+        """
+        Validate that parameter definitions are compatible with the configuration.
+
+        Parameters
+        ----------
+        param_defs : Sequence[ParamDef]
+            Parameter definitions to validate
+
+        Raises
+        ------
+        ValueError
+            If required parameters are missing or incompatible parameters are provided
+        """
+        param_names = {pd.name for pd in param_defs}
+        missing_params = []
+        incompatible_params = []
+
+        # Check medium-specific parameters
+        if self.config.medium == "wind":
+            if "A_star" not in param_names:
+                missing_params.append("A_star (required for wind medium)")
+            # Wind medium supports n_ism and n0 for stratified configurations
+        elif self.config.medium == "ism":
+            if "n_ism" not in param_names:
+                missing_params.append("n_ism (required for ISM medium)")
+            incompatible = {"A_star", "n0"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with ISM medium)" for p in incompatible]
+                )
+
+        # Check jet-specific parameters
+        if self.config.jet == "tophat":
+            required = {"theta_c", "E_iso", "Gamma0"}
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for tophat jet)" for p in missing]
+                )
+
+            incompatible = {"k_e", "k_g", "E_iso_w", "Gamma0_w"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with tophat jet)" for p in incompatible]
+                )
+
+        elif self.config.jet == "powerlaw":
+            required = {"theta_c", "E_iso", "Gamma0", "k_e", "k_g"}
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for powerlaw jet)" for p in missing]
+                )
+
+            incompatible = {"E_iso_w", "Gamma0_w"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with powerlaw jet)" for p in incompatible]
+                )
+
+        elif self.config.jet == "gaussian":
+            required = {"theta_c", "E_iso", "Gamma0"}
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for gaussian jet)" for p in missing]
+                )
+
+            incompatible = {"k_e", "k_g", "E_iso_w", "Gamma0_w"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with gaussian jet)" for p in incompatible]
+                )
+
+        elif self.config.jet == "two_component":
+            required = {"theta_c", "E_iso", "Gamma0", "theta_w", "E_iso_w", "Gamma0_w"}
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for two_component jet)" for p in missing]
+                )
+
+            incompatible = {"k_e", "k_g"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with two_component jet)" for p in incompatible]
+                )
+
+        elif self.config.jet == "step_powerlaw":
+            required = {
+                "theta_c",
+                "E_iso",
+                "Gamma0",
+                "E_iso_w",
+                "Gamma0_w",
+                "k_e",
+                "k_g",
+            }
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for step_powerlaw jet)" for p in missing]
+                )
+
+        # Check required forward shock parameters (always needed)
+        fwd_required = {"eps_e", "eps_B", "p"}
+        missing_fwd = fwd_required - param_names
+        if missing_fwd:
+            missing_params.extend(
+                [f"{p} (required for forward shock radiation)" for p in missing_fwd]
+            )
+
+        # Check reverse shock parameters
+        if self.config.rvs_shock:
+            rvs_required = {"p_r", "eps_e_r", "eps_B_r"}
+            missing_rvs = rvs_required - param_names
+            if missing_rvs:
+                missing_params.extend(
+                    [
+                        f"{p} (required when reverse shock is enabled)"
+                        for p in missing_rvs
+                    ]
+                )
+        else:
+            rvs_params = {"p_r", "eps_e_r", "eps_B_r", "xi_e_r"} & param_names
+            if rvs_params:
+                incompatible_params.extend(
+                    [f"{p} (reverse shock is disabled)" for p in rvs_params]
+                )
+
+        # Check magnetar parameters
+        if self.config.magnetar:
+            mag_required = {"L0", "t0", "q"}
+            missing_mag = mag_required - param_names
+            if missing_mag:
+                missing_params.extend(
+                    [f"{p} (required when magnetar is enabled)" for p in missing_mag]
+                )
+        else:
+            mag_params = {"L0", "t0", "q"} & param_names
+            if mag_params:
+                incompatible_params.extend(
+                    [f"{p} (magnetar is disabled)" for p in mag_params]
+                )
+
+        # Report errors
+        if missing_params or incompatible_params:
+            error_msg = "Parameter validation failed:\n"
+            if missing_params:
+                error_msg += (
+                    "Missing required parameters:\n  - "
+                    + "\n  - ".join(missing_params)
+                    + "\n"
+                )
+            if incompatible_params:
+                error_msg += (
+                    "Incompatible parameters for current configuration:\n  - "
+                    + "\n  - ".join(incompatible_params)
+                    + "\n"
+                )
+            error_msg += (
+                f"\nCurrent configuration: medium='{self.config.medium}', "
+                f"jet='{self.config.jet}', "
+            )
+            error_msg += (
+                f"rvs_shock={self.config.rvs_shock}, magnetar={self.config.magnetar}"
+            )
+            raise ValueError(error_msg)
+
     def fit(
         self,
         param_defs: Sequence[ParamDef],
@@ -61,11 +231,12 @@ class Fitter:
         -------
         FitResult
         """
-        # 1) build lists for emcee
+
+        self.validate_parameters(param_defs)
+
         defs = list(param_defs)
         self._param_defs = defs
 
-        # build the emcee bounds & initials
         labels, inits, lowers, uppers = zip(
             *(
                 (
@@ -94,7 +265,7 @@ class Fitter:
             except AttributeError:
                 raise AttributeError(f"'{pd.name}' is not a valid MCMC parameter")
 
-        # 2) build a fast transformation closure
+        # build a fast transformation closure
         def to_params(x: np.ndarray) -> ModelParams:
             p = ModelParams()
             i = 0

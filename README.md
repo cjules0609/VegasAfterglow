@@ -682,6 +682,8 @@ mc_params = [
     ParamDef("E_iso",      1e50,  1e54,  Scale.LOG),       # Isotropic energy [erg]
     ParamDef("Gamma0",        5,  1000,  Scale.LOG),       # Lorentz factor at the core
     ParamDef("theta_c",     0.0,   0.5,  Scale.LINEAR),    # Core half-opening angle [rad]
+    ParamDef("k_e",           2,     2,  Scale.FIXED),     # Energy power law index
+    ParamDef("k_g",           2,     2,  Scale.FIXED),     # Lorentz factor power law index
     ParamDef("theta_v",     0.0,   0.0,  Scale.FIXED),     # Viewing angle [rad]
     ParamDef("p",             2,     3,  Scale.LINEAR),    # Shocked electron power law index
     ParamDef("eps_e",      1e-2,   0.5,  Scale.LOG),       # Electron energy fraction
@@ -772,11 +774,6 @@ Now you can plot the best-fit model:
 ```python
 # Function to plot model light curves along with observed data
 def draw_bestfit(t,lc_fit, nu, spec_fit):
-    lc_files = ["data/ep.csv", "data/r.csv", "data/vt-r.csv"]
-    spec_files = ["data/ep-spec.csv"]
-    nus = [2.4e17, 4.84e14, 1.4e14]
-    ts = [3000]
-
     fig =plt.figure(figsize=(4.5, 7.5))
 
     ax1 = fig.add_subplot(211)

@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated all examples in README, documentation, and notebooks with clear CGS unit comments
   - Consistent unit documentation: `nu [Hz]`, `t [s]`, `f_nu [erg/cm²/s/Hz]`, `flux [erg/cm²/s]`
 
+#### **Interface Consistency Verification**
+- **Parameter Binding Validation**: Verified all pybind11 interface parameters match documentation
+  - All ObsData methods confirmed to use simplified parameter names
+  - Method names verified to be consistent across all interfaces
+  - Complete synchronization between C++ bindings and Python documentation
+
 ### Migration Notes
 
 **Method Name Changes**: Update your method calls as follows:
@@ -229,8 +235,8 @@ coordinates = details.theta            # New way
 
 #### **Parameter Interface Updates**
 - **PowerLawJet**: Split single `k` parameter into separate `k_e` (energy) and `k_g` (Lorentz factor) indices for more flexible modeling
-- **TwoComponentJet**: Parameter names changed from `theta_n, E_iso_n, Gamma0_n` to `theta_c, E_iso_c, Gamma0_c` for consistency
-- **StepPowerLawJet**: New jet model with parameters `(theta_c, E_iso_c, Gamma0_c, E_iso_w, Gamma0_w, k_e, k_g)`
+- **TwoComponentJet**: Parameter names standardized to `(theta_c, E_iso, Gamma0, theta_w, E_iso_w, Gamma0_w)` for core and wide components
+- **StepPowerLawJet**: New jet model with parameters `(theta_c, E_iso, Gamma0, E_iso_w, Gamma0_w, k_e, k_g)` for core and power-law wing components
 - **Wind Medium**: Extended with optional `n_ism` and `n_0` parameters for stratified medium modeling: `Wind(A_star, n_ism=0, n_0=inf)`
 - **Medium Class**: Simplified from `Medium(rho, mass)` to `Medium(rho)` - removed separate mass parameter
 - **Model Methods**:
