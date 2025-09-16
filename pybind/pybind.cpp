@@ -87,43 +87,43 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
              py::call_guard<py::gil_scoped_release>());
 
-    py::class_<Flux>(m, "Flux").def(py::init<>()).def_readwrite("sync", &Flux::sync).def_readwrite("ssc", &Flux::ssc);
+    py::class_<Flux>(m, "Flux").def(py::init<>()).def_readonly("sync", &Flux::sync).def_readonly("ssc", &Flux::ssc);
 
     py::class_<PyFlux>(m, "FluxDict")
         .def(py::init<>())
-        .def_readwrite("fwd", &PyFlux::fwd)
-        .def_readwrite("rvs", &PyFlux::rvs)
-        .def_readwrite("total", &PyFlux::total);
+        .def_readonly("fwd", &PyFlux::fwd)
+        .def_readonly("rvs", &PyFlux::rvs)
+        .def_readonly("total", &PyFlux::total);
 
     py::class_<PyShock>(m, "ShockDetails")
         .def(py::init<>())
-        .def_readwrite("t_comv", &PyShock::t_comv)
-        .def_readwrite("t_obs", &PyShock::t_obs)
-        .def_readwrite("Gamma", &PyShock::Gamma)
-        .def_readwrite("Gamma_th", &PyShock::Gamma_th)
-        .def_readwrite("B_comv", &PyShock::B_comv)
-        .def_readwrite("r", &PyShock::r)
-        .def_readwrite("theta", &PyShock::theta)
-        .def_readwrite("N_p", &PyShock::N_p)
-        .def_readwrite("N_e", &PyShock::N_e)
-        .def_readwrite("gamma_m", &PyShock::gamma_m)
-        .def_readwrite("gamma_c", &PyShock::gamma_c)
-        .def_readwrite("gamma_M", &PyShock::gamma_M)
-        .def_readwrite("gamma_a", &PyShock::gamma_a)
-        .def_readwrite("nu_m", &PyShock::nu_m)
-        .def_readwrite("nu_c", &PyShock::nu_c)
-        .def_readwrite("nu_M", &PyShock::nu_M)
-        .def_readwrite("nu_a", &PyShock::nu_a)
-        .def_readwrite("I_nu_max", &PyShock::I_nu_max)
-        .def_readwrite("Doppler", &PyShock::Doppler);
+        .def_readonly("t_comv", &PyShock::t_comv)
+        .def_readonly("t_obs", &PyShock::t_obs)
+        .def_readonly("Gamma", &PyShock::Gamma)
+        .def_readonly("Gamma_th", &PyShock::Gamma_th)
+        .def_readonly("B_comv", &PyShock::B_comv)
+        .def_readonly("r", &PyShock::r)
+        .def_readonly("theta", &PyShock::theta)
+        .def_readonly("N_p", &PyShock::N_p)
+        .def_readonly("N_e", &PyShock::N_e)
+        .def_readonly("gamma_m", &PyShock::gamma_m)
+        .def_readonly("gamma_c", &PyShock::gamma_c)
+        .def_readonly("gamma_M", &PyShock::gamma_M)
+        .def_readonly("gamma_a", &PyShock::gamma_a)
+        .def_readonly("nu_m", &PyShock::nu_m)
+        .def_readonly("nu_c", &PyShock::nu_c)
+        .def_readonly("nu_M", &PyShock::nu_M)
+        .def_readonly("nu_a", &PyShock::nu_a)
+        .def_readonly("I_nu_max", &PyShock::I_nu_max)
+        .def_readonly("Doppler", &PyShock::Doppler);
 
     py::class_<PyDetails>(m, "SimulationDetails")
         .def(py::init<>())
-        .def_readwrite("phi", &PyDetails::phi)
-        .def_readwrite("theta", &PyDetails::theta)
-        .def_readwrite("t_src", &PyDetails::t_src)
-        .def_readwrite("fwd", &PyDetails::fwd)
-        .def_readwrite("rvs", &PyDetails::rvs);
+        .def_readonly("phi", &PyDetails::phi)
+        .def_readonly("theta", &PyDetails::theta)
+        .def_readonly("t_src", &PyDetails::t_src)
+        .def_readonly("fwd", &PyDetails::fwd)
+        .def_readonly("rvs", &PyDetails::rvs);
 
     //========================================================================================================
     //                                 MCMC bindings

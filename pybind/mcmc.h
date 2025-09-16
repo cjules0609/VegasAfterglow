@@ -18,18 +18,6 @@
 
 /**
  * <!-- ************************************************************************************** -->
- * @typedef PyOutput
- * @brief Container for MCMC simulation output data as key-value pairs.
- * @details This type provides a convenient mapping from string identifiers to numerical
- *          arrays containing MCMC results such as parameter chains, likelihood values,
- *          acceptance rates, and other diagnostic quantities. The use of xt::xarray
- *          enables efficient storage and manipulation of multi-dimensional output data.
- * <!-- ************************************************************************************** -->
- */
-using PyOutput = std::unordered_map<std::string, xt::xarray<Real>>;
-
-/**
- * <!-- ************************************************************************************** -->
  * @struct FluxData
  * @brief Container for observational flux data and model predictions for chi-squared analysis.
  * @details This structure organizes time-series flux measurements with their uncertainties,

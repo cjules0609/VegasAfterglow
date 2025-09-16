@@ -78,6 +78,56 @@ The ``ObsData`` class handles multi-wavelength observational data:
         data.add_spectrum(t=t, nu=df["nu"],
                           f_nu=df["Fv_obs"], err=df["Fv_err"])  # All quantities in CGS units
 
+Data Selection and Optimization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Smart Data Subsampling with logscale_screen**
+
+For large datasets or densely sampled observations, using all available data points can lead to computational inefficiency and biased parameter estimation. The ``logscale_screen`` method provides intelligent data subsampling that maintains the essential information content while reducing computational overhead.
+
+.. code-block:: python
+
+    # Example: Large dense dataset
+    t_dense = np.logspace(2, 7, 1000)  # 1000 time points
+    flux_dense = np.random.lognormal(-60, 0.5, 1000)  # Dense flux measurements
+    flux_err_dense = 0.1 * flux_dense
+
+    # Subsample using logarithmic screening
+    # This selects ~50-100 representative points across 5 decades in time
+    indices = data.logscale_screen(t_dense, num_order=5)
+
+    # Add only the selected subset
+    data.add_flux_density(nu=5e14,
+                         t=t_dense[indices],
+                         f_nu=flux_dense[indices],
+                         err=flux_err_dense[indices])
+
+**Why logscale_screen is Important:**
+
+1. **Prevents Oversampling Bias**: Dense data clusters can dominate the χ² calculation, causing the MCMC to over-fit specific frequency bands or time periods.
+
+2. **Computational Efficiency**: Reduces the number of model evaluations needed during MCMC sampling, significantly improving performance.
+
+3. **Preserves Information**: Unlike uniform thinning, logarithmic sampling maintains representation across all temporal/spectral scales.
+
+4. **Balanced Multi-band Fitting**: Ensures each frequency band contributes proportionally to the parameter constraints.
+
+**Multi-band Balance Guidelines:**
+
+- **Target 10-30 points per frequency band** for balanced constraints
+- **Avoid >100 points in any single band** unless scientifically justified
+- **Maintain temporal coverage** across all evolutionary phases
+- **Weight systematic uncertainties** appropriately using the weights parameter
+
+.. warning::
+    **Common Data Selection Pitfalls:**
+
+    - **Optical-heavy datasets**: Dense optical coverage can bias parameters toward optical-dominant solutions
+    - **Late-time clustering**: Too many late-time points can over-constrain decay slopes at the expense of early physics
+    - **Single-epoch spectra**: Broadband spectra at one time can dominate multi-epoch light curves in χ² space
+
+    **Solution**: Use ``logscale_screen`` and manual data selection to ensure balanced representation across all observational dimensions.
+
 Global Configuration
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -614,6 +664,9 @@ Basic MCMC Execution
 
 .. code-block:: python
 
+    # Check data statistics before MCMC
+    print(f"Total data points: {data.data_points_num()}")
+
     # Create fitter object
     fitter = Fitter(data, cfg, num_workers=8)  # Use 8 CPU cores
 
@@ -718,28 +771,4 @@ Visualization
 Troubleshooting
 ---------------
 
-Common Issues
-^^^^^^^^^^^^^
-
-**Poor Convergence**
-  - Increase burn-in fraction
-  - Use more walkers
-  - Check parameter ranges
-  - Start with coarser resolution
-
-**Memory Errors**
-  - Reduce resolution
-  - Decrease number of workers
-  - Use thinning (thin > 1)
-
-**Slow Performance**
-  - Reduce resolution initially
-  - Use fewer walkers for exploration
-  - Check data size and complexity
-
-**Failed Fits**
-  - Verify data format and units
-  - Check parameter bounds
-  - Ensure model configuration matches data
-
-For more troubleshooting help, see :doc:`troubleshooting`.
+For comprehensive troubleshooting help including MCMC convergence issues, data selection problems, memory optimization, and performance tuning, see :doc:`troubleshooting`.
