@@ -135,6 +135,20 @@ class Fitter:
                     [f"{p} (required for step_powerlaw jet)" for p in missing]
                 )
 
+        elif self.config.jet == "powerlaw_wing":
+            required = {"theta_c", "E_iso_w", "Gamma0_w", "k_e", "k_g"}
+            missing = required - param_names
+            if missing:
+                missing_params.extend(
+                    [f"{p} (required for powerlaw_wing jet)" for p in missing]
+                )
+
+            incompatible = {"E_iso", "Gamma0"} & param_names
+            if incompatible:
+                incompatible_params.extend(
+                    [f"{p} (not used with powerlaw_wing jet)" for p in incompatible]
+                )
+
         # Check required forward shock parameters (always needed)
         fwd_required = {"eps_e", "eps_B", "p"}
         missing_fwd = fwd_required - param_names

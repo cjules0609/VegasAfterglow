@@ -88,9 +88,9 @@ Real FRShockEqn<Ejecta, Medium>::compute_dU3_dt(State const& state, State const&
     Real ad_idx = adiabatic_idx(Gamma34);
     Real adiabatic_cooling = compute_adiabatic_cooling_rate2(ad_idx, state.r, state.x3, state.U3_th, diff.r, diff.x3);
 
-    if (state.m3 < state.m4 || diff.m4 > 0) {  // reverse shock still crossing
+    if (state.m3 < state.m4 || diff.m4 > 0) { // reverse shock still crossing
         Real shock_heating = compute_shock_heating_rate(Gamma34, diff.m3);
-        Real eps_rad = 0;  ////compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_rvs);
+        Real eps_rad = 0; ////compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_rvs);
         return (1 - eps_rad) * shock_heating + adiabatic_cooling;
     } else {
         return adiabatic_cooling;
@@ -256,8 +256,8 @@ void FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
     Real ad_idx = adiabatic_idx(state.Gamma);
     state.U2_th = (state.Gamma - 1) * state.m2 * con::c2 / ad_idx;
 
-    state.m3 = 0;     // calculate_init_m3(Gamma4, state.Gamma, state.m2, sigma4);
-    state.U3_th = 0;  //(Gamma34 - 1) * state.m3* con::c2;
+    state.m3 = 0;    // calculate_init_m3(Gamma4, state.Gamma, state.m2, sigma4);
+    state.U3_th = 0; //(Gamma34 - 1) * state.m3* con::c2;
 
     state.x3 = 0;
 }
@@ -274,8 +274,8 @@ void FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
  * <!-- ************************************************************************************** -->
  */
 inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
-    constexpr Real g_low = 1.5;   // k is the medium power law index
-    constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
+    constexpr Real g_low = 1.5;  // k is the medium power law index
+    constexpr Real g_high = 3.5; // Blandford-McKee limit// TODO: need to be modified for non ISM medium
     Real p = std::sqrt(std::sqrt(std::fabs(gamma_rel - 1)));
     return g_low + (g_high - g_low) * p / (1 + p);
 }
@@ -303,9 +303,9 @@ Real FRShockEqn<Ejecta, Medium>::compute_shell_sigma(State const& state) const {
  */
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T) {
     Real beta4 = gamma_to_beta(Gamma4);
-    if (t0 < T) {  // pure injection
+    if (t0 < T) { // pure injection
         return Gamma4 * t0 * beta4 * con::c;
-    } else {  // injection+shell spreading
+    } else { // injection+shell spreading
         Real cs = compute_sound_speed(Gamma4);
         return Gamma4 * T * beta4 * con::c + cs * (t0 - T) * Gamma4;
     }
@@ -409,7 +409,7 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     using namespace boost::numeric::odeint;
 
     typename Eqn::State state;
-    Real t0 = 0.1 * unit::sec;
+    Real t0 = 0.01 * unit::sec;
 
     eqn.set_init_state(state, t0);
 

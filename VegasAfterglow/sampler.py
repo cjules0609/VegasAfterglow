@@ -108,7 +108,7 @@ class MultiThreadEmcee:
             moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
 
         logger.info(
-            "🚀 Running coarse MCMC at resolution %s for %d steps",
+            "Running coarse MCMC at resolution %s for %d steps",
             resolution,
             total_steps,
         )
@@ -145,7 +145,7 @@ class MultiThreadEmcee:
         top_k_log_probs = flat_logp[final_idx]
 
         logger.info(
-            "🎯 Found %d unique fits with log probabilities: %.2f to %.2f",
+            "Found %d unique fits with log probabilities: %.2f to %.2f",
             len(top_k_params),
             top_k_log_probs[0],
             top_k_log_probs[-1],
@@ -190,7 +190,7 @@ class MultiThreadEmcee:
         cutoff = median - threshold_mad * mad
         good = mean_lp > cutoff
         logger.info(
-            "🎯 Filtered %d / %d bad walkers (cutoff=%.2f)",
+            "Filtered %d / %d bad walkers (cutoff=%.2f)",
             np.sum(~good),
             nwalkers,
             cutoff,

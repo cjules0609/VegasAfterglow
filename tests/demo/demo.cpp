@@ -30,7 +30,7 @@ auto test_reverse_shock(double xi, double sigma, bool output = true) {
     std::cout << "T0: " << jet.T0 / unit::sec << ' ' << xi << ' ' << sigma << ' '
               << thin_shell_dec_radius(E_iso, n_ism, Gamma0) / (2 * Gamma0 * Gamma0) / unit::sec << std::endl;
 
-    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z);
+    Coord coord = auto_grid(jet, t_obs, 0.6, theta_v, z, 0.5, 10, 50);
 
     auto [f_shock, r_shock] = generate_shock_pair(coord, medium, jet, rad_fwd, rad_rvs);
     // auto f_shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B);
@@ -195,15 +195,15 @@ void test_FRS() {
 }
 
 int main() {
-    for (Real i = 1; i < 30;) {
+    /*for (Real i = 1; i < 30;) {
         test_ic(i);
         i += 0.01;
     }
 
     return 0;
-    test_FRS();
+    test_FRS();*/
 
-    /*double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
+    double xi[] = {0.001, 0.01, 0.1, 1, 2, 3, 5, 10, 100};
     // double xi[] = {100};
     double sigma[] = {0, 0.01, 0.05, 0.1, 1, 10, 100};
 
@@ -213,12 +213,12 @@ int main() {
         for (auto s : sigma) {
             test_reverse_shock(x, s);
         }
-    }*/
+    }
 
     double xi2[] = {0.001, 0.01, 0.1, 1, 5, 10, 100, 1000, 10000};
-    // Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
+    Array sigma2 = xt::logspace(std::log10(1e-5), std::log10(100), 100);
 
-    double sigma2[] = {0, 0, 0, 0, 0, 0};
+    //double sigma2[] = {0, 0, 0, 0, 0, 0};
 
     for (auto x : xi2) {
         std::ofstream out("rshock-data/crossing-time-" + std::to_string(x) + ".txt");
