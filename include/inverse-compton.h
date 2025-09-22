@@ -296,7 +296,7 @@ Real ICPhoton<Electrons, Photons>::compute_I_nu(Real nu) {
         Real Ndgamma = column_den(i) * dgamma(i);
 
         if (nu > upscatter * nu0.back())
-            continue;
+            break;
 
         bool extrapolate = true;
         for (size_t j = nu_size; j-- > 0;) {
