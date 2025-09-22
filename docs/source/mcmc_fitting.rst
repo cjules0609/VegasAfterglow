@@ -710,12 +710,12 @@ Model Predictions
     nu_model = np.array([1e9, 5e14, 2e17])  # Radio, optical, X-ray
 
     # Light curves at specific frequencies
-    lc_model = fitter.flux_density_grid(result.best_params, t_model, nu_model)
+    lc_model = fitter.flux_density_grid(result.top_k_params[0], t_model, nu_model)
 
     # Spectra at specific times
     nu_spec = np.logspace(8, 20, 100)
     times_spec = [1000, 10000]
-    spec_model = fitter.flux_density_grid(result.best_params, times_spec, nu_spec)
+    spec_model = fitter.flux_density_grid(result.top_k_params[0], times_spec, nu_spec)
 
     # Frequency-integrated flux (broadband light curves)
     # Useful for comparing with instruments like Swift/BAT, Fermi/LAT
@@ -723,7 +723,7 @@ Model Predictions
     nu_max_broad = 1e19  # Upper frequency bound [Hz]
     num_freq_points = 5  # Number of frequency points for integration
 
-    flux_integrated = fitter.flux(result.best_params, t_model,
+    flux_integrated = fitter.flux(result.top_k_params[0], t_model,
                                   nu_min_broad, nu_max_broad, num_freq_points)
 
 Visualization
