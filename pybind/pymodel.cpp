@@ -282,11 +282,11 @@ auto PyModel::flux_density(PyArray const& t, PyArray const& nu) -> PyFlux {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
 
-    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
-        return obs.specific_flux_series(t, nu, grids...);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto& photons) -> XTArray {
+        return obs.specific_flux_series(t, nu, photons) / unit::flux_den_cgs;
     };
 
-    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
+    auto result = compute_emission(t_obs, nu_obs, flux_func);
     result.calc_total();
     return result;
 }
@@ -298,11 +298,11 @@ auto PyModel::flux(PyArray const& t, double nu_min, double nu_max, size_t num_nu
     Array nu_obs = xt::logspace(std::log10(nu_min * unit::Hz), std::log10(nu_max * unit::Hz), num_nu);
     Array t_obs = t * unit::sec;
 
-    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
-        return obs.flux(t, nu, grids...);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto& photons) -> XTArray {
+        return obs.flux(t, nu, photons) / unit::flux_cgs;
     };
 
-    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
+    auto result = compute_emission(t_obs, nu_obs, flux_func);
     result.calc_total();
     return result;
 }
@@ -375,10 +375,11 @@ auto PyModel::flux_density_exposures(PyArray const& t, PyArray const& nu, PyArra
 
     auto sampling = generate_exposure_sampling(t, nu, expo_time, num_points);
 
-    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
-        return obs.specific_flux_series(t, nu, grids...);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto& photons) -> XTArray {
+        return obs.specific_flux_series(t, nu, photons) / unit::flux_den_cgs;
     };
-    auto result = compute_flux_density(sampling.t_obs_sorted, sampling.nu_obs_sorted, flux_func);
+
+    auto result = compute_emission(sampling.t_obs_sorted, sampling.nu_obs_sorted, flux_func);
 
     average_exposure_flux(result, sampling.idx_sorted, t.size(), num_points);
 
@@ -392,11 +393,36 @@ auto PyModel::flux_density_grid(PyArray const& t, PyArray const& nu) -> PyFlux {
     Array t_obs = t * unit::sec;
     Array nu_obs = nu * unit::Hz;
 
-    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto&... grids) {
-        return obs.specific_flux(t, nu, grids...);
+    auto flux_func = [](Observer& obs, Array const& t, Array const& nu, auto& photons) -> XTArray {
+        return obs.specific_flux(t, nu, photons) / unit::flux_den_cgs;
     };
 
-    auto result = compute_flux_density(t_obs, nu_obs, flux_func);
+    auto result = compute_emission(t_obs, nu_obs, flux_func);
     result.calc_total();
     return result;
 }
+
+/*
+Array PyModel::medium(Real phi, Real theta, Array const& r) {
+    Array rho = xt::zeros<Real>(r.shape());
+    for (size_t i = 0; i < r.size(); ++i) {
+        rho(i) = medium.rho(phi, theta, r(i) * unit::cm) / (unit::g / unit::cm3);
+    }
+    return rho;
+}
+
+Array PyModel::jet_E_iso(Real phi, Array const& theta) {
+    Array E_iso = xt::zeros<Real>(theta.shape());
+    for (size_t i = 0; i < theta.size(); ++i) {
+        E_iso(i) = jet.eps_k(phi, theta(i)) / (unit::erg / (4 * con::pi));
+    }
+    return E_iso;
+}
+
+Array PyModel::jet_Gamma0(Real phi, Array const& theta) {
+    Array Gamma0 = xt::zeros<Real>(theta.shape());
+    for (size_t i = 0; i < theta.size(); ++i) {
+        Gamma0(i) = jet.Gamma0(phi, theta(i));
+    }
+    return Gamma0;
+}*/

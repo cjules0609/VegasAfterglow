@@ -93,7 +93,7 @@ For large datasets or densely sampled observations, using all available data poi
     flux_err_dense = 0.1 * flux_dense
 
     # Subsample using logarithmic screening
-    # This selects ~50-100 representative points across 5 decades in time
+    # This selects ~5*5=25 representative points across 5 decades in time
     indices = ObsData.logscale_screen(t_dense, num_order=5)
 
     # Add only the selected subset

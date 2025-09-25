@@ -70,8 +70,8 @@ class Observer {
      * @return Array of specific flux values at each observation time
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    Array specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -86,8 +86,8 @@ class Observer {
      *          relativistic beaming and cosmological effects.
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    MeshGrid specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -99,8 +99,8 @@ class Observer {
      * @return Array of specific flux values at each observation time for a single observed frequency
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    Array specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    Array specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -115,8 +115,8 @@ class Observer {
      * @return Array of integrated flux values at each observation time
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    Array flux(Array const& t_obs, Array const& band_freq, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -130,8 +130,8 @@ class Observer {
      * @return 2D grid of spectra (frequency × time)
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    MeshGrid spectra(Array const& freqs, Array const& t_obs, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -145,8 +145,8 @@ class Observer {
      * @return Array containing the spectrum at the given time
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    Array spectrum(Array const& freqs, Real t_obs, PhotonGrid&... photons);
+    template <typename PhotonGrid>
+    Array spectrum(Array const& freqs, Real t_obs, PhotonGrid& photons);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -253,9 +253,8 @@ class Observer {
      * @return True if both lower and upper boundaries are valid for interpolation, false otherwise
      * <!-- ************************************************************************************** -->
      */
-    template <typename... PhotonGrid>
-    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu,
-                        PhotonGrid&... photons) noexcept;
+    template <typename PhotonGrid>
+    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu, PhotonGrid& photons) noexcept;
 };
 
 //========================================================================================================
@@ -277,9 +276,9 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
     }
 }
 
-template <typename... PhotonGrid>
+template <typename PhotonGrid>
 bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
-                              PhotonGrid&... photons) noexcept {
+                              PhotonGrid& photons) noexcept {
     if (state.last_hi == k + 1 && state.last_lg2_nu == lg2_nu_obs) {
         if (!std::isfinite(state.slope)) {
             return false;
@@ -298,12 +297,12 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
         state.lg2_I_nu_lo = state.lg2_I_nu_hi;
     } else {
         Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
-        state.lg2_I_nu_lo = 3 * lg2_doppler(i, j, k) + (photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + ...) +
-                            lg2_emission_area(i, j, k);
+        state.lg2_I_nu_lo =
+            3 * lg2_doppler(i, j, k) + photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + lg2_emission_area(i, j, k);
     }
 
     Real lg2_nu_hi = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k + 1);
-    state.lg2_I_nu_hi = 3 * lg2_doppler(i, j, k + 1) + (photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) + ...) +
+    state.lg2_I_nu_hi = 3 * lg2_doppler(i, j, k + 1) + photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) +
                         lg2_emission_area(i, j, k + 1);
 
     state.slope = (state.lg2_I_nu_hi - state.lg2_I_nu_lo) / lg2_t_ratio;
@@ -317,8 +316,8 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
     return true;
 }
 
-template <typename... PhotonGrid>
-MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons) {
+template <typename PhotonGrid>
+MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, PhotonGrid& photons) {
     size_t t_obs_len = t_obs.size();
     size_t nu_len = nu_obs.size();
 
@@ -341,7 +340,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                     if (lg2_t_hi < lg2_t_obs(t_idx)) {
                         continue;
                     } else {
-                        if (set_boundaries(state, i, j, k, lg2_nu[l], photons...)) {
+                        if (set_boundaries(state, i, j, k, lg2_nu[l], photons)) {
                             for (; t_idx < t_obs_len && lg2_t_obs(t_idx) <= lg2_t_hi; t_idx++) {
                                 F_nu(l, t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                             }
@@ -361,8 +360,8 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
     return F_nu;
 }
 
-template <typename... PhotonGrid>
-Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid&... photons) {
+template <typename PhotonGrid>
+Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, PhotonGrid& photons) {
     size_t t_obs_len = t_obs.size();
     size_t nu_len = nu_obs.size();
 
@@ -388,7 +387,7 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
                     k++;
                     continue;
                 } else {
-                    if (set_boundaries(state, i, j, k, lg2_nu[t_idx], photons...)) {
+                    if (set_boundaries(state, i, j, k, lg2_nu(t_idx), photons)) {
                         F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                     }
                     t_idx++;
@@ -404,25 +403,25 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
     return F_nu;
 }
 
-template <typename... PhotonGrid>
-Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid&... photons) {
-    return xt::view(specific_flux(t_obs, Array({nu_obs}), photons...), 0);
+template <typename PhotonGrid>
+Array Observer::specific_flux(Array const& t_obs, Real nu_obs, PhotonGrid& photons) {
+    return xt::view(specific_flux(t_obs, Array({nu_obs}), photons), 0);
 }
 
-template <typename... PhotonGrid>
-Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid&... photons) {
-    return xt::view(spectra(freqs, Array({t_obs}), photons...), 0);
+template <typename PhotonGrid>
+Array Observer::spectrum(Array const& freqs, Real t_obs, PhotonGrid& photons) {
+    return xt::view(spectra(freqs, Array({t_obs}), photons), 0);
 }
 
-template <typename... PhotonGrid>
-MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid&... photons) {
-    return xt::transpose(specific_flux(t_obs, freqs, photons...));
+template <typename PhotonGrid>
+MeshGrid Observer::spectra(Array const& freqs, Array const& t_obs, PhotonGrid& photons) {
+    return xt::transpose(specific_flux(t_obs, freqs, photons));
 }
 
-template <typename... PhotonGrid>
-Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid&... photons) {
+template <typename PhotonGrid>
+Array Observer::flux(Array const& t_obs, Array const& band_freq, PhotonGrid& photons) {
     Array nu_obs = boundary_to_center_log(band_freq);
-    MeshGrid F_nu = specific_flux(t_obs, nu_obs, photons...);
+    MeshGrid F_nu = specific_flux(t_obs, nu_obs, photons);
     Array flux({t_obs.size()}, 0);
     for (size_t i = 0; i < nu_obs.size(); ++i) {
         Real dnu = band_freq(i + 1) - band_freq(i);

@@ -491,10 +491,10 @@ class PyModel {
   private:
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Internal specific flux calculation method using natural units.
-     * @details Template method that handles the core flux calculation logic using internal
+     * @brief Internal emission calculation method using natural units.
+     * @details Template method that handles the core emission calculation logic using internal
      *          dimensionless units. This method sets up the coordinate system, generates
-     *          shocks, and delegates to the appropriate flux calculation function.
+     *          shocks, and delegates to the appropriate emission calculation function.
      * @param t Observer time array [internal units]
      * @param nu Observer frequency array [internal units]
      * @param flux_func Function to compute flux (either specific_flux or specific_flux_series)
@@ -502,11 +502,11 @@ class PyModel {
      * <!-- ************************************************************************************** -->
      */
     template <typename Func>
-    PyFlux compute_flux_density(Array const& t, Array const& nu, Func&& flux_func);
+    PyFlux compute_emission(Array const& t, Array const& nu, Func&& flux_func);
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Helper method to calculate flux for a given shock region.
+     * @brief Helper method to calculate emission for a given shock region.
      * @details Template method that computes emission from a single shock (forward or reverse)
      *          including synchrotron radiation and optionally synchrotron self-Compton and
      *          inverse Compton cooling effects. This method handles the radiation physics
@@ -605,16 +605,16 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
         }
     }
 
-    emission.sync = std::invoke(flux_func, obs, t_obs, nu_obs, syn_ph) / unit::flux_den_cgs;
+    emission.sync = std::invoke(flux_func, obs, t_obs, nu_obs, syn_ph);
 
     if (rad.ssc) {
         auto IC_ph = generate_IC_photons(syn_e, syn_ph, rad.kn);
-        emission.ssc = std::invoke(flux_func, obs, t_obs, nu_obs, IC_ph) / unit::flux_den_cgs;
+        emission.ssc = std::invoke(flux_func, obs, t_obs, nu_obs, IC_ph);
     }
 }
 
 template <typename Func>
-auto PyModel::compute_flux_density(Array const& t_obs, Array const& nu_obs, Func&& flux_func) -> PyFlux {
+auto PyModel::compute_emission(Array const& t_obs, Array const& nu_obs, Func&& flux_func) -> PyFlux {
     Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 

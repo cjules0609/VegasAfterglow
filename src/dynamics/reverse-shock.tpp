@@ -59,9 +59,9 @@ Real FRShockEqn<Ejecta, Medium>::compute_dGamma_dt(State const& state, State con
              Gamma_eff2 * diff.U2_th + Gamma_eff3 * diff.U3_th - deps_dt;
     Real b = (state.m2 + state.m3) * con::c2 + dGamma_eff2_dGamma * state.U2_th + dGamma_eff3_dGamma * state.U3_th;
 
-    if (b == 0) [[unlikely]] {
+    if (b == 0 || std::isnan(-a / b) || std::isinf(-a / b)) {
         return 0;
-    } else [[likely]] {
+    } else {
         return -a / b;
     }
 }
@@ -256,10 +256,12 @@ void FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
     Real ad_idx = adiabatic_idx(state.Gamma);
     state.U2_th = (state.Gamma - 1) * state.m2 * con::c2 / ad_idx;
 
-    state.m3 = 0;    // calculate_init_m3(Gamma4, state.Gamma, state.m2, sigma4);
-    state.U3_th = 0; //(Gamma34 - 1) * state.m3* con::c2;
+    state.m3 = 0;
+    //state.m4 * 1e-6;                         // calculate_init_m3(Gamma4, state.Gamma, state.m2, sigma4);
+    state.U3_th = 0;
+    //state.m3* con::c2 * 1e-6; //(Gamma34 - 1) * state.m3* con::c2;
 
-    state.x3 = 0;
+    state.x3 = 0; //state.x4 * 1e-6;
 }
 
 /**
@@ -406,14 +408,15 @@ inline void reverse_shock_early_extrap(size_t i, size_t j, Shock& shock) {
 template <typename Eqn, typename View>
 void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, Eqn& eqn,
                            Real rtol = 1e-6) {
+
     using namespace boost::numeric::odeint;
 
     typename Eqn::State state;
     Real t0 = 0.01 * unit::sec;
-
     eqn.set_init_state(state, t0);
 
-    if (state.Gamma <= con::Gamma_cut) {
+    constexpr Real RS_Gamma_limit = 1.03;
+    if (state.Gamma <= RS_Gamma_limit) {
         set_stopping_shock(i, j, shock_fwd, state);
         set_stopping_shock(i, j, shock_rvs, state);
         return;

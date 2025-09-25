@@ -83,8 +83,8 @@ double FluxData::estimate_chi2() const {
     double chi_square = 0;
     for (size_t i = 0; i < t.size(); ++i) {
         double error = Fv_err(i);
-        if (error == 0)
-            continue;
+        //if (error == 0)
+        //    continue;
         double diff = Fv_obs(i) - Fv_model(i);
         chi_square += weights(i) * (diff * diff) / (error * error);
     }
@@ -95,14 +95,15 @@ double MultiBandData::estimate_chi2() const {
     double chi_square = 0;
     for (size_t i = 0; i < times.size(); ++i) {
         double error = errors(i);
-        if (error == 0)
-            continue;
+        //if (error == 0)
+        //    continue;
         double diff = fluxes(i) - model_fluxes(i);
         chi_square += weights(i) * (diff * diff) / (error * error);
     }
     for (auto& d : flux_data) {
         chi_square += d.estimate_chi2();
     }
+
     return chi_square;
 }
 

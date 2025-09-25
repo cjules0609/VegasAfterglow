@@ -159,7 +159,7 @@ class Fitter:
 
         # Check reverse shock parameters
         if self.config.rvs_shock:
-            rvs_required = {"p_r", "eps_e_r", "eps_B_r"}
+            rvs_required = {"p_r", "eps_e_r", "eps_B_r", "tau"}
             missing_rvs = rvs_required - param_names
             if missing_rvs:
                 missing_params.extend(

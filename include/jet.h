@@ -342,7 +342,7 @@ namespace math {
             if (theta <= theta_c) {
                 return 0.;
             } else {
-                return height / (1 + fast_pow(theta / theta_c, k));
+                return height * fast_pow(theta / theta_c, -k);
             }
         };
     }
@@ -352,7 +352,7 @@ namespace math {
             if (theta <= theta_c) {
                 return 1.;
             } else {
-                return height / (1 + fast_pow(theta / theta_c, k)) + 1;
+                return height * fast_pow(theta / theta_c, -k) + 1;
             }
         };
     }
@@ -362,7 +362,7 @@ namespace math {
             if (theta <= theta_c) {
                 return height_c;
             } else {
-                return height_w / (1 + fast_pow(theta / theta_c, k));
+                return height_w * fast_pow(theta / theta_c, -k);
             }
         };
     }
@@ -372,7 +372,7 @@ namespace math {
             if (theta <= theta_c) {
                 return height_c + 1;
             } else {
-                return height_w / (1 + fast_pow(theta / theta_c, k)) + 1;
+                return height_w * fast_pow(theta / theta_c, -k) + 1;
             }
         };
     }

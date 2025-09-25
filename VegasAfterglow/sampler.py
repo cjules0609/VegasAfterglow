@@ -7,7 +7,6 @@ from typing import Callable, Optional, Sequence, Tuple, Type
 
 import emcee
 import numpy as np
-from emcee.moves import DEMove, DESnookerMove
 
 from .types import FitResult, ModelParams, ObsData, Setups, VegasMC
 
@@ -90,22 +89,23 @@ class MultiThreadEmcee:
         """
         Run coarse MCMC + optional stretch-move refinement at higher resolution.
         """
-        # 1) configure coarse grid
+
         cfg = self._make_cfg(base_cfg, *resolution)
 
-        # 2) prepare log-prob
         log_prob = _log_prob(
             data, cfg, self.to_params, self.pl, self.pu, self.model_cls
         )
 
-        # 3) initialize walker positions
         spread = 0.05 * (self.pu - self.pl)
         pos = self.init + spread * np.random.randn(self.nwalkers, self.ndim)
         pos = np.clip(pos, self.pl + 1e-8, self.pu - 1e-8)
 
-        # 4) default moves
         if moves is None:
-            moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
+            moves = [
+                (emcee.moves.StretchMove(a=2.0), 0.6),
+                (emcee.moves.DEMove(gamma=None), 0.3),
+                (emcee.moves.DESnookerMove(gamma=None), 0.1),
+            ]
 
         logger.info(
             "Running coarse MCMC at resolution %s for %d steps",
@@ -118,18 +118,14 @@ class MultiThreadEmcee:
             )
             sampler.run_mcmc(pos, total_steps, progress=True)
 
-        # 5) extract & filter
         burn = int(burn_frac * total_steps)
         chain = sampler.get_chain(discard=burn, thin=thin)
         logp = sampler.get_log_prob(discard=burn, thin=thin)
         chain, logp, _ = self._filter_bad_walkers(chain, logp)
 
-        # 6) flatten & find top k fits
         flat_chain = chain.reshape(-1, self.ndim)
         flat_logp = logp.reshape(-1)
 
-        # Find top k unique parameter combinations
-        # Sort by log prob (descending)
         sorted_idx = np.argsort(flat_logp)[::-1]
 
         # Round parameters to avoid floating point precision issues
@@ -151,7 +147,6 @@ class MultiThreadEmcee:
             top_k_log_probs[-1],
         )
 
-        # 8) return FitResult
         return FitResult(
             samples=chain,
             log_probs=logp,
