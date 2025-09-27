@@ -56,7 +56,7 @@ class Fitter:
         elif self.config.medium == "ism":
             if "n_ism" not in param_names:
                 missing_params.append("n_ism (required for ISM medium)")
-            incompatible = {"A_star", "n0"} & param_names
+            incompatible = {"A_star", "n0", "k_m"} & param_names
             if incompatible:
                 incompatible_params.extend(
                     [f"{p} (not used with ISM medium)" for p in incompatible]

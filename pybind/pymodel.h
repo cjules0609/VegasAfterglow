@@ -195,10 +195,11 @@ Medium PyISM(Real n_ism);
  * @param A_star Wind parameter A* = Ṁv_w/(4π) in units of 5×10^11 g/cm [dimensionless]
  * @param n_ism Constant density component for large radii [cm^-3] (default: 0)
  * @param n0 Inner boundary density for stratified wind model [cm^-3] (default: ∞)
+ * @param k Power-law index for wind density profile (ρ ∝ r^(-k), default: 2)
  * @return Medium Configured medium object representing stellar wind properties
  * <!-- ************************************************************************************** -->
  */
-Medium PyWind(Real A_star, Real n_ism = 0, Real n0 = con::inf);
+Medium PyWind(Real A_star, Real n_ism = 0, Real n0 = con::inf, Real k = 2);
 
 /**
  * <!-- ************************************************************************************** -->

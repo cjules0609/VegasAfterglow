@@ -135,14 +135,15 @@ namespace evn {
      *          falls off as 1/r²
      * <!-- ************************************************************************************** -->
      */
-    inline auto wind(Real A_star, Real n_ism = 0, Real n0 = con::inf) {
+    inline auto wind(Real A_star, Real n_ism = 0, Real n0 = con::inf, Real k = 2) {
         // Convert A_star to proper units: A_star * 5e11 g/cm
-        Real A = A_star * 5e11 * unit::g / unit::cm;
+        constexpr Real r0 = 1e17 * unit::cm; // reference radius
+        Real A = A_star * 5e11 * unit::g / unit::cm * std::pow(r0, k - 2);
         Real rho_ism = n_ism * con::mp;
-        Real r02 = A / (n0 * con::mp);
+        Real r0k = A / (n0 * con::mp);
 
-        // Return a function that computes density = A/r^2
-        // This represents a steady-state stellar wind where density falls off as 1/r^2
-        return [=](Real phi, Real theta, Real r) noexcept { return A / (r02 + r * r) + rho_ism; };
+        // Return a function that computes density = A/r^k
+        // This represents a steady-state stellar wind where density falls off as 1/r^k
+        return [=](Real phi, Real theta, Real r) noexcept { return A / (r0k + std::pow(r, k)) + rho_ism; };
     }
 } // namespace evn

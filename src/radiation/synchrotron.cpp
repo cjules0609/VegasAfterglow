@@ -99,9 +99,11 @@ Real SynElectrons::compute_spectrum(Real gamma) const {
             // Above minimum Lorentz factor: power-law with exponential cutoff
 
             break;
+
+#ifdef SELF_ABSORPTION_HEATING
         case 4: // Gao, Lei, Wu and Zhang 2013 Eq 18
             if (gamma <= gamma_a) {
-                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // Rising part of the spectrum
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // thermal part
             } else if (gamma <= gamma_m) {
                 return gamma_c / (gamma * gamma); // Transition region
             } else
@@ -111,20 +113,48 @@ Real SynElectrons::compute_spectrum(Real gamma) const {
             break;
         case 5: // Gao, Lei, Wu and Zhang 2013 Eq 19
             if (gamma <= gamma_a) {
-                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // Rising part of the spectrum
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // thermal part
             } else
                 return (p - 1) * gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p);
-            // Power-law decay with exponential cutoff
 
             break;
         case 6: // Gao, Lei, Wu and Zhang 2013 Eq 20
             if (gamma <= gamma_a) {
-                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // Rising part of the spectrum
+                return 3 * gamma * gamma / (gamma_a * gamma_a * gamma_a); // thermal part
             } else
                 return fast_pow(gamma_m, p - 1) * gamma_c * fast_pow(gamma, -(p + 1));
-            // Steeper decay in this regime
 
             break;
+#else
+        case 4:
+            if (gamma <= gamma_c) {
+                return 0; // Below cooling Lorentz factor, spectrum is zero
+            } else if (gamma <= gamma_m) {
+                return gamma_c / (gamma * gamma); // Intermediate regime scaling
+            } else
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p);
+            // High energy tail with exponential cutoff
+
+            break;
+        case 5:
+            if (gamma <= gamma_m) {
+                return 0; // Below minimum Lorentz factor, spectrum is zero
+            } else if (gamma <= gamma_c) {
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) /
+                       gamma_m; // Power-law spectrum between gamma_m and gamma_c
+            } else
+                return (p - 1) * fast_pow(gamma / gamma_m, -p) * gamma_c / (gamma * gamma_m);
+            break;
+        case 6:
+            if (gamma <= gamma_c) {
+                return 0; // Below cooling Lorentz factor, spectrum is zero
+            } else if (gamma <= gamma_m) {
+                return gamma_c / (gamma * gamma); // Intermediate regime scaling
+            } else
+                return gamma_c / (gamma * gamma_m) * fast_pow(gamma / gamma_m, -p);
+
+            break;
+#endif
         default:
             return 0;
     }
@@ -157,10 +187,10 @@ void SynPhotons::update_constant() {
         C1_ = std::cbrt(nu_a / nu_m);
         C2_ = fast_pow(nu_c / nu_m, (-p + 1) / 2);
 
-        log2_C1_ = fast_log2(nu_a / nu_m) / 3 - 2 * fast_log2(nu_a);
-        log2_C2_ = -fast_log2(nu_m) / 3;
-        log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
-        log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
+        log2_C1_ = (log2_nu_a - log2_nu_m) / 3 - 2 * log2_nu_a;
+        log2_C2_ = -log2_nu_m / 3;
+        log2_C3_ = (p - 1) / 2 * log2_nu_m;
+        log2_C4_ = (p - 1) / 2 * (log2_nu_m - log2_nu_c) + p / 2 * log2_nu_c;
     } else if (regime == 2) {
         // m_a_pa4_2 = fastPow(nu_m / nu_a, (p + 4) / 2);    // (nu_m / nu_a)^((p+4)/2)
         // a_m_mpa1_2 = fastPow(nu_a / nu_m, (-p + 1) / 2);  // (nu_a / nu_m)^((-p+1)/2)
@@ -169,40 +199,54 @@ void SynPhotons::update_constant() {
         C2_ = fast_pow(nu_a / nu_m, (-p + 1) / 2);
         C3_ = fast_pow(nu_c / nu_m, (-p + 1) / 2);
 
-        log2_C1_ = (p + 4) / 2 * fast_log2(nu_m / nu_a) - 2 * fast_log2(nu_m);
-        log2_C2_ = (p - 1) / 2 * fast_log2(nu_m / nu_a) - 2.5 * fast_log2(nu_a);
-        log2_C3_ = (p - 1) / 2 * fast_log2(nu_m);
-        log2_C4_ = (p - 1) / 2 * fast_log2(nu_m / nu_c) + p / 2 * fast_log2(nu_c);
+        log2_C1_ = (p + 4) / 2 * (log2_nu_m - log2_nu_a) - 2 * log2_nu_m;
+        log2_C2_ = (p - 1) / 2 * (log2_nu_m - log2_nu_a) - 2.5 * log2_nu_a;
+        log2_C3_ = (p - 1) / 2 * log2_nu_m;
+        log2_C4_ = (p - 1) / 2 * (log2_nu_m - log2_nu_c) + p / 2 * log2_nu_c;
     } else if (regime == 3) {
         // a_c_1_3 = std::cbrt(nu_a / nu_c);  // (nu_a / nu_c)^(1/3)
         // c_m_1_2 = std::sqrt(nu_c / nu_m);  // (nu_c / nu_m)^(1/2)
         C1_ = std::cbrt(nu_a / nu_c);
         C2_ = std::sqrt(nu_c / nu_m);
 
-        log2_C1_ = fast_log2(nu_a / nu_c) / 3 - 2 * fast_log2(nu_a);
-        log2_C2_ = -fast_log2(nu_c) / 3;
-        log2_C3_ = fast_log2(nu_c) / 2;
-        log2_C4_ = fast_log2(nu_c / nu_m) / 2 + p / 2 * fast_log2(nu_m);
+        log2_C1_ = (log2_nu_a - log2_nu_c) / 3 - 2 * log2_nu_a;
+        log2_C2_ = -log2_nu_c / 3;
+        log2_C3_ = log2_nu_c / 2;
+        log2_C4_ = (log2_nu_c - log2_nu_m) / 2 + p / 2 * log2_nu_m;
     } else if (regime == 4) {
-        // a_m_1_2 = std::sqrt(nu_a / nu_m);  // (nu_a / nu_m)^(1/2)
-        // R4 = std::sqrt(nu_c / nu_a) / 3;   // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for regime 4
         C1_ = std::sqrt(nu_a / nu_m);
-        C2_ = std::sqrt(nu_c / nu_a) / 3;
+        C3_ = 3;
+        C2_ = std::sqrt(nu_c / nu_a) / C3_;
 
-        log2_C1_ = -2 * fast_log2(nu_a);
-        log2_C2_ = fast_log2(C2_) + fast_log2(nu_a) / 2;
-        log2_C3_ = fast_log2(C2_) + fast_log2(nu_a / nu_m) / 2 + p / 2 * fast_log2(nu_m);
-    } else if (regime == 5 || regime == 6) {
-        // R4 = std::sqrt(nu_c / nu_a) / 3;              // (nu_c / nu_a)^(1/2) / 3; // R4: scaling factor for
-        // regime 4 R6 = R4 * fastPow(nu_m / nu_a, (p - 1) / 2);  // R6: scaling factor for regime 6
-        C1_ = std::sqrt(nu_c / nu_a) / 3;
-        C2_ = C1_ * fast_pow(nu_m / nu_a, (p - 1) / 2);
+        log2_C4_ = fast_log2(C2_);
 
-        log2_C1_ = -2 * fast_log2(nu_a);
-        log2_C2_ = fast_log2((p - 1) * C2_) + p / 2 * fast_log2(nu_a);
-        log2_C3_ = fast_log2(C2_) + p / 2 * fast_log2(nu_a);
+        log2_C1_ = -2 * log2_nu_a;
+        log2_C2_ = log2_C4_ + log2_nu_a / 2;
+        log2_C3_ = log2_C4_ + (log2_nu_a - log2_nu_m) / 2 + p / 2 * log2_nu_m;
+
+    } else if (regime == 5) {
+        C1_ = std::sqrt(nu_m / nu_a);
+        C3_ = 3 / (p - 1);
+        C2_ = std::sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2) / C3_;
+
+        log2_C4_ = fast_log2(C2_);
+
+        log2_C1_ = -2.5 * log2_nu_a;
+        log2_C2_ = log2_C4_ + p / 2 * log2_nu_a;
+
+        log2_C3_ = fast_log2(C3_);
+    } else if (regime == 6) {
+        C1_ = std::sqrt(nu_m / nu_a);
+        C3_ = 3;
+        C2_ = std::sqrt(nu_c / nu_a) * fast_pow(nu_m / nu_a, (p - 1) / 2) / C3_;
+
+        log2_C4_ = fast_log2(C2_);
+
+        log2_C1_ = -2.5 * log2_nu_a;
+        log2_C2_ = log2_C4_ + p / 2 * log2_nu_a;
+
+        log2_C3_ = 1.5849625007; // log2(3)
     }
-    // R5 = (p - 1) * R6;  // R5 scales R6 (commented out)
 }
 
 Real SynPhotons::compute_spectrum(Real nu) const {
@@ -248,6 +292,7 @@ Real SynPhotons::compute_spectrum(Real nu) const {
             return C2_ * fast_pow(nu / nu_m, -p / 2);
 
             break;
+#ifdef SELF_ABSORPTION_HEATING
         case 4:
             if (nu <= nu_a) {
                 return (nu / nu_a) * (nu / nu_a);
@@ -259,20 +304,41 @@ Real SynPhotons::compute_spectrum(Real nu) const {
 
             break;
         case 5:
-            if (nu <= nu_a) {
-                return (nu / nu_a) * (nu / nu_a);
-            }
-            return (p - 1) * C2_ * fast_pow(nu / nu_a, -p / 2);
-
-            break;
         case 6:
+            if (nu < nu_m) {
+                return C1_ * (nu / nu_a) * (nu / nu_a);
+            }
             if (nu <= nu_a) {
-                return (nu / nu_a) * (nu / nu_a);
+                return pow52(nu / nu_a);
             }
             return C2_ * fast_pow(nu / nu_a, -p / 2);
 
             break;
 
+#else
+        case 4:
+            if (nu <= nu_a) {
+                return 3 * C2_ * (nu / nu_a) * (nu / nu_a);
+            }
+            if (nu <= nu_m) {
+                return 3 * C2_ * std::sqrt(nu_a / nu);
+            }
+            return 3 * C2_ * C1_ * fast_pow(nu / nu_m, -p / 2);
+
+            break;
+        case 5:
+        case 6:
+            if (nu <= nu_m) {
+                return C3_ * C2_ * C1_ * (nu / nu_a) * (nu / nu_a);
+            }
+            if (nu <= nu_a) {
+                return C3_ * C2_ * pow52(nu / nu_a);
+            }
+            return C3_ * C2_ * fast_pow(nu / nu_a, -p / 2);
+
+            break;
+
+#endif
         default:
             return 0;
             break;
@@ -280,6 +346,7 @@ Real SynPhotons::compute_spectrum(Real nu) const {
 }
 
 Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
+    constexpr Real log2_3 = 1.5849625007; // log2(3)
     switch (regime) {
         case 1:
             if (log2_nu <= log2_nu_a) {
@@ -322,6 +389,7 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
             return log2_C4_ - p / 2. * log2_nu;
 
             break;
+#ifdef SELF_ABSORPTION_HEATING
         case 4:
             if (log2_nu <= log2_nu_a) {
                 return log2_C1_ + 2. * log2_nu;
@@ -334,22 +402,44 @@ Real SynPhotons::compute_log2_spectrum(Real log2_nu) const {
 
             break;
         case 5:
+        case 6:
+            if (log2_nu <= log2_nu_m) {
+                return 0.5 * log2_nu_m + log2_C1_ + 2. * log2_nu;
+            }
+
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2. * log2_nu;
+                return log2_C1_ + 2.5 * log2_nu;
             }
 
             return log2_C2_ - p / 2. * log2_nu;
 
             break;
-        case 6:
+#else
+        case 4:
+
             if (log2_nu <= log2_nu_a) {
-                return log2_C1_ + 2. * log2_nu;
+                return log2_3 + log2_C4_ + log2_C1_ + 2. * log2_nu;
+            }
+            if (log2_nu <= log2_nu_m) {
+                return log2_3 + log2_C2_ - log2_nu / 2.;
             }
 
-            return log2_C3_ - p / 2. * log2_nu;
+            return log2_3 + log2_C3_ - p / 2. * log2_nu;
 
             break;
+        case 5:
+        case 6:
+            if (log2_nu <= log2_nu_m) {
+                return log2_C3_ + log2_C4_ + 0.5 * log2_nu_m + log2_C1_ + 2. * log2_nu;
+            }
+            if (log2_nu <= log2_nu_a) {
+                return log2_C3_ + log2_C4_ + log2_C1_ + 2.5 * log2_nu;
+            }
 
+            return log2_C3_ + log2_C2_ - p / 2. * log2_nu;
+
+            break;
+#endif
         default:
             return -con::inf;
             break;
@@ -518,23 +608,46 @@ Real compute_syn_gamma_a(Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Re
     // 2kT(nu_a/c)^2 = I_peak*(nu_a/nu_peak)^(1/3) // first assume nu_a is in the 1/3 segment
     Real nu_a = fast_pow(I_syn_peak * con::c2 / (std::cbrt(nu_peak) * 2 * kT), 0.6);
 
+#ifdef SELF_ABSORPTION_HEATING
     if (nu_a > nu_peak) { // nu_a is not in the 1/3 segment
         constexpr Real coef = 3 * con::e / (4 * con::pi * con::me * con::c);
-        if (gamma_c > gamma_m) { // then assume nu_a is in the -(p-1)/2 segment
+        if (gamma_c > gamma_m) { // first assume nu_a is in the -(p-1)/2 segment, 2kT(nu_a/nu_m)^2.5 nu_m^2/c^2
             Real nu_m = compute_syn_freq(gamma_m, B);
             nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * fast_pow(nu_m, p / 2), 2 / (p + 4));
             Real nu_c = compute_syn_freq(gamma_c, B);
             if (nu_a > nu_c) { // nu_a is not in the -(p-1)/2 segment, strong absorption
-                Real C = 1.5 * I_syn_peak / (con::me * coef * coef * B * B);
-                Real gamma_a = root_bisect([C](Real x) -> Real { return x * x * x * x * x - x - C; }, gamma_c, gamma_M);
+                Real C = 1.5 * I_syn_peak / (con::me * pow52(coef * B) * std::sqrt(nu_m));
+                Real gamma_a =
+                    root_bisect([C](Real x) -> Real { return x * x * x * x * x * x - x - C; }, gamma_c, gamma_M);
                 return gamma_a;
             }
         } else { // strong absorption
-            Real C = 1.5 * I_syn_peak / (con::me * coef * coef * B * B);
-            Real gamma_a = root_bisect([C](Real x) -> Real { return x * x * x * x * x - x - C; }, gamma_c, gamma_M);
+            Real nu_m = compute_syn_freq(gamma_m, B);
+            Real C = 1.5 * I_syn_peak / (con::me * pow52(coef * B) * std::sqrt(nu_m));
+            Real gamma_a = root_bisect([C](Real x) -> Real { return x * x * x * x * x * x - x - C; }, gamma_c, gamma_M);
             return gamma_a;
         }
     }
+#else
+    if (nu_a > nu_peak) {        // nu_a is not in the 1/3 segment
+        if (gamma_c > gamma_m) { // first assume nu_a is in the -(p-1)/2 segment
+            Real nu_m = compute_syn_freq(gamma_m, B);
+            nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * fast_pow(nu_m, p / 2), 2 / (p + 4));
+            Real nu_c = compute_syn_freq(gamma_c, B);
+            if (nu_a > nu_c) { //  nu_a is not in the -(p-1)/2 but -p/2 segment
+                nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * std::sqrt(nu_c) * fast_pow(nu_m, p / 2), 2 / (p + 5));
+            }
+        } else { //first assume nu_a is in the -1/2 segment
+            Real nu_c = compute_syn_freq(gamma_c, B);
+            nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * std::sqrt(nu_c), 0.4);
+            Real nu_m = compute_syn_freq(gamma_m, B);
+            if (nu_a > nu_m) { // nu_a is in the -1/2 segment but -p/2 segment
+                nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * std::sqrt(nu_c) * fast_pow(nu_m, p / 2), 2 / (p + 5));
+            }
+        }
+    }
+
+#endif
     return compute_syn_gamma(nu_a, B) + 1;
 }
 

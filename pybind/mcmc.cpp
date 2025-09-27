@@ -30,12 +30,6 @@ std::vector<size_t> MultiBandData::logscale_screen(PyArray const& data, size_t n
     double log_range = log_end - log_start;
     size_t total_points = static_cast<size_t>(std::ceil(log_range * num_order)) + 1;
 
-    if (total_points >= total_size) {
-        std::vector<size_t> indices(total_size);
-        std::iota(indices.begin(), indices.end(), 0);
-        return indices;
-    }
-
     std::vector<size_t> indices;
     indices.reserve(total_points);
 
@@ -48,7 +42,6 @@ std::vector<size_t> MultiBandData::logscale_screen(PyArray const& data, size_t n
         double log_target = log_start + i * step;
         double target_value = std::pow(10.0, log_target);
 
-        // Find closest index to target value
         size_t best_idx = 1;
         double min_diff = std::abs(static_cast<double>(data(1)) - target_value);
 
@@ -60,10 +53,7 @@ std::vector<size_t> MultiBandData::logscale_screen(PyArray const& data, size_t n
             }
         }
 
-        double log_diff = std::abs(std::log10(static_cast<double>(data(best_idx))) - log_target);
-        double max_log_tolerance = 0.5 / num_order; // Scale tolerance with sampling density
-
-        if (log_diff <= max_log_tolerance && std::find(indices.begin(), indices.end(), best_idx) == indices.end()) {
+        if (std::find(indices.begin(), indices.end(), best_idx) == indices.end()) {
             indices.push_back(best_idx);
         }
     }
@@ -153,7 +143,7 @@ Medium MultiBandModel::select_medium(Params const& param) {
     if (config.medium == "ism") {
         medium.rho = evn::ISM(param.n_ism / unit::cm3);
     } else if (config.medium == "wind") {
-        medium.rho = evn::wind(param.A_star, param.n_ism / unit::cm3, param.n0 / unit::cm3);
+        medium.rho = evn::wind(param.A_star, param.n_ism / unit::cm3, param.n0 / unit::cm3, param.k_m);
     } else {
         AFTERGLOW_ENSURE(false, "Unknown medium type");
     }

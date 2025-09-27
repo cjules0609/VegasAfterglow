@@ -109,13 +109,15 @@ Medium PyISM(Real n_ism) {
     return medium;
 }
 
-Medium PyWind(Real A_star, Real n_ism, Real n0) {
+Medium PyWind(Real A_star, Real n_ism, Real n0, Real k) {
     Medium medium;
 
+    constexpr Real r0 = 1e17; // reference radius
+    Real A = A_star * 5e11 * std::pow(r0, k - 2);
     Real rho_ism = n_ism * 1.67e-24;
-    Real r02 = A_star * 5e11 / (n0 * 1.67e-24);
+    Real r0k = A / (n0 * 1.67e-24);
 
-    medium.rho = [=](Real phi, Real theta, Real r) { return A_star * 5e11 / (r02 + r * r) + rho_ism; };
+    medium.rho = [=](Real phi, Real theta, Real r) { return A / (r0k + std::pow(r, k)) + rho_ism; };
     return medium;
 }
 

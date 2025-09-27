@@ -96,15 +96,16 @@ class MultiThreadEmcee:
             data, cfg, self.to_params, self.pl, self.pu, self.model_cls
         )
 
-        spread = 0.05 * (self.pu - self.pl)
+        spread = 0.2 * (self.pu - self.pl)
         pos = self.init + spread * np.random.randn(self.nwalkers, self.ndim)
-        pos = np.clip(pos, self.pl + 1e-8, self.pu - 1e-8)
+        eps = 1e-6 * (self.pu - self.pl)
+        pos = np.clip(pos, self.pl + eps, self.pu - eps)
 
         if moves is None:
             moves = [
-                (emcee.moves.StretchMove(a=2.0), 0.6),
-                (emcee.moves.DEMove(gamma=None), 0.3),
-                (emcee.moves.DESnookerMove(gamma=None), 0.1),
+                (emcee.moves.StretchMove(), 0.6),
+                (emcee.moves.DEMove(), 0.3),
+                (emcee.moves.DESnookerMove(), 0.1),
             ]
 
         logger.info(

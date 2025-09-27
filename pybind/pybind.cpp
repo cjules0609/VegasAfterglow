@@ -50,7 +50,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
     // Medium bindings
     m.def("ISM", &PyISM, py::arg("n_ism"));
 
-    m.def("Wind", &PyWind, py::arg("A_star"), py::arg("n_ism") = 0, py::arg("n0") = con::inf);
+    m.def("Wind", &PyWind, py::arg("A_star"), py::arg("n_ism") = 0, py::arg("n0") = con::inf, py::arg("k") = 2);
 
     py::class_<Medium>(m, "Medium").def(py::init<TernaryFunc>(), py::arg("rho"));
 
@@ -136,6 +136,7 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readwrite("n_ism", &Params::n_ism)
         .def_readwrite("n0", &Params::n0)
         .def_readwrite("A_star", &Params::A_star)
+        .def_readwrite("k_m", &Params::k_m)
 
         .def_readwrite("E_iso", &Params::E_iso)
         .def_readwrite("Gamma0", &Params::Gamma0)
