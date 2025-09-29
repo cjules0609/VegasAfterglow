@@ -5,6 +5,45 @@ All notable changes to VegasAfterglow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.3] - 2025-09-29
+
+### Changed
+
+#### **Default Physics Settings**
+- **Self-Absorption Heating**: Disabled self-absorption heating by default for improved numerical stability
+- **Strong Absorption Subsegmentation**: Enhanced subsegmentation (5/2 ratio) for improved handling of strong self-absorption regions
+
+#### **MCMC Framework Improvements**
+- **Enhanced Move Strategy**: Implemented new MCMC move strategy for better parameter space exploration
+- **Wider Initial Spread**: Increased initial parameter spread for more robust sampling
+- **General Medium Support**: Extended `-k` parameter support for general medium configurations
+
+### Fixed
+
+#### **Model Interface**
+- **Flux Unit Consistency**: Fixed model flux unit handling for consistent calculations across interfaces
+- **Reverse Shock Dynamics**: Implemented hardcut Gamma treatment for more stable reverse shock evolution
+
+### Performance
+
+#### **Inverse Compton Optimization**
+- **Early Break Implementation**: Added early break condition for inverse Compton calculations to improve computational efficiency
+
+### Documentation
+
+#### **Enhanced Guidelines**
+- **MCMC Fitting Guidelines**: Added comprehensive guidelines for MCMC parameter fitting
+- **Interface Documentation**: Updated documentation for interface consistency and parameter usage
+- **Code Examples**: Enhanced examples and troubleshooting documentation
+
+### Development
+
+#### **Code Quality**
+- **Interface Consistency**: Major cleanup for interface name consistency across Python bindings
+- **Code Cleanup**: General code cleanup and optimization throughout the codebase
+
+---
+
 ## [v1.0.2] - 2025-09-15
 
 ### Changed
@@ -502,6 +541,9 @@ coordinates = details.theta            # New way
 
 | Version | Release Date | Key Features |
 |---------|--------------|--------------|
+| v1.0.3  | 2025-09-29   | Self-absorption heating disabled by default, MCMC improvements, flux unit fixes |
+| v1.0.2  | 2025-09-15   | Python interface method name updates, enhanced documentation, API consistency |
+| v1.0.1  | 2025-09-15   | Frequency integrated flux support, return object interface redesign |
 | v1.0.0  | 2025-09-06   | **Major Release**: Advanced MCMC framework, adaptive mesh generation, new jet models |
 | v0.2.8  | 2025-08-15   | Inverse Compton performance optimization (~10x), interface improvements |
 | v0.2.7  | 2025-07-31   | Internal quantities evolution interface, performance fixes |

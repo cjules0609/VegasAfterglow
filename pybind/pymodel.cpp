@@ -223,7 +223,7 @@ void PyModel::single_evo_details(Shock const& shock, Coord const& coord, Array c
 
 auto PyModel::details(Real t_min, Real t_max) -> PyDetails {
     Array t_obs = xt::logspace(std::log10(t_min * unit::sec), std::log10(t_max * unit::sec), 10);
-    Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
+    Coord coord = auto_grid(jet_, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
     PyDetails details;
@@ -235,7 +235,7 @@ auto PyModel::details(Real t_min, Real t_max) -> PyDetails {
     Observer observer;
 
     if (!rvs_rad_opt) {
-        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
+        auto fwd_shock = generate_fwd_shock(coord, medium_, jet_, fwd_rad.rad, rtol);
 
         save_shock_details(fwd_shock, details.fwd);
 
@@ -244,7 +244,7 @@ auto PyModel::details(Real t_min, Real t_max) -> PyDetails {
         return details;
     } else {
         auto rvs_rad = *rvs_rad_opt;
-        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
+        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium_, jet_, fwd_rad.rad, rvs_rad.rad, rtol);
 
         save_shock_details(fwd_shock, details.fwd);
 
@@ -404,6 +404,29 @@ auto PyModel::flux_density_grid(PyArray const& t, PyArray const& nu) -> PyFlux {
     return result;
 }
 
+Array PyModel::jet_E_iso(Real phi, Array const& theta) {
+    Array E_iso = xt::zeros<Real>(theta.shape());
+    for (size_t i = 0; i < theta.size(); ++i) {
+        E_iso(i) = jet_.eps_k(phi, theta(i)) / (unit::erg / (4 * con::pi));
+    }
+    return E_iso;
+}
+
+Array PyModel::jet_Gamma0(Real phi, Array const& theta) {
+    Array Gamma0 = xt::zeros<Real>(theta.shape());
+    for (size_t i = 0; i < theta.size(); ++i) {
+        Gamma0(i) = jet_.Gamma0(phi, theta(i));
+    }
+    return Gamma0;
+}
+
+Array PyModel::medium(Real phi, Real theta, Array const& r) {
+    Array rho = xt::zeros<Real>(r.shape());
+    for (size_t i = 0; i < r.size(); ++i) {
+        rho(i) = medium_.rho(phi, theta, r(i) * unit::cm) / (unit::g / unit::cm3);
+    }
+    return rho;
+}
 /*
 Array PyModel::medium(Real phi, Real theta, Array const& r) {
     Array rho = xt::zeros<Real>(r.shape());

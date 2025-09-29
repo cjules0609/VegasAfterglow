@@ -158,9 +158,9 @@ class Observer {
      */
     void update_required(MaskGrid& required, Array const& t_obs);
 
-    MeshGrid3d lg2_t;             ///< Log2 of observation time grid
-    MeshGrid3d lg2_doppler;       ///< Log2 of Doppler factor grid
-    MeshGrid3d lg2_emission_area; ///< Log2 of observe frame emission area
+    MeshGrid3d lg2_t;           ///< Log2 of observation time grid
+    MeshGrid3d lg2_doppler;     ///< Log2 of Doppler factor grid
+    MeshGrid3d lg2_geom_factor; ///< Log2 of observe frame geometric factor (solid angle * r^2 * D^3)
   private:
     Real one_plus_z{1};     ///< 1 + redshift
     Real lg2_one_plus_z{0}; ///< Log2(1 + redshift)
@@ -215,8 +215,8 @@ class Observer {
      */
     struct InterpState {
         Real slope{0};       ///< Slope for logarithmic interpolation
-        Real lg2_I_nu_lo{0}; ///< Lower boundary of specific intensity (log2 scale)
-        Real lg2_I_nu_hi{0}; ///< Upper boundary of specific intensity (log2 scale)
+        Real lg2_L_nu_lo{0}; ///< Lower boundary of specific luminosity (log2 scale)
+        Real lg2_L_nu_hi{0}; ///< Upper boundary of specific luminosity (log2 scale)
         Real last_lg2_nu{0}; ///< Last log2 frequency (for interpolation)
         size_t last_hi{0};   ///< Index for the upper boundary in the grid
     };
@@ -239,6 +239,7 @@ class Observer {
      * @brief Validates and sets the interpolation boundaries
      * @tparam PhotonGrid Types of photon grid objects
      * @param state The interpolation state to update
+     * @param eff_i Effective phi grid index (accounts for jet symmetry)
      * @param i Phi grid index
      * @param j Theta grid index
      * @param k Time grid index
@@ -254,7 +255,8 @@ class Observer {
      * <!-- ************************************************************************************** -->
      */
     template <typename PhotonGrid>
-    bool set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real log2_nu, PhotonGrid& photons) noexcept;
+    bool set_boundaries(InterpState& state, size_t eff_i, size_t i, size_t j, size_t k, Real log2_nu,
+                        PhotonGrid& photons) noexcept;
 };
 
 //========================================================================================================
@@ -277,7 +279,7 @@ inline void iterate_to(Real value, Array const& arr, size_t& it) noexcept {
 }
 
 template <typename PhotonGrid>
-bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, Real lg2_nu_obs,
+bool Observer::set_boundaries(InterpState& state, size_t eff_i, size_t i, size_t j, size_t k, Real lg2_nu_obs,
                               PhotonGrid& photons) noexcept {
     if (state.last_hi == k + 1 && state.last_lg2_nu == lg2_nu_obs) {
         if (!std::isfinite(state.slope)) {
@@ -289,23 +291,19 @@ bool Observer::set_boundaries(InterpState& state, size_t i, size_t j, size_t k, 
 
     Real lg2_t_ratio = lg2_t(i, j, k + 1) - lg2_t(i, j, k);
 
-    size_t eff_i = i * jet_3d;
-
     // continuing from previous boundary, shift the high boundary to lower.
     // Calling .I_nu()/.log_I_nu() could be expensive.
     if (state.last_hi != 0 && k == state.last_hi && lg2_nu_obs == state.last_lg2_nu) {
-        state.lg2_I_nu_lo = state.lg2_I_nu_hi;
+        state.lg2_L_nu_lo = state.lg2_L_nu_hi;
     } else {
         Real lg2_nu_lo = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k);
-        state.lg2_I_nu_lo =
-            3 * lg2_doppler(i, j, k) + photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + lg2_emission_area(i, j, k);
+        state.lg2_L_nu_lo = photons(eff_i, j, k).compute_log2_I_nu(lg2_nu_lo) + lg2_geom_factor(i, j, k);
     }
 
     Real lg2_nu_hi = lg2_one_plus_z + lg2_nu_obs - lg2_doppler(i, j, k + 1);
-    state.lg2_I_nu_hi = 3 * lg2_doppler(i, j, k + 1) + photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) +
-                        lg2_emission_area(i, j, k + 1);
+    state.lg2_L_nu_hi = photons(eff_i, j, k + 1).compute_log2_I_nu(lg2_nu_hi) + lg2_geom_factor(i, j, k + 1);
 
-    state.slope = (state.lg2_I_nu_hi - state.lg2_I_nu_lo) / lg2_t_ratio;
+    state.slope = (state.lg2_L_nu_hi - state.lg2_L_nu_lo) / lg2_t_ratio;
 
     if (!std::isfinite(state.slope)) {
         return false;
@@ -327,8 +325,8 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
     MeshGrid F_nu({nu_len, t_obs_len}, 0);
 
     for (size_t l = 0; l < nu_len; l++) {
-        // Loop over effective phi and theta grid points.
         for (size_t i = 0; i < eff_phi_grid; i++) {
+            size_t eff_i = i * jet_3d;
             for (size_t j = 0; j < theta_grid; j++) {
                 // Skip observation times that are below the grid's start time
                 size_t t_idx = 0;
@@ -340,7 +338,7 @@ MeshGrid Observer::specific_flux(Array const& t_obs, Array const& nu_obs, Photon
                     if (lg2_t_hi < lg2_t_obs(t_idx)) {
                         continue;
                     } else {
-                        if (set_boundaries(state, i, j, k, lg2_nu[l], photons)) {
+                        if (set_boundaries(state, eff_i, i, j, k, lg2_nu[l], photons)) {
                             for (; t_idx < t_obs_len && lg2_t_obs(t_idx) <= lg2_t_hi; t_idx++) {
                                 F_nu(l, t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                             }
@@ -375,6 +373,7 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
     Array F_nu = xt::zeros<Real>({t_obs_len});
 
     for (size_t i = 0; i < eff_phi_grid; i++) {
+        size_t eff_i = i * jet_3d;
         for (size_t j = 0; j < theta_grid; j++) {
             size_t t_idx = 0;
             iterate_to(lg2_t(i, j, 0), lg2_t_obs, t_idx);
@@ -387,7 +386,7 @@ Array Observer::specific_flux_series(Array const& t_obs, Array const& nu_obs, Ph
                     k++;
                     continue;
                 } else {
-                    if (set_boundaries(state, i, j, k, lg2_nu(t_idx), photons)) {
+                    if (set_boundaries(state, eff_i, i, j, k, lg2_nu(t_idx), photons)) {
                         F_nu(t_idx) += interpolate(state, i, j, k, lg2_t_obs(t_idx));
                     }
                     t_idx++;

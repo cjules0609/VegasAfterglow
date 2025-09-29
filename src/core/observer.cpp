@@ -15,7 +15,7 @@
 
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real lg2_t_obs) const noexcept {
     Real dlg2_t = lg2_t_obs - lg2_t(i, j, k);
-    return fast_exp2(state.lg2_I_nu_lo + dlg2_t * state.slope);
+    return fast_exp2(state.lg2_L_nu_lo + dlg2_t * state.slope);
 }
 
 void Observer::calc_solid_angle(Coord const& coord, Shock const& shock) {
@@ -58,7 +58,8 @@ void Observer::calc_solid_angle(Coord const& coord, Shock const& shock) {
                 //     continue;
                 // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
-                lg2_emission_area(i, j, k) = std::log2(dOmega * shock.r(i, j, k) * shock.r(i, j, k));
+                lg2_geom_factor(i, j, k) =
+                    std::log2(dOmega * shock.r(i, j, k) * shock.r(i, j, k)) + 3 * lg2_doppler(i, j, k);
             }
         }
     }
@@ -103,7 +104,7 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
             }
         }
     }
-    lg2_t = xt::log2(time);
+    xt::noalias(lg2_t) = xt::log2(time);
 }
 
 void Observer::update_required(MaskGrid& required, Array const& t_obs) {
@@ -156,7 +157,7 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     time = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
     lg2_t = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
     lg2_doppler = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
-    lg2_emission_area = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_geom_factor = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
     calc_t_obs(coord, shock);

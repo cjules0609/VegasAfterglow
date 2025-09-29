@@ -84,7 +84,15 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def("flux_density_exposures", &PyModel::flux_density_exposures, py::arg("t"), py::arg("nu"),
              py::arg("expo_time"), py::arg("num_points") = 10, py::call_guard<py::gil_scoped_release>())
 
-        .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"),
+        .def("details", &PyModel::details, py::arg("t_min"), py::arg("t_max"), py::call_guard<py::gil_scoped_release>())
+
+        .def("medium", &PyModel::medium, py::arg("phi"), py::arg("theta"), py::arg("r"),
+             py::call_guard<py::gil_scoped_release>())
+
+        .def("jet_E_iso", &PyModel::jet_E_iso, py::arg("phi"), py::arg("theta"),
+             py::call_guard<py::gil_scoped_release>())
+
+        .def("jet_Gamma0", &PyModel::jet_Gamma0, py::arg("phi"), py::arg("theta"),
              py::call_guard<py::gil_scoped_release>());
 
     py::class_<Flux>(m, "Flux").def(py::init<>()).def_readonly("sync", &Flux::sync).def_readonly("ssc", &Flux::ssc);

@@ -403,8 +403,8 @@ class PyModel {
             std::optional<PyRadiation> rvs_rad = std::nullopt,
             std::tuple<Real, Real, Real> resolutions = std::make_tuple(0.3, 1, 10), Real rtol = 1e-5,
             bool axisymmetric = true)
-        : jet(jet),
-          medium(medium),
+        : jet_(jet),
+          medium_(medium),
           obs_setup(observer),
           fwd_rad(fwd_rad),
           rvs_rad_opt(rvs_rad),
@@ -413,7 +413,7 @@ class PyModel {
           t_resol(std::get<2>(resolutions)),
           rtol(rtol),
           axisymmetric(axisymmetric) {
-        convert_unit(this->jet, this->medium);
+        convert_unit(this->jet_, this->medium_);
     }
 
     /**
@@ -488,6 +488,12 @@ class PyModel {
      * <!-- ************************************************************************************** -->
      */
     PyDetails details(Real t_min, Real t_max);
+
+    Array medium(Real phi, Real theta, Array const& r);
+
+    Array jet_E_iso(Real phi, Array const& theta);
+
+    Array jet_Gamma0(Real phi, Array const& theta);
 
   private:
     /**
@@ -572,8 +578,8 @@ class PyModel {
     void average_exposure_flux(PyFlux& result, std::vector<size_t> const& idx_sorted, size_t original_size,
                                size_t num_points);
 
-    Ejecta jet;                             ///< Jet model
-    Medium medium;                          ///< Circumburst medium
+    Ejecta jet_;                            ///< Jet model
+    Medium medium_;                         ///< Circumburst medium
     PyObserver obs_setup;                   ///< Observer configuration
     PyRadiation fwd_rad;                    ///< Forward shock radiation parameters
     std::optional<PyRadiation> rvs_rad_opt; ///< Optional reverse shock radiation parameters
@@ -616,7 +622,7 @@ void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Arra
 
 template <typename Func>
 auto PyModel::compute_emission(Array const& t_obs, Array const& nu_obs, Func&& flux_func) -> PyFlux {
-    Coord coord = auto_grid(jet, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
+    Coord coord = auto_grid(jet_, t_obs, this->theta_w, obs_setup.theta_obs, obs_setup.z, phi_resol, theta_resol,
                             t_resol, axisymmetric);
 
     PyFlux flux;
@@ -624,7 +630,7 @@ auto PyModel::compute_emission(Array const& t_obs, Array const& nu_obs, Func&& f
     Observer observer;
 
     if (!rvs_rad_opt) {
-        auto fwd_shock = generate_fwd_shock(coord, medium, jet, fwd_rad.rad, rtol);
+        auto fwd_shock = generate_fwd_shock(coord, medium_, jet_, fwd_rad.rad, rtol);
 
         single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux.fwd,
                               std::forward<Func>(flux_func));
@@ -632,7 +638,7 @@ auto PyModel::compute_emission(Array const& t_obs, Array const& nu_obs, Func&& f
         return flux;
     } else {
         auto rvs_rad = *rvs_rad_opt;
-        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium, jet, fwd_rad.rad, rvs_rad.rad, rtol);
+        auto [fwd_shock, rvs_shock] = generate_shock_pair(coord, medium_, jet_, fwd_rad.rad, rvs_rad.rad, rtol);
 
         single_shock_emission(fwd_shock, coord, t_obs, nu_obs, observer, fwd_rad, flux.fwd,
                               std::forward<Func>(flux_func));

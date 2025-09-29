@@ -641,7 +641,7 @@ Real compute_syn_gamma_a(Real B, Real I_syn_peak, Real gamma_m, Real gamma_c, Re
             Real nu_c = compute_syn_freq(gamma_c, B);
             nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * std::sqrt(nu_c), 0.4);
             Real nu_m = compute_syn_freq(gamma_m, B);
-            if (nu_a > nu_m) { // nu_a is in the -1/2 segment but -p/2 segment
+            if (nu_a > nu_m) { // nu_a is not in the -1/2 segment but -p/2 segment
                 nu_a = fast_pow(I_syn_peak * con::c2 / (2 * kT) * std::sqrt(nu_c) * fast_pow(nu_m, p / 2), 2 / (p + 5));
             }
         }
