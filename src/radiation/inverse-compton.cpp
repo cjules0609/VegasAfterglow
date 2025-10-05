@@ -11,126 +11,136 @@
 #include <iostream>
 #include <thread>
 
+#include "IO.h"
 #include "macros.h"
 #include "utilities.h"
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Computes the radiative efficiency parameter (ηₑ) given minimum electron Lorentz factors.
- * @details If gamma_c is less than gamma_m, it returns 1; otherwise, it returns (gamma_c/gamma_m)^(2-p).
- * @param gamma_m Minimum electron Lorentz factor
- * @param gamma_c Cooling electron Lorentz factor
- * @param p Electron distribution power-law index
- * @return The radiative efficiency parameter
- * <!-- ************************************************************************************** -->
- */
-inline Real eta_rad(Real gamma_m, Real gamma_c, Real p) {
-    return gamma_c < gamma_m ? 1 : std::pow(gamma_c / gamma_m, (2 - p));
-}
+InverseComptonY::InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcept {
+    gamma_hat_m = con::me * con::c2 / con::h / nu_m; // Compute minimum characteristic Lorentz factor
+    gamma_hat_c = con::me * con::c2 / con::h / nu_c; // Compute cooling characteristic Lorentz factor
+    this->Y_T = Y_T;                                 // Set the Thomson Y parameter
+    nu_hat_m = compute_syn_freq(gamma_hat_m, B);     // Compute corresponding synchrotron frequency for gamma_hat_m
+    nu_hat_c = compute_syn_freq(gamma_hat_c, B);     // Compute corresponding synchrotron frequency for gamma_hat_c
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Computes the effective Compton Y parameter in the Thomson regime.
- * @details Iteratively solves for Y until convergence using the relation:
- *          Y0 = (sqrt(1+4b) - 1)/2, where b = (ηₑ * eps_e / eps_B).
- *          The electron cooling parameters are updated during each iteration.
- * @param B Magnetic field strength
- * @param t_com Comoving time
- * @param eps_e Electron energy fraction
- * @param eps_B Magnetic energy fraction
- * @param e Synchrotron electron properties
- * @return The effective Thomson Y parameter
- * <!-- ************************************************************************************** -->
- */
-Real effectiveYThomson(Real B, Real t_com, Real eps_e, Real eps_B, SynElectrons const& e) {
-    Real eta_e = eta_rad(e.gamma_m, e.gamma_c, e.p);
-    Real b = eta_e * eps_e / eps_B;
-    Real Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
-    Real Y1 = 2 * Y0;
-    for (; std::fabs((Y1 - Y0) / Y0) > 1e-5;) {
-        Y1 = Y0;
-        Real gamma_c = compute_gamma_c(t_com, B, e.Ys, e.p);
-        eta_e = eta_rad(e.gamma_m, gamma_c, e.p);
-        b = eta_e * eps_e / eps_B;
-        Y0 = (std::sqrt(1 + 4 * b) - 1) / 2;
+    if (nu_hat_m <= nu_hat_c) {
+        regime = 1; // fast IC cooling regime
+    } else {
+        regime = 2; // slow IC cooling regime
     }
-    return Y0;
 }
 
-Real ICPhoton::I_nu(Real nu) const { return eq_space_loglog_interp(nu, this->nu_IC_, this->j_nu_, true, true); }
+InverseComptonY::InverseComptonY(Real Y_T) noexcept {
+    this->Y_T = Y_T; // Set the Thomson Y parameter
+    regime = 3;      // Set regime to 3 (special case)
+}
 
-Real compton_sigma(Real nu) {
-    Real x = con::h * nu / (con::me * con::c2);
-    if (x <= 1) {
+InverseComptonY::InverseComptonY() noexcept {
+    nu_hat_m = 0;
+    nu_hat_c = 0;
+    gamma_hat_m = 0;
+    gamma_hat_c = 0;
+    Y_T = 0;
+    regime = 0;
+}
+
+Real InverseComptonY::compute_val_at_gamma(Real gamma, Real p) const {
+    switch (regime) {
+        case 3:
+            return Y_T; // In regime 3, simply return Y_T
+            break;
+        case 1:
+            if (gamma <= gamma_hat_m) {
+                return Y_T; // For gamma below gamma_hat_m, no modification
+            } else if (gamma <= gamma_hat_c) {
+                return Y_T / std::sqrt(gamma / gamma_hat_m); // Intermediate regime scaling
+            } else
+                return Y_T * pow43(gamma_hat_c / gamma) * std::sqrt(gamma_hat_m / gamma_hat_c); // High gamma scaling
+
+            break;
+        case 2:
+            if (gamma <= gamma_hat_c) {
+                return Y_T; // For gamma below gamma_hat_c, no modification
+            } else if (gamma <= gamma_hat_m) {
+                return Y_T * fast_pow(gamma / gamma_hat_c, (p - 3) / 2); // Scaling in intermediate regime
+            } else
+                return Y_T * pow43(gamma_hat_m / gamma) *
+                       fast_pow(gamma_hat_m / gamma_hat_c, (p - 3) / 2); // High gamma scaling
+
+            break;
+        default:
+            return 0;
+            break;
+    }
+}
+
+Real InverseComptonY::compute_val_at_nu(Real nu, Real p) const {
+    switch (regime) {
+        case 3:
+            return Y_T; // In regime 3, simply return Y_T
+            break;
+        case 1:
+            if (nu <= nu_hat_m) {
+                return Y_T; // For frequencies below nu_hat_m, no modification
+            } else if (nu <= nu_hat_c) {
+                return Y_T * std::sqrt(std::sqrt(nu_hat_m / nu)); // Intermediate frequency scaling
+            } else
+                return Y_T * pow23(nu_hat_c / nu) * std::sqrt(std::sqrt(nu_hat_m / nu_hat_c)); // High frequency scaling
+
+            break;
+        case 2:
+            if (nu <= nu_hat_c) {
+                return Y_T; // For frequencies below nu_hat_c, no modification
+            } else if (nu <= nu_hat_m) {
+                return Y_T * fast_pow(nu / nu_hat_c, (p - 3) / 4); // Intermediate frequency scaling
+            } else
+                return Y_T * pow23(nu_hat_m / nu) *
+                       fast_pow(nu_hat_m / nu_hat_c, (p - 3) / 4); // High frequency scaling
+
+            break;
+        default:
+            return 0;
+            break;
+    }
+}
+
+Real InverseComptonY::compute_Y_Thompson(InverseComptonY const& Ys) {
+    return Ys.Y_T;
+}
+
+Real InverseComptonY::compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p) {
+    return Ys.compute_val_at_gamma(gamma, p);
+}
+
+Real InverseComptonY::compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p) {
+    return Ys.compute_val_at_nu(nu, p);
+}
+
+Real compton_cross_section(Real nu) {
+    Real x = con::h / (con::me * con::c2) * nu;
+    /*if (x <= 1) {
         return con::sigmaT;
     } else {
         return 0;
-    }
-    /*
+    }*/
+
     if (x < 1e-2) {
-         return con::sigmaT * (1 - 2 * x);
-     } else if (x > 1e2) {
-         return 3. / 8 * con::sigmaT * (log(2 * x) + 1.0 / 2) / x;
-     } else {
-         return 0.75 * con::sigmaT *
-                ((1 + x) / (x * x * x) * (2 * x * (1 + x) / (1 + 2 * x) - log(1 + 2 * x)) + log(1 + 2 * x) / (2 * x) -
-                 (1 + 3 * x) / (1 + 2 * x) / (1 + 2 * x));
-     }
-    */
-}
+        return con::sigmaT * (1 - 2 * x);
+    } else if (x > 1e2) {
+        return 3. / 8 * con::sigmaT * (log(2 * x) + 0.5) / x;
+    } else {
+        Real l = std::log1p(2.0 * x); // log(1+2x)
+        Real invx = 1.0 / x;
+        Real invx2 = invx * invx;
+        Real term1 = 1.0 + 2.0 * x;
+        Real invt1 = 1.0 / term1;
+        Real invt1_2 = invt1 * invt1;
 
-ICPhotonGrid gen_IC_photons(SynElectronGrid const& e, SynPhotonGrid const& ph) {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t r_size = e.shape()[2];
-    ICPhotonGrid IC_ph({phi_size, theta_size, r_size});
+        // ((1+x)/x^3) * (2x(1+x)/(1+2x) - log(1+2x)) + log(1+2x)/(2x) - (1+3x)/(1+2x)^2
+        Real a = (1.0 + x) * invx2 * invx;          // (1+x)/x^3
+        Real b = (2.0 * x * (1.0 + x)) * invt1 - l; // bracket
+        Real c = 0.5 * l * invx;                    // log_term/(2x)
+        Real d = (1.0 + 3.0 * x) * invt1_2;         // (1+3x)/(1+2x)^2
 
-    for (size_t i = 0; i < phi_size; ++i) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
-                // Generate the IC photon spectrum for each grid cell.
-                IC_ph(i, j, k).gen(e(i, j, k), ph(i, j, k));
-            }
-        }
+        return 0.75 * con::sigmaT * (a * b + c - d);
     }
-    return IC_ph;
-}
-
-void Thomson_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t r_size = e.shape()[2];
-
-    for (size_t i = 0; i < phi_size; i++) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
-                Real Y_T =
-                    effectiveYThomson(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
-
-                e(i, j, k).Ys = InverseComptonY(Y_T);
-            }
-        }
-    }
-    update_electrons_4Y(e, shock);
-}
-
-void KN_cooling(SynElectronGrid& e, SynPhotonGrid const& ph, Shock const& shock) {
-    size_t phi_size = e.shape()[0];
-    size_t theta_size = e.shape()[1];
-    size_t r_size = e.shape()[2];
-    for (size_t i = 0; i < phi_size; ++i) {
-        for (size_t j = 0; j < theta_size; ++j) {
-            for (size_t k = 0; k < r_size; ++k) {
-                Real Y_T =
-                    effectiveYThomson(shock.B(i, j, k), shock.t_comv(i, j, k), shock.eps_e, shock.eps_B, e(i, j, k));
-                // Clear existing Ys and emplace a new InverseComptonY with additional synchrotron frequency parameters.
-                // e[i][j][k].Ys.clear();
-                // e[i][j][k].Ys.emplace_back(ph[i][j][k].nu_m, ph[i][j][k].nu_c, shock.B[i][j][k], Y_T);
-                e(i, j, k).Ys = InverseComptonY(ph(i, j, k).nu_m, ph(i, j, k).nu_c, shock.B(i, j, k), Y_T);
-            }
-        }
-    }
-    update_electrons_4Y(e, shock);
 }

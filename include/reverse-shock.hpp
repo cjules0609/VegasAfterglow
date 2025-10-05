@@ -20,21 +20,26 @@
  */
 template <typename Ejecta, typename Medium>
 struct ReverseState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< Whether ejecta has mass injection
-    static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< Whether ejecta has energy injection
-    static constexpr size_t array_size = 7;
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;   ///< Whether ejecta has mass injection
+    static constexpr bool energy_inject = HasDedt<Ejecta>; ///< Whether ejecta has energy injection
+    static constexpr size_t array_size = 12;
 
     MAKE_THIS_ODEINT_STATE(ReverseState, data, array_size)
 
     union {
         struct {
-            Real width_shell;  ///< Width of the shell
-            Real m3;           ///< Shocked ejecta mass per solid angle
-            Real r;            ///< Radius
-            Real t_comv;       ///< Comoving time
-            Real theta;        ///< Angular coordinate theta
-            Real eps_shell;    ///< energy of shell per solid angle
-            Real m_shell;      ///< shell mass per solid angle
+            Real Gamma;  ///< Lorentz factor of the shocked region
+            Real x4;     ///< Comoving frame width of the region 4
+            Real x3;     ///< Comoving frame width of the region 3
+            Real m2;     ///< Shocked medium mass per solid angle
+            Real m3;     ///< Shocked ejecta mass per solid angle
+            Real U2_th;  ///< internal energy per solid angle in region 3
+            Real U3_th;  ///< internal energy per solid angle in region 2
+            Real r;      ///< Radius
+            Real t_comv; ///< Comoving time
+            Real theta;  ///< Angular coordinate theta
+            Real eps4;   ///< energy  per solid angle in region 4
+            Real m4;     ///< mass per solid angle in region 4
         };
         array_type data;
     };
@@ -50,7 +55,7 @@ struct ReverseState {
  */
 template <typename Ejecta, typename Medium>
 class FRShockEqn {
-   public:
+  public:
     using State = ReverseState<Ejecta, Medium>;
 
     /**
@@ -61,19 +66,23 @@ class FRShockEqn {
      * @param ejecta The ejecta driving the shock
      * @param phi Azimuthal angle
      * @param theta Polar angle
-     * @param eps_e Electron energy fraction
      * <!-- ************************************************************************************** -->
      */
-    FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, Real eps_e);
+    FRShockEqn(Medium const& medium, Ejecta const& jet, Real phi, Real theta, RadParams const& rad_fwd,
+               RadParams const& rad_rvs);
 
-    Medium const& medium;  ///< Reference to the medium properties
-    Ejecta const& ejecta;  ///< Reference to the jet properties
-    Real const phi{0};     ///< Angular coordinate phi
-    Real const theta0{0};  ///< Angular coordinate theta
-    Real const eps_e{0};   ///< Electron energy fraction
-    Real Gamma4{1};        ///< Initial Lorentz factor of the jet
-    Real u_x{0};           ///< Reverse shock crossed four velocity
-    Real r_x{0};           ///< Reverse shock crossed radius
+    Medium const& medium;    ///< Reference to the medium properties
+    Ejecta const& ejecta;    ///< Reference to the jet properties
+    RadParams const rad_fwd; ///< Radiation parameters for forward shock
+    RadParams const rad_rvs; ///< Radiation parameters for reverse shock
+    Real const phi{0};       ///< Angular coordinate phi
+    Real const theta0{0};    ///< Angular coordinate theta
+    Real Gamma4{1};          ///< Initial Lorentz factor of the jet
+    Real u_x{0};             ///< Reverse shock crossed four velocity
+    Real r_x{0};             ///< Reverse shock crossed radius
+    Real B3_ordered_x{0};    ///< Ordered magnetic field in region 3 at crossing
+    Real V3_comv_x{0};       ///< Comoving Volume in region 3 at crossing
+    Real rho3_x{0};          ///< Density in region 3 at crossing
 
     /**
      * <!-- ************************************************************************************** -->
@@ -92,61 +101,9 @@ class FRShockEqn {
      * @details Sets up initial state values and determines if the shock has already crossed.
      * @param state State vector to initialize
      * @param t0 Initial time
-     * @return True if the shock has already crossed at the initial time, false otherwise
      * <!-- ************************************************************************************** -->
      */
-    bool set_init_state(State& state, Real t0) const noexcept;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Sets constants at the shock crossing point for later calculations.
-     * @details Stores key parameters and switches the ODE from crossing to crossed state.
-     * @param state State at shock crossing
-     * @param B Magnetic field at shock crossing
-     * <!-- ************************************************************************************** -->
-     */
-    void set_cross_state(State const& state, Real B);
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Computes the Lorentz factor (Gamma3) during shock crossing.
-     * @details Uses energy conservation to determine the appropriate Gamma3 value.
-     * @param state Current state of the system
-     * @return The computed Lorentz factor for region 3 (shocked ejecta)
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_crossing_Gamma3(State const& state) const;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Computes the relative Lorentz factor after shock crossing.
-     * @details Uses adiabatic expansion to determine the relative Lorentz factor.
-     * @param state Current state of the system
-     * @return The relative Lorentz factor post-crossing
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_crossed_Gamma_rel(State const& state) const;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Computes the magnetic field after shock crossing.
-     * @details Calculates magnetic field based on pressure and energy conservation.
-     * @param state Current state of the system
-     * @return Magnetic field strength in the shocked region
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_crossed_B(State const& state) const;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Computes the Lorentz factor for region 3 after shock crossing.
-     * @details Uses a power-law profile that applies both in relativistic and Newtonian regimes.
-     * @param gamma_rel Relative Lorentz factor
-     * @param r Current radius
-     * @return The Lorentz factor for region 3 post-crossing
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_crossed_Gamma3(Real Gamma_rel, Real r) const;
+    void set_init_state(State& state, Real t0) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
@@ -160,33 +117,34 @@ class FRShockEqn {
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Checks if the ejecta is still injecting mass or energy at time t.
-     * @details Returns true if either energy or mass is being injected.
-     * @param t Current time
-     * @return Boolean indicating if injection is happening at time t
+     * @brief Saves the state of the system at the crossing point.
+     * @param state Current state of the system
      * <!-- ************************************************************************************** -->
      */
-    bool is_injecting(Real t) const;
+    void save_cross_state(State const& state);
 
-   private:
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Calculates the energy and mass injection rates at time t.
-     * @details Returns a pair containing energy injection rate and mass injection rate.
-     * @param t Current time
-     * @return A pair {energy_rate, mass_rate} with injection rates at time t
-     * <!-- ************************************************************************************** -->
-     */
-    std::pair<Real, Real> get_injection_rate(Real t) const;
+  private:
+    inline Real compute_dGamma_dt(State const& state, State const& diff, Real t) const noexcept;
 
-    Real N_electron{0};        ///< Normalized total electron (for post crossing scaling calculation)
-    Real adiabatic_const{1};   ///< Normalized adiabatic constant where C = rho^idx/p
-    Real e_mag_const{1};       ///< Normalized magnetic energy constant where C = B^2/p
-    Real gamma_hat_x{4. / 3};  ///< Adiabatic index at the shock crossing
-    Real deps0_dt{0};          ///< Ejecta energy injection rate
-    Real dm0_dt{0};            ///< Ejecta mass injection rate
-    Real u4{0};                ///< Four-velocity of the unshocked ejecta
-    bool crossed{false};       ///< Flag indicating if shock has crossed the shell
+    inline Real compute_dU2_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dU3_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dx3_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dx4_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dm2_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dm3_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_deps4_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    inline Real compute_dm4_dt(State const& state, State const& diff, Real t) const noexcept;
+
+    Real deps0_dt{0}; ///< Ejecta energy injection rate
+    Real dm0_dt{0};   ///< Ejecta mass injection rate
+    Real u4{0};       ///< Four-velocity of the unshocked ejecta
 };
 
 /**
@@ -213,8 +171,8 @@ using ShockPair = std::pair<Shock, Shock>;
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta, typename Medium>
-ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol = 1e-5);
+ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
+                              RadParams const& rad_rvs, Real rtol = 1e-5);
 
 //========================================================================================================
 //                                  template function implementation

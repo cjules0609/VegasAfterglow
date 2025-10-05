@@ -22,21 +22,21 @@ struct PromptPhotons {
 using PromptPhotonsGrid = xt::xtensor<PromptPhotons, 3>;
 
 class CoastingShock {
-   public:
+  public:
     CoastingShock(size_t phi_size, size_t theta_size, size_t t_size);
     CoastingShock() = delete;
 
-    MeshGrid3d r;        // radius
-    MeshGrid3d theta;    // theta for jet spreading
-    MeshGrid3d Gamma;    // relative lorentz factor between down stream and up stream
-    MeshGrid3d epsilon;  // relative energy per solid angle
+    MeshGrid3d r;       // radius
+    MeshGrid3d theta;   // theta for jet spreading
+    MeshGrid3d Gamma;   // relative lorentz factor between down stream and up stream
+    MeshGrid3d epsilon; // relative energy per solid angle
 
-    auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); }  // Returns grid dimensions
+    auto shape() const { return std::make_tuple(phi_size, theta_size, t_size); } // Returns grid dimensions
 
-   private:
-    size_t const phi_size{0};    // Number of grid points in phi direction
-    size_t const theta_size{0};  // Number of grid points in theta direction
-    size_t const t_size{0};      // Number of grid points in time direction
+  private:
+    size_t const phi_size{0};   // Number of grid points in phi direction
+    size_t const theta_size{0}; // Number of grid points in theta direction
+    size_t const t_size{0};     // Number of grid points in time direction
 };
 
 template <typename Ejecta>

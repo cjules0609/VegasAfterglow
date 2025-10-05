@@ -16,26 +16,32 @@
  * <!-- ************************************************************************************** -->
  */
 class Medium {
-   public:
+  public:
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Constructor: Initialize with density function
+     * @param rho Density function
+     * <!-- ************************************************************************************** -->
+     */
+    Medium(TernaryFunc rho) noexcept : rho(rho) {}
+
+    Medium() = default;
+
     /// Density function that returns the mass density at a given position (phi, theta, r)
     /// The function is initialized to zero by default
     TernaryFunc rho{func::zero_3d};
-
-    /// Mass function that returns the integrated mass per solid angle within a radius r at position (phi, theta, r).
-    /// please make sure this is consistent with the density function, where m = \int rho * r^2 dr
-    TernaryFunc mass{func::zero_3d};
 };
 
 /**
  * <!-- ************************************************************************************** -->
  * @class ISM
  * @brief Implements a uniform interstellar medium (ISM) with constant density.
- * @details Provides methods to compute density and integrated mass at any position.
+ * @details Provides methods to compute density at any position.
  *          The ISM is characterized by the particle number density n_ism.
  * <!-- ************************************************************************************** -->
  */
 class ISM {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with particle number density in cm^-3
@@ -55,38 +61,28 @@ class ISM {
      */
     inline Real rho(Real phi, Real theta, Real r) const noexcept { return rho_; }
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Return integrated mass per solid angle within radius r (proportional to r^3)
-     * @param phi Azimuthal angle (unused)
-     * @param theta Polar angle (unused)
-     * @param r Radial distance
-     * @return Mass enclosed within radius r (= rho * r^3 / 3)
-     * <!-- ************************************************************************************** -->
-     */
-    inline Real mass(Real phi, Real theta, Real r) const noexcept { return rho_ * r * r * r / 3; }
-
-   private:
-    Real rho_{0};  ///< Mass density (particle number density × proton mass)
+  private:
+    Real rho_{0}; ///< Mass density (particle number density × proton mass)
 };
 
 /**
  * <!-- ************************************************************************************** -->
  * @class Wind
  * @brief Implements a stellar wind medium with density proportional to 1/r².
- * @details Provides methods to compute density and integrated mass at any position.
+ * @details Provides methods to compute density at any position.
  *          The wind is characterized by the wind parameter A_star.
  * <!-- ************************************************************************************** -->
  */
 class Wind {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with wind parameter A_star (in standard units)
      * @param A_star Wind density parameter in standard units
      * <!-- ************************************************************************************** -->
      */
-    Wind(Real A_star) noexcept : A(A_star * 5e11 * unit::g / unit::cm) {}
+    Wind(Real A_star, Real n_ism = 0, Real n0 = con::inf) noexcept
+        : A(A_star * 5e11 * unit::g / unit::cm), rho_ism(n_ism * con::mp), r02(A / (n0 * con::mp)) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -97,21 +93,13 @@ class Wind {
      * @return Density value at radius r (= A/r²)
      * <!-- ************************************************************************************** -->
      */
-    inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r * r); }
 
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Return integrated mass per solid angle within radius r (proportional to r)
-     * @param phi Azimuthal angle (unused)
-     * @param theta Polar angle (unused)
-     * @param r Radial distance
-     * @return Mass enclosed within radius r (= A * r)
-     * <!-- ************************************************************************************** -->
-     */
-    inline Real mass(Real phi, Real theta, Real r) const noexcept { return A * r; }
+    inline Real rho(Real phi, Real theta, Real r) const noexcept { return A / (r02 + r * r) + rho_ism; }
 
-   private:
-    Real A{0};  ///< Wind density parameter in physical units
+  private:
+    Real A{0};       ///< Wind density parameter in physical units
+    Real rho_ism{0}; ///< ISM density floor
+    Real r02{0};     ///< Radius where ISM transitions to
 };
 
 /**
@@ -126,33 +114,36 @@ namespace evn {
      * <!-- ************************************************************************************** -->
      * @brief Creates a uniform interstellar medium (ISM) profile
      * @param n_ism Number density of particles in cm^-3
-     * @return Pair of functions for density and mass calculation
+     * @return function for density
      * <!-- ************************************************************************************** -->
      */
     inline auto ISM(Real n_ism) {
         Real rho = n_ism * con::mp;
 
-        return std::make_pair([rho](Real phi, Real theta, Real r) noexcept { return rho; },
-                              [rho](Real phi, Real theta, Real r) noexcept { return rho * r * r * r / 3; });
+        return [=](Real phi, Real theta, Real r) noexcept { return rho; };
     };
 
     /**
      * <!-- ************************************************************************************** -->
      * @brief Creates a stellar wind medium profile
      * @param A_star Wind parameter in standard units
-     * @return Pair of functions for density and mass calculation
+     * @param n_ism Number density of the ISM [cm^-3]
+     * @param n0 Number density of inner region [cm^-3]
+     * @return functions for density calculation
      * @details Converts A_star to proper units (A_star * 5e11 g/cm) and returns functions that compute
      *          density = A/r² and mass = A*r, representing a steady-state stellar wind where density
      *          falls off as 1/r²
      * <!-- ************************************************************************************** -->
      */
-    inline auto wind(Real A_star) {
+    inline auto wind(Real A_star, Real n_ism = 0, Real n0 = con::inf, Real k = 2) {
         // Convert A_star to proper units: A_star * 5e11 g/cm
-        Real A = A_star * 5e11 * unit::g / unit::cm;
+        constexpr Real r0 = 1e17 * unit::cm; // reference radius
+        Real A = A_star * 5e11 * unit::g / unit::cm * std::pow(r0, k - 2);
+        Real rho_ism = n_ism * con::mp;
+        Real r0k = A / (n0 * con::mp);
 
-        // Return a function that computes density = A/r^2
-        // This represents a steady-state stellar wind where density falls off as 1/r^2
-        return std::make_pair([A](Real phi, Real theta, Real r) noexcept { return A / (r * r); },
-                              [A](Real phi, Real theta, Real r) noexcept { return A * r; });
+        // Return a function that computes density = A/r^k
+        // This represents a steady-state stellar wind where density falls off as 1/r^k
+        return [=](Real phi, Real theta, Real r) noexcept { return A / (r0k + std::pow(r, k)) + rho_ism; };
     }
-}  // namespace evn
+} // namespace evn

@@ -15,7 +15,7 @@
 #include "synchrotron.h"
 
 #ifndef NO_XTENSOR_IO
-#include "xtensor-io/xnpz.hpp"
+    #include "xtensor-io/xnpz.hpp"
 #endif
 
 /**
@@ -155,11 +155,11 @@ void write_npz(std::string const& filename, Args const&... args);
 template <typename T, typename... Rest>
 void write_npz_recursive(std::string const& filename, bool first, std::string const& name, const T& array,
                          const Rest&... rest) {
-    auto arr = xt::eval(array);                                 // ensure evaluated
-    xt::dump_npz(filename + ".npz", name, arr, false, !first);  // append after first write
+    auto arr = xt::eval(array);                                // ensure evaluated
+    xt::dump_npz(filename + ".npz", name, arr, false, !first); // append after first write
 
     if constexpr (sizeof...(rest) > 0) {
-        write_npz_recursive(filename, false, rest...);  // continue with rest
+        write_npz_recursive(filename, false, rest...); // continue with rest
     }
 }
 

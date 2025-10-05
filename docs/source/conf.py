@@ -6,6 +6,34 @@
 # -- Project information -----------------------------------------------------
 import os
 import sys
+from unittest.mock import MagicMock
+
+# Mock C++ extension modules for documentation building
+class BetterMock(MagicMock):
+    # Add a proper __all__ attribute
+    __all__ = ['ModelParams', 'Setups', 'ObsData', 'VegasMC']
+
+    # Add documentation strings
+    @classmethod
+    def __getattr__(cls, name):
+        mock = MagicMock()
+        # Add docstrings to make autodoc happy
+        mock.__doc__ = f"Mocked {name} class for documentation."
+        # Make the signature inspection work better
+        if name == '__init__':
+            mock.__signature__ = None
+        return mock
+
+# Create fake module structure
+systems_mock = type('VegasAfterglowC', (), {
+    '__all__': ['ModelParams', 'Setups', 'ObsData', 'VegasMC'],
+    'ModelParams': type('ModelParams', (), {'__doc__': 'ModelParams class documentation.'}),
+    'Setups': type('Setups', (), {'__doc__': 'Setups class documentation.'}),
+    'ObsData': type('ObsData', (), {'__doc__': 'ObsData class documentation.'}),
+    'VegasMC': type('VegasMC', (), {'__doc__': 'VegasMC class documentation.'})
+})
+
+sys.modules['VegasAfterglow.VegasAfterglowC'] = systems_mock
 sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'VegasAfterglow'
@@ -54,14 +82,11 @@ html_static_path = ['_static']
 html_logo = '../../assets/logo.svg'
 html_favicon = '../../assets/logo.svg'
 html_theme_options = {
-    'logo_only': True,
-    'display_version': True,  # Adding version display to make theme structure more standard
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': True,
     'navigation_depth': 4,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
     'includehidden': True,
+    'titles_only': False,
+    'globaltoc_collapse': False,
+    'globaltoc_maxdepth': 4,
 }
 html_css_files = [
     'css/custom.css',
@@ -71,55 +96,32 @@ html_css_files = [
 html_js_files = [
     'js/custom.js',
 ]
-html_add_permalinks = None    # older Sphinx
-html_permalinks     = "" 
-# Add syntax highlighting style
-pygments_style = 'sphinx'
 
+# Add syntax highlighting style
+pygments_style = 'material'
+highlight_language = 'python'  # Ensuring Python is the default language
 # GitHub Pages settings
 html_baseurl = 'https://yihanwangastro.github.io/VegasAfterglow/docs/'
-html_add_permalinks   = None      # older Sphinx
-html_permalinks       = ""        # newer Sphinx – no ¶
-html_permalinks_icon  = ""        # RTD-theme uses a chain icon by default
 
-# Create a custom javascript file for source code toggling
-import os
-js_dir = os.path.join(os.path.dirname(__file__), '_static', 'js')
-os.makedirs(js_dir, exist_ok=True)
-with open(os.path.join(js_dir, 'custom.js'), 'w') as f:
+# Create a custom css file for basic styling
+css_dir = os.path.join(os.path.dirname(__file__), '_static', 'css')
+os.makedirs(css_dir, exist_ok=True)
+with open(os.path.join(css_dir, 'custom.css'), 'w') as f:
     f.write("""
-// Function to toggle source code visibility
-document.addEventListener('DOMContentLoaded', function() {
-    // Add toggle buttons for implementation sections
-    const sections = document.querySelectorAll('.breathe-sectiondef');
-    sections.forEach(function(section) {
-        if (section.querySelector('.cpp-source')) {
-            const btn = document.createElement('button');
-            btn.textContent = 'Toggle Implementation';
-            btn.className = 'toggle-impl-btn';
-            btn.style.cssText = 'background: #2980b9; color: white; border: none; padding: 5px 10px; margin: 5px 0; cursor: pointer; border-radius: 3px;';
-            btn.onclick = function() {
-                const sources = section.querySelectorAll('.cpp-source');
-                sources.forEach(function(src) {
-                    src.style.display = src.style.display === 'none' ? 'block' : 'none';
-                });
-            };
-            section.insertBefore(btn, section.firstChild);
-        }
-    });
-    
-    // Add a link to source browser in the navigation
-    const nav = document.querySelector('.wy-nav-side .wy-menu-vertical');
-    if (nav) {
-        const sourceLi = document.createElement('li');
-        sourceLi.className = 'toctree-l1';
-        const sourceLink = document.createElement('a');
-        sourceLink.href = '/source_browser.html';
-        sourceLink.textContent = 'Source Code Browser';
-        sourceLi.appendChild(sourceLink);
-        nav.appendChild(sourceLi);
-    }
-});
+/* Basic styling for documentation */
+dl.cpp.function {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f7f7f7;
+}
+
+dl.cpp.class {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
 """)
 
 # -- Breathe configuration ---------------------------------------------------
@@ -220,27 +222,28 @@ napoleon_attr_annotations = True
 viewcode_follow_imported_members = True
 viewcode_enable_epub = True
 
-# Custom implementation to include source from cpp files
+# Simple setup function
 def setup(app):
-    # Custom directive for including source code from implementation files
-    from docutils.parsers.rst import Directive
-    from docutils import nodes
-    
-    class ImplementationDirective(Directive):
-        required_arguments = 1  # function name
-        optional_arguments = 1  # filename
-        has_content = False
-        
-        def run(self):
-            function_name = self.arguments[0]
-            filename = self.arguments[1] if len(self.arguments) > 1 else None
-            
-            para = nodes.paragraph()
-            para += nodes.Text(f"Implementation details for {function_name} can be found in the source browser.")
-            
-            return [para]
-    
-    app.add_directive('implementation', ImplementationDirective)
-    
-    # Add custom CSS class for implementation details
-    app.add_css_file('css/custom.css') 
+    # Add custom CSS file for styling
+    app.add_css_file('css/custom.css')
+
+# Create a custom css file for styling code blocks
+css_dir = os.path.join(os.path.dirname(__file__), '_static', 'css')
+os.makedirs(css_dir, exist_ok=True)
+with open(os.path.join(css_dir, 'custom.css'), 'w') as f:
+    f.write("""
+/* Basic styling for C++ documentation */
+dl.cpp.function {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f7f7f7;
+}
+
+dl.cpp.class {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+""")

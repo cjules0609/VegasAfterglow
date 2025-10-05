@@ -21,26 +21,27 @@
  */
 template <typename Ejecta, typename Medium>
 struct ForwardState {
-    static constexpr bool mass_inject = HasDmdt<Ejecta>;    ///< whether Ejecta class has dmdt method
-    static constexpr bool energy_inject = HasDedt<Ejecta>;  ///< whether Ejecta class has dedt method
+    static constexpr bool mass_inject = HasDmdt<Ejecta>;   ///< whether Ejecta class has dmdt method
+    static constexpr bool energy_inject = HasDedt<Ejecta>; ///< whether Ejecta class has dedt method
     /// use least fixed array size for integrator efficiency
-    static constexpr size_t array_size = 5 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
+    static constexpr size_t array_size = 6 + (mass_inject ? 1 : 0) + (energy_inject ? 1 : 0);
 
     MAKE_THIS_ODEINT_STATE(ForwardState, data, array_size)
 
     union {
         struct {
-            Real Gamma;   ///< Lorentz factor
-            Real u;       ///< internal energy density
-            Real r;       ///< radius
-            Real t_comv;  ///< comoving time
-            Real theta;   ///< angle
+            Real Gamma;  ///< Lorentz factor
+            Real m2;     ///< swept mass
+            Real U2_th;  ///< internal energy per solid angle
+            Real r;      ///< radius
+            Real t_comv; ///< comoving time
+            Real theta;  ///< angle
 
             /// shell energy density per solid angle
-            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_shell;
+            [[no_unique_address]] std::conditional_t<energy_inject, Real, class Empty> eps_jet;
 
             /// shell mass per solid angle
-            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_shell;
+            [[no_unique_address]] std::conditional_t<mass_inject, Real, class Empty> m_jet;
         };
         array_type data;
     };
@@ -51,8 +52,8 @@ struct ForwardState {
  * @class ForwardShockEqn
  * @brief Represents the forward shock equation for a given jet and medium.
  * @details It defines a state vector (with variable size based on template parameters) and overloads operator()
- *          to compute the derivatives of the state with respect to t. It also declares helper functions for the
- *          derivatives. This class implements the physical equations governing the forward shock evolution.
+ *          to compute the derivatives of the state with respect to source time. It also declares helper functions for
+ *          the derivatives. This class implements the physical equations governing the forward shock evolution.
  *
  * @tparam Ejecta The ejecta class template parameter
  * @tparam Medium The medium class template parameter
@@ -60,7 +61,7 @@ struct ForwardState {
  */
 template <typename Ejecta, typename Medium>
 class ForwardShockEqn {
-   public:
+  public:
     using State = ForwardState<Ejecta, Medium>;
 
     /**
@@ -71,11 +72,12 @@ class ForwardShockEqn {
      * @param ejecta The ejecta driving the shock
      * @param phi Azimuthal angle
      * @param theta Polar angle
-     * @param eps_e Electron energy fraction
+     * @param rad_params Radiation parameters
      * @param theta_s Critical angle for jet spreading
      * <!-- ************************************************************************************** -->
      */
-    ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e, Real theta_s);
+    ForwardShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, RadParams const& rad_params,
+                    Real theta_s);
 
     /**
      * <!-- ************************************************************************************** -->
@@ -98,48 +100,42 @@ class ForwardShockEqn {
      */
     void set_init_state(State& state, Real t0) const noexcept;
 
-    Medium const& medium;  ///< Reference to the ambient medium properties
-    Ejecta const& ejecta;  ///< Reference to the ejecta properties
+    Medium const& medium; ///< Reference to the ambient medium properties
+    Ejecta const& ejecta; ///< Reference to the ejecta properties
+    Real const phi{0};    ///< Angular coordinate phi in the jet frame
+    Real const theta0{0}; ///< Initial angular coordinate theta
+    RadParams const rad;  ///< Radiation parameters
 
-    Real const phi{0};     ///< Angular coordinate phi in the jet frame
-    Real const theta0{0};  ///< Initial angular coordinate theta
-    Real const eps_e{0};   ///< Fraction of energy given to electrons
-
-   private:
+  private:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Computes the derivative of Gamma with respect to engine time t.
      * @details Calculates the rate of change of the Lorentz factor based on various physical factors.
-     * @param m_swept Total swept-up mass
-     * @param dm_dt_swept Rate of swept-up mass
      * @param state Current state of the system
      * @param diff Current derivatives
      * @param ad_idx Adiabatic index
      * @return The time derivative of Gamma
      * <!-- ************************************************************************************** -->
      */
-    inline Real dGamma_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
-                          Real ad_idx) const noexcept;
+    inline Real compute_dGamma_dt(State const& state, State const& diff, Real ad_idx) const noexcept;
 
     /**
      * <!-- ************************************************************************************** -->
      * @brief Computes the derivative of internal energy with respect to time t.
      * @details Calculates the rate of change of the internal energy density considering adiabatic expansion
      *          and energy injection from newly swept-up material.
-     * @param m_swept Total swept-up mass
-     * @param dm_dt_swept Rate of swept-up mass
+     * @param eps_rad radiative efficiency
      * @param state Current state of the system
      * @param diff Current derivatives
      * @param ad_idx Adiabatic index
      * @return The time derivative of internal energy
      * <!-- ************************************************************************************** -->
      */
-    inline Real dU_dt(Real m_swept, Real dm_dt_swept, State const& state, State const& diff,
-                      Real ad_idx) const noexcept;
+    inline Real compute_dU_dt(Real eps_rad, State const& state, State const& diff, Real ad_idx) const noexcept;
 
-    Real const dOmega0{0};  ///< Initial solid angle element
-    Real const theta_s{0};  ///< Jet structure parameter controlling angular dependence
-    Real m_shell{0};        ///< Ejecta mass per solid angle
+    Real const dOmega0{0}; ///< Initial solid angle element
+    Real const theta_s{0}; ///< Critical angle for jet spreading
+    Real m_jet0{0};        ///< Ejecta mass per solid angle
 };
 
 /**
@@ -179,14 +175,13 @@ void grid_solve_fwd_shock(size_t i, size_t j, View const& t, Shock& shock, FwdEq
  * @param coord Coordinate system definition
  * @param medium The medium through which the shock propagates
  * @param jet The jet (ejecta) driving the shock
- * @param eps_e Electron energy fraction
- * @param eps_B Magnetic energy fraction
+ * @param rad_params Radiation parameters
  * @param rtol Relative tolerance for the ODE solver (default: 1e-5)
  * @return A Shock object containing the evolution data
  * <!-- ************************************************************************************** -->
  */
 template <typename Ejecta, typename Medium>
-Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e, Real eps_B,
+Shock generate_fwd_shock(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_params,
                          Real rtol = 1e-5);
 
 //========================================================================================================

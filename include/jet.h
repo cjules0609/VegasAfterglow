@@ -20,7 +20,25 @@
  * <!-- ************************************************************************************** -->
  */
 class Ejecta {
-   public:
+  public:
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
+     * @param eps_k Energy per unit solid angle as a function of (phi, theta)
+     * @param Gamma0 Lorentz factor as a function of (phi, theta)
+     * @param sigma0 Magnetization parameter as a function of (phi, theta)
+     * @param deps_dt Energy injection rate per solid angle as a function of (phi, theta, t)
+     * @param dm_dt Mass injection rate per unit solid angle as a function of (phi, theta, t)
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
+     * <!-- ************************************************************************************** -->
+     */
+    Ejecta(BinaryFunc eps_k, BinaryFunc Gamma0, BinaryFunc sigma0 = func::zero_2d, TernaryFunc deps_dt = func::zero_3d,
+           TernaryFunc dm_dt = func::zero_3d, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : eps_k(eps_k), Gamma0(Gamma0), sigma0(sigma0), deps_dt(deps_dt), dm_dt(dm_dt), T0(T0), spreading(spreading) {}
+
+    Ejecta() = default;
+
     /// Initial energy per unit solid angle as a function of (phi, theta)
     BinaryFunc eps_k{func::zero_2d};
 
@@ -55,17 +73,19 @@ class Ejecta {
  * <!-- ************************************************************************************** -->
  */
 class TophatJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    TophatJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
-        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    TophatJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), T0(T0), spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -87,15 +107,13 @@ class TophatJet {
      */
     inline Real Gamma0(Real phi, Real theta) const noexcept { return theta < theta_c_ ? Gamma0_ : 1; }
 
-    /// Duration of the ejecta in seconds
-    Real T0{1 * unit::sec};
-    /// Flag indicating if the ejecta spreads laterally during evolution
-    bool spreading{false};
+    Real T0{1 * unit::sec}; ///< Duration of the ejecta in seconds
+    bool spreading{false};  ///< Flag indicating if the ejecta spreads laterally during evolution
 
-   private:
-    Real const theta_c_{0};  ///< Core angle of the jet
-    Real const eps_k_{0};    ///< Energy per solid angle within the core
-    Real const Gamma0_{1};   ///< Initial Lorentz factor within the core
+  private:
+    Real const theta_c_{0}; ///< Core angle of the jet
+    Real const eps_k_{0};   ///< Energy per solid angle within the core
+    Real const Gamma0_{1};  ///< Initial Lorentz factor within the core
 };
 
 /**
@@ -107,17 +125,23 @@ class TophatJet {
  * <!-- ************************************************************************************** -->
  */
 class GaussianJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, and initial Lorentz factor
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    GaussianJet(Real theta_c, Real E_iso, Real Gamma0) noexcept
-        : norm_(-1 / (2 * theta_c * theta_c)), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0) {}
+    GaussianJet(Real theta_c, Real E_iso, Real Gamma0, bool spreading = false, Real T0 = 1 * unit::sec) noexcept
+        : norm_(-1 / (2 * theta_c * theta_c)),
+          eps_k_(E_iso / (4 * con::pi)),
+          Gamma0_(Gamma0),
+          T0(T0),
+          spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -137,17 +161,19 @@ class GaussianJet {
      * @return Lorentz factor with Gaussian angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_exp(theta * theta * norm_); }
+    inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return (Gamma0_ - 1) * fast_exp(theta * theta * norm_) + 1;
+    }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
     /// Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
-   private:
-    Real const norm_{0};    ///< Normalization factor for Gaussian distribution
-    Real const eps_k_{0};   ///< Peak energy per solid angle at center
-    Real const Gamma0_{1};  ///< Peak Lorentz factor at center
+  private:
+    Real const norm_{0};   ///< Normalization factor for Gaussian distribution
+    Real const eps_k_{0};  ///< Peak energy per solid angle at center
+    Real const Gamma0_{1}; ///< Peak Lorentz factor at center
 };
 
 /**
@@ -159,18 +185,22 @@ class GaussianJet {
  * <!-- ************************************************************************************** -->
  */
 class PowerLawJet {
-   public:
+  public:
     /**
      * <!-- ************************************************************************************** -->
      * @brief Constructor: Initialize with core angle, isotropic energy, initial Lorentz factor, and power-law index
      * @param theta_c Core angle of the jet
      * @param E_iso Isotropic equivalent energy
      * @param Gamma0 Initial Lorentz factor
-     * @param k Power-law index
+     * @param k_e Power-law index
+     * @param k_g Power-law index
+     * @param T0 Duration of the ejecta
+     * @param spreading Flag indicating if the ejecta spreads laterally during evolution
      * <!-- ************************************************************************************** -->
      */
-    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k) noexcept
-        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_(k) {}
+    PowerLawJet(Real theta_c, Real E_iso, Real Gamma0, Real k_e, Real k_g, bool spreading = false,
+                Real T0 = 1 * unit::sec) noexcept
+        : theta_c_(theta_c), eps_k_(E_iso / (4 * con::pi)), Gamma0_(Gamma0), k_e_(k_e), T0(T0), spreading(spreading) {}
 
     /**
      * <!-- ************************************************************************************** -->
@@ -180,7 +210,7 @@ class PowerLawJet {
      * @return Energy per solid angle with power-law angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ * fast_pow(theta / theta_c_, -k_); }
+    inline Real eps_k(Real phi, Real theta) const noexcept { return eps_k_ / (1 + fast_pow(theta / theta_c_, k_e_)); }
 
     /**
      * <!-- ************************************************************************************** -->
@@ -190,18 +220,21 @@ class PowerLawJet {
      * @return Lorentz factor with power-law angular dependence
      * <!-- ************************************************************************************** -->
      */
-    inline Real Gamma0(Real phi, Real theta) const noexcept { return Gamma0_ * fast_pow(theta / theta_c_, -k_); }
+    inline Real Gamma0(Real phi, Real theta) const noexcept {
+        return (Gamma0_ - 1) / (1 + fast_pow(theta / theta_c_, k_g_)) + 1;
+    }
 
     /// Duration of the ejecta in seconds
     Real T0{1 * unit::sec};
     /// Flag indicating if the ejecta spreads laterally during evolution
     bool spreading{false};
 
-   private:
-    Real const theta_c_{0};  ///< Core angle of the jet
-    Real const eps_k_{0};    ///< Energy per solid angle at the core
-    Real const Gamma0_{1};   ///< Initial Lorentz factor at the core
-    Real const k_{2};        ///< Power-law index for angular dependence
+  private:
+    Real const theta_c_{0}; ///< Core angle of the jet
+    Real const eps_k_{0};   ///< Energy per solid angle at the core
+    Real const Gamma0_{1};  ///< Initial Lorentz factor at the core
+    Real const k_e_{2};     ///< Power-law index for energy angular dependence
+    Real const k_g_{2};     ///< Power-law index for Lorentz factor angular dependence
 };
 
 /**
@@ -257,12 +290,16 @@ namespace math {
      * <!-- ************************************************************************************** -->
      * @brief Returns a tophat function: constant within the core angle, zero outside
      * @param theta_c Core angle
-     * @param hight Height (value inside the core)
+     * @param height Height (value inside the core)
      * @return Function implementing a tophat profile
      * <!-- ************************************************************************************** -->
      */
-    inline auto tophat(Real theta_c, Real hight) noexcept {
-        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? hight : 0; };
+    inline auto tophat(Real theta_c, Real height) noexcept {
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? height : 0; };
+    }
+
+    inline auto tophat_plus_one(Real theta_c, Real height) noexcept {
+        return [=](Real phi, Real theta) noexcept { return theta < theta_c ? height + 1 : 1; };
     }
 
     /**
@@ -274,8 +311,13 @@ namespace math {
      * <!-- ************************************************************************************** -->
      */
     inline auto gaussian(Real theta_c, Real height) noexcept {
-        Real spread = 2 * theta_c * theta_c;
-        return [=](Real phi, Real theta) noexcept { return height * fast_exp(-theta * theta / spread); };
+        Real spread = -2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(theta * theta / spread); };
+    }
+
+    inline auto gaussian_plus_one(Real theta_c, Real height) noexcept {
+        Real spread = -2 * theta_c * theta_c;
+        return [=](Real phi, Real theta) noexcept { return height * fast_exp(theta * theta / spread) + 1; };
     }
 
     /**
@@ -291,14 +333,92 @@ namespace math {
         return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)); };
     }
 
+    inline auto powerlaw_plus_one(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept { return height / (1 + fast_pow(theta / theta_c, k)) + 1; };
+    }
+
+    inline auto powerlaw_wing(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return 0.;
+            } else {
+                return height * fast_pow(theta / theta_c, -k);
+            }
+        };
+    }
+
+    inline auto powerlaw_wing_plus_one(Real theta_c, Real height, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return 1.;
+            } else {
+                return height * fast_pow(theta / theta_c, -k) + 1;
+            }
+        };
+    }
+
+    inline auto step_powerlaw(Real theta_c, Real height_c, Real height_w, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c;
+            } else {
+                return height_w * fast_pow(theta / theta_c, -k);
+            }
+        };
+    }
+
+    inline auto step_powerlaw_plus_one(Real theta_c, Real height_c, Real height_w, Real k) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c + 1;
+            } else {
+                return height_w * fast_pow(theta / theta_c, -k) + 1;
+            }
+        };
+    }
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Returns a two-component profile function for jet properties
+     * @param theta_c Core angle
+     * @param theta_w Wing angle
+     * @param height_c Height at core
+     * @param height_w Height at wing
+     * @return Function implementing a two-component profile
+     * <!-- ************************************************************************************** -->
+     */
+    inline auto two_component(Real theta_c, Real theta_w, Real height_c, Real height_w) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c;
+            } else if (theta <= theta_w) {
+                return height_w;
+            } else {
+                return 0.;
+            }
+        };
+    }
+
+    inline auto two_component_plus_one(Real theta_c, Real theta_w, Real height_c, Real height_w) noexcept {
+        return [=](Real phi, Real theta) noexcept {
+            if (theta <= theta_c) {
+                return height_c + 1;
+            } else if (theta <= theta_w) {
+                return height_w + 1;
+            } else {
+                return 1.;
+            }
+        };
+    }
+
     /**
      * <!-- ************************************************************************************** -->
      * @brief Creates a constant injection profile: returns 1 regardless of time
      * @return Function that always returns 1
      * <!-- ************************************************************************************** -->
      */
-    inline auto const_injection() noexcept {
-        return [=](Real t) noexcept { return 1.; };
+    inline auto const_injection(Real height) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return height; };
     }
 
     /**
@@ -308,8 +428,8 @@ namespace math {
      * @return Function implementing a step function
      * <!-- ************************************************************************************** -->
      */
-    inline auto step_injection(Real t0) noexcept {
-        return [=](Real t) noexcept { return t > t0 ? 1. : 0.; };
+    inline auto step_injection(Real t0, Real height_low, Real height_high) noexcept {
+        return [=](Real t) noexcept { return t > t0 ? height_high : height_low; };
     }
 
     /**
@@ -320,8 +440,8 @@ namespace math {
      * @return Function implementing a square wave
      * <!-- ************************************************************************************** -->
      */
-    inline auto square_injection(Real t0, Real t1) noexcept {
-        return [=](Real t) noexcept { return t > t0 && t < t1 ? 1. : 0.; };
+    inline auto square_injection(Real t0, Real t1, Real height_high, Real height_low) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return t > t0 && t < t1 ? height_high : height_low; };
     }
 
     /**
@@ -332,10 +452,31 @@ namespace math {
      * @return Function implementing a power-law decay
      * <!-- ************************************************************************************** -->
      */
-    inline auto powerlaw_injection(Real t0, Real q) noexcept {
-        return [=](Real t) noexcept { return fast_pow(1 + t / t0, -q); };
+    inline auto powerlaw_injection(Real t0, Real q, Real hight) noexcept {
+        return [=](Real phi, Real theta, Real t) noexcept { return hight * fast_pow(1 + t / t0, -q); };
     }
-}  // namespace math
+
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Creates a magnetar injection profile: returns a power-law decay for theta < theta_c
+     * @param t0 Reference time
+     * @param q Power-law decay index
+     * @param L0 Normalization factor
+     * @param theta_c Critical angle
+     * @return Function implementing a magnetar injection profile
+     * <!-- ************************************************************************************** -->
+     */
+    inline auto magnetar_injection(Real t0, Real q, Real L0, Real theta_c) {
+        return [=](Real phi, Real theta, Real t) noexcept {
+            if (theta <= theta_c) {
+                Real tt = 1 + t / t0;
+                return L0 * fast_pow(tt, -q);
+            } else {
+                return 0.;
+            }
+        };
+    }
+} // namespace math
 
 /**
  * <!-- ************************************************************************************** -->

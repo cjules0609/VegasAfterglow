@@ -11,258 +11,359 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <vector>
 
-template <typename Array>
-void sort_synchronized(Array& a, Array& b, Array& c) {
-    std::size_t N = a.size();
+#include "error_handling.h"
+#include "pybind.h"
 
-    std::vector<std::size_t> idx(N);
-    std::iota(idx.begin(), idx.end(), 0);
+std::vector<size_t> MultiBandData::logscale_screen(PyArray const& data, size_t num_order) {
+    size_t total_size = data.size();
 
-    std::sort(idx.begin(), idx.end(), [&](std::size_t i, std::size_t j) { return a(i) < a(j); });
-
-    Array a_sorted = xt::empty<double>({N});
-    Array b_sorted = xt::empty<double>({N});
-    Array c_sorted = xt::empty<double>({N});
-
-    for (std::size_t i = 0; i < N; ++i) {
-        a_sorted(i) = a(idx[i]);
-        b_sorted(i) = b(idx[i]);
-        c_sorted(i) = c(idx[i]);
+    if (num_order == 0) {
+        std::vector<size_t> indices(total_size);
+        std::iota(indices.begin(), indices.end(), 0);
+        return indices;
     }
 
-    a = std::move(a_sorted);
-    b = std::move(b_sorted);
-    c = std::move(c_sorted);
+    double log_start = std::log10(static_cast<double>(data(0)));
+    double log_end = std::log10(static_cast<double>(data(total_size - 1)));
+    double log_range = log_end - log_start;
+    size_t total_points = static_cast<size_t>(std::ceil(log_range * num_order)) + 1;
+
+    std::vector<size_t> indices;
+    indices.reserve(total_points);
+
+    // Always include first point
+    indices.push_back(0);
+
+    double step = log_range / (total_points - 1);
+
+    for (size_t i = 1; i < total_points - 1; ++i) {
+        double log_target = log_start + i * step;
+        double target_value = std::pow(10.0, log_target);
+
+        size_t best_idx = 1;
+        double min_diff = std::abs(static_cast<double>(data(1)) - target_value);
+
+        for (size_t j = 2; j < total_size - 1; ++j) {
+            double diff = std::abs(static_cast<double>(data(j)) - target_value);
+            if (diff < min_diff) {
+                min_diff = diff;
+                best_idx = j;
+            }
+        }
+
+        if (std::find(indices.begin(), indices.end(), best_idx) == indices.end()) {
+            indices.push_back(best_idx);
+        }
+    }
+
+    // Always include last point
+    if (total_size > 1) {
+        indices.push_back(total_size - 1);
+    }
+
+    std::sort(indices.begin(), indices.end());
+    indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+
+    return indices;
 }
 
-double LightCurveData::estimate_chi2() const {
+double FluxData::estimate_chi2() const {
     double chi_square = 0;
     for (size_t i = 0; i < t.size(); ++i) {
-        if (Fv_err[i] == 0) continue;
-        double diff = Fv_obs[i] - Fv_model[i];
-        chi_square += (diff * diff) / (Fv_err[i] * Fv_err[i]);
-    }
-    return chi_square;
-}
-
-double SpectrumData::estimate_chi2() const {
-    double chi_square = 0;
-    for (size_t i = 0; i < nu.size(); ++i) {
-        if (Fv_err[i] == 0) continue;
-        double diff = Fv_obs[i] - Fv_model[i];
-        chi_square += (diff * diff) / (Fv_err[i] * Fv_err[i]);
+        double error = Fv_err(i);
+        //if (error == 0)
+        //    continue;
+        double diff = Fv_obs(i) - Fv_model(i);
+        chi_square += weights(i) * (diff * diff) / (error * error);
     }
     return chi_square;
 }
 
 double MultiBandData::estimate_chi2() const {
     double chi_square = 0;
-    for (auto const& data : light_curve) {
-        chi_square += data.estimate_chi2();
+    for (size_t i = 0; i < times.size(); ++i) {
+        double error = errors(i);
+        //if (error == 0)
+        //    continue;
+        double diff = fluxes(i) - model_fluxes(i);
+        chi_square += weights(i) * (diff * diff) / (error * error);
     }
-    for (auto const& data : spectrum) {
-        chi_square += data.estimate_chi2();
+    for (auto& d : flux_data) {
+        chi_square += d.estimate_chi2();
     }
+
     return chi_square;
 }
 
-void MultiBandData::add_light_curve(double nu, List const& t, List const& Fv_obs, List const& Fv_err) {
-    assert(t.size() == Fv_obs.size() && t.size() == Fv_err.size() && "light curve array inconsistent length!");
-    LightCurveData data;
-
-    data.nu = nu * unit::Hz;
-    data.t = xt::eval(xt::adapt(t));
-    data.Fv_obs = xt::eval(xt::adapt(Fv_obs));
-    data.Fv_err = xt::eval(xt::adapt(Fv_err));
-    data.Fv_model = xt::zeros_like(data.Fv_obs);
-
-    sort_synchronized(data.t, data.Fv_obs, data.Fv_err);
-
-    for (auto& t : data.t) {
-        t *= unit::sec;
-    }
-    for (auto& Fv_obs : data.Fv_obs) {
-        Fv_obs *= unit::flux_den_cgs;
-    }
-    for (auto& Fv_err : data.Fv_err) {
-        Fv_err *= unit::flux_den_cgs;
-    }
-
-    light_curve.push_back(std::move(data));
-}
-
-void MultiBandData::add_spectrum(double t, List const& nu, List const& Fv_obs, List const& Fv_err) {
-    assert(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size() && "spectrum array inconsistent length!");
-    SpectrumData data;
-
-    data.t = t * unit::sec;
-    data.nu = xt::eval(xt::adapt(nu));
-    data.Fv_obs = xt::eval(xt::adapt(Fv_obs));
-    data.Fv_err = xt::eval(xt::adapt(Fv_err));
-
-    sort_synchronized(data.nu, data.Fv_obs, data.Fv_err);
-
-    for (auto& nu : data.nu) {
-        nu *= unit::Hz;
-    }
-    for (auto& Fv_obs : data.Fv_obs) {
-        Fv_obs *= unit::flux_den_cgs;
-    }
-    for (auto& Fv_err : data.Fv_err) {
-        Fv_err *= unit::flux_den_cgs;
-    }
-    spectrum.push_back(std::move(data));
-}
-
-MultiBandModel::MultiBandModel(MultiBandData const& obs_data) : obs_data(obs_data) {
-    std::vector<Real> evaluate_t;
-    evaluate_t.reserve(100);
-
-    for (auto& data : obs_data.light_curve) {
-        for (auto t : data.t) {
-            evaluate_t.push_back(t);
-        }
-    }
-
-    for (auto& data : obs_data.spectrum) {
-        evaluate_t.push_back(data.t);
-    }
-    std::sort(evaluate_t.begin(), evaluate_t.end());
-    this->t_eval = xt::eval(xt::adapt(evaluate_t));
-
-    if (t_eval.size() == 0) {
-        std::cerr << "Error: No observation time data provided!" << std::endl;
-    }
-}
-
-void MultiBandModel::configure(ConfigParams const& param) { this->config = param; }
-
-/*
-std::vector<double> MultiBandModel::chiSquareBatch(std::vector<Params> const& param_batch) {
-    const size_t N = param_batch.size();
-    std::vector<double> results(N);
-
-#pragma omp parallel for
-    for (int i = 0; i < N; ++i) {
-        results[i] = chiSquare(param_batch[i]);
-    }
-
-    return results;
-}
-*/
-
-void MultiBandModel::build_system(Params const& param, Array const& t_eval, Observer& obs, SynElectronGrid& electrons,
-                                  SynPhotonGrid& photons) {
-    Real E_iso = param.E_iso * unit::erg;
+Ejecta MultiBandModel::select_jet(Params const& param) {
+    Real eps_iso = param.E_iso * unit::erg / (4 * con::pi);
     Real Gamma0 = param.Gamma0;
     Real theta_c = param.theta_c;
-    Real theta_v = param.theta_v;
     Real theta_w = param.theta_w;
-    Real p = param.p;
-    Real eps_e = param.eps_e;
-    Real eps_B = param.eps_B;
-    Real xi = param.xi;
+    Real eps_iso_w = param.E_iso_w * unit::erg / (4 * con::pi);
+    Real Gamma0_w = param.Gamma0_w;
+    Ejecta jet;
+    jet.T0 = param.duration * unit::sec;
+    if (config.jet == "tophat") {
+        jet.eps_k = math::tophat(theta_c, eps_iso);
+        jet.Gamma0 = math::tophat_plus_one(theta_c, Gamma0 - 1);
+    } else if (config.jet == "gaussian") {
+        jet.eps_k = math::gaussian(theta_c, eps_iso);
+        jet.Gamma0 = math::gaussian_plus_one(theta_c, Gamma0 - 1);
+    } else if (config.jet == "powerlaw") {
+        jet.eps_k = math::powerlaw(theta_c, eps_iso, param.k_e);
+        jet.Gamma0 = math::powerlaw_plus_one(theta_c, Gamma0 - 1, param.k_g);
+    } else if (config.jet == "powerlaw_wing") {
+        jet.eps_k = math::powerlaw_wing(theta_c, eps_iso_w, param.k_e);
+        jet.Gamma0 = math::powerlaw_wing_plus_one(theta_c, Gamma0_w - 1, param.k_g);
+    } else if (config.jet == "uniform") {
+        jet.eps_k = math::tophat(con::pi / 2, eps_iso);
+        jet.Gamma0 = math::tophat_plus_one(con::pi / 2, Gamma0 - 1);
+    } else if (config.jet == "two_component") {
+        jet.eps_k = math::two_component(theta_c, theta_w, eps_iso, eps_iso_w);
+        jet.Gamma0 = math::two_component_plus_one(theta_c, theta_w, Gamma0 - 1, Gamma0_w - 1);
+    } else if (config.jet == "step_powerlaw") {
+        jet.eps_k = math::step_powerlaw(theta_c, eps_iso, eps_iso_w, param.k_e);
+        jet.Gamma0 = math::step_powerlaw_plus_one(theta_c, Gamma0 - 1, Gamma0_w - 1, param.k_g);
+    } else {
+        AFTERGLOW_ENSURE(false, "Unknown jet type");
+    }
 
-    Real lumi_dist = config.lumi_dist * unit::cm;
-    Real z = config.z;
+    if (config.magnetar == true) {
+        jet.deps_dt =
+            math::magnetar_injection(param.t0 * unit::sec, param.q, param.L0 * unit::erg / unit::sec, theta_c);
+    }
+    return jet;
+}
 
-    // create model
+Medium MultiBandModel::select_medium(Params const& param) {
     Medium medium;
     if (config.medium == "ism") {
-        Real n_ism = param.n_ism / unit::cm3;
-        std::tie(medium.rho, medium.mass) = evn::ISM(n_ism);
+        medium.rho = evn::ISM(param.n_ism / unit::cm3);
     } else if (config.medium == "wind") {
-        std::tie(medium.rho, medium.mass) = evn::wind(param.A_star);
+        medium.rho = evn::wind(param.A_star, param.n_ism / unit::cm3, param.n0 / unit::cm3, param.k_m);
     } else {
-        std::cerr << "Error: Unknown medium type" << std::endl;
+        AFTERGLOW_ENSURE(false, "Unknown medium type");
+    }
+    return medium;
+}
+
+void MultiBandData::add_flux_density(double nu, PyArray const& t, PyArray const& Fv_obs, PyArray const& Fv_err,
+                                     std::optional<PyArray> weights) {
+    AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
+
+    Array w = xt::ones<Real>({t.size()});
+
+    if (weights) {
+        w = *weights;
+        AFTERGLOW_REQUIRE(t.size() == w.size(), "weights array inconsistent length!");
     }
 
-    Ejecta jet;
-    if (config.jet == "tophat") {
-        jet.eps_k = math::tophat(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::tophat(theta_c, Gamma0);
-    } else if (config.jet == "gaussian") {
-        jet.eps_k = math::gaussian(theta_c, E_iso / (4 * con::pi));
-        jet.Gamma0 = math::gaussian(theta_c, Gamma0);
-    } else if (config.jet == "powerlaw") {
-        jet.eps_k = math::powerlaw(theta_c, E_iso / (4 * con::pi), param.k_jet);
-        jet.Gamma0 = math::powerlaw(theta_c, Gamma0, param.k_jet);
-    } else {
-        std::cerr << "Error: Unknown jet type" << std::endl;
+    for (size_t i = 0; i < t.size(); ++i) {
+        tuple_data.push_back(std::make_tuple(t(i) * unit::sec, nu * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
+                                             Fv_err(i) * unit::flux_den_cgs, w(i)));
+    }
+}
+
+void MultiBandData::add_flux(double nu_min, double nu_max, size_t num_points, PyArray const& t, PyArray const& Fv_obs,
+                             PyArray const& Fv_err, std::optional<PyArray> weights) {
+    AFTERGLOW_REQUIRE(t.size() == Fv_obs.size() && t.size() == Fv_err.size(), "light curve array inconsistent length!");
+    AFTERGLOW_REQUIRE(is_ascending(t), "Time array must be in ascending order!");
+    AFTERGLOW_REQUIRE(nu_min < nu_max, "nu_min must be less than nu_max!");
+
+    Array w = xt::ones<Real>({t.size()});
+
+    if (weights) {
+        w = *weights;
+        AFTERGLOW_REQUIRE(t.size() == w.size(), "weights array inconsistent length!");
+
+        size_t len = w.size();
+        Real weight_sum = 0;
+        for (size_t i = 0; i < len; ++i) {
+            weight_sum += w(i);
+        }
+        w /= (weight_sum / len);
     }
 
-    size_t t_num = config.t_grid;
-    size_t theta_num = config.theta_grid;
-    size_t phi_num = config.phi_grid;
+    Array nu = xt::logspace(std::log10(nu_min * unit::Hz), std::log10(nu_max * unit::Hz), num_points);
 
-    auto coord = auto_grid(jet, t_eval, theta_w, theta_v, z, phi_num, theta_num, t_num);
+    flux_data.emplace_back(
+        FluxData{t * unit::sec, nu, Fv_obs * unit::flux_cgs, Fv_err * unit::flux_cgs, xt::zeros<Real>({t.size()}), w});
+}
 
-    auto shock = generate_fwd_shock(coord, medium, jet, eps_e, eps_B, config.rtol);
+void MultiBandData::add_spectrum(double t, PyArray const& nu, PyArray const& Fv_obs, PyArray const& Fv_err,
+                                 std::optional<PyArray> weights) {
+    AFTERGLOW_REQUIRE(nu.size() == Fv_obs.size() && nu.size() == Fv_err.size(), "spectrum array inconsistent length!");
 
-    // obs.observe_at(t_eval, coord, shock, lumi_dist, z);
-    obs.observe(coord, shock, lumi_dist, z);
+    Array w = xt::ones<Real>({nu.size()});
 
-    electrons = generate_syn_electrons(shock, p, xi);
+    if (weights) {
+        w = *weights;
+        AFTERGLOW_REQUIRE(nu.size() == w.size(), "weights array inconsistent length!");
+    }
 
-    photons = generate_syn_photons(shock, electrons);
+    for (size_t i = 0; i < nu.size(); ++i) {
+        tuple_data.push_back(std::make_tuple(t * unit::sec, nu(i) * unit::Hz, Fv_obs(i) * unit::flux_den_cgs,
+                                             Fv_err(i) * unit::flux_den_cgs, w(i)));
+    }
+}
+
+size_t MultiBandData::data_points_num() const {
+    size_t num = tuple_data.size();
+    for (auto& d : flux_data) {
+        num += d.t.size();
+    }
+    return num;
+}
+
+void MultiBandData::fill_data_arrays() {
+    const size_t len = tuple_data.size();
+    std::sort(tuple_data.begin(), tuple_data.end(),
+              [](auto const& a, auto const& b) { return std::get<0>(a) < std::get<0>(b); });
+    times = Array::from_shape({len});
+    frequencies = Array::from_shape({len});
+    fluxes = Array::from_shape({len});
+    errors = Array::from_shape({len});
+    model_fluxes = Array::from_shape({len});
+    weights = Array::from_shape({len});
+
+    Real weight_sum = 0;
+    for (size_t i = 0; i < len; ++i) {
+        times(i) = std::get<0>(tuple_data[i]);
+        frequencies(i) = std::get<1>(tuple_data[i]);
+        fluxes(i) = std::get<2>(tuple_data[i]);
+        errors(i) = std::get<3>(tuple_data[i]);
+        weights(i) = std::get<4>(tuple_data[i]);
+        model_fluxes(i) = 0; // Placeholder for model fluxes
+        weight_sum += weights(i);
+    }
+    weights /= (weight_sum / len);
+
+    if (len > 0) {
+        this->t_min = times.front();
+        this->t_max = times.back();
+    }
+
+    for (auto& d : flux_data) {
+        if (d.t.front() < t_min)
+            t_min = d.t.front();
+        if (d.t.back() > t_max)
+            t_max = d.t.back();
+    }
+}
+
+MultiBandModel::MultiBandModel(MultiBandData const& data) : obs_data(data) {
+    obs_data.fill_data_arrays();
+
+    AFTERGLOW_REQUIRE((obs_data.times.size() > 0 || obs_data.flux_data.size() > 0),
+                      "No observation time data provided!");
+}
+
+void MultiBandModel::configure(ConfigParams const& param) {
+    this->config = param;
 }
 
 double MultiBandModel::estimate_chi2(Params const& param) {
     Observer obs;
-    SynElectronGrid electrons;
-    SynPhotonGrid photons;
+    SynPhotonGrid f_photons;
+    SynPhotonGrid r_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> f_IC_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> r_IC_photons;
 
-    build_system(param, t_eval, obs, electrons, photons);
+    generate_photons(param, obs_data.t_min, obs_data.t_max, obs, f_photons, r_photons, f_IC_photons, r_IC_photons);
 
-    for (auto& data : obs_data.light_curve) {
-        data.Fv_model = obs.specific_flux(data.t, data.nu, photons);
+    obs_data.model_fluxes = obs.specific_flux_series(obs_data.times, obs_data.frequencies, f_photons);
+    for (auto& d : obs_data.flux_data) {
+        d.Fv_model = obs.flux(d.t, d.nu, f_photons);
     }
 
-    for (auto& data : obs_data.spectrum) {
-        data.Fv_model = obs.spectrum(data.nu, data.t, photons);
+    if (r_photons.size() > 0) {
+        obs_data.model_fluxes += obs.specific_flux_series(obs_data.times, obs_data.frequencies, r_photons);
+        for (auto& d : obs_data.flux_data) {
+            d.Fv_model += obs.flux(d.t, d.nu, r_photons);
+        }
+    }
+
+    if (f_IC_photons.size() > 0) {
+        obs_data.model_fluxes += obs.specific_flux_series(obs_data.times, obs_data.frequencies, f_IC_photons);
+        for (auto& d : obs_data.flux_data) {
+            d.Fv_model += obs.flux(d.t, d.nu, f_IC_photons);
+        }
+    }
+
+    if (r_IC_photons.size() > 0) {
+        obs_data.model_fluxes += obs.specific_flux_series(obs_data.times, obs_data.frequencies, r_IC_photons);
+        for (auto& d : obs_data.flux_data) {
+            d.Fv_model += obs.flux(d.t, d.nu, r_IC_photons);
+        }
     }
 
     return obs_data.estimate_chi2();
 }
 
-std::vector<std::vector<double>> convert_to_std_vector(MeshGrid const& grid) {
-    std::vector<std::vector<double>> out;
-    out.reserve(grid.shape()[0]);
+auto MultiBandModel::flux_density_grid(Params const& param, PyArray const& t, PyArray const& nu) -> PyGrid {
+    Array t_bins = t * unit::sec;
+    Array nu_bins = nu * unit::Hz;
+    MeshGrid F_nu = MeshGrid::from_shape({nu.size(), t.size()});
 
-    for (size_t i = 0; i < grid.shape()[0]; ++i) {
-        std::vector<double> row;
-        row.reserve(grid.shape()[1]);
-        for (size_t j = 0; j < grid.shape()[1]; ++j) {
-            row.push_back(grid(i, j) / unit::flux_den_cgs);
-        }
-        out.push_back(std::move(row));
+    Observer obs;
+    SynPhotonGrid f_photons;
+    SynPhotonGrid r_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> f_IC_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> r_IC_photons;
+
+    generate_photons(param, t_bins.front(), t_bins.back(), obs, f_photons, r_photons, f_IC_photons, r_IC_photons);
+
+    F_nu = obs.specific_flux(t_bins, nu_bins, f_photons);
+
+    if (r_photons.size() > 0) {
+        F_nu += obs.specific_flux(t_bins, nu_bins, r_photons);
     }
-    return out;
+
+    if (f_IC_photons.size() > 0) {
+        F_nu += obs.specific_flux(t_bins, nu_bins, f_IC_photons);
+    }
+
+    if (r_IC_photons.size() > 0) {
+        F_nu += obs.specific_flux(t_bins, nu_bins, r_IC_photons);
+    }
+
+    // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
+    pybind11::gil_scoped_acquire acquire;
+    return F_nu / unit::flux_den_cgs;
 }
 
-auto MultiBandModel::light_curves(Params const& param, List const& t, List const& nu) -> Grid {
+auto MultiBandModel::flux(Params const& param, PyArray const& t, double nu_min, double nu_max, size_t num_points)
+    -> PyArray {
+    Array t_bins = t * unit::sec;
+    Array nu_bins = xt::logspace(std::log10(nu_min * unit::Hz), std::log10(nu_max * unit::Hz), num_points);
+    Array F_nu = Array::from_shape({t.size()});
+
     Observer obs;
-    SynElectronGrid electrons;
-    SynPhotonGrid photons;
+    SynPhotonGrid f_photons;
+    SynPhotonGrid r_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> f_IC_photons;
+    ICPhotonGrid<SynElectrons, SynPhotons> r_IC_photons;
 
-    Array t_bins = xt::adapt(t) * unit::sec;
-    build_system(param, t_bins, obs, electrons, photons);
-    auto nu_bins = xt::adapt(nu) * unit::Hz;
-    auto F_nu = obs.specific_flux(t_bins, nu_bins, photons);
+    generate_photons(param, t_bins.front(), t_bins.back(), obs, f_photons, r_photons, f_IC_photons, r_IC_photons);
 
-    return convert_to_std_vector(F_nu);
-}
+    F_nu = obs.flux(t_bins, nu_bins, f_photons);
 
-auto MultiBandModel::spectra(Params const& param, List const& nu, List const& t) -> Grid {
-    Observer obs;
-    SynElectronGrid electrons;
-    SynPhotonGrid photons;
+    if (r_photons.size() > 0) {
+        F_nu += obs.flux(t_bins, nu_bins, r_photons);
+    }
 
-    Array t_bins = xt::adapt(t) * unit::sec;
-    build_system(param, t_bins, obs, electrons, photons);
-    auto nu_bins = xt::adapt(nu) * unit::Hz;
-    auto F_nu = obs.spectra(nu_bins, t_bins, photons);
+    if (f_IC_photons.size() > 0) {
+        F_nu += obs.flux(t_bins, nu_bins, f_IC_photons);
+    }
 
-    return convert_to_std_vector(F_nu);
+    if (r_IC_photons.size() > 0) {
+        F_nu += obs.flux(t_bins, nu_bins, r_IC_photons);
+    }
+
+    // we bind this function for GIL free. As the return will create a pyobject, we need to get the GIL.
+    pybind11::gil_scoped_acquire acquire;
+    return F_nu / unit::flux_cgs;
 }

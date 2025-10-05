@@ -15,10 +15,10 @@
 
 Real Observer::interpolate(InterpState const& state, size_t i, size_t j, size_t k, Real lg2_t_obs) const noexcept {
     Real dlg2_t = lg2_t_obs - lg2_t(i, j, k);
-    return fast_exp2(lg2_surface(i, j, k) + state.lg2_I_lo + dlg2_t * state.slope);
+    return fast_exp2(state.lg2_L_nu_lo + dlg2_t * state.slope);
 }
 
-void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
+void Observer::calc_solid_angle(Coord const& coord, Shock const& shock) {
     Array dphi({eff_phi_grid}, 0);
 
     if (eff_phi_grid == 1) {
@@ -33,17 +33,17 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
     // precompute the dcos to avoid recomputing in axisymmetric jet
     static thread_local MeshGrid3d dcos;
     if (dcos.shape() != shock.theta.shape()) {
-        dcos.resize(shock.theta.shape());
+        // dcos.resize(shock.theta.shape());
+        dcos = MeshGrid3d::from_shape(shock.theta.shape());
     }
 
     int last = theta_grid - 1;
     size_t shock_phi_size = shock.theta.shape(0);
     for (size_t i = 0; i < shock_phi_size; ++i) {
         for (size_t j = 0; j < theta_grid; ++j) {
-            size_t j_m1 = (j == 0) ? 0 : (j - 1);
             size_t j_p1 = (j == last) ? last : (j + 1);
             for (size_t k = 0; k < t_grid; ++k) {
-                Real theta_lo = 0.5 * (shock.theta(i, j, k) + shock.theta(i, j_m1, k));
+                Real theta_lo = (j == 0) ? 0.0 : 0.5 * (shock.theta(i, j, k) + shock.theta(i, j - 1, k));
                 Real theta_hi = 0.5 * (shock.theta(i, j, k) + shock.theta(i, j_p1, k));
                 dcos(i, j, k) = std::cos(theta_hi) - std::cos(theta_lo);
             }
@@ -58,8 +58,8 @@ void Observer::calc_emission_surface(Coord const& coord, Shock const& shock) {
                 //     continue;
                 // }  // maybe remove this inner branch harm to vectorization
                 Real dOmega = std::fabs(dcos(i_eff, j, k) * dphi(i));
-                Real r = shock.r(i_eff, j, k);
-                lg2_surface(i, j, k) = std::log2(dOmega * r * r) + 3 * lg2_doppler(i, j, k);
+                lg2_geom_factor(i, j, k) =
+                    std::log2(dOmega * shock.r(i, j, k) * shock.r(i, j, k)) + 3 * lg2_doppler(i, j, k);
             }
         }
     }
@@ -71,8 +71,10 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
 
     static thread_local MeshGrid3d cos_theta, sin_theta;
     if (cos_theta.shape() != shock.theta.shape()) {
-        cos_theta.resize(shock.theta.shape());
-        sin_theta.resize(shock.theta.shape());
+        // cos_theta.resize(shock.theta.shape());
+        // sin_theta.resize(shock.theta.shape());
+        cos_theta = MeshGrid3d::from_shape(shock.theta.shape());
+        sin_theta = MeshGrid3d::from_shape(shock.theta.shape());
     }
 
     size_t shock_phi_size = shock.theta.shape(0);
@@ -86,7 +88,7 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
     }
 
     for (size_t i = 0; i < eff_phi_grid; ++i) {
-        Real cos_phi = std::cos(coord.phi[i]);
+        Real cos_phi = std::cos(coord.phi[i] - coord.phi_view);
         size_t i_eff = i * jet_3d;
         for (size_t j = 0; j < theta_grid; ++j) {
             // Compute the cosine of the angle between the local velocity vector and the observer's line of sight.
@@ -102,7 +104,7 @@ void Observer::calc_t_obs(Coord const& coord, Shock const& shock) {
             }
         }
     }
-    lg2_t = xt::log2(time);
+    xt::noalias(lg2_t) = xt::log2(time);
 }
 
 void Observer::update_required(MaskGrid& required, Array const& t_obs) {
@@ -120,7 +122,7 @@ void Observer::update_required(MaskGrid& required, Array const& t_obs) {
                 Real const t_lo = lg2_t(i, j, k);
                 Real const t_hi = lg2_t(i, j, k + 1);
 
-                if (t_lo <= log2_t_obs(t_idx) && log2_t_obs(t_idx) < t_hi) {
+                if (t_lo < log2_t_obs(t_idx) && log2_t_obs(t_idx) <= t_hi) {
                     required(i_eff, j, k) = 1;
                     required(i_eff, j, k + 1) = 1;
                 }
@@ -137,7 +139,7 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     jet_3d = static_cast<size_t>((phi_size > 1));
     // Set effective phi grid size based on the observation angle and jet dimensionality.
     if (coord.theta_view == 0 && jet_3d == 0) {
-        this->eff_phi_grid = 1;  // optimize for on-axis observer
+        this->eff_phi_grid = 1; // optimize for on-axis observer
     } else {
         this->eff_phi_grid = coord.phi.size();
     }
@@ -147,10 +149,15 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
     this->one_plus_z = 1 + redshift;
     this->lg2_one_plus_z = std::log2(one_plus_z);
 
-    time.resize({eff_phi_grid, theta_size, t_size});
+    /*time.resize({eff_phi_grid, theta_size, t_size});
     lg2_t.resize({eff_phi_grid, theta_size, t_size});
     lg2_doppler.resize({eff_phi_grid, theta_size, t_size});
-    lg2_surface.resize({eff_phi_grid, theta_size, t_size});
+    lg2_emission_area.resize({eff_phi_grid, theta_size, t_size});*/
+
+    time = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_t = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_doppler = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
+    lg2_geom_factor = MeshGrid3d::from_shape({eff_phi_grid, theta_size, t_size});
 
     // Calculate the solid angle grid and observation time grid.
     calc_t_obs(coord, shock);
@@ -158,12 +165,12 @@ void Observer::build_time_grid(Coord const& coord, Shock const& shock, Real lumi
 
 void Observer::observe(Coord const& coord, Shock const& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
-    calc_emission_surface(coord, shock);
+    calc_solid_angle(coord, shock);
 }
 
 void Observer::observe_at(Array const& t_obs, Coord const& coord, Shock& shock, Real luminosity_dist, Real redshift) {
     build_time_grid(coord, shock, luminosity_dist, redshift);
     xt::view(shock.required, xt::all(), xt::all(), xt::all()) = 0;
     update_required(shock.required, t_obs);
-    calc_emission_surface(coord, shock);
+    calc_solid_angle(coord, shock);
 }

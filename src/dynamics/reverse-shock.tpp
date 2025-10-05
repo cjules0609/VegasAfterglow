@@ -8,38 +8,26 @@
 #include "reverse-shock.hpp"
 #include "shock.h"
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Computes the rate of change of shocked ejecta mass per solid angle.
- * @param width Width of the shocked region
- * @param m4 Mass per solid angle in region 4 (unshocked ejecta)
- * @param gamma3 Lorentz factor in region 3 (shocked ejecta)
- * @param gamma4 Lorentz factor in region 4 (unshocked ejecta)
- * @param sigma Magnetization parameter
- * @return The rate of change of mass in region 3
- * <!-- ************************************************************************************** -->
- */
-inline Real compute_dm3_dt(Real width, Real m4, Real gamma3, Real gamma4, Real sigma) {
-    if (gamma3 == gamma4) {
-        return 0.;
+template <typename Eqn, typename State>
+bool is_crossing(Eqn const& eqn, State const& state, Real t) {
+    Real dmdt = 0;
+
+    if constexpr (State::mass_inject) {
+        dmdt = eqn.ejecta.dm_dt(eqn.phi, state.theta, t);
     }
-    Real beta3 = gamma_to_beta(gamma3);
-    Real beta4 = gamma_to_beta(gamma4);
-    Real gamma34 = compute_rel_Gamma(gamma4, gamma3, beta4, beta3);
-    Real ratio_u = compute_4vel_jump(gamma34, sigma);
-    Real column_den3 = m4 * ratio_u / width;
-    Real dxdt = (beta4 - beta3) * con::c / ((1 - beta3) * (1 - gamma4 / (gamma3 * ratio_u)));
-    return column_den3 * gamma3 * dxdt;
+
+    return (state.m3 < state.m4) || dmdt > 0 || t < eqn.ejecta.T0;
 }
 
 template <typename Ejecta, typename Medium>
-FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta, Real eps_e)
+FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& ejecta, Real phi, Real theta,
+                                       RadParams const& rad_fwd, RadParams const& rad_rvs)
     : medium(medium),
       ejecta(ejecta),
+      rad_fwd(rad_fwd),
+      rad_rvs(rad_rvs),
       phi(phi),
       theta0(theta),
-      eps_e(eps_e),
       Gamma4(ejecta.Gamma0(phi, theta)),
       deps0_dt(ejecta.eps_k(phi, theta) / ejecta.T0),
       dm0_dt(deps0_dt / (Gamma4 * con::c2)),
@@ -50,145 +38,230 @@ FRShockEqn<Ejecta, Medium>::FRShockEqn(Medium const& medium, Ejecta const& eject
 }
 
 template <typename Ejecta, typename Medium>
-void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
-    Real Gamma3 = 1;
+Real FRShockEqn<Ejecta, Medium>::compute_dGamma_dt(State const& state, State const& diff, Real t) const noexcept {
+    Real Gamma34 = compute_rel_Gamma(Gamma4, state.Gamma);
+    Real ad_idx2 = adiabatic_idx(state.Gamma);
+    Real ad_idx3 = adiabatic_idx(Gamma34);
 
-    // Gamma_rel = 1;
+    Real Gamma_eff2 = compute_effective_Gamma(ad_idx2, state.Gamma);
+    Real Gamma_eff3 = compute_effective_Gamma(ad_idx3, state.Gamma);
 
-    auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
-    diff.eps_shell = deps_shell_dt;
-    diff.m_shell = dm_shell_dt;
+    Real dGamma_eff2_dGamma = compute_effective_Gamma_dGamma(ad_idx2, state.Gamma);
+    Real dGamma_eff3_dGamma = compute_effective_Gamma_dGamma(ad_idx3, state.Gamma);
 
-    bool is_injecting = diff.eps_shell > 0 || diff.m_shell > 0;
+    Real deps_dt = 0;
 
-    if (!crossed) {
-        Gamma3 = compute_crossing_Gamma3(state);
-        // Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
+    if constexpr (State::energy_inject) {
+        deps_dt = ejecta.deps_dt(phi, state.theta, t);
+    }
 
-        Real sigma4 = compute_shell_sigma(state);
-        diff.m3 = compute_dm3_dt(state.width_shell, state.m_shell, Gamma3, Gamma4, sigma4);
-        if (state.m3 >= state.m_shell) {
-            diff.m3 = std::min(diff.m3, diff.m_shell);
+    Real a = (state.Gamma - 1) * con::c2 * diff.m2 + (state.Gamma - Gamma4) * con::c2 * diff.m3 +
+             Gamma_eff2 * diff.U2_th + Gamma_eff3 * diff.U3_th - deps_dt;
+    Real b = (state.m2 + state.m3) * con::c2 + dGamma_eff2_dGamma * state.U2_th + dGamma_eff3_dGamma * state.U3_th;
+
+    if (b == 0 || std::isnan(-a / b) || std::isinf(-a / b)) {
+        return 0;
+    } else {
+        return -a / b;
+    }
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dU2_dt(State const& state, State const& diff, Real t) const noexcept {
+    Real e_th = (state.Gamma - 1) * 4 * state.Gamma * medium.rho(phi, state.theta, state.r) * con::c2;
+    // Real V_comv = state.r * state.r * state.r / (12 * state.Gamma * state.Gamma);
+    // Real e_th = state.U2_th / V_comv;
+    Real eps_rad = compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_fwd);
+
+    Real ad_idx = adiabatic_idx(state.Gamma);
+
+    Real shock_heating = compute_shock_heating_rate(state.Gamma, diff.m2);
+
+    Real adiabatic_cooling = compute_adiabatic_cooling_rate2(ad_idx, state.r, state.x4, state.U2_th, diff.r, diff.x4);
+
+    return (1 - eps_rad) * shock_heating + adiabatic_cooling;
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dU3_dt(State const& state, State const& diff, Real t) const noexcept {
+    Real Gamma34 = compute_rel_Gamma(this->Gamma4, state.Gamma);
+    Real ad_idx = adiabatic_idx(Gamma34);
+    Real adiabatic_cooling = compute_adiabatic_cooling_rate2(ad_idx, state.r, state.x3, state.U3_th, diff.r, diff.x3);
+
+    if (state.m3 < state.m4 || diff.m4 > 0) { // reverse shock still crossing
+        Real shock_heating = compute_shock_heating_rate(Gamma34, diff.m3);
+        Real eps_rad = 0; ////compute_radiative_efficiency(state.t_comv, state.Gamma, e_th, rad_rvs);
+        return (1 - eps_rad) * shock_heating + adiabatic_cooling;
+    } else {
+        return adiabatic_cooling;
+    }
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dx3_dt(State const& state, State const& diff, Real t) const noexcept {
+    if ((state.m3 < state.m4 || diff.m4 > 0) && (state.Gamma != this->Gamma4)) {
+        Real sigma = compute_shell_sigma(state);
+        Real Gamma34 = compute_rel_Gamma(this->Gamma4, state.Gamma);
+        Real beta3 = gamma_to_beta(state.Gamma);
+        Real beta4 = gamma_to_beta(this->Gamma4);
+        Real comp_ratio = compute_4vel_jump(Gamma34, sigma);
+        Real dx3dt = (beta4 - beta3) * con::c / ((1 - beta3) * (state.Gamma * comp_ratio / this->Gamma4 - 1));
+
+        return std::fabs(dx3dt * state.Gamma);
+    } else {
+        Real Gamma34 = compute_rel_Gamma(this->Gamma4, state.Gamma);
+        return compute_shell_spreading_rate(Gamma34, diff.t_comv);
+    }
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dx4_dt(State const& state, State const& diff, Real t) const noexcept {
+    if (diff.m4 > 0) {
+        return u4;
+    } else {
+        return compute_shell_spreading_rate(this->Gamma4, diff.t_comv);
+    }
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dm2_dt(State const& state, State const& diff, Real t) const noexcept {
+    return state.r * state.r * medium.rho(phi, state.theta, state.r) * diff.r;
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dm3_dt(State const& state, State const& diff, Real t) const noexcept {
+    if ((state.m3 < state.m4 || diff.m4 > 0) && (state.Gamma != this->Gamma4)) {
+        Real sigma = compute_shell_sigma(state);
+        Real Gamma34 = compute_rel_Gamma(this->Gamma4, state.Gamma);
+        Real comp_ratio = compute_4vel_jump(Gamma34, sigma);
+        Real column_den3 = state.m4 * comp_ratio / state.x4;
+        Real dm3dt = column_den3 * diff.x3;
+
+        if (state.m3 >= state.m4) {
+            return std::min(dm3dt, diff.m4);
+        } else {
+            return dm3dt;
         }
     } else {
-        Real Gamma_rel = compute_crossed_Gamma_rel(state);
-        Gamma3 = compute_crossed_Gamma3(Gamma_rel, state.r);
-        diff.m3 = 0;
+        return 0.;
     }
-
-    Real beta3 = gamma_to_beta(Gamma3);
-    diff.r = compute_dr_dt(beta3);
-    diff.t_comv = compute_dt_dt_comv(Gamma3, beta3);
-
-    diff.width_shell = is_injecting ? u4 : compute_shell_spreading_rate(Gamma3, diff.t_comv);
-    diff.theta = 0;  // no lateral spreading
-}
-inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T);
-
-template <typename Ejecta, typename Medium>
-bool FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
-    Real beta4 = gamma_to_beta(Gamma4);
-    state.theta = theta0;
-    state.width_shell = compute_init_comv_shell_width(Gamma4, t0, ejecta.T0);
-
-    Real dt = std::min(t0, ejecta.T0);
-    state.eps_shell = deps0_dt * dt;
-    state.m_shell = dm0_dt * dt;
-
-    state.r = beta4 * con::c * t0 / (1 - beta4);
-    state.t_comv = state.r / std::sqrt(Gamma4 * Gamma4 - 1) / con::c;
-
-    Real rho = medium.rho(phi, theta0, state.r);
-
-    if (t0 < ejecta.T0) {
-        // thick shell deceleration radius where gamma starts to drop propto t^{-1/4}
-        Real r_dec = 0.35 * std::sqrt(3 * dm0_dt * (1 - beta4) / (beta4 * con::c * rho * Gamma4));
-
-        // r0 is larger than the decelertation radius, so r=beta4 * con::c * t0 / (1 - beta4) is not appropriate
-        if (state.r > r_dec) {
-            Real t_dec = r_dec * (1 - beta4) / (beta4 * con::c);
-            state.r = std::sqrt(4 * Gamma4 * Gamma4 * r_dec * (t0 - t_dec) + r_dec * r_dec);
-            rho = medium.rho(phi, theta0, state.r);
-
-            Real t_dec_com = r_dec / std::sqrt(Gamma4 * Gamma4 - 1) / con::c;
-            state.t_comv = (std::sqrt(state.r * state.r * state.r) - std::sqrt(r_dec * r_dec * r_dec)) /
-                               (1.5 * Gamma4 * std::sqrt(r_dec)) +
-                           t_dec_com;
-        }
-    }
-
-    auto [crossed, m3] = solve_init_m3(*this, state, Gamma4, t0);
-    state.m3 = m3;
-    return crossed;
 }
 
 template <typename Ejecta, typename Medium>
-std::pair<Real, Real> FRShockEqn<Ejecta, Medium>::get_injection_rate(Real t) const {
-    Real deps_shell_dt = 0;
-    Real dm_shell_dt = 0;
+Real FRShockEqn<Ejecta, Medium>::compute_deps4_dt(State const& state, State const& diff, Real t) const noexcept {
+    Real deps4_dt = 0;
 
     if (t < ejecta.T0) {
-        deps_shell_dt = deps0_dt;
-        dm_shell_dt = dm0_dt;
+        deps4_dt = deps0_dt;
     }
 
     if constexpr (State::energy_inject) {
-        deps_shell_dt += ejecta.deps_dt(phi, theta0, t);
+        deps4_dt += ejecta.deps_dt(phi, theta0, t);
+    }
+
+    return deps4_dt;
+}
+
+template <typename Ejecta, typename Medium>
+Real FRShockEqn<Ejecta, Medium>::compute_dm4_dt(State const& state, State const& diff, Real t) const noexcept {
+    Real dm4_dt = 0;
+
+    if (t < ejecta.T0) {
+        dm4_dt = dm0_dt;
     }
 
     if constexpr (State::mass_inject) {
-        dm_shell_dt += ejecta.dm_dt(phi, theta0, t);
+        dm4_dt += ejecta.dm_dt(phi, theta0, t);
     }
 
-    return {deps_shell_dt, dm_shell_dt};
+    return dm4_dt;
 }
 
 template <typename Ejecta, typename Medium>
-bool FRShockEqn<Ejecta, Medium>::is_injecting(Real t) const {
-    auto [deps_shell_dt, dm_shell_dt] = get_injection_rate(t);
-    return deps_shell_dt > 0 || dm_shell_dt > 0;
+void FRShockEqn<Ejecta, Medium>::operator()(State const& state, State& diff, Real t) {
+    Real beta3 = gamma_to_beta(state.Gamma);
+
+    diff.r = compute_dr_dt(beta3);
+    diff.t_comv = compute_dt_dt_comv(state.Gamma, beta3);
+
+    diff.m2 = compute_dm2_dt(state, diff, t);
+
+    diff.eps4 = compute_deps4_dt(state, diff, t);
+    diff.m4 = compute_dm4_dt(state, diff, t);
+
+    diff.x4 = compute_dx4_dt(state, diff, t);
+    diff.x3 = compute_dx3_dt(state, diff, t);
+
+    diff.m3 = compute_dm3_dt(state, diff, t);
+
+    diff.U2_th = compute_dU2_dt(state, diff, t);
+    diff.U3_th = compute_dU3_dt(state, diff, t);
+
+    diff.Gamma = compute_dGamma_dt(state, diff, t);
+
+    diff.theta = 0;
 }
 
+inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T);
+
 template <typename Ejecta, typename Medium>
-Real FRShockEqn<Ejecta, Medium>::compute_crossing_Gamma3(State const& state) const {
-    Real m2 = compute_swept_mass(*this, state);
-    Real m3 = state.m3;
+void FRShockEqn<Ejecta, Medium>::save_cross_state(State const& state) {
+    r_x = state.r;
+    u_x = std::sqrt(state.Gamma * state.Gamma - 1);
+
+    V3_comv_x = r_x * r_x * state.x3;
+
     Real sigma4 = compute_shell_sigma(state);
+    Real comp_ratio34 = compute_compression(Gamma4, state.Gamma, sigma4);
+    Real rho4 = state.m4 / (state.r * state.r * state.x4);
+    rho3_x = rho4 * comp_ratio34;
 
-    auto func = [=, this](Real Gamma3) -> Real {
-        Real Gamma34 = compute_rel_Gamma(Gamma4, Gamma3);
-        Real adx3 = adiabatic_idx(Gamma34);
-        Real adx2 = adiabatic_idx(Gamma3);
-        Real g_eff2 = compute_effective_Gamma(adx2, Gamma3);
-        Real g_eff3 = compute_effective_Gamma(adx3, Gamma3);
+    Real B4 = compute_upstr_B(rho4, sigma4);
+    B3_ordered_x = B4 * comp_ratio34;
+}
 
-        Real eps2 = m2 * (Gamma3 - 1 + g_eff2 * (Gamma3 - 1));
-        Real eps3 = m3 * (Gamma3 - Gamma4 + g_eff3 * (Gamma34 - 1)) * (1 + sigma4);
+inline Real calculate_init_m3(Real Gamma4, Real Gamma3, Real m2, Real sigma) {
+    Real Gamma34 = compute_rel_Gamma(Gamma4, Gamma3);
+    Real ad_idx2 = adiabatic_idx(Gamma3);
+    Real ad_idx3 = adiabatic_idx(Gamma34);
 
-        return eps2 + eps3;
-    };
-    constexpr Real r_tol = 1e-3;
-    return root_bisect(func, 1, Gamma4, r_tol);
+    Real Gamma_eff2 = compute_effective_Gamma(ad_idx2, Gamma3);
+    Real Gamma_eff3 = compute_effective_Gamma(ad_idx3, Gamma3);
+
+    return -m2 * (Gamma3 - 1 + Gamma_eff2 * (Gamma3 - 1)) / (Gamma3 - Gamma4 + Gamma_eff3 * (Gamma34 - 1)) /
+           (1 + sigma);
 }
 
 template <typename Ejecta, typename Medium>
-void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
-    this->r_x = state.r;
-    constexpr Real n3_norm = 1;  // normalized n3/n3_x = 1
-    this->N_electron = n3_norm * state.width_shell * state.r * state.r;
+void FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noexcept {
+    Real beta4 = gamma_to_beta(Gamma4);
 
-    Real Gamma3 = compute_crossing_Gamma3(state);
-    this->u_x = std::sqrt(Gamma3 * Gamma3 - 1);
+    state.r = beta4 * con::c * t0 / (1 - beta4);
+    state.t_comv = state.r / std::sqrt(Gamma4 * Gamma4 - 1) / con::c;
+    state.theta = theta0;
 
-    Real Gamma_rel = compute_rel_Gamma(Gamma4, Gamma3);
-    Real gamma_electron = (Gamma_rel - 1) * con::mp / con::me * eps_e + 1;  // electron Lorentz factor
+    Real dt = std::min(t0, ejecta.T0);
+    state.eps4 = deps0_dt * dt;
+    state.m4 = dm0_dt * dt;
+    state.x4 = compute_init_comv_shell_width(Gamma4, t0, ejecta.T0);
 
-    // use electron adiabatic index see section 3.2 https://arxiv.org/pdf/astro-ph/9910241
-    this->gamma_hat_x = adiabatic_idx(gamma_electron);
-    Real p_norm = (gamma_hat_x - 1) * (Gamma_rel - 1) * n3_norm;      // p = (ad-1)(gamma-1)n m_p c^2
-    this->adiabatic_const = fast_pow(n3_norm, gamma_hat_x) / p_norm;  // p \propto n^ad
-    this->e_mag_const = p_norm / (B * B);
-    this->crossed = true;
+    // constexpr Real Gamma34 = 1;
+    // compute_Gamma_from_relative(Gamma4, Gamma34);
+
+    state.m2 = medium.rho(phi, theta0, state.r) * state.r * state.r * state.r / 3;
+
+    Real sigma4 = compute_shell_sigma(state);
+    state.Gamma = Gamma4;
+
+    Real ad_idx = adiabatic_idx(state.Gamma);
+    state.U2_th = (state.Gamma - 1) * state.m2 * con::c2 / ad_idx;
+
+    state.m3 = 0;
+    //state.m4 * 1e-6;                         // calculate_init_m3(Gamma4, state.Gamma, state.m2, sigma4);
+    state.U3_th = 0;
+    //state.m3* con::c2 * 1e-6; //(Gamma34 - 1) * state.m3* con::c2;
+
+    state.x3 = 0; //state.x4 * 1e-6;
 }
 
 /**
@@ -203,89 +276,21 @@ void FRShockEqn<Ejecta, Medium>::set_cross_state(State const& state, Real B) {
  * <!-- ************************************************************************************** -->
  */
 inline Real get_post_cross_g(Real gamma_rel, Real k = 0) {
-    constexpr Real g_low = 1.5;   // k is the medium power law index
-    constexpr Real g_high = 3.5;  // Blandford-McKee limit// TODO: need to be modified for non ISM medium
-    Real p = std::sqrt(std::sqrt(gamma_rel - 1));
+    constexpr Real g_low = 1.5;  // k is the medium power law index
+    constexpr Real g_high = 3.5; // Blandford-McKee limit// TODO: need to be modified for non ISM medium
+    Real p = std::sqrt(std::sqrt(std::fabs(gamma_rel - 1)));
     return g_low + (g_high - g_low) * p / (1 + p);
 }
 
 template <typename Ejecta, typename Medium>
-Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma3(Real gamma_rel, Real r) const {
-    Real g = get_post_cross_g(gamma_rel);
-    Real u = u_x * fast_pow(r / r_x, -g);
-    return std::sqrt(u * u + 1);
-}
-
-template <typename Ejecta, typename Medium>
-Real FRShockEqn<Ejecta, Medium>::compute_crossed_Gamma_rel(State const& state) const {
-    Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
-    Real p3_norm = std::pow(n3_norm, gamma_hat_x) / adiabatic_const;      // adiabatic expansion
-    return p3_norm / ((gamma_hat_x - 1) * n3_norm) + 1;
-}
-
-template <typename Ejecta, typename Medium>
-Real FRShockEqn<Ejecta, Medium>::compute_crossed_B(State const& state) const {
-    Real n3_norm = N_electron / (state.width_shell * state.r * state.r);  // proton number conservation
-    Real p3_norm = std::pow(n3_norm, gamma_hat_x) / adiabatic_const;      // adiabatic expansion
-    return std::sqrt(p3_norm / e_mag_const);
-}
-
-template <typename Ejecta, typename Medium>
 Real FRShockEqn<Ejecta, Medium>::compute_shell_sigma(State const& state) const {
-    return std::max(0.0, state.eps_shell / (Gamma4 * state.m_shell * con::c2) - 1);
+    Real sigma = state.eps4 / (Gamma4 * state.m4 * con::c2) - 1;
+    return (sigma > con::sigma_cut) ? sigma : 0;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 // Helper functions
 //---------------------------------------------------------------------------------------------------------------------
-
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Calculates the initial shocked mass m3 at time t0.
- * @details Ensures energy conservation at the initial time.
- * @param eqn The equation system containing medium and ejecta parameters
- * @param state Current state of the system
- * @param Gamma4 Lorentz factor of the unshocked ejecta
- * @param t0 Initial time
- * @return A tuple containing {crossed, initial_m3} where crossed indicates if shock has crossed
- * <!-- ************************************************************************************** -->
- */
-template <typename Eqn, typename State>
-inline auto solve_init_m3(Eqn const& eqn, State const& state, Real Gamma4, Real t0) {
-    Real E_iso = eqn.ejecta.eps_k(eqn.phi, eqn.theta0) * 4 * con::pi;
-    Real n1 = eqn.medium.rho(eqn.phi, eqn.theta0, state.r) / con::mp;
-    Real l = sedov_length(E_iso, n1);
-    Real sigma0 = eqn.compute_shell_sigma(state);
-    Real beta4 = gamma_to_beta(Gamma4);
-    Real Delta0 = con::c * eqn.ejecta.T0;  // lab frame shell width
-    Real r_x = std::sqrt(std::sqrt(Delta0 * l * l * l / 3) / (1 + sigma0) * 3. / 4);
-    Real Rs = con::c * eqn.ejecta.T0 * beta4 / (1 - beta4);
-
-    if (r_x > Rs) {
-        constexpr Real rtol = 1e-3;
-        Real r_x_new = (1 + 2 * rtol) * r_x;
-        for (; std::fabs((r_x - r_x_new) / r_x) > rtol;) {
-            Delta0 = con::c * eqn.ejecta.T0 + (r_x_new - Rs) / (std::sqrt(3) * Gamma4 * Gamma4);
-            r_x = r_x_new;
-            r_x_new = std::sqrt(std::sqrt(Delta0 * l * l * l / 3) / (1 + sigma0) * 3. / 4);
-        }
-    }
-
-    Real m4_tot = E_iso / (4 * con::pi * con::c2 * Gamma4 * (1 + sigma0));
-
-    if (!eqn.is_injecting(t0)) {
-        Real m3 = m4_tot * std::pow(state.r / r_x, 1.5);
-        if (m3 >= state.m_shell) {
-            return std::make_tuple(true, state.m_shell);
-        } else {
-            return std::make_tuple(false, m3);
-        }
-    } else {
-        Real m3 = m4_tot * state.r / r_x;
-        return std::make_tuple(false, std::min(m3, state.m_shell));
-    }
-}
 
 /**
  * <!-- ************************************************************************************** -->
@@ -300,209 +305,92 @@ inline auto solve_init_m3(Eqn const& eqn, State const& state, Real Gamma4, Real 
  */
 inline Real compute_init_comv_shell_width(Real Gamma4, Real t0, Real T) {
     Real beta4 = gamma_to_beta(Gamma4);
-    if (t0 < T) {  // pure injection
+    if (t0 < T) { // pure injection
         return Gamma4 * t0 * beta4 * con::c;
-    } else {  // injection+shell spreading
-        Real cs = con::c / std::sqrt(3);
+    } else { // injection+shell spreading
+        Real cs = compute_sound_speed(Gamma4);
         return Gamma4 * T * beta4 * con::c + cs * (t0 - T) * Gamma4;
     }
 }
-// inline Real initShellWidth(Real gamma, Real T, Real r) { return r / gamma / std::sqrt(3); }
 
 /**
  * <!-- ************************************************************************************** -->
  * @internal
- * @brief Updates the post-shock crossing state at a grid point.
- * @details Stores computed values in the shock object for the given grid indices.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param k Grid index for time
- * @param eqn The equation system containing parameters
- * @param state Current state of the system
- * @param shock Shock object to update
- * <!-- ************************************************************************************** -->
- */
-template <typename Eqn, typename State>
-inline void save_crossed_RS_state(size_t i, size_t j, size_t k, Eqn const& eqn, State const& state, Shock& shock) {
-    size_t k0 = shock.injection_idx(i, j);
-    Real r0 = shock.r(i, j, k0);
-    shock.t_comv(i, j, k) = state.t_comv;
-    shock.r(i, j, k) = state.r;
-    shock.theta(i, j, k) = state.theta;
-    shock.Gamma_rel(i, j, k) = eqn.compute_crossed_Gamma_rel(state);
-    shock.Gamma(i, j, k) = eqn.compute_crossed_Gamma3(shock.Gamma_rel(i, j, k), state.r);
-    shock.column_num_den(i, j, k) = shock.column_num_den(i, j, k0) * (r0 * r0) / (state.r * state.r);
-    shock.B(i, j, k) = eqn.compute_crossed_B(state);
-}
-
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Sets the initial condition for forward shock based on the reverse shock state.
- * @details Used at the crossing point to maintain consistency between forward and reverse shocks.
- * @param eqn_rvs The reverse shock equation system
- * @param state_fwd Forward shock state to initialize
- * @param state_rvs Reverse shock state at crossing
- * @param gamma2 Lorentz factor of region 2 (shocked medium)
- * <!-- ************************************************************************************** -->
- */
-template <typename Eqn, typename FState, typename RState>
-void set_fwd_state_from_rvs_state(Eqn const& eqn_rvs, FState& state_fwd, RState const& state_rvs, Real gamma2) {
-    state_fwd.r = state_rvs.r;
-    state_fwd.t_comv = state_rvs.t_comv;
-    state_fwd.theta = state_rvs.theta;
-    state_fwd.Gamma = gamma2;
-
-    Real m_swept = compute_swept_mass(eqn_rvs, state_rvs);
-
-    if constexpr (HasU<FState>) {
-        state_fwd.u = (gamma2 - 1) * m_swept * con::c2;
-    }
-
-    if constexpr (FState::energy_inject) {
-        state_fwd.eps_shell = state_rvs.eps_shell;
-    }
-
-    if constexpr (FState::mass_inject) {
-        state_fwd.m_shell = state_rvs.m_shell;
-    }
-}
-
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Saves the state of both forward and reverse shocks at a grid point.
+ * @brief Saves the state of reverse shocks at a grid point.
  * @details Updates shock properties for both shocks and checks if crossing is complete.
  * @param i Grid index for phi
  * @param j Grid index for theta
  * @param k Grid index for time
- * @param eqn_rvs The reverse shock equation system
+ * @param eqn The reverse shock equation system
  * @param state Current state of the system
- * @param t Current time
- * @param shock_fwd Forward shock object to update
- * @param shock_rvs Reverse shock object to update
- * @return True if the shock has crossed and there's no more injection
+ * @param shock Reverse shock object to update
  * <!-- ************************************************************************************** -->
  */
 template <typename Eqn, typename State>
-bool save_shock_pair_state(size_t i, size_t j, int k, Eqn const& eqn_rvs, State const& state, Real t, Shock& shock_fwd,
-                           Shock& shock_rvs) {
-    Real n4 = state.m_shell / (state.r * state.r * state.width_shell * con::mp);
-    Real sigma4 = eqn_rvs.compute_shell_sigma(state);
+void save_rvs_shock_state(size_t i, size_t j, int k, Eqn const& eqn, State const& state, Shock& shock) {
+    if (k <= shock.injection_idx(i, j)) {
+        Real Gamma4 = eqn.Gamma4;
+        Real sigma4 = eqn.compute_shell_sigma(state);
 
-    Real m2 = compute_swept_mass(eqn_rvs, state);
-    Real n1 = eqn_rvs.medium.rho(eqn_rvs.phi, state.theta, state.r) / con::mp;
+        Real comp_ratio34 = compute_compression(Gamma4, state.Gamma, sigma4);
+        Real rho4 = state.m4 / (state.r * state.r * state.x4);
+        Real Gamma3_th = compute_Gamma_therm(state.U3_th, state.m3, true);
 
-    constexpr Real Gamma1 = 1;
-    constexpr Real sigma1 = 0;
+        Real B4 = compute_upstr_B(rho4, sigma4);
+        Real B3 = compute_downstr_B(shock.rad.eps_B, rho4, B4, Gamma3_th, comp_ratio34);
 
-    Real Gamma3 = eqn_rvs.compute_crossing_Gamma3(state);
+        write_shock_state(shock, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma3_th, B3, state.m3);
+    } else {
+        Real V3_comv = state.r * state.r * state.x3;
+        Real comp_ratio = eqn.V3_comv_x / V3_comv;
+        Real Gamma3_th = compute_Gamma_therm(state.U3_th, state.m3);
 
-    save_shock_state(shock_fwd, i, j, k, state, Gamma3, Gamma1, m2 / con::mp, n1, sigma1);
-    save_shock_state(shock_rvs, i, j, k, state, Gamma3, eqn_rvs.Gamma4, state.m3 / con::mp, n4, sigma4);
-    return state.m3 >= state.m_shell && !eqn_rvs.is_injecting(t);
-}
+        Real B3 = compute_downstr_B(shock.rad.eps_B, eqn.rho3_x, eqn.B3_ordered_x, Gamma3_th, comp_ratio);
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Handles low Gamma scenario by stopping both shocks.
- * @details Sets appropriate values when Lorentz factor drops below threshold.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param shock_fwd Forward shock object to update
- * @param shock_rvs Reverse shock object to update
- * @param state_fwd Forward shock state
- * @param state_rvs Reverse shock state
- * @return True if stopping condition was applied
- * <!-- ************************************************************************************** -->
- */
-template <typename FState, typename RState>
-bool set_stopping_shocks(size_t i, size_t j, Shock& shock_fwd, Shock& shock_rvs, FState const& state_fwd,
-                         RState const& state_rvs) {
-    if (state_fwd.Gamma < con::Gamma_cut) {
-        set_stopping_shock(i, j, shock_fwd, state_fwd);
-        set_stopping_shock(i, j, shock_rvs, state_rvs);
-        return true;
+        write_shock_state(shock, i, j, k, state.t_comv, state.r, state.theta, state.Gamma, Gamma3_th, B3, state.m3);
     }
-    return false;
 }
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Solves forward/reverse shock until crossing occurs.
- * @details Advances the ODE solver and saves shock states at each time step.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param t View of time points
- * @param stepper_rvs ODE stepper for reverse shock
- * @param eqn_rvs Reverse shock equation system
- * @param state_rvs Reverse shock state
- * @param shock_fwd Forward shock object
- * @param shock_rvs Reverse shock object
- * @return Index where shock crossing occurs
- * <!-- ************************************************************************************** -->
- */
-template <typename View, typename RState, typename REqn, typename Stepper>
-size_t solve_until_cross(size_t i, size_t j, View const& t, Stepper& stepper_rvs, REqn& eqn_rvs, RState& state_rvs,
-                         Shock& shock_fwd, Shock& shock_rvs) {
-    size_t k0 = 0;
-    Real t_back = t.back();
-    bool crossed = false;
-    size_t k = 0;
+inline void reverse_shock_early_extrap(size_t i, size_t j, Shock& shock) {
+    auto [phi_size, theta_size, t_size] = shock.shape();
 
-    while (!crossed && stepper_rvs.current_time() <= t_back) {
-        stepper_rvs.do_step(eqn_rvs);
-        while (k < t.size() && stepper_rvs.current_time() > t(k)) {
-            stepper_rvs.calc_state(t(k), state_rvs);
-            crossed = save_shock_pair_state(i, j, k, eqn_rvs, state_rvs, t(k), shock_fwd, shock_rvs);
-            if (crossed) {
-                k0 = k;
-                shock_rvs.injection_idx(i, j) = k0;
-                eqn_rvs.set_cross_state(state_rvs, shock_rvs.B(i, j, k));
-                stepper_rvs.initialize(state_rvs, t(k0), stepper_rvs.current_time_step());
-                break;
-            }
-            k++;
+    size_t idx_cut = 0;
+    for (; idx_cut < t_size; ++idx_cut) {
+        if (shock.Gamma_th(i, j, idx_cut) > con::Gamma_cut) {
+            break;
         }
     }
 
-    return k0;
-}
+    Real gamma_slope = 0;
+    Real B_slope = 0;
+    Real N_p_slope = 0;
+    Real r_lg2 = fast_log2(shock.r(i, j, idx_cut));
+    Real Gamma_th_lg2 = fast_log2(shock.Gamma_th(i, j, idx_cut) - 1);
+    Real B_lg2 = fast_log2(shock.B(i, j, idx_cut));
+    Real N_p_lg2 = fast_log2(shock.N_p(i, j, idx_cut));
 
-/**
- * <!-- ************************************************************************************** -->
- * @internal
- * @brief Solves shock after crossing using the provided update function.
- * @details Advances the ODE solver and saves shock states at each time step.
- * @param i Grid index for phi
- * @param j Grid index for theta
- * @param t View of time points
- * @param k0 Index at which crossing occurred
- * @param stepper ODE stepper
- * @param eqn Equation system
- * @param state Current state
- * @param shock Shock object to update
- * @param update Function to update shock state
- * <!-- ************************************************************************************** -->
- */
-template <typename UpdateFunc, typename Stepper, typename Eqn, typename State, typename View>
-void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& stepper, Eqn& eqn, State& state,
-                      Shock& shock, UpdateFunc update) {
-    size_t k = k0 + 1;
-    Real t_back = t.back();
+    constexpr size_t off_set = 2;
 
-    while (stepper.current_time() <= t_back) {
-        stepper.do_step(eqn);
-        while (k < t.size() && stepper.current_time() > t(k)) {
-            stepper.calc_state(t(k), state);
-            update(i, j, k, eqn, state, shock);
-            k++;
-        }
+    if (idx_cut == 0 || idx_cut >= t_size - off_set || idx_cut >= shock.injection_idx(i, j)) {
+        return;
+    } else {
+        gamma_slope = (fast_log2(shock.Gamma_th(i, j, idx_cut + off_set) - 1) - Gamma_th_lg2) /
+                      (fast_log2(shock.r(i, j, idx_cut + off_set)) - r_lg2);
+
+        B_slope = (fast_log2(shock.B(i, j, idx_cut + off_set)) - B_lg2) /
+                  (fast_log2(shock.r(i, j, idx_cut + off_set)) - r_lg2);
+
+        N_p_slope = (fast_log2(shock.N_p(i, j, idx_cut + off_set)) - N_p_lg2) /
+                    (fast_log2(shock.r(i, j, idx_cut + off_set)) - r_lg2);
+    }
+
+    for (size_t k = 0; k < idx_cut; k++) {
+        Real dr_lg2 = fast_log2(shock.r(i, j, k)) - r_lg2;
+        shock.Gamma_th(i, j, k) = 1 + fast_exp2(Gamma_th_lg2 + gamma_slope * dr_lg2);
+        shock.B(i, j, k) = fast_exp2(B_lg2 + B_slope * dr_lg2);
+        shock.N_p(i, j, k) = fast_exp2(N_p_lg2 + N_p_slope * dr_lg2);
     }
 }
-
 /**
  * <!-- ************************************************************************************** -->
  * @internal
@@ -513,67 +401,71 @@ void solve_post_cross(size_t i, size_t j, View const& t, size_t k0, Stepper& ste
  * @param t View of time points
  * @param shock_fwd Forward shock object
  * @param shock_rvs Reverse shock object
- * @param eqn_fwd Forward shock equation system
- * @param eqn_rvs Reverse shock equation system
+ * @param eqn Reverse shock equation system
  * @param rtol Relative tolerance for ODE solver
  * <!-- ************************************************************************************** -->
  */
-template <typename FwdEqn, typename RvsEqn, typename View>
-void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, FwdEqn const& eqn_fwd,
-                           RvsEqn& eqn_rvs, Real rtol = 1e-6) {
+template <typename Eqn, typename View>
+void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, Shock& shock_rvs, Eqn& eqn,
+                           Real rtol = 1e-6) {
+
     using namespace boost::numeric::odeint;
-    auto stepper_fwd = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename FwdEqn::State>());
 
-    typename FwdEqn::State state_fwd;
-    typename RvsEqn::State state_rvs;
+    typename Eqn::State state;
+    Real t0 = 0.01 * unit::sec;
+    eqn.set_init_state(state, t0);
 
-    Real t_dec = compute_dec_time(eqn_rvs, t.back());
-    Real t0 = std::min(t.front(), t_dec / 100);
-
-    eqn_fwd.set_init_state(state_fwd, t0);
-
-    bool crossed = eqn_rvs.set_init_state(state_rvs, t0);
-
-    if (set_stopping_shocks(i, j, shock_fwd, shock_rvs, state_fwd, state_rvs)) return;
-
-    if (crossed) {
-        grid_solve_fwd_shock(i, j, t, shock_fwd, eqn_fwd, rtol);
+    constexpr Real RS_Gamma_limit = 1.03;
+    if (state.Gamma <= RS_Gamma_limit) {
+        set_stopping_shock(i, j, shock_fwd, state);
+        set_stopping_shock(i, j, shock_rvs, state);
         return;
     }
 
-    auto stepper_rvs = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename RvsEqn::State>());
-    stepper_rvs.initialize(state_rvs, t0, 0.1 * t0);
+    auto stepper = make_dense_output(rtol, rtol, runge_kutta_dopri5<typename Eqn::State>());
+    // auto stepper = bulirsch_stoer_dense_out<typename Eqn::State>{rtol, rtol};
+    stepper.initialize(state, t0, 1e-9 * t0);
 
-    size_t k0 = solve_until_cross(i, j, t, stepper_rvs, eqn_rvs, state_rvs, shock_fwd, shock_rvs);
+    size_t k = 0;
+    for (; t(k) < t0; k++) {
+        eqn.set_init_state(state, t(k));
+        save_fwd_shock_state(i, j, k, eqn, state, shock_fwd);
+        save_rvs_shock_state(i, j, k, eqn, state, shock_rvs);
+    }
 
-    set_fwd_state_from_rvs_state(eqn_rvs, state_fwd, state_rvs, shock_rvs.Gamma(i, j, k0));
-    stepper_fwd.initialize(state_fwd, t(k0), stepper_rvs.current_time_step());
-
-    solve_post_cross(i, j, t, k0, stepper_fwd, eqn_fwd, state_fwd, shock_fwd,
-                     save_fwd_shock_state<FwdEqn, typename FwdEqn::State>);
-
-    solve_post_cross(i, j, t, k0, stepper_rvs, eqn_rvs, state_rvs, shock_rvs,
-                     save_crossed_RS_state<RvsEqn, typename RvsEqn::State>);
+    bool reverse_shock_crossing = true;
+    for (; stepper.current_time() <= t.back();) {
+        stepper.do_step(eqn);
+        while (k < t.size() && stepper.current_time() > t(k)) {
+            stepper.calc_state(t(k), state);
+            if (reverse_shock_crossing && !is_crossing(eqn, state, t(k))) {
+                shock_rvs.injection_idx(i, j) = k;
+                reverse_shock_crossing = false;
+                eqn.save_cross_state(state);
+            }
+            save_fwd_shock_state(i, j, k, eqn, state, shock_fwd);
+            save_rvs_shock_state(i, j, k, eqn, state, shock_rvs);
+            ++k;
+        }
+    }
+    reverse_shock_early_extrap(i, j, shock_rvs);
 }
 
 template <typename Ejecta, typename Medium>
-ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, Real eps_e_f, Real eps_B_f,
-                              Real eps_e_r, Real eps_B_r, Real rtol) {
+ShockPair generate_shock_pair(Coord const& coord, Medium const& medium, Ejecta const& jet, RadParams const& rad_fwd,
+                              RadParams const& rad_rvs, Real rtol) {
     auto [phi_size, theta_size, t_size] = coord.shape();
     size_t phi_size_needed = coord.t.shape()[0];
-    Shock f_shock(phi_size_needed, theta_size, t_size, eps_e_f, eps_B_f);
-    Shock r_shock(phi_size_needed, theta_size, t_size, eps_e_r, eps_B_r);
+    Shock f_shock(phi_size_needed, theta_size, t_size, rad_fwd);
+    Shock r_shock(phi_size_needed, theta_size, t_size, rad_rvs);
     for (size_t i = 0; i < phi_size_needed; ++i) {
-        Real theta_s =
-            jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
+        // Real theta_s =
+        //     jet_spreading_edge(jet, medium, coord.phi(i), coord.theta.front(), coord.theta.back(), coord.t.front());
         for (size_t j = 0; j < theta_size; ++j) {
-            // auto eqn_f = ForwardShockEqn(medium, jet, inject, coord.phi(i), coord.theta(j), eps_e);
-            auto eqn_f = SimpleShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_f, theta_s);
-            auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), eps_e_r);
+            auto eqn_r = FRShockEqn(medium, jet, coord.phi(i), coord.theta(j), rad_fwd, rad_rvs);
             // Solve the forward-reverse shock shell
-            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_f, eqn_r, rtol);
+            grid_solve_shock_pair(i, j, xt::view(coord.t, i, j, xt::all()), f_shock, r_shock, eqn_r, rtol);
         }
     }
-
     return std::make_pair(std::move(f_shock), std::move(r_shock));
 }

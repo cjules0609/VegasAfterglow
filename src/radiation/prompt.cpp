@@ -8,12 +8,12 @@
 #include "prompt.h"
 
 CoastingShock::CoastingShock(size_t phi_size, size_t theta_size, size_t t_size)
-    : r({phi_size, theta_size, t_size}, 0),        // Initialize engine time grid with 0
-      theta({phi_size, theta_size, t_size}, 0),    // Initialize theta grid with 0
-      Gamma({phi_size, theta_size, t_size}, 1),    // Initialize Gamma_rel grid with 1
-      epsilon({phi_size, theta_size, t_size}, 0),  // Initialize column density grid with 0
-      phi_size(phi_size),                          // Store phi grid size
-      theta_size(theta_size),                      // Store theta grid size
+    : r({phi_size, theta_size, t_size}, 0),       // Initialize engine time grid with 0
+      theta({phi_size, theta_size, t_size}, 0),   // Initialize theta grid with 0
+      Gamma({phi_size, theta_size, t_size}, 1),   // Initialize Gamma_rel grid with 1
+      epsilon({phi_size, theta_size, t_size}, 0), // Initialize column density grid with 0
+      phi_size(phi_size),                         // Store phi grid size
+      theta_size(theta_size),                     // Store theta grid size
       t_size(t_size) {}
 
 PromptPhotonsGrid gen_prompt_photons(CoastingShock const& shock, Real R0, Real nu_0, Real alpha) {
@@ -43,4 +43,6 @@ PromptPhotonsGrid gen_prompt_photons(CoastingShock const& shock, Real R0, Real n
     return ph;
 }
 
-Real PromptPhotons::I_nu(Real nu) const { return E_nu_peak * std::pow(nu / nu_0, -alpha); }
+Real PromptPhotons::I_nu(Real nu) const {
+    return E_nu_peak * std::pow(nu / nu_0, -alpha);
+}

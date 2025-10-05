@@ -2,19 +2,22 @@
 requires = [
   "scikit-build-core>=0.4.3",
   "pybind11>=2.6.0",
-  "cmake>=3.15",
+  "numpy>=1.20",
+  "setuptools>=42",
+  "setuptools-scm>=6.2",
+  "wheel",
 ]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "VegasAfterglow"
-version = "0.1.3"
+dynamic = ["version"]
 description = "MCMC tools for astrophysics"
 readme = "README.md"
 authors = [
   {name = "Yihan Wang", email = "yihan.astro@gmail.com"}
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 dependencies = [
   "numpy>=1.20",
   "scipy>=1.6",
@@ -32,8 +35,14 @@ cmake.version = ">=3.15.0"
 cmake.args = ["-DCMAKE_POSITION_INDEPENDENT_CODE=ON","-DCMAKE_BUILD_PARALLEL_LEVEL=8"]
 cmake.build-type = "Release"
 build.verbose = false
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 
-sdist.include = [
+[tool.setuptools_scm]
+write_to = "VegasAfterglow/_version.py"
+fallback_version = "0.0.0"
+
+[tool.scikit-build.sdist]
+include = [
   "LICENSE",
   "README.md",
   "CMakeLists.txt",

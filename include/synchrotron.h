@@ -8,108 +8,10 @@
 
 #include <vector>
 
+#include "inverse-compton.h"
 #include "medium.h"
 #include "mesh.h"
 #include "shock.h"
-
-/**
- * <!-- ************************************************************************************** -->
- * @struct InverseComptonY
- * @brief Handles Inverse Compton Y parameter calculations and related threshold values.
- * <!-- ************************************************************************************** -->
- */
-struct InverseComptonY {
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Initializes an InverseComptonY object with frequency thresholds, magnetic field and Y parameter.
-     * @details Computes characteristic gamma values and corresponding frequencies, then determines cooling regime.
-     * @param nu_m Characteristic frequency for minimum Lorentz factor
-     * @param nu_c Characteristic frequency for cooling Lorentz factor
-     * @param B Magnetic field strength
-     * @param Y_T Thomson Y parameter
-     * <!-- ************************************************************************************** -->
-     */
-    InverseComptonY(Real nu_m, Real nu_c, Real B, Real Y_T) noexcept;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Simple constructor that initializes with only the Thomson Y parameter for special cases.
-     * @param Y_T Thomson Y parameter
-     * <!-- ************************************************************************************** -->
-     */
-    InverseComptonY(Real Y_T) noexcept;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Default constructor that initializes all member variables to zero.
-     * <!-- ************************************************************************************** -->
-     */
-    InverseComptonY() noexcept;
-
-    // Member variables
-    Real nu_hat_m{0};     ///< Frequency threshold for minimum electrons
-    Real nu_hat_c{0};     ///< Frequency threshold for cooling electrons
-    Real gamma_hat_m{0};  ///< Lorentz factor threshold for minimum energy electrons
-    Real gamma_hat_c{0};  ///< Lorentz factor threshold for cooling electrons
-    Real Y_T{0};          ///< Thomson scattering Y parameter
-    size_t regime{0};     ///< Indicator for the operating regime (1=fast IC cooling, 2=slow IC cooling, 3=special case)
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Calculates the effective Y parameter for a given frequency and spectral index.
-     * @details Different scaling relations apply depending on the cooling regime and frequency range.
-     * @param nu Frequency at which to compute the Y parameter
-     * @param p Spectral index of electron distribution
-     * @return The effective Y parameter at the given frequency
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_val_at_nu(Real nu, Real p) const;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Calculates the effective Y parameter for a given Lorentz factor and spectral index.
-     * @details Different scaling relations apply depending on the cooling regime and gamma value.
-     * @param gamma Electron Lorentz factor
-     * @param p Spectral index of electron distribution
-     * @return The effective Y parameter at the given gamma
-     * <!-- ************************************************************************************** -->
-     */
-    Real compute_val_at_gamma(Real gamma, Real p) const;
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Returns the Thomson Y parameter from the provided InverseComptonY object.
-     * @details Previously supported summing Y parameters from multiple objects.
-     * @param Ys InverseComptonY object
-     * @return The Thomson Y parameter
-     * <!-- ************************************************************************************** -->
-     */
-    static Real compute_Y_Thompson(InverseComptonY const& Ys);  ///< Returns Y_T parameter
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Calculates the effective Y parameter at a specific Lorentz factor and spectral index.
-     * @details Previously supported summing contributions from multiple InverseComptonY objects.
-     * @param Ys InverseComptonY object
-     * @param gamma Electron Lorentz factor
-     * @param p Spectral index of electron distribution
-     * @return The effective Y parameter at the given gamma
-     * <!-- ************************************************************************************** -->
-     */
-    static Real compute_Y_tilt_at_gamma(InverseComptonY const& Ys, Real gamma, Real p);
-
-    /**
-     * <!-- ************************************************************************************** -->
-     * @brief Calculates the effective Y parameter at a specific frequency and spectral index.
-     * @details Previously supported summing contributions from multiple InverseComptonY objects.
-     * @param Ys InverseComptonY object
-     * @param nu Frequency at which to compute the Y parameter
-     * @param p Spectral index of electron distribution
-     * @return The effective Y parameter at the given frequency
-     * <!-- ************************************************************************************** -->
-     */
-    static Real compute_Y_tilt_at_nu(InverseComptonY const& Ys, Real nu, Real p);
-};
 
 /**
  * <!-- ************************************************************************************** -->
@@ -120,38 +22,47 @@ struct InverseComptonY {
  */
 struct SynElectrons {
     // All values in comoving frame
-    Real I_nu_peak{0};       ///< Peak intensity at the characteristic frequency
-    Real gamma_m{0};         ///< Minimum electron Lorentz factor
-    Real gamma_c{0};         ///< Cooling electron Lorentz factor
-    Real gamma_a{0};         ///< Self-absorption Lorentz factor
-    Real gamma_M{0};         ///< Maximum electron Lorentz factor
-    Real p{2.3};             ///< Power-law index for the electron energy distribution
-    Real column_num_den{0};  ///< Normalized column number density
-    Real Y_c{0};             ///< Inverse Compton Y parameter at cooling frequency
-    size_t regime{0};        ///< Regime indicator (1-6, determines spectral shape)
-    InverseComptonY Ys;      ///< InverseComptonY parameters for this electron population
+    Real gamma_m{0};    ///< Minimum electron Lorentz factor
+    Real gamma_c{0};    ///< Cooling electron Lorentz factor
+    Real gamma_a{0};    ///< Self-absorption Lorentz factor
+    Real gamma_M{0};    ///< Maximum electron Lorentz factor
+    Real p{2.3};        ///< Power-law index for the electron energy distribution
+    Real N_e{0};        ///< shock electron number PER SOLID ANGLE
+    Real column_den{0}; ///< Column number density
+    Real Y_c{0};        ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};   ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys; ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the electron column number density at a specific Lorentz factor.
+     * @brief Calculates the comoving electron number (PER SOLID ANGLE) spectrum at a specific Lorentz factor.
      * @details Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
      * @param gamma Electron Lorentz factor
      * @return Column number density at the specified Lorentz factor
      * <!-- ************************************************************************************** -->
      */
-    Real compute_column_num_den(Real gamma) const;
+    Real compute_N_gamma(Real gamma) const;
 
-   private:
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the electron energy spectrum at a given Lorentz factor.
+     * @brief Calculates the column number density of the electron distribution.
+     * @details Uses the electron energy spectrum to compute the column number density.
+     * @return Column number density of the electron distribution
+     * <!-- ************************************************************************************** -->
+     */
+    Real compute_column_den(Real gamma) const;
+
+  private:
+    /**
+     * <!-- ************************************************************************************** -->
+     * @brief Calculates the comoving electron energy spectrum at a given Lorentz factor.
      * @details Different spectral forms apply based on the current regime and relative to
      *          characteristic Lorentz factors (gamma_a, gamma_c, gamma_m, gamma_M).
      * @param gamma Electron Lorentz factor
      * @return The normalized electron energy spectrum value
      * <!-- ************************************************************************************** -->
      */
-    inline Real compute_gamma_spectrum(Real gamma) const;
+    inline Real compute_spectrum(Real gamma) const;
 };
 
 /**
@@ -162,37 +73,41 @@ struct SynElectrons {
  */
 struct SynPhotons {
     // All values in comoving frame
-    Real nu_m{0};  ///< Characteristic frequency corresponding to gamma_m
-    Real nu_c{0};  ///< Cooling frequency corresponding to gamma_c
-    Real nu_a{0};  ///< Self-absorption frequency
-    Real nu_M{0};  ///< Maximum photon frequency
+    Real I_nu_max{0}; ///< Maximum specific synchrotron power PER SOLID ANGLE
+    Real nu_m{0};     ///< Characteristic frequency corresponding to gamma_m
+    Real nu_c{0};     ///< Cooling frequency corresponding to gamma_c
+    Real nu_a{0};     ///< Self-absorption frequency
+    Real nu_M{0};     ///< Maximum photon frequency
+    Real p{2.3};      ///< Power-law index for the electron energy distribution
 
-    Real log2_I_nu_peak{0};          ///< Log2 of peak intensity (for computational efficiency)
-    Real log2_nu_m{0};               ///< Log2 of nu_m
-    Real log2_nu_c{0};               ///< Log2 of nu_c
-    Real log2_nu_a{0};               ///< Log2 of nu_a
-    Real log2_nu_M{0};               ///< Log2 of nu_M
-    const SynElectrons* e{nullptr};  ///< Pointer to the associated SynElectrons
+    Real log2_I_nu_max{0}; ///< Log2 of I_nu_max (for computational efficiency)
+    Real log2_nu_m{0};     ///< Log2 of nu_m
+    Real log2_nu_c{0};     ///< Log2 of nu_c
+    Real log2_nu_a{0};     ///< Log2 of nu_a
+    Real log2_nu_M{0};     ///< Log2 of nu_M
+    Real Y_c{0};           ///< Inverse Compton Y parameter at cooling frequency
+    size_t regime{0};      ///< Regime indicator (1-6, determines spectral shape)
+    InverseComptonY Ys;    ///< InverseComptonY parameters for this electron population
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the synchrotron intensity at a given frequency.
+     * @brief Calculates the comoving synchrotron specific intensity.
      * @details Includes inverse Compton corrections for frequencies above the cooling frequency.
-     * @param nu Frequency at which to compute the intensity
-     * @return The synchrotron intensity at the specified frequency
+     * @param nu Frequency at which to compute the specific intensity
+     * @return The synchrotron specific intensity at the specified frequency
      * <!-- ************************************************************************************** -->
      */
-    Real compute_I_nu(Real nu) const;  ///< Linear intensity
+    Real compute_I_nu(Real nu) const; ///< Linear power PER SOLID ANGLE
 
     /**
      * <!-- ************************************************************************************** -->
-     * @brief Calculates the base-2 logarithm of synchrotron intensity at a given frequency.
+     * @brief Calculates the base-2 logarithm of comoving synchrotron specific intensity at a given frequency.
      * @details Optimized for numerical computation by using logarithmic arithmetic.
      * @param log2_nu Base-2 logarithm of the frequency
-     * @return Base-2 logarithm of synchrotron intensity
+     * @return Base-2 logarithm of synchrotron specific intensity
      * <!-- ************************************************************************************** -->
      */
-    Real compute_log2_I_nu(Real log2_nu) const;  ///<  Log2 intensity (for computational efficiency)
+    Real compute_log2_I_nu(Real log2_nu) const; ///<  Log2 specific intensity (for computational efficiency)
 
     /**
      * <!-- ************************************************************************************** -->
@@ -202,12 +117,12 @@ struct SynPhotons {
      */
     void update_constant();
 
-   private:
+  private:
     // Cached calculation constants for spectral computations
     // Optimized calculation constants
-    Real C1_{0};  ///< Cached spectral coefficient 1
-    Real C2_{0};  ///< Cached spectral coefficient 2
-    Real C3_{0};  ///< Cached spectral coefficient 3
+    Real C1_{0}; ///< Cached spectral coefficient 1
+    Real C2_{0}; ///< Cached spectral coefficient 2
+    Real C3_{0}; ///< Cached spectral coefficient 3
 
     // Log2 of calculation constants for faster computation
     Real log2_C1_{0};
@@ -261,12 +176,10 @@ using SynElectronGrid = xt::xtensor<SynElectrons, 3>;
  * @details Initializes all electron properties including Lorentz factors, column densities,
  *          and peak intensities for each grid cell.
  * @param shock The shock object containing physical properties
- * @param p Power-law index for the electron energy distribution
- * @param xi Energy partitioning parameter (default: 1)
  * @return A new grid of synchrotron electrons
  * <!-- ************************************************************************************** -->
  */
-SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi = 1);
+SynElectronGrid generate_syn_electrons(Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -274,11 +187,9 @@ SynElectronGrid generate_syn_electrons(Shock const& shock, Real p, Real xi = 1);
  * @details Modifies a grid supplied by the caller rather than creating a new one.
  * @param electrons The electron grid to populate
  * @param shock The shock object containing physical properties
- * @param p Power-law index for the electron energy distribution
- * @param xi Energy partitioning parameter (default: 1)
  * <!-- ************************************************************************************** -->
  */
-void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock, Real p, Real xi = 1);
+void generate_syn_electrons(SynElectronGrid& electrons, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->
@@ -314,11 +225,11 @@ void generate_syn_photons(SynPhotonGrid& photons, Shock const& shock, SynElectro
  * @brief Updates electron properties throughout the grid based on shock parameters and IC Y values.
  * @details Recalculates gamma_M, gamma_c, gamma_a, regime, and Y_c parameters for each grid cell.
  *          Handles both freshly-shocked and adiabatic cooling regions.
- * @param e Synchrotron electron grid to update
+ * @param electrons Synchrotron electron grid to update
  * @param shock The shock object containing evolution data
  * <!-- ************************************************************************************** -->
  */
-void update_electrons_4Y(SynElectronGrid& e, Shock const& shock);
+void update_electrons_4Y(SynElectronGrid& electrons, Shock const& shock);
 
 /**
  * <!-- ************************************************************************************** -->

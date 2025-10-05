@@ -1,15 +1,14 @@
 # src/vegasglow/sampler.py
 
-import threading
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Sequence, Tuple, Callable, Type, Optional
+from typing import Callable, Optional, Sequence, Tuple, Type
 
-import numpy as np
 import emcee
-from emcee.moves import DEMove, DESnookerMove, StretchMove
+import numpy as np
 
-from .types import ModelParams, Setups, ObsData, VegasMC, FitResult
+from .types import FitResult, ModelParams, ObsData, Setups, VegasMC
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,7 @@ class _log_prob:
     """
     Thread-safe log-probability callable for emcee.
     """
+
     def __init__(
         self,
         data: ObsData,
@@ -65,7 +65,7 @@ class MultiThreadEmcee:
         param_config: Tuple[Sequence[str], np.ndarray, np.ndarray, np.ndarray],
         to_params: Callable[[np.ndarray], ModelParams],
         model_cls: Type[VegasMC],
-        num_workers: Optional[int] = None
+        num_workers: Optional[int] = None,
     ):
         self.labels, self.init, self.pl, self.pu = param_config
         self.ndim = len(self.init)
@@ -78,82 +78,85 @@ class MultiThreadEmcee:
         self,
         data: ObsData,
         base_cfg: Setups,
-        resolution: Tuple[int, int, int] = (24, 24, 24),
+        resolution: Tuple[float, float, float] = (0.3, 1, 10),
         total_steps: int = 10_000,
         burn_frac: float = 0.2,
         thin: int = 1,
         moves: Optional[Sequence[Tuple[emcee.moves.Move, float]]] = None,
-        refine_steps: int = 1_000
+        refine_steps: int = 500,
+        top_k: int = 10,
     ) -> FitResult:
         """
         Run coarse MCMC + optional stretch-move refinement at higher resolution.
         """
-        # 1) configure coarse grid
+
         cfg = self._make_cfg(base_cfg, *resolution)
 
-        # 2) prepare log-prob
-        log_prob = _log_prob(data, cfg, self.to_params, self.pl, self.pu, self.model_cls)
+        log_prob = _log_prob(
+            data, cfg, self.to_params, self.pl, self.pu, self.model_cls
+        )
 
-        # 3) initialize walker positions
-        spread = 0.05 * (self.pu - self.pl)
+        spread = 0.2 * (self.pu - self.pl)
         pos = self.init + spread * np.random.randn(self.nwalkers, self.ndim)
-        pos = np.clip(pos, self.pl + 1e-8, self.pu - 1e-8)
+        eps = 1e-6 * (self.pu - self.pl)
+        pos = np.clip(pos, self.pl + eps, self.pu - eps)
 
-        # 4) default moves
         if moves is None:
-            moves = [(DEMove(), 0.8), (DESnookerMove(), 0.2)]
+            moves = [
+                (emcee.moves.StretchMove(), 0.6),
+                (emcee.moves.DEMove(), 0.3),
+                (emcee.moves.DESnookerMove(), 0.1),
+            ]
 
-        logger.info("🚀 Running coarse MCMC at resolution %s for %d steps", resolution, total_steps)
+        logger.info(
+            "Running coarse MCMC at resolution %s for %d steps",
+            resolution,
+            total_steps,
+        )
         with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
             sampler = emcee.EnsembleSampler(
                 self.nwalkers, self.ndim, log_prob, pool=pool, moves=moves
             )
             sampler.run_mcmc(pos, total_steps, progress=True)
 
-        # 5) extract & filter
         burn = int(burn_frac * total_steps)
         chain = sampler.get_chain(discard=burn, thin=thin)
-        logp  = sampler.get_log_prob(discard=burn, thin=thin)
+        logp = sampler.get_log_prob(discard=burn, thin=thin)
         chain, logp, _ = self._filter_bad_walkers(chain, logp)
 
-        # 6) flatten & find MAP
         flat_chain = chain.reshape(-1, self.ndim)
-        flat_logp  = logp.reshape(-1)
-        best_idx   = np.argmax(flat_logp)
-        best_theta = flat_chain[best_idx]
+        flat_logp = logp.reshape(-1)
 
-        # 7) refine at high resolution
-        logger.info("🔬 Refining MAP with stretch move for %d steps", refine_steps)
-        cfg_high = self._make_cfg(base_cfg, 64, 64, 64)
-        high_log_prob = _log_prob(data, cfg_high, self.to_params, self.pl, self.pu, self.model_cls)
+        sorted_idx = np.argsort(flat_logp)[::-1]
 
-        pos_refine = best_theta + 0.1 * spread * np.random.randn(self.nwalkers, self.ndim)
-        pos_refine = np.clip(pos_refine, self.pl + 1e-8, self.pu - 1e-8)
+        # Round parameters to avoid floating point precision issues
+        rounded_params = np.round(flat_chain[sorted_idx], decimals=12)
 
-        with ThreadPoolExecutor(max_workers=self.num_workers) as pool:
-            sampler_ref = emcee.EnsembleSampler(
-                self.nwalkers, self.ndim, high_log_prob, pool=pool, moves=[(StretchMove(), 1.0)]
-            )
-            sampler_ref.run_mcmc(pos_refine, refine_steps, progress=True)
+        # Find unique parameter combinations while preserving sort order
+        _, unique_idx = np.unique(rounded_params, axis=0, return_index=True)
+        # Keep original sort order, limit to top_k
+        unique_idx = np.sort(unique_idx)[:top_k]
 
-        burn_ref   = int(burn_frac * refine_steps)
-        ref_chain  = sampler_ref.get_chain(discard=burn_ref, thin=thin)
-        ref_logp   = sampler_ref.get_log_prob(discard=burn_ref, thin=thin)
-        ref_chain, ref_logp, _ = self._filter_bad_walkers(ref_chain, ref_logp)
-        ref_flat_chain = ref_chain.reshape(-1, self.ndim)
-        ref_flat_logp  = ref_logp.reshape(-1)
-        best_idx_r     = np.argmax(ref_flat_logp)
-        best_theta     = ref_flat_chain[best_idx_r]
+        final_idx = sorted_idx[unique_idx]
+        top_k_params = flat_chain[final_idx]
+        top_k_log_probs = flat_logp[final_idx]
 
-        # 8) return FitResult
-        return FitResult(
-            samples     = chain,
-            log_probs   = logp,
-            best_params = best_theta,
-            labels      = self.labels
+        logger.info(
+            "Found %d unique fits with log probabilities: %.2f to %.2f",
+            len(top_k_params),
+            top_k_log_probs[0],
+            top_k_log_probs[-1],
         )
 
-    def _make_cfg(self, base_cfg: Setups, r: int, theta: int, phi: int) -> Setups:
+        return FitResult(
+            samples=chain,
+            log_probs=logp,
+            labels=self.labels,
+            top_k_params=top_k_params,
+            top_k_log_probs=top_k_log_probs,
+        )
+
+    def _make_cfg(self, base_cfg: Setups, phi: float, theta: float, t: float) -> Setups:
         """
         Create a shallow copy of base_cfg and override its grid resolution.
         """
@@ -164,25 +167,28 @@ class MultiThreadEmcee:
                     setattr(cfg, attr, getattr(base_cfg, attr))
                 except Exception:
                     pass
-        cfg.t_grid     = int(r)
-        cfg.theta_grid = int(theta)
-        cfg.phi_grid   = int(phi)
+        cfg.t_resol = t
+        cfg.theta_resol = theta
+        cfg.phi_resol = phi
         return cfg
 
     @staticmethod
     def _filter_bad_walkers(
-        chain: np.ndarray,
-        logp: np.ndarray,
-        threshold_mad: float = 3.0
+        chain: np.ndarray, logp: np.ndarray, threshold_mad: float = 3.0
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Remove walkers whose mean log-prob is > threshold_mad·MAD below the median.
         """
         nsteps, nwalkers, _ = chain.shape
         mean_lp = np.mean(logp, axis=0)
-        median  = np.median(mean_lp)
-        mad     = np.median(np.abs(mean_lp - median))
-        cutoff  = median - threshold_mad * mad
-        good    = mean_lp > cutoff
-        logger.info("🎯 Filtered %d / %d bad walkers (cutoff=%.2f)", np.sum(~good), nwalkers, cutoff)
+        median = np.median(mean_lp)
+        mad = np.median(np.abs(mean_lp - median))
+        cutoff = median - threshold_mad * mad
+        good = mean_lp > cutoff
+        logger.info(
+            "Filtered %d / %d bad walkers (cutoff=%.2f)",
+            np.sum(~good),
+            nwalkers,
+            cutoff,
+        )
         return chain[:, good, :], logp[:, good], good
