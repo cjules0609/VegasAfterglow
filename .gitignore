@@ -1,3 +1,4 @@
+._*
 **/*.txt
 !**/requirements.txt
 **/*.csv
