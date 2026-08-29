@@ -8,6 +8,8 @@
 #include "pymodel.h"
 
 #include <algorithm>
+#include <initializer_list>
+#include <limits>
 #include <numeric>
 
 #include "error_handling.h"
@@ -32,6 +34,118 @@ XTArray YEvaluator::operator()(PyArray const& gamma) const {
         result(i) = eval_(gamma(i));
     }
     return result;
+}
+
+//========================================================================================================
+//                                  Numerical electron configurations
+//========================================================================================================
+
+char const* electron_normalization_name(ElectronNormalization normalization) noexcept {
+    switch (normalization) {
+    case ElectronNormalization::energy:
+        return "energy";
+    case ElectronNormalization::number:
+        return "number";
+    }
+    return "unknown";
+}
+
+NumericalElectronConfig::NumericalElectronConfig(NumericalElectronShape shape,
+                                                 ElectronNormalization normalization,
+                                                 std::string model_name)
+    : normalization(normalization), model_name(std::move(model_name)) {
+    this->shape = sample_electron_shape(shape);
+    synchrotron = build_numerical_synchrotron_table(this->shape);
+}
+
+NumericalElectronConfig::NumericalElectronConfig(std::shared_ptr<ElectronShapeTable const> shape,
+                                                 ElectronNormalization normalization,
+                                                 std::string model_name)
+    : normalization(normalization), model_name(std::move(model_name)), shape(std::move(shape)) {
+    if (!this->shape) {
+        throw std::invalid_argument("electron shape table must not be null");
+    }
+    synchrotron = build_numerical_synchrotron_table(this->shape);
+}
+
+PyFlatElectrons::PyFlatElectrons(Real gamma_min, Real gamma_max, ElectronNormalization normalization)
+    : gamma_min(gamma_min), gamma_max(gamma_max), normalization(normalization),
+      config(FlatElectronShape{gamma_min, gamma_max}, normalization, "flat") {}
+
+std::string PyFlatElectrons::repr() const {
+    char buf[192];
+    snprintf(buf, sizeof(buf), "FlatElectrons(gamma_min=%.6g, gamma_max=%.6g, normalization='%s')", gamma_min,
+             gamma_max, electron_normalization_name(normalization));
+    return buf;
+}
+
+PyPowerLawElectrons::PyPowerLawElectrons(Real p, Real gamma_min, Real gamma_max,
+                                         ElectronNormalization normalization)
+    : p(p), gamma_min(gamma_min), gamma_max(gamma_max), normalization(normalization),
+      config(PowerLawElectronShape{gamma_min, gamma_max, p}, normalization, "powerlaw") {}
+
+std::string PyPowerLawElectrons::repr() const {
+    char buf[224];
+    snprintf(buf, sizeof(buf),
+             "PowerLawElectrons(p=%.6g, gamma_min=%.6g, gamma_max=%.6g, normalization='%s')", p, gamma_min,
+             gamma_max, electron_normalization_name(normalization));
+    return buf;
+}
+
+PyCutoffPowerLawElectrons::PyCutoffPowerLawElectrons(Real p, Real gamma_min, Real gamma_max, Real gamma_cut,
+                                                     ElectronNormalization normalization)
+    : p(p), gamma_min(gamma_min), gamma_max(gamma_max), gamma_cut(gamma_cut), normalization(normalization),
+      config(CutoffPowerLawElectronShape{gamma_min, gamma_max, p, gamma_cut}, normalization,
+             "cutoff_powerlaw") {}
+
+std::string PyCutoffPowerLawElectrons::repr() const {
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "CutoffPowerLawElectrons(p=%.6g, gamma_min=%.6g, gamma_max=%.6g, gamma_cut=%.6g, "
+             "normalization='%s')",
+             p, gamma_min, gamma_max, gamma_cut, electron_normalization_name(normalization));
+    return buf;
+}
+
+PyElectronDistribution::PyElectronDistribution(std::shared_ptr<ElectronShapeTable const> shape,
+                                               ElectronNormalization normalization, size_t samples_per_decade)
+    : gamma_min(shape ? shape->gamma_min : 1), gamma_max(shape ? shape->gamma_max : 1),
+      normalization(normalization), samples_per_decade(samples_per_decade),
+      config(std::move(shape), normalization, "custom") {}
+
+std::string PyElectronDistribution::repr() const {
+    char buf[224];
+    snprintf(buf, sizeof(buf),
+             "ElectronDistribution(gamma_min=%.6g, gamma_max=%.6g, normalization='%s', "
+             "samples_per_decade=%zu)",
+             gamma_min, gamma_max, electron_normalization_name(normalization), samples_per_decade);
+    return buf;
+}
+
+NumericalElectronConfig const& numerical_electron_config(PyNumericalElectrons const& electrons) {
+    return std::visit([](auto const& model) -> NumericalElectronConfig const& { return model.config; }, electrons);
+}
+
+NumericalRadiationGrid::NumericalRadiationGrid(Shock const& shock, NumericalElectronConfig const& config,
+                                               RadParams const& rad, bool ssa_enabled) {
+    const auto [phi_size, theta_size, time_size] = shock.shape();
+    shape = {phi_size, theta_size, time_size};
+    electrons.reserve(phi_size * theta_size * time_size);
+    photons.resize({phi_size, theta_size, time_size});
+
+    for (size_t i = 0; i < phi_size; ++i) {
+        for (size_t j = 0; j < theta_size; ++j) {
+            for (size_t k = 0; k < time_size; ++k) {
+                const Real r = shock.r(i, j, k);
+                AFTERGLOW_REQUIRE(std::isfinite(r) && r > 0,
+                                  "shock radius must be finite and positive for numerical electron normalization");
+                electrons.emplace_back(config.shape, config.normalization, shock.N_p(i, j, k) / (r * r),
+                                       shock.Gamma_th(i, j, k), rad.eps_e, rad.xi_e);
+                photons(i, j, k) =
+                    NumericalSynchrotron(config.synchrotron, electrons.back(), shock.B(i, j, k), ssa_enabled);
+            }
+        }
+    }
 }
 
 // Shared post-construction setup for the named jet factories.
@@ -244,6 +358,12 @@ void save_electron_details(ElectronGrid const& electrons, PyShock& details) {
     details.gamma_m_hat = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     details.gamma_c_hat = xt::zeros<Real>({shape[0], shape[1], shape[2]});
     details.N_e = xt::zeros<Real>({shape[0], shape[1], shape[2]});
+    details.electron_gamma_min = XTArray({shape[0], shape[1], shape[2]}, std::numeric_limits<Real>::quiet_NaN());
+    details.electron_gamma_max = XTArray({shape[0], shape[1], shape[2]}, std::numeric_limits<Real>::quiet_NaN());
+    details.electron_number_fraction =
+        XTArray({shape[0], shape[1], shape[2]}, std::numeric_limits<Real>::quiet_NaN());
+    details.electron_energy_fraction =
+        XTArray({shape[0], shape[1], shape[2]}, std::numeric_limits<Real>::quiet_NaN());
 
     for (size_t i = 0; i < shape[0]; ++i) {
         for (size_t j = 0; j < shape[1]; ++j) {
@@ -259,6 +379,48 @@ void save_electron_details(ElectronGrid const& electrons, PyShock& details) {
         }
     }
 }
+
+void save_numerical_radiation_details(NumericalRadiationGrid const& radiation, Shock const& shock,
+                                      PyShock& details) {
+    const auto shape = radiation.shape;
+    const Real nan = std::numeric_limits<Real>::quiet_NaN();
+    const std::initializer_list<size_t> dimensions = {shape[0], shape[1], shape[2]};
+
+    details.gamma_m = XTArray(dimensions, nan);
+    details.gamma_c = XTArray(dimensions, nan);
+    details.gamma_a = XTArray(dimensions, nan);
+    details.gamma_M = XTArray(dimensions, nan);
+    details.gamma_m_hat = XTArray(dimensions, nan);
+    details.gamma_c_hat = XTArray(dimensions, nan);
+    details.nu_m = XTArray(dimensions, nan);
+    details.nu_c = XTArray(dimensions, nan);
+    details.nu_a = XTArray(dimensions, nan);
+    details.nu_M = XTArray(dimensions, nan);
+    details.nu_m_hat = XTArray(dimensions, nan);
+    details.nu_c_hat = XTArray(dimensions, nan);
+    details.Y_T = XTArray(dimensions, nan);
+    details.I_nu_max = XTArray(dimensions, nan);
+    details.N_e = xt::zeros<Real>(dimensions);
+    details.electron_gamma_min = xt::zeros<Real>(dimensions);
+    details.electron_gamma_max = xt::zeros<Real>(dimensions);
+    details.electron_number_fraction = xt::zeros<Real>(dimensions);
+    details.electron_energy_fraction = xt::zeros<Real>(dimensions);
+
+    for (size_t i = 0; i < shape[0]; ++i) {
+        for (size_t j = 0; j < shape[1]; ++j) {
+            for (size_t k = 0; k < shape[2]; ++k) {
+                auto const& electrons = radiation.electron(i, j, k);
+                const Real r = shock.r(i, j, k);
+                details.N_e(i, j, k) = electrons.number_column * r * r;
+                details.electron_gamma_min(i, j, k) = electrons.gamma_min();
+                details.electron_gamma_max(i, j, k) = electrons.gamma_max();
+                details.electron_number_fraction(i, j, k) = electrons.implied_xi_e;
+                details.electron_energy_fraction(i, j, k) = electrons.implied_eps_e;
+            }
+        }
+    }
+}
+
 template <typename PhotonGrid>
 void save_photon_details(PhotonGrid const& photons, PyShock& details, Shock const& shock) {
     const auto shape = photons.shape();
@@ -295,6 +457,14 @@ void PyModel::single_evo_details(Shock const& shock, Coord const& coord, Observe
     // Precondition: obs.observe() has already run (kinematics are shared between paired shocks).
     details.t_obs = obs.time / unit::sec;
     details.Doppler = xt::exp2(obs.lg2_doppler);
+
+    if (rad.electrons) {
+        NumericalRadiationGrid numerical(shock, numerical_electron_config(*rad.electrons), rad.rad,
+                                         rad.ssa_enabled());
+        save_numerical_radiation_details(numerical, shock, details);
+        details.numerical_radiation_ = std::move(numerical);
+        return;
+    }
 
     auto syn_e = generate_syn_electrons(shock, coord);
 
@@ -531,6 +701,16 @@ auto PyModel::sky_image(PyArray const& t_obs, double nu_obs, double fov, size_t 
     // Helper: set up a shock once (observe, electrons, photons, SSC cooling),
     // then render sky images for all frames via batched sky_image.
     auto render_shock_frames = [&](Shock const& shock, Coord const& coord, PyRadiation const& rad) {
+        if (rad.electrons) {
+            NumericalRadiationGrid numerical(shock, numerical_electron_config(*rad.electrons), rad.rad,
+                                             rad.ssa_enabled());
+            auto img = observer.sky_image(coord, shock, t_arr, nu_cgs, numerical.photons, npixel, pix_size);
+            result.image += img.image / unit::flux_den_cgs;
+            result.extent = img.extent;
+            result.pixel_solid_angle = img.pixel_solid_angle;
+            return;
+        }
+
         auto syn_e = generate_syn_electrons(shock, coord);
         auto syn_ph = generate_syn_photons(shock, syn_e, coord);
 

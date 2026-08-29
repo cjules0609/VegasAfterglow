@@ -10,9 +10,12 @@ from .native import NativeFunc, gil_free
 
 # Core physics types (always available)
 from .types import (
+    CutoffPowerLawElectrons,
+    ElectronDistribution,
     ISM,
     Ejecta,
     FitResult,
+    FlatElectrons,
     GaussianJet,
     Magnetar,
     Medium,
@@ -21,6 +24,7 @@ from .types import (
     Observer,
     ParamDef,
     PowerLawJet,
+    PowerLawElectrons,
     PowerLawWing,
     Radiation,
     Scale,
@@ -66,6 +70,10 @@ __all__ = [
     "Ejecta",
     "Model",
     "Radiation",
+    "FlatElectrons",
+    "PowerLawElectrons",
+    "CutoffPowerLawElectrons",
+    "ElectronDistribution",
     "Observer",
     "Magnetar",
     # Utilities

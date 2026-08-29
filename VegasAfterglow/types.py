@@ -6,6 +6,9 @@ from typing import Optional, Sequence, Tuple
 import numpy as np
 
 from .VegasAfterglowC import (  # noqa: F401
+    CutoffPowerLawElectrons,
+    ElectronDistribution,
+    FlatElectrons,
     ISM,
     Ejecta,
     GaussianJet,
@@ -14,6 +17,7 @@ from .VegasAfterglowC import (  # noqa: F401
     Model,
     Observer,
     PowerLawJet,
+    PowerLawElectrons,
     PowerLawWing,
     Radiation,
     StepPowerLawJet,

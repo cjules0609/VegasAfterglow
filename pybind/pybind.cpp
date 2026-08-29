@@ -22,6 +22,77 @@
 // decltype((void)I, Real{})..., initializes params, and unpacks the call.
 constexpr size_t MAX_NATIVE_PARAMS = 10;
 
+ElectronNormalization parse_electron_normalization(std::string const& normalization) {
+    if (normalization == "energy") {
+        return ElectronNormalization::energy;
+    }
+    if (normalization == "number") {
+        return ElectronNormalization::number;
+    }
+    throw py::value_error("normalization must be 'energy' or 'number', got '" + normalization + "'");
+}
+
+PyElectronDistribution sample_python_electron_distribution(py::object const& function, Real gamma_min,
+                                                            Real gamma_max, ElectronNormalization normalization,
+                                                            size_t samples_per_decade) {
+    AFTERGLOW_PROFILE_SCOPE(custom_electron_total);
+    if (!PyCallable_Check(function.ptr())) {
+        throw py::type_error("function must be callable");
+    }
+    if (samples_per_decade < 4 || samples_per_decade > 512) {
+        throw py::value_error("samples_per_decade must be between 4 and 512");
+    }
+
+    Array gamma = make_electron_gamma_grid(gamma_min, gamma_max, samples_per_decade);
+    py::array_t<Real> gamma_array(gamma.size());
+    auto gamma_view = gamma_array.mutable_unchecked<1>();
+    for (size_t i = 0; i < gamma.size(); ++i) {
+        gamma_view(i) = gamma(i);
+    }
+
+    py::object result;
+    try {
+        AFTERGLOW_PROFILE_SCOPE(custom_electron_function);
+        result = function(gamma_array);
+    } catch (py::error_already_set& error) {
+        py::raise_from(error, PyExc_RuntimeError, "failed while sampling electron distribution");
+        throw py::error_already_set();
+    }
+
+    py::array returned = py::array::ensure(result);
+    if (!returned) {
+        throw py::type_error("electron distribution function must return a one-dimensional numeric array");
+    }
+    if (returned.ndim() != 1 || static_cast<size_t>(returned.shape(0)) != gamma.size()) {
+        throw py::value_error("electron distribution function must return a one-dimensional array matching the "
+                              "gamma sampling grid");
+    }
+    const std::string dtype_kind = py::str(returned.dtype().attr("kind"));
+    if (dtype_kind == "c") {
+        throw py::type_error("electron distribution function must return real values, not complex values");
+    }
+
+    auto values_array = py::array_t<Real, py::array::c_style | py::array::forcecast>::ensure(returned);
+    if (!values_array) {
+        throw py::type_error("electron distribution function output must be convertible to floating point");
+    }
+    Array values = Array::from_shape({gamma.size()});
+    auto values_view = values_array.unchecked<1>();
+    for (size_t i = 0; i < gamma.size(); ++i) {
+        values(i) = values_view(i);
+    }
+
+    std::shared_ptr<ElectronShapeTable const> sampled;
+    {
+        AFTERGLOW_PROFILE_SCOPE(custom_electron_sampling);
+        sampled = sample_electron_shape(gamma, values);
+    }
+    {
+        AFTERGLOW_PROFILE_SCOPE(custom_synchrotron_table);
+        return PyElectronDistribution(std::move(sampled), normalization, samples_per_decade);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Callback exception guard: user Python callbacks are invoked deep inside
 // noexcept ODE right-hand sides, where a propagating py::error_already_set
@@ -364,16 +435,116 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readonly("phi_obs", &PyObserver::phi_obs)
         .def("__repr__", &PyObserver::repr);
 
+    // Numerical electron-distribution bindings
+    py::class_<PyFlatElectrons>(m, "FlatElectrons",
+                                "Bounded flat instantaneous electron distribution for numerical synchrotron.")
+        .def(py::init([](Real gamma_min, Real gamma_max, std::string const& normalization) {
+                 return PyFlatElectrons(gamma_min, gamma_max, parse_electron_normalization(normalization));
+             }),
+             py::arg("gamma_min"), py::arg("gamma_max"), py::kw_only(), py::arg("normalization"))
+        .def_readonly("gamma_min", &PyFlatElectrons::gamma_min)
+        .def_readonly("gamma_max", &PyFlatElectrons::gamma_max)
+        .def_property_readonly("normalization", [](PyFlatElectrons const& e) {
+            return electron_normalization_name(e.normalization);
+        })
+        .def("__repr__", &PyFlatElectrons::repr);
+
+    py::class_<PyPowerLawElectrons>(m, "PowerLawElectrons",
+                                    "Bounded power-law instantaneous electron distribution.")
+        .def(py::init([](Real p, Real gamma_min, Real gamma_max, std::string const& normalization) {
+                 return PyPowerLawElectrons(p, gamma_min, gamma_max, parse_electron_normalization(normalization));
+             }),
+             py::arg("p"), py::arg("gamma_min"), py::arg("gamma_max"), py::kw_only(),
+             py::arg("normalization"))
+        .def_readonly("p", &PyPowerLawElectrons::p)
+        .def_readonly("gamma_min", &PyPowerLawElectrons::gamma_min)
+        .def_readonly("gamma_max", &PyPowerLawElectrons::gamma_max)
+        .def_property_readonly("normalization", [](PyPowerLawElectrons const& e) {
+            return electron_normalization_name(e.normalization);
+        })
+        .def("__repr__", &PyPowerLawElectrons::repr);
+
+    py::class_<PyCutoffPowerLawElectrons>(m, "CutoffPowerLawElectrons",
+                                          "Bounded exponentially cut off power-law electron distribution.")
+        .def(py::init([](Real p, Real gamma_min, Real gamma_max, Real gamma_cut,
+                         std::string const& normalization) {
+                 return PyCutoffPowerLawElectrons(p, gamma_min, gamma_max, gamma_cut,
+                                                  parse_electron_normalization(normalization));
+             }),
+             py::arg("p"), py::arg("gamma_min"), py::arg("gamma_max"), py::arg("gamma_cut"),
+             py::kw_only(), py::arg("normalization"))
+        .def_readonly("p", &PyCutoffPowerLawElectrons::p)
+        .def_readonly("gamma_min", &PyCutoffPowerLawElectrons::gamma_min)
+        .def_readonly("gamma_max", &PyCutoffPowerLawElectrons::gamma_max)
+        .def_readonly("gamma_cut", &PyCutoffPowerLawElectrons::gamma_cut)
+        .def_property_readonly("normalization", [](PyCutoffPowerLawElectrons const& e) {
+            return electron_normalization_name(e.normalization);
+        })
+        .def("__repr__", &PyCutoffPowerLawElectrons::repr);
+
+    py::class_<PyElectronDistribution>(
+        m, "ElectronDistribution",
+        "One-shot sampled custom instantaneous electron shape for numerical synchrotron.")
+        .def(py::init([](py::object function, Real gamma_min, Real gamma_max, std::string const& normalization,
+                         size_t samples_per_decade) {
+                 return sample_python_electron_distribution(function, gamma_min, gamma_max,
+                                                            parse_electron_normalization(normalization),
+                                                            samples_per_decade);
+             }),
+             py::arg("function"), py::arg("gamma_min"), py::arg("gamma_max"), py::kw_only(),
+             py::arg("normalization"), py::arg("samples_per_decade") = 32)
+        .def_readonly("gamma_min", &PyElectronDistribution::gamma_min)
+        .def_readonly("gamma_max", &PyElectronDistribution::gamma_max)
+        .def_readonly("samples_per_decade", &PyElectronDistribution::samples_per_decade)
+        .def_property_readonly("normalization", [](PyElectronDistribution const& e) {
+            return electron_normalization_name(e.normalization);
+        })
+        .def_property_readonly("electron_model", [](PyElectronDistribution const&) { return "custom"; })
+        .def_property_readonly("gamma", [](PyElectronDistribution const& e) { return XTArray(e.config.shape->gamma); })
+        .def_property_readonly("shape", [](PyElectronDistribution const& e) { return XTArray(e.config.shape->shape); })
+        .def("__repr__", &PyElectronDistribution::repr);
+
     // Radiation bindings
     py::class_<PyRadiation>(m, "Radiation")
-        .def(py::init<Real, Real, Real, Real, bool, bool>(), py::arg("eps_e"), py::arg("eps_B"), py::arg("p"),
-             py::arg("xi_e") = 1, py::arg("ssc") = false, py::arg("kn") = false)
+        .def(py::init([](Real eps_e, Real eps_B, Real p, Real xi_e, bool ssc, bool kn, py::object electrons,
+                         std::optional<bool> ssa) {
+                 std::optional<PyNumericalElectrons> model;
+                 if (!electrons.is_none()) {
+                     if (py::isinstance<PyFlatElectrons>(electrons)) {
+                         model = electrons.cast<PyFlatElectrons>();
+                     } else if (py::isinstance<PyPowerLawElectrons>(electrons)) {
+                         model = electrons.cast<PyPowerLawElectrons>();
+                     } else if (py::isinstance<PyCutoffPowerLawElectrons>(electrons)) {
+                         model = electrons.cast<PyCutoffPowerLawElectrons>();
+                     } else if (py::isinstance<PyElectronDistribution>(electrons)) {
+                         model = electrons.cast<PyElectronDistribution>();
+                     } else {
+                         throw py::type_error(
+                             "electrons must be None, FlatElectrons, PowerLawElectrons, or "
+                             "CutoffPowerLawElectrons, or ElectronDistribution");
+                     }
+                 }
+                 return PyRadiation(eps_e, eps_B, p, xi_e, ssc, kn, std::move(model), ssa);
+             }),
+             py::arg("eps_e"), py::arg("eps_B"), py::arg("p"), py::arg("xi_e") = 1,
+             py::arg("ssc") = false, py::arg("kn") = false, py::kw_only(), py::arg("electrons") = py::none(),
+             py::arg("ssa") = py::none())
         .def_property_readonly("eps_e", [](PyRadiation const& r) { return r.rad.eps_e; })
         .def_property_readonly("eps_B", [](PyRadiation const& r) { return r.rad.eps_B; })
         .def_property_readonly("p", [](PyRadiation const& r) { return r.rad.p; })
         .def_property_readonly("xi_e", [](PyRadiation const& r) { return r.rad.xi_e; })
         .def_readonly("ssc", &PyRadiation::ssc)
         .def_readonly("kn", &PyRadiation::kn)
+        .def_property_readonly("electrons", [](PyRadiation const& r) -> py::object {
+            if (!r.electrons) {
+                return py::none();
+            }
+            return std::visit([](auto const& model) { return py::cast(model); }, *r.electrons);
+        })
+        .def_property_readonly("electron_model", &PyRadiation::electron_model)
+        .def_property_readonly("supports_ssa", &PyRadiation::supports_ssa)
+        .def_property_readonly("ssa_enabled", &PyRadiation::ssa_enabled)
+        .def_property_readonly("supports_ssc", &PyRadiation::supports_ssc)
         .def("__repr__", &PyRadiation::repr);
 
     // Model bindings
@@ -484,7 +655,9 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
 
     // Spectrum evaluators and grid accessors for details() callable interface
     py::class_<SpectrumEvaluator>(m, "_SpectrumEvaluator")
-        .def("__call__", &SpectrumEvaluator::operator(), py::arg("nu_comv"));
+        .def("__call__", py::overload_cast<Real>(&SpectrumEvaluator::operator(), py::const_), py::arg("value"))
+        .def("__call__", py::overload_cast<PyArray const&>(&SpectrumEvaluator::operator(), py::const_),
+             py::arg("value"));
 
     py::class_<YEvaluator>(m, "_YEvaluator").def("__call__", &YEvaluator::operator(), py::arg("gamma"));
 
@@ -496,6 +669,38 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
                 const Real I_unit = unit::flux_den_cgs;
                 return SpectrumEvaluator{
                     [&ph, I_unit](Real nu_comv) { return ph.compute_I_nu(nu_comv * unit::Hz) / I_unit; }};
+            },
+            py::return_value_policy::reference_internal);
+
+    py::class_<NumericalSynSpectrumGrid>(m, "_NumericalSynSpectrumGrid")
+        .def(
+            "__getitem__",
+            [](NumericalSynSpectrumGrid const& g, py::tuple idx) {
+                auto& ph = (*g.grid_)(idx[0].cast<size_t>(), idx[1].cast<size_t>(), idx[2].cast<size_t>());
+                const Real I_unit = unit::flux_den_cgs;
+                return SpectrumEvaluator{
+                    [&ph, I_unit](Real nu_comv) { return ph.compute_I_nu(nu_comv * unit::Hz) / I_unit; }};
+            },
+            py::return_value_policy::reference_internal);
+
+    py::class_<NumericalSyncOpticalDepthGrid>(m, "_NumericalSyncOpticalDepthGrid")
+        .def(
+            "__getitem__",
+            [](NumericalSyncOpticalDepthGrid const& g, py::tuple idx) {
+                auto& ph = (*g.grid_)(idx[0].cast<size_t>(), idx[1].cast<size_t>(), idx[2].cast<size_t>());
+                return SpectrumEvaluator{
+                    [&ph](Real nu_comv) { return ph.compute_optical_depth(nu_comv * unit::Hz); }};
+            },
+            py::return_value_policy::reference_internal);
+
+    py::class_<ElectronColumnDistributionGrid>(m, "_ElectronColumnDistributionGrid")
+        .def(
+            "__getitem__",
+            [](ElectronColumnDistributionGrid const& g, py::tuple idx) {
+                auto const& electrons =
+                    g.grid_->electron(idx[0].cast<size_t>(), idx[1].cast<size_t>(), idx[2].cast<size_t>());
+                return SpectrumEvaluator{
+                    [&electrons](Real gamma) { return electrons.compute_column_den(gamma) * unit::cm2; }};
             },
             py::return_value_policy::reference_internal);
 
@@ -545,13 +750,38 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_readonly("Y_T", &PyShock::Y_T)
         .def_readonly("I_nu_max", &PyShock::I_nu_max)
         .def_readonly("Doppler", &PyShock::Doppler)
+        .def_readonly("electron_gamma_min", &PyShock::electron_gamma_min)
+        .def_readonly("electron_gamma_max", &PyShock::electron_gamma_max)
+        .def_readonly("electron_number_fraction", &PyShock::electron_number_fraction)
+        .def_readonly("electron_energy_fraction", &PyShock::electron_energy_fraction)
+        .def_property_readonly(
+            "electron_column_distribution",
+            [](PyShock& self) -> py::object {
+                if (!self.numerical_radiation_) {
+                    return py::none();
+                }
+                return py::cast(ElectronColumnDistributionGrid{&*self.numerical_radiation_});
+            },
+            py::return_value_policy::reference_internal)
         .def_property_readonly(
             "sync_spectrum",
             [](PyShock& self) -> py::object {
+                if (self.numerical_radiation_) {
+                    return py::cast(NumericalSynSpectrumGrid{&self.numerical_radiation_->photons});
+                }
                 if (self.syn_photons_.size() == 0) {
                     return py::none();
                 }
                 return py::cast(SynSpectrumGrid{&self.syn_photons_});
+            },
+            py::return_value_policy::reference_internal)
+        .def_property_readonly(
+            "sync_optical_depth",
+            [](PyShock& self) -> py::object {
+                if (!self.numerical_radiation_) {
+                    return py::none();
+                }
+                return py::cast(NumericalSyncOpticalDepthGrid{&self.numerical_radiation_->photons});
             },
             py::return_value_policy::reference_internal)
         .def_property_readonly(

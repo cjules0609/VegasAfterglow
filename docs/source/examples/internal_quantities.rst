@@ -337,5 +337,6 @@ These callable accessors are also available on ``details.rvs`` when a reverse sh
 **Callable spectrum properties:**
 
 - ``details.fwd.sync_spectrum[i, j, k](nu_comv)``: Comoving synchrotron specific intensity at given frequencies. Input: comoving frequency in Hz. Output: :math:`I_\nu` in erg/s/Hz/cm²/sr.
+- ``details.fwd.sync_optical_depth[i, j, k](nu_comv)``: Dimensionless synchrotron optical depth for a numerical electron distribution. Available whether numerical SSA is enabled or disabled, so the transfer can be inspected independently. It is ``None`` for the standard analytic model, which does not construct an explicit optical-depth spectrum.
 - ``details.fwd.ssc_spectrum[i, j, k](nu_comv)``: Comoving SSC specific intensity. Same units as synchrotron. Only available when ``ssc=True``.
 - ``details.fwd.Y_spectrum[i, j, k](gamma)``: Compton-Y parameter as a function of electron Lorentz factor. Input: dimensionless :math:`\gamma`. Output: dimensionless :math:`Y(\gamma)`.

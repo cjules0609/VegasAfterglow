@@ -7,11 +7,14 @@
 
 #pragma once
 
+#include <array>
 #include <cstdio>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "error_handling.h"
@@ -275,12 +278,95 @@ class PyObserver {
 
 /**
  * <!-- ************************************************************************************** -->
+ * @struct NumericalElectronConfig
+ * @brief Shared runtime configuration for a bounded instantaneous numerical electron population.
+ * @details Sampling the electron shape and building its dimensionless emission spectrum happen once when the
+ *          typed configuration is constructed. The absorption table is constructed thread-safely on first use;
+ *          per-cell radiation subsequently reuses the shared native state.
+ * <!-- ************************************************************************************** -->
+ */
+struct NumericalElectronConfig {
+    NumericalElectronConfig(NumericalElectronShape shape, ElectronNormalization normalization,
+                            std::string model_name);
+    NumericalElectronConfig(std::shared_ptr<ElectronShapeTable const> shape, ElectronNormalization normalization,
+                            std::string model_name);
+
+    ElectronNormalization normalization;
+    std::string model_name;
+    std::shared_ptr<ElectronShapeTable const> shape;
+    std::shared_ptr<NumericalSynchrotronTable const> synchrotron;
+};
+
+/** @brief Python-facing bounded flat instantaneous electron distribution. */
+struct PyFlatElectrons {
+    PyFlatElectrons(Real gamma_min, Real gamma_max, ElectronNormalization normalization);
+
+    Real gamma_min;
+    Real gamma_max;
+    ElectronNormalization normalization;
+    NumericalElectronConfig config;
+
+    [[nodiscard]] std::string repr() const;
+};
+
+/** @brief Python-facing bounded numerical power-law instantaneous electron distribution. */
+struct PyPowerLawElectrons {
+    PyPowerLawElectrons(Real p, Real gamma_min, Real gamma_max, ElectronNormalization normalization);
+
+    Real p;
+    Real gamma_min;
+    Real gamma_max;
+    ElectronNormalization normalization;
+    NumericalElectronConfig config;
+
+    [[nodiscard]] std::string repr() const;
+};
+
+/** @brief Python-facing bounded numerical cutoff-power-law instantaneous electron distribution. */
+struct PyCutoffPowerLawElectrons {
+    PyCutoffPowerLawElectrons(Real p, Real gamma_min, Real gamma_max, Real gamma_cut,
+                              ElectronNormalization normalization);
+
+    Real p;
+    Real gamma_min;
+    Real gamma_max;
+    Real gamma_cut;
+    ElectronNormalization normalization;
+    NumericalElectronConfig config;
+
+    [[nodiscard]] std::string repr() const;
+};
+
+/** @brief Python-facing one-shot sampled custom instantaneous electron distribution. */
+struct PyElectronDistribution {
+    PyElectronDistribution(std::shared_ptr<ElectronShapeTable const> shape, ElectronNormalization normalization,
+                           size_t samples_per_decade);
+
+    Real gamma_min;
+    Real gamma_max;
+    ElectronNormalization normalization;
+    size_t samples_per_decade;
+    NumericalElectronConfig config;
+
+    [[nodiscard]] std::string repr() const;
+};
+
+using PyNumericalElectrons =
+    std::variant<PyFlatElectrons, PyPowerLawElectrons, PyCutoffPowerLawElectrons, PyElectronDistribution>;
+
+[[nodiscard]] char const* electron_normalization_name(ElectronNormalization normalization) noexcept;
+[[nodiscard]] NumericalElectronConfig const& numerical_electron_config(PyNumericalElectrons const& electrons);
+
+/**
+ * <!-- ************************************************************************************** -->
  * @class PyRadiation
  * @brief Radiation parameters for synchrotron and inverse Compton emission processes.
  * @details This class encapsulates the microphysical parameters that govern particle
  *          acceleration and radiation processes in relativistic shocks. It controls
  *          the efficiency of converting shock energy into accelerated electrons and
- *          magnetic fields, as well as enabling advanced radiation processes.
+ *          magnetic fields, as well as enabling advanced radiation processes. An optional
+ *          numerical electron model represents the authoritative instantaneous emitting
+ *          population; numerical SSA is optional and the distribution is not modified at gamma_c.
  * <!-- ************************************************************************************** -->
  */
 class PyRadiation {
@@ -298,21 +384,52 @@ class PyRadiation {
      * @param xi_e Fraction of shock-heated electrons that are accelerated to relativistic energies
      * @param ssc Whether to include synchrotron self-Compton emission and IC cooling (default: false)
      * @param kn Whether to include Klein-Nishina corrections for IC processes (default: false)
+     * @param electrons Optional bounded instantaneous numerical electron population. Numerical populations
+     *                  require explicit energy or number normalization and currently reject SSC and KN.
+     * @param ssa Optional numerical-SSA selection. Omitted preserves historical defaults: analytic SSA for the
+     *            standard model and optically thin emission for numerical electron distributions.
      * <!-- ************************************************************************************** -->
      */
-    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e = 1, bool ssc = false, bool kn = false)
-        : rad(RadParams{eps_e, eps_B, p, xi_e}), ssc(ssc), kn(kn) {
+    PyRadiation(Real eps_e, Real eps_B, Real p, Real xi_e = 1, bool ssc = false, bool kn = false,
+                std::optional<PyNumericalElectrons> electrons = std::nullopt,
+                std::optional<bool> ssa = std::nullopt)
+        : rad(RadParams{eps_e, eps_B, p, xi_e}), ssc(ssc), kn(kn), electrons(std::move(electrons)),
+          ssa_request(ssa) {
         AFTERGLOW_REQUIRE_RANGE_OI(eps_e, 0.0, 1.0);
         AFTERGLOW_REQUIRE_RANGE_OI(eps_B, 0.0, 1.0);
         AFTERGLOW_REQUIRE_RANGE_OI(xi_e, 0.0, 1.0);
         // p > 1 is the physical minimum for a finite electron-energy integral. The model handles
         // both slow-cooling (p > 2) and fast-cooling (1 < p < 2) regimes, so don't impose p > 2.
         AFTERGLOW_REQUIRE_GREATER_THAN(p, 1.0);
+        AFTERGLOW_REQUIRE(!this->electrons || !ssc,
+                          "ssc=True is not currently supported with numerical electron distributions because "
+                          "the existing IC cooling and SSC grid construction assume the standard afterglow "
+                          "electron model");
+        AFTERGLOW_REQUIRE(!this->electrons || !kn,
+                          "kn=True is not currently supported with numerical electron distributions because "
+                          "Klein-Nishina corrections belong to the unsupported SSC/IC path");
+        AFTERGLOW_REQUIRE(this->electrons || !ssa.has_value() || *ssa,
+                          "ssa=False is not supported with the standard electron model because standard analytic "
+                          "SSA is part of the historical radiation path");
+        if (this->electrons && ssa_enabled()) {
+            (void)ensure_numerical_synchrotron_absorption_table(
+                *numerical_electron_config(*this->electrons).synchrotron);
+        }
     }
 
     RadParams rad;
     bool ssc{false}; ///< Whether to include SSC emission and IC cooling
     bool kn{false};  ///< Whether to include KN
+    std::optional<PyNumericalElectrons> electrons; ///< Optional instantaneous numerical emitting population
+    std::optional<bool> ssa_request; ///< Explicit selection; omitted preserves the historical branch default
+
+    [[nodiscard]] bool has_numerical_electrons() const noexcept { return electrons.has_value(); }
+    [[nodiscard]] std::string electron_model() const {
+        return electrons ? numerical_electron_config(*electrons).model_name : "standard";
+    }
+    [[nodiscard]] bool supports_ssa() const noexcept { return true; }
+    [[nodiscard]] bool ssa_enabled() const noexcept { return electrons ? ssa_request.value_or(false) : true; }
+    [[nodiscard]] bool supports_ssc() const noexcept { return !electrons; }
 
     [[nodiscard]] std::string repr() const {
         char buf[128];
@@ -327,6 +444,13 @@ class PyRadiation {
         }
         if (kn) {
             s += ", kn=True";
+        }
+        if (electrons && ssa_enabled()) {
+            s += ", ssa=True";
+        }
+        if (electrons) {
+            s += ", electrons=";
+            s += std::visit([](auto const& model) { return model.repr(); }, *electrons);
         }
         s += ")";
         return s;
@@ -449,10 +573,26 @@ struct PySkyImage {
 // Type aliases for IC photon grid
 using SynICPhoton = ICPhoton<SynElectrons, SynPhotons>;
 using SynICPhotonGrid = xt::xtensor<SynICPhoton, 3>;
+using NumericalSynPhotonGrid = xt::xtensor<NumericalSynchrotron, 3>;
+
+/** @brief Per-cell numerical electron populations and their lightweight photon spectra. */
+struct NumericalRadiationGrid {
+    NumericalRadiationGrid(Shock const& shock, NumericalElectronConfig const& config, RadParams const& rad,
+                           bool ssa_enabled = false);
+
+    std::array<size_t, 3> shape{};
+    std::vector<NumericalElectronDistribution> electrons;
+    NumericalSynPhotonGrid photons;
+
+    [[nodiscard]] NumericalElectronDistribution const& electron(size_t i, size_t j, size_t k) const noexcept {
+        return electrons[(i * shape[1] + j) * shape[2] + k];
+    }
+};
 
 /// Callable evaluator for per-cell spectrum queries (takes comoving frequency in Hz)
 struct SpectrumEvaluator {
     std::function<Real(Real)> eval_;
+    Real operator()(Real nu_comv) const { return eval_(nu_comv); }
     XTArray operator()(PyArray const& nu_comv) const;
 };
 
@@ -465,6 +605,21 @@ struct YEvaluator {
 /// Grid accessor for synchrotron spectrum: sync_spectrum[i,j,k] → SpectrumEvaluator
 struct SynSpectrumGrid {
     SynPhotonGrid const* grid_;
+};
+
+/// Grid accessor for a numerical synchrotron spectrum.
+struct NumericalSynSpectrumGrid {
+    NumericalSynPhotonGrid const* grid_;
+};
+
+/// Grid accessor for dimensionless numerical synchrotron optical depth.
+struct NumericalSyncOpticalDepthGrid {
+    NumericalSynPhotonGrid const* grid_;
+};
+
+/// Grid accessor for dSigma_e/dgamma from a numerical instantaneous electron population.
+struct ElectronColumnDistributionGrid {
+    NumericalRadiationGrid const* grid_;
 };
 
 /// Grid accessor for IC spectrum: ssc_spectrum[i,j,k] → SpectrumEvaluator
@@ -512,11 +667,16 @@ struct PyShock {
     XTArray Y_T;
     XTArray I_nu_max; ///< Maximum specific intensity [erg/s/Hz]
     XTArray Doppler;  ///< Doppler factor for beaming
+    XTArray electron_gamma_min;       ///< Numerical-distribution lower gamma bound
+    XTArray electron_gamma_max;       ///< Numerical-distribution upper gamma bound
+    XTArray electron_number_fraction; ///< Actual or implied electron number fraction
+    XTArray electron_energy_fraction; ///< Actual or implied electron energy fraction
 
     // Stored photon grids for per-cell spectrum evaluation
     // Stored photon grids double as presence flags: size() == 0 until assigned.
     SynPhotonGrid syn_photons_;
     SynICPhotonGrid ic_photons_;
+    std::optional<NumericalRadiationGrid> numerical_radiation_;
 
     [[nodiscard]] std::string repr() const {
         if (Gamma.size() == 0) {
@@ -873,6 +1033,19 @@ class PyModel {
 template <typename Func>
 void PyModel::single_shock_emission(Shock const& shock, Coord const& coord, Array const& t_obs, Array const& nu_obs,
                                     Observer& obs, PyRadiation const& rad, Flux& emission, Func&& flux_func) {
+    if (rad.electrons) {
+        auto numerical = [&] {
+            AFTERGLOW_PROFILE_SCOPE(numerical_synchrotron);
+            return NumericalRadiationGrid(shock, numerical_electron_config(*rad.electrons), rad.rad,
+                                          rad.ssa_enabled());
+        }();
+        {
+            AFTERGLOW_PROFILE_SCOPE(sync_flux);
+            emission.sync = std::invoke(flux_func, obs, t_obs, nu_obs, numerical.photons);
+        }
+        return;
+    }
+
     auto syn_e = [&] {
         AFTERGLOW_PROFILE_SCOPE(syn_electrons);
         return generate_syn_electrons(shock, coord);

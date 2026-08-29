@@ -60,10 +60,13 @@ set(AFTERGLOW_SOURCES
   src/core/physics.cpp
   src/dynamics/shock.cpp
   src/radiation/inverse-compton.cpp
+  src/radiation/electron-distribution.cpp
+  src/radiation/numerical-synchrotron.cpp
   src/radiation/power-law-syn.cpp
   src/radiation/prompt.cpp
   src/radiation/smooth-power-law-syn.cpp
   src/radiation/synchrotron.cpp
+  src/radiation/synchrotron-kernel.cpp
   src/util/IO.cpp
   src/util/utilities.cpp
 )
@@ -105,10 +108,13 @@ if(AFTERGLOW_TESTS)
     src/core/physics.cpp
     src/dynamics/shock.cpp
     src/radiation/inverse-compton.cpp
+    src/radiation/electron-distribution.cpp
+    src/radiation/numerical-synchrotron.cpp
     src/radiation/power-law-syn.cpp
     src/radiation/prompt.cpp
     src/radiation/smooth-power-law-syn.cpp
     src/radiation/synchrotron.cpp
+    src/radiation/synchrotron-kernel.cpp
     src/util/IO.cpp
     src/util/utilities.cpp
   )
@@ -127,14 +133,12 @@ if(AFTERGLOW_TESTS)
     tests/cpp/test_power_law_syn.cpp
     tests/cpp/test_reverse_shock.cpp
     tests/cpp/test_inverse_compton.cpp
+    tests/cpp/test_synchrotron_kernel.cpp
+    tests/cpp/test_electron_distribution.cpp
+    tests/cpp/test_numerical_synchrotron.cpp
+    tests/cpp/test_numerical_ssa.cpp
     ${AFTERGLOW_CORE_SOURCES}
   )
-
-  # Local-only test for the in-development synchrotron kernel (untracked files)
-  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpp/test_synchrotron_kernel.cpp"
-     AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/radiation/synchrotron-kernel.h")
-    target_sources(afterglow_tests PRIVATE tests/cpp/test_synchrotron_kernel.cpp)
-  endif()
 
   target_include_directories(afterglow_tests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"

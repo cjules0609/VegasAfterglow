@@ -10,5 +10,6 @@ Examples
    basic_usage
    models
    internal_quantities
+   electron_distributions
    sky_image
    introspection
