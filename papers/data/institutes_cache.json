@@ -2232,5 +2232,82 @@
   "lng": 116.39723,
   "homepage": "https://www.ucas.ac.cn",
   "logo": "https://www.google.com/s2/favicons?domain=ucas.ac.cn&sz=64"
+ },
+ "I130238516": {
+  "id": "I130238516",
+  "name": "University of Minnesota",
+  "ror": "https://ror.org/017zqws13",
+  "country": "United States",
+  "city": "Minneapolis",
+  "lat": 44.97997,
+  "lng": -93.26384,
+  "homepage": "https://twin-cities.umn.edu",
+  "logo": "https://www.google.com/s2/favicons?domain=twin-cities.umn.edu&sz=64"
+ },
+ "I183067930": {
+  "id": "I183067930",
+  "name": "Shanghai Jiao Tong University",
+  "ror": "https://ror.org/0220qvk04",
+  "country": "China",
+  "city": "Shanghai",
+  "lat": 31.22222,
+  "lng": 121.45806,
+  "homepage": "https://www.sjtu.edu.cn",
+  "logo": "https://www.google.com/s2/favicons?domain=sjtu.edu.cn&sz=64"
+ },
+ "I103187081": {
+  "id": "I103187081",
+  "name": "Smithsonian Institution",
+  "ror": "https://ror.org/01pp8nd67",
+  "country": "United States",
+  "city": "Washington",
+  "lat": 38.89511,
+  "lng": -77.03637,
+  "homepage": "https://www.si.edu",
+  "logo": "https://www.google.com/s2/favicons?domain=si.edu&sz=64"
+ },
+ "I119971240": {
+  "id": "I119971240",
+  "name": "Nordic Institute for Theoretical Physics",
+  "ror": "https://ror.org/03r06fs10",
+  "country": "Sweden",
+  "city": "Stockholm",
+  "lat": 59.32938,
+  "lng": 18.06871,
+  "homepage": "https://nordita.org",
+  "logo": "https://www.google.com/s2/favicons?domain=nordita.org&sz=64"
+ },
+ "I4405271294": {
+  "id": "I4405271294",
+  "name": "Shanghai Key Laboratory for Particle Physics and Cosmology",
+  "ror": "https://ror.org/026y40n38",
+  "country": "China",
+  "city": "Shanghai",
+  "lat": 31.22222,
+  "lng": 121.45806,
+  "homepage": "https://old.physics.sjtu.edu.cn/en/research/keylabs",
+  "logo": "https://www.google.com/s2/favicons?domain=old.physics.sjtu.edu.cn&sz=64"
+ },
+ "I4405261410": {
+  "id": "I4405261410",
+  "name": "International Gemini Observatory",
+  "ror": "https://ror.org/058tw4f12",
+  "country": "United States",
+  "city": "Tucson",
+  "lat": 32.22174,
+  "lng": -110.92648,
+  "homepage": "https://www.gemini.edu",
+  "logo": "https://www.google.com/s2/favicons?domain=gemini.edu&sz=64"
+ },
+ "I4387155299": {
+  "id": "I4387155299",
+  "name": "Institute for Cosmic Ray Research",
+  "ror": "https://ror.org/008td3p62",
+  "country": "Japan",
+  "city": "Tokyo",
+  "lat": 35.6895,
+  "lng": 139.69171,
+  "homepage": "https://www.icrr.u-tokyo.ac.jp",
+  "logo": "https://www.google.com/s2/favicons?domain=icrr.u-tokyo.ac.jp&sz=64"
  }
 }
