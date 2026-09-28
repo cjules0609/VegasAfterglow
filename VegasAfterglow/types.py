@@ -7,7 +7,9 @@ import numpy as np
 
 from .VegasAfterglowC import (  # noqa: F401
     CutoffPowerLawElectrons,
+    ElectronCooling,
     ElectronDistribution,
+    ElectronEvolutionResult,
     FlatElectrons,
     ISM,
     Ejecta,

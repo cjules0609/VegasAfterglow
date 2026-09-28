@@ -93,6 +93,71 @@ PyElectronDistribution sample_python_electron_distribution(py::object const& fun
     }
 }
 
+namespace {
+    std::vector<Real> interval_series(py::object const& value, size_t time_size, char const* name,
+                                      bool rms_endpoints = false) {
+        if (time_size < 2) {
+            throw py::value_error("times must contain at least two samples");
+        }
+        const size_t intervals = time_size - 1;
+        std::vector<Real> raw;
+        if (py::isinstance<py::float_>(value) || py::isinstance<py::int_>(value)) {
+            raw.assign(1, value.cast<Real>());
+        } else {
+            py::array array = py::array::ensure(value);
+            if (!array || array.ndim() != 1) {
+                throw py::value_error(std::string(name) + " must be a scalar or one-dimensional array");
+            }
+            auto converted = py::array_t<Real, py::array::c_style | py::array::forcecast>::ensure(array);
+            if (!converted) {
+                throw py::type_error(std::string(name) + " must be convertible to floating point");
+            }
+            auto view = converted.unchecked<1>();
+            raw.resize(static_cast<size_t>(view.shape(0)));
+            for (size_t i = 0; i < raw.size(); ++i) {
+                raw[i] = view(i);
+            }
+        }
+        if (!(raw.size() == 1 || raw.size() == intervals || raw.size() == time_size)) {
+            throw py::value_error(std::string(name) + " must have length 1, len(times)-1, or len(times)");
+        }
+        for (Real x : raw) {
+            if (!(std::isfinite(x) && x >= 0)) {
+                throw py::value_error(std::string(name) + " must be finite and non-negative");
+            }
+        }
+        if (raw.size() == 1) {
+            return std::vector<Real>(intervals, raw[0]);
+        }
+        if (raw.size() == intervals) {
+            return raw;
+        }
+        std::vector<Real> result(intervals);
+        for (size_t i = 0; i < intervals; ++i) {
+            result[i] = rms_endpoints ? std::sqrt(0.5 * (raw[i] * raw[i] + raw[i + 1] * raw[i + 1]))
+                                      : 0.5 * (raw[i] + raw[i + 1]);
+        }
+        return result;
+    }
+
+    PyNumericalElectrons cast_numerical_electrons(py::object const& electrons) {
+        if (py::isinstance<PyFlatElectrons>(electrons)) {
+            return electrons.cast<PyFlatElectrons>();
+        }
+        if (py::isinstance<PyPowerLawElectrons>(electrons)) {
+            return electrons.cast<PyPowerLawElectrons>();
+        }
+        if (py::isinstance<PyCutoffPowerLawElectrons>(electrons)) {
+            return electrons.cast<PyCutoffPowerLawElectrons>();
+        }
+        if (py::isinstance<PyElectronDistribution>(electrons)) {
+            return electrons.cast<PyElectronDistribution>();
+        }
+        throw py::type_error("electrons must be FlatElectrons, PowerLawElectrons, "
+                             "CutoffPowerLawElectrons, or ElectronDistribution");
+    }
+} // namespace
+
 // ---------------------------------------------------------------------------
 // Callback exception guard: user Python callbacks are invoked deep inside
 // noexcept ODE right-hand sides, where a propagating py::error_already_set
@@ -251,6 +316,7 @@ static py::handle native_func_type() {
 }
 
 PYBIND11_MODULE(VegasAfterglowC, m) {
+    m.attr("reverse_shock_solver_policy") = "finite_seed_strict_v1";
     xt::import_numpy();
 
     // Build-flavor introspection: golden baselines must be generated with the
@@ -503,6 +569,172 @@ PYBIND11_MODULE(VegasAfterglowC, m) {
         .def_property_readonly("gamma", [](PyElectronDistribution const& e) { return XTArray(e.config.shape->gamma); })
         .def_property_readonly("shape", [](PyElectronDistribution const& e) { return XTArray(e.config.shape->shape); })
         .def("__repr__", &PyElectronDistribution::repr);
+
+    py::class_<PyElectronEvolution>(m, "ElectronEvolutionResult",
+                                    "Comoving one-zone electron-distribution snapshots.")
+        .def_readonly("time", &PyElectronEvolution::time)
+        .def_readonly("gamma", &PyElectronEvolution::gamma)
+        .def_readonly("distribution", &PyElectronEvolution::distribution)
+        .def_readonly("number", &PyElectronEvolution::number)
+        .def_readonly("kinetic_energy", &PyElectronEvolution::kinetic_energy)
+        .def_readonly("escaped_lower", &PyElectronEvolution::escaped_lower)
+        .def("final_electrons",
+             [](PyElectronEvolution const& result, std::string const& normalization) {
+                 return result.final_electrons(parse_electron_normalization(normalization));
+             },
+             py::kw_only(), py::arg("normalization") = "number",
+             "Return the last snapshot as an instantaneous ElectronDistribution. Number normalization is the "
+             "safe default because energy normalization would restore radiated energy.")
+        .def("__repr__", &PyElectronEvolution::repr);
+
+    py::class_<PyElectronCooling>(
+        m, "ElectronCooling",
+        "Optional comoving one-zone kinetic evolution for arbitrary isotropic electron distributions.")
+        .def(py::init<bool, bool, bool, Real, Real, size_t, bool>(),
+             py::kw_only(), py::arg("synchrotron") = true, py::arg("inverse_compton") = false,
+             py::arg("adiabatic") = false, py::arg("compton_y") = 0,
+             py::arg("max_step_fraction") = 0.5, py::arg("max_substeps") = 4096,
+             py::arg("accumulate_at_gamma_min") = true)
+        .def_property_readonly("synchrotron", [](PyElectronCooling const& c) { return c.config.synchrotron; })
+        .def_property_readonly("inverse_compton",
+                               [](PyElectronCooling const& c) { return c.config.inverse_compton; })
+        .def_property_readonly("adiabatic", [](PyElectronCooling const& c) { return c.config.adiabatic; })
+        .def_property_readonly("compton_y", [](PyElectronCooling const& c) { return c.config.compton_y; })
+        .def(
+            "evolve",
+            [](PyElectronCooling const& cooling, py::object electrons, PyArray const& times,
+               py::object magnetic_field, py::object expansion_rate, py::object photon_energy_density,
+               py::object injection, Real escape_time) {
+                if (times.size() < 2) {
+                    throw py::value_error("times must contain at least two samples");
+                }
+                for (size_t i = 0; i < times.size(); ++i) {
+                    if (!(std::isfinite(times(i)) && times(i) >= 0 &&
+                          (i == 0 || times(i) > times(i - 1)))) {
+                        throw py::value_error("times must be finite, non-negative, and strictly increasing");
+                    }
+                }
+                if (!(escape_time > 0) || std::isnan(escape_time)) {
+                    throw py::value_error("escape_time must be positive or infinity");
+                }
+
+                PyNumericalElectrons electron_model = cast_numerical_electrons(electrons);
+                auto const& electron_config = numerical_electron_config(electron_model);
+                ElectronKineticState state(electron_config.shape);
+                const size_t nt = times.size();
+                const size_t ng = state.gamma.size();
+                auto fields = interval_series(magnetic_field, nt, "magnetic_field", true);
+                auto expansion = interval_series(expansion_rate, nt, "expansion_rate");
+                auto photon_energy = interval_series(photon_energy_density, nt, "photon_energy_density");
+
+                py::array injection_array;
+                py::array_t<Real, py::array::c_style | py::array::forcecast> injection_values;
+                const bool injection_callable = !injection.is_none() && PyCallable_Check(injection.ptr());
+                if (!injection.is_none() && !injection_callable) {
+                    injection_array = py::array::ensure(injection);
+                    if (!injection_array || (injection_array.ndim() != 1 && injection_array.ndim() != 2)) {
+                        throw py::value_error("injection must be callable, a gamma vector, or an interval-by-gamma array");
+                    }
+                    injection_values =
+                        py::array_t<Real, py::array::c_style | py::array::forcecast>::ensure(injection_array);
+                    if (!injection_values) {
+                        throw py::type_error("injection must be convertible to floating point");
+                    }
+                    if ((injection_array.ndim() == 1 && static_cast<size_t>(injection_array.shape(0)) != ng) ||
+                        (injection_array.ndim() == 2 &&
+                         (static_cast<size_t>(injection_array.shape(0)) != nt - 1 ||
+                          static_cast<size_t>(injection_array.shape(1)) != ng))) {
+                        throw py::value_error("injection shape must be (n_gamma,) or (len(times)-1, n_gamma)");
+                    }
+                }
+
+                py::array_t<Real> gamma_python(ng);
+                auto gamma_view = gamma_python.mutable_unchecked<1>();
+                for (size_t g = 0; g < ng; ++g) {
+                    gamma_view(g) = state.gamma(g);
+                }
+
+                PyElectronEvolution result;
+                result.time = xt::zeros<Real>({nt});
+                result.gamma = state.gamma;
+                result.distribution = xt::zeros<Real>({nt, ng});
+                result.number = xt::zeros<Real>({nt});
+                result.kinetic_energy = xt::zeros<Real>({nt});
+                result.normalization = electron_config.normalization;
+                const Real decades = std::log10(electron_config.shape->gamma_max /
+                                                electron_config.shape->gamma_min);
+                result.samples_per_decade = decades > 0
+                    ? std::max<size_t>(4, static_cast<size_t>(std::llround((ng - 1) / decades)))
+                    : 32;
+
+                auto save_snapshot = [&](size_t index) {
+                    Array density = state.distribution();
+                    result.time(index) = times(index);
+                    result.number(index) = state.number();
+                    result.kinetic_energy(index) = state.kinetic_energy_moment();
+                    for (size_t g = 0; g < ng; ++g) {
+                        result.distribution(index, g) = density(g);
+                    }
+                };
+                save_snapshot(0);
+
+                for (size_t interval = 0; interval + 1 < nt; ++interval) {
+                    Array source;
+                    if (injection_callable) {
+                        const Real midpoint = 0.5 * (times(interval) + times(interval + 1));
+                        py::object evaluated = injection(gamma_python, midpoint);
+                        py::array returned = py::array::ensure(evaluated);
+                        if (!returned || returned.ndim() != 1 ||
+                            static_cast<size_t>(returned.shape(0)) != ng) {
+                            throw py::value_error("injection callable must return one value per gamma sample");
+                        }
+                        auto converted =
+                            py::array_t<Real, py::array::c_style | py::array::forcecast>::ensure(returned);
+                        if (!converted) {
+                            throw py::type_error("injection callable output must be convertible to floating point");
+                        }
+                        source = Array::from_shape({ng});
+                        auto view = converted.unchecked<1>();
+                        for (size_t g = 0; g < ng; ++g) {
+                            source(g) = view(g) / unit::sec;
+                        }
+                    } else if (!injection.is_none()) {
+                        source = Array::from_shape({ng});
+                        if (injection_array.ndim() == 1) {
+                            auto view = injection_values.unchecked<1>();
+                            for (size_t g = 0; g < ng; ++g) {
+                                source(g) = view(g) / unit::sec;
+                            }
+                        } else {
+                            auto view = injection_values.unchecked<2>();
+                            for (size_t g = 0; g < ng; ++g) {
+                                source(g) = view(interval, g) / unit::sec;
+                            }
+                        }
+                    }
+
+                    const Real dt = (times(interval + 1) - times(interval)) * unit::sec;
+                    advance_electron_distribution(
+                        state, dt, fields[interval] * unit::Gauss, cooling.config,
+                        expansion[interval] / unit::sec,
+                        photon_energy[interval] * unit::erg / unit::cm3, source,
+                        std::isfinite(escape_time) ? escape_time * unit::sec : con::inf);
+                    save_snapshot(interval + 1);
+                }
+                result.escaped_lower = state.escaped_lower;
+                return result;
+            },
+            py::arg("electrons"), py::arg("times"), py::arg("magnetic_field"), py::kw_only(),
+            py::arg("expansion_rate") = 0, py::arg("photon_energy_density") = 0,
+            py::arg("injection") = py::none(), py::arg("escape_time") = con::inf,
+            R"doc(Evolve dN/dgamma in comoving time.
+
+times and escape_time are seconds, magnetic_field is gauss, expansion_rate is s^-1,
+and photon_energy_density is erg cm^-3. Arrays may describe intervals (len(times)-1)
+or sample endpoints (len(times)); endpoint magnetic fields are RMS-averaged because
+synchrotron losses scale as B^2. A callable injection receives (gamma, midpoint_time)
+and returns dN/(dgamma dt) per second.)doc")
+        .def("__repr__", &PyElectronCooling::repr);
 
     // Radiation bindings
     py::class_<PyRadiation>(m, "Radiation")

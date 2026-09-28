@@ -12,6 +12,7 @@
 **/*.npz
 !tests/python/golden/*.npz
 **/.DS_Store
+**/._*
 **/*.pyc
 **/__pycache__/
 **/*.dSYM
@@ -71,6 +72,7 @@ docs/source/_static/css/
 
 # Local exploratory notebooks under script/ (PNGs/PDFs already ignored above)
 script/*.ipynb
+!script/arbitrary_electron_playground.ipynb
 script/*.gif
 script/bench_*.sh
 script/*.h5

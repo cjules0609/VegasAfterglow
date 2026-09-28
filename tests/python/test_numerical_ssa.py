@@ -88,6 +88,12 @@ def test_optical_depth_diagnostic_and_transferred_spectrum():
             p=2.3, gamma_min=10, gamma_max=1e8, gamma_cut=1e5, normalization="number"
         ),
         ElectronDistribution(
+            function=lambda gamma: gamma**-2.3,
+            gamma_min=10,
+            gamma_max=1e8,
+            normalization="number",
+        ),
+        ElectronDistribution(
             function=lambda gamma: np.exp(-0.5 * (np.log(gamma / 1e4) / 0.3) ** 2),
             gamma_min=10,
             gamma_max=1e7,
@@ -112,7 +118,16 @@ def test_optical_depth_diagnostic_and_transferred_spectrum():
             normalization="number",
         ),
     ],
-    ids=["flat", "powerlaw", "cutoff", "pileup", "broken", "quasi_thermal", "internal_zero"],
+    ids=[
+        "flat",
+        "powerlaw",
+        "cutoff",
+        "custom_powerlaw",
+        "pileup",
+        "broken",
+        "quasi_thermal",
+        "internal_zero",
+    ],
 )
 def test_supported_shapes_have_finite_nonnegative_ssa(electrons):
     details = _model(electrons, ssa=True).details(1e2, 1e6)

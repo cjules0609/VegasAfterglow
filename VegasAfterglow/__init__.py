@@ -11,7 +11,9 @@ from .native import NativeFunc, gil_free
 # Core physics types (always available)
 from .types import (
     CutoffPowerLawElectrons,
+    ElectronCooling,
     ElectronDistribution,
+    ElectronEvolutionResult,
     ISM,
     Ejecta,
     FitResult,
@@ -73,7 +75,9 @@ __all__ = [
     "FlatElectrons",
     "PowerLawElectrons",
     "CutoffPowerLawElectrons",
+    "ElectronCooling",
     "ElectronDistribution",
+    "ElectronEvolutionResult",
     "Observer",
     "Magnetar",
     # Utilities

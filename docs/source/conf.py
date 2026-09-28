@@ -38,7 +38,7 @@ author = 'VegasAfterglow Team'
 # back to "0.0.0".
 from importlib.metadata import version as _get_version, PackageNotFoundError
 try:
-    release = _get_version("VegasAfterglow")
+    release = _get_version("VegasAfterglow") or "0.0.0"
     # ``release`` is the full PEP 440 string (e.g. ``2.0.4.dev9+g3623d41``).
     # Strip the dev / local-version suffix so the sphinx-rtd-theme sidebar
     # reads a clean ``X.Y.Z``. ``version`` is what the theme shows in the
@@ -68,7 +68,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ['**/._*']
 
 # Enable todos
 todo_include_todos = True
@@ -168,10 +168,11 @@ breathe_doxygen_mapping = {
     'struct': 'struct',
 }
 
-# Improved debug options for troubleshooting
-breathe_debug_trace_directives = True
-breathe_debug_trace_doxygen_ids = True
-breathe_debug_trace_qualification = True
+# Keep normal documentation builds quiet; enable these locally only when
+# diagnosing Breathe/Doxygen rendering.
+breathe_debug_trace_directives = False
+breathe_debug_trace_doxygen_ids = False
+breathe_debug_trace_qualification = False
 
 # Enhanced options for template and inline function documentation
 breathe_template_relations = True

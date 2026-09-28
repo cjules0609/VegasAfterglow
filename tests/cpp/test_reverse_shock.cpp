@@ -107,3 +107,27 @@ BOOST_AUTO_TEST_CASE(pair_system_physical_invariants) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_CASE(reverse_shock_cold_initial_shell_has_finite_geometry) {
+    GaussianJet jet(0.1, 1e53 * unit::erg, 300, false, 30 * unit::sec);
+    ISM medium(1e-6 / unit::cm3);
+    RadParams rad;
+    FRShockEqn eqn(medium, jet, 0.0, 0.39, rad, rad);
+    decltype(eqn)::State state;
+    eqn.set_init_state(state, 1e-9 * unit::sec);
+    BOOST_CHECK_EQUAL(compute_rel_Gamma(eqn.Gamma4, state.Gamma), 1.0);
+    BOOST_CHECK_GT(state.x3, 0);
+    BOOST_CHECK_GT(state.m3, 0);
+    BOOST_CHECK_LT(state.m3 / state.m4, 1e-6);
+    BOOST_CHECK_EQUAL(state.U3_th, 0);
+}
+
+BOOST_AUTO_TEST_CASE(reverse_shock_all_cold_row_needs_no_early_extrapolation) {
+    RadParams rad;
+    Shock shock(1, 1, 4, rad);
+    reverse_shock_early_extrap(0, 0, shock);
+    for (size_t k = 0; k < 4; ++k) {
+        BOOST_CHECK_EQUAL(shock.Gamma_th(0, 0, k), 1);
+        BOOST_CHECK_EQUAL(shock.B(0, 0, k), 0);
+    }
+}

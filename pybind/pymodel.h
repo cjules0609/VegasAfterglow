@@ -357,6 +357,15 @@ using PyNumericalElectrons =
 [[nodiscard]] char const* electron_normalization_name(ElectronNormalization normalization) noexcept;
 [[nodiscard]] NumericalElectronConfig const& numerical_electron_config(PyNumericalElectrons const& electrons);
 
+/** User-facing configuration for explicit comoving kinetic evolution. */
+struct PyElectronCooling {
+    PyElectronCooling(bool synchrotron, bool inverse_compton, bool adiabatic, Real compton_y,
+                      Real max_step_fraction, size_t max_substeps, bool accumulate_at_gamma_min);
+
+    ElectronCoolingConfig config;
+    [[nodiscard]] std::string repr() const;
+};
+
 /**
  * <!-- ************************************************************************************** -->
  * @class PyRadiation
@@ -472,6 +481,21 @@ void convert_unit_jet(JetVariant& jet);
 void convert_unit_medium(MediumVariant& medium);
 
 using XTArray = xt::xarray<Real>;
+
+/** Snapshots returned by ElectronCooling.evolve; ordinates remain dN/dgamma. */
+struct PyElectronEvolution {
+    XTArray time;
+    XTArray gamma;
+    XTArray distribution;
+    XTArray number;
+    XTArray kinetic_energy;
+    Real escaped_lower{0};
+    ElectronNormalization normalization{ElectronNormalization::number};
+    size_t samples_per_decade{32};
+
+    [[nodiscard]] PyElectronDistribution final_electrons(ElectronNormalization output_normalization) const;
+    [[nodiscard]] std::string repr() const;
+};
 
 /**
  * <!-- ************************************************************************************** -->

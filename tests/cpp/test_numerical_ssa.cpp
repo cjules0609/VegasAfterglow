@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(flat_hard_boundaries_match_distributional_derivative) {
         const Real by_parts = interpolated_K(*table, u);
         BOOST_TEST_MESSAGE("flat-boundary check u=" << u << " gamma=[" << gamma_min << ", " << gamma_max
                                                      << "] relative error=" << by_parts / direct - 1);
-        // The independently evaluated high-precision check agrees to 4e-14; this sampled-grid comparison also
+        // The generator's independent 50-digit check enforces 1e-30 agreement; this sampled-grid comparison also
         // includes the production quadrature error near an exponentially sharp endpoint.
         BOOST_CHECK_SMALL(by_parts / direct - 1, 3e-4);
     }
@@ -140,6 +140,8 @@ BOOST_AUTO_TEST_CASE(optical_depth_column_and_fixed_u_magnetic_scaling) {
     const Real tau1 = p1.compute_optical_depth(compute_syn_freq(1, B1) * u);
     const Real tau2 = p2.compute_optical_depth(compute_syn_freq(1, B1) * u);
     const Real tauB = pB.compute_optical_depth(compute_syn_freq(1, B2) * u);
+    BOOST_TEST_MESSAGE("column scaling ratio=" << tau2 / tau1 << ", expected=3");
+    BOOST_TEST_MESSAGE("fixed-u magnetic scaling ratio=" << tauB / tau1 << ", expected=" << B1 / B2);
     BOOST_CHECK_SMALL(tau2 / tau1 - 3, 3e-12);
     BOOST_CHECK_SMALL(tauB / tau1 - B1 / B2, 3e-12);
 }
@@ -156,10 +158,13 @@ BOOST_AUTO_TEST_CASE(power_law_absorption_asymptotes) {
     const Real nu1 = compute_syn_freq(1e3, B1);
     const Real nu2 = compute_syn_freq(1e6, B1);
     const Real nu_slope = slope(nu1, ph1.compute_optical_depth(nu1), nu2, ph1.compute_optical_depth(nu2));
+    BOOST_TEST_MESSAGE("power-law tau frequency slope=" << nu_slope << ", expected=" << -(p + 4) / 2);
     BOOST_CHECK_SMALL(nu_slope + (p + 4) / 2, 3e-3);
 
     const Real nu_fixed = compute_syn_freq(1e5, B1);
     const Real magnetic_ratio = ph2.compute_optical_depth(nu_fixed) / ph1.compute_optical_depth(nu_fixed);
+    BOOST_TEST_MESSAGE("power-law tau magnetic exponent=" << std::log(magnetic_ratio) / std::log(B2 / B1)
+                                                            << ", expected=" << (p + 2) / 2);
     BOOST_CHECK_SMALL(magnetic_ratio / std::pow(B2 / B1, (p + 2) / 2) - 1, 3e-3);
 }
 
@@ -178,16 +183,20 @@ BOOST_AUTO_TEST_CASE(transfer_limits_are_stable) {
     NumericalSynchrotron thin(table, thin_e, B, false);
     NumericalSynchrotron thin_ssa(table, thin_e, B, true);
     const Real thin_tau = thin_ssa.compute_optical_depth(nu);
+    const Real thin_transfer_error = thin_ssa.compute_I_nu(nu) / thin.compute_I_nu(nu) - 1;
+    BOOST_TEST_MESSAGE("thin transfer tau=" << thin_tau << ", relative error=" << thin_transfer_error);
     BOOST_CHECK_CLOSE(thin_tau, 1e-10, 1e-8);
-    BOOST_CHECK_SMALL(thin_ssa.compute_I_nu(nu) / thin.compute_I_nu(nu) - 1, 1e-9);
+    BOOST_CHECK_SMALL(thin_transfer_error, 1e-9);
 
     const Real thick_column = (1e20 / unit::cm2) * 1e8 / trial_tau;
     NumericalElectronDistribution thick_e(shape, ElectronNormalization::number, thick_column, 2, 0.1, 1);
     NumericalSynchrotron thick(table, thick_e, B, false);
     NumericalSynchrotron thick_ssa(table, thick_e, B, true);
     const Real thick_tau = thick_ssa.compute_optical_depth(nu);
+    const Real thick_transfer_error = thick_ssa.compute_I_nu(nu) / (thick.compute_I_nu(nu) / thick_tau) - 1;
+    BOOST_TEST_MESSAGE("thick transfer tau=" << thick_tau << ", relative error=" << thick_transfer_error);
     BOOST_CHECK_CLOSE(thick_tau, 1e8, 1e-8);
-    BOOST_CHECK_SMALL(thick_ssa.compute_I_nu(nu) / (thick.compute_I_nu(nu) / thick_tau) - 1, 2e-12);
+    BOOST_CHECK_SMALL(thick_transfer_error, 2e-12);
 }
 
 BOOST_AUTO_TEST_CASE(optically_thick_power_law_slope_is_five_halves) {
@@ -204,6 +213,7 @@ BOOST_AUTO_TEST_CASE(optically_thick_power_law_slope_is_five_halves) {
                                          (1e20 / unit::cm2) * 1e6 / min_tau, 2, 0.1, 1);
     NumericalSynchrotron photons(table, thick, B, true);
     const Real spectral_slope = slope(nu1, photons.compute_I_nu(nu1), nu2, photons.compute_I_nu(nu2));
+    BOOST_TEST_MESSAGE("optically thick power-law intensity slope=" << spectral_slope << ", expected=2.5");
     BOOST_CHECK_SMALL(spectral_slope - 2.5, 4e-3);
 }
 
@@ -219,7 +229,9 @@ BOOST_AUTO_TEST_CASE(deep_low_frequency_thick_slope_is_two) {
     NumericalElectronDistribution thick(shape, ElectronNormalization::number,
                                          (1e20 / unit::cm2) * 1e6 / min_tau, 2, 0.1, 1);
     NumericalSynchrotron photons(table, thick, B, true);
-    BOOST_CHECK_SMALL(slope(nu1, photons.compute_I_nu(nu1), nu2, photons.compute_I_nu(nu2)) - 2, 2e-12);
+    const Real spectral_slope = slope(nu1, photons.compute_I_nu(nu1), nu2, photons.compute_I_nu(nu2));
+    BOOST_TEST_MESSAGE("deep-low-frequency intensity slope=" << spectral_slope << ", expected=2");
+    BOOST_CHECK_SMALL(spectral_slope - 2, 2e-12);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

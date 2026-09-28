@@ -34,7 +34,9 @@ struct SynElectrons {
     /**
      * <!-- ************************************************************************************** -->
      * @brief Calculates the comoving electron number (PER SOLID ANGLE) spectrum at a specific Lorentz factor.
-     * @details Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor.
+     * @details Includes corrections for inverse Compton cooling effects above the cooling Lorentz factor. This
+     *          distribution supplies electron/SSC diagnostics; the standard synchrotron photon spectrum is the
+     *          independent Granot-Sari-style SmoothPowerLawSyn fit and is not obtained by convolving this function.
      * @param gamma Electron Lorentz factor
      * @return Electron number per solid angle at the specified Lorentz factor
      * <!-- ************************************************************************************** -->
@@ -74,9 +76,9 @@ static_assert(SynElectronModel<SynElectrons>,
  * <!-- ************************************************************************************** -->
  */
 
-/// The active synchrotron photon model — one-line switch. Any replacement must satisfy the
-/// SynPhotonModel concept (syn-concepts.h); conformance is static_assert'ed in each model's
-/// header, so the compiler enforces the contract instead of comment discipline.
+/// The active standard synchrotron photon model. SmoothPowerLawSyn is a Granot-Sari-style fitted photon
+/// prescription, not a direct convolution of SynElectrons::compute_N_gamma. Any replacement must satisfy the
+/// SynPhotonModel concept (syn-concepts.h); conformance is static_assert'ed in each model's header.
 using SynPhotons = SmoothPowerLawSyn;
 
 /// Type alias for 3D grid of synchrotron photons

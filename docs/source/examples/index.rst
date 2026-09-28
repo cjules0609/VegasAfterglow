@@ -11,5 +11,6 @@ Examples
    models
    internal_quantities
    electron_distributions
+   electron_cooling
    sky_image
    introspection

@@ -12,7 +12,9 @@
 /**
  * <!-- ************************************************************************************** -->
  * @struct SmoothPowerLawSyn
- * @brief Represents synchrotron photons in the comoving frame and provides spectral functions.
+ * @brief Granot-Sari-style smooth broken-power-law fit for standard synchrotron photons in the comoving frame.
+ * @details This is an analytic photon-spectrum prescription. It is not the full single-electron-kernel convolution
+ *          of SynElectrons::compute_N_gamma; NumericalSynchrotron provides that distinct local calculation.
  * <!-- ************************************************************************************** -->
  */
 struct SmoothPowerLawSyn {

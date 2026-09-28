@@ -72,6 +72,26 @@ BOOST_AUTO_TEST_CASE(characteristic_frequency_scales_as_B_gamma_squared) {
     BOOST_CHECK_CLOSE(peak2 / peak1, (B2 / B1) * 4, 0.3);
 }
 
+BOOST_AUTO_TEST_CASE(characteristic_frequency_is_not_the_single_electron_kernel_peak) {
+    constexpr Real gamma_min = 100;
+    constexpr Real gamma_max = 101;
+    constexpr Real B = 0.3 * unit::Gauss;
+    auto shape = sample_electron_shape(FlatElectronShape(gamma_min, gamma_max), 128);
+    auto table = build_numerical_synchrotron_table(shape, 64);
+    NumericalElectronDistribution electrons(shape, ElectronNormalization::number, 1e20, 2, 0.1, 1);
+    NumericalSynchrotron photons(table, electrons, B);
+
+    const Real gamma_mid = std::sqrt(gamma_min * gamma_max);
+    const Real nu_characteristic = compute_syn_freq(gamma_mid, B);
+    const Real nu_peak = peak_frequency(photons, 0.05 * nu_characteristic, 2 * nu_characteristic);
+
+    // compute_syn_freq returns the conventional critical frequency. The full F(nu/nu_critical) kernel peaks
+    // near x=0.286, so a plotted I_nu maximum must not be relabeled as a lower numerical nu_m.
+    BOOST_TEST_MESSAGE("narrow-distribution kernel peak / characteristic frequency = "
+                       << nu_peak / nu_characteristic);
+    BOOST_CHECK_CLOSE(nu_peak / nu_characteristic, 0.2858, 1.0);
+}
+
 BOOST_AUTO_TEST_CASE(low_frequency_slope) {
     auto shape = sample_electron_shape(FlatElectronShape(100, 1e4));
     auto table = build_numerical_synchrotron_table(shape);

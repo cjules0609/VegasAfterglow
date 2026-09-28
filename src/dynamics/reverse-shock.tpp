@@ -5,6 +5,7 @@
 //                 \_/  \___| \__, | \__,_||___/ /_/   \_\|_|   \__|\___||_|   \__, ||_| \___/  \_/\_/
 //                            |___/                                            |___/
 #pragma once
+#include <stdexcept>
 #include "reverse-shock.hpp"
 #include "shock.h"
 
@@ -342,7 +343,11 @@ void FRShockEqn<Ejecta, Medium>::set_init_state(State& state, Real t0) const noe
                                           rad_fwd.radiative ? rad_fwd.eps_e : 0.0);
 
     const Real Gamma34 = compute_rel_Gamma(Gamma4, state.Gamma);
-    if (Gamma34 > 1 && state.m4 > 0 && state.x4 > 0) {
+    // Seed the shell geometry even when Gamma34 rounds to exactly one.
+    // A zero-width shell makes dx3/x3 singular as penetration first starts,
+    // driving adaptive integration down to time's floating-point resolution.
+    // The seed carries no thermal energy when the relative motion is zero.
+    if (state.m4 > 0 && state.x4 > 0) {
         constexpr Real seed_frac = 1e-8;
         const Real sigma = compute_shell_sigma(state);
         const Real comp_ratio = compute_4vel_jump(Gamma34, sigma);
@@ -435,6 +440,13 @@ inline void reverse_shock_early_extrap(size_t i, size_t j, Shock& shock) {
         }
     }
 
+    // A weak RS can stay cold over the complete output interval. Check this
+    // before indexing idx_cut (which then equals t_size) or taking log(0).
+    constexpr size_t offset = 2;
+    if (idx_cut == 0 || idx_cut + offset >= t_size || idx_cut >= shock.injection_idx(i, j)) {
+        return;
+    }
+
     Real gamma_slope = 0;
     Real B_slope = 0;
     Real N_p_slope = 0;
@@ -442,8 +454,6 @@ inline void reverse_shock_early_extrap(size_t i, size_t j, Shock& shock) {
     const Real log2_Gamma_th = fast_log2(shock.Gamma_th(i, j, idx_cut) - 1);
     const Real log2_B = fast_log2(shock.B(i, j, idx_cut));
     const Real log2_N_p = fast_log2(shock.N_p(i, j, idx_cut));
-
-    constexpr size_t offset = 2;
 
     if (idx_cut == 0 || idx_cut >= t_size - offset || idx_cut >= shock.injection_idx(i, j)) {
         return;
@@ -553,16 +563,28 @@ void grid_solve_shock_pair(size_t i, size_t j, View const& t, Shock& shock_fwd, 
     for (size_t steps = 0; stepper.current_time() <= t.back();) {
         stepper.do_step(eqn);
         if (++steps > defaults::solver::max_ode_steps) {
-            std::fprintf(stderr, "Warning: reverse shock ODE exceeded %zu steps at (i=%zu, j=%zu), giving up\n",
-                         defaults::solver::max_ode_steps, i, j);
-            break;
+            std::fprintf(stderr,
+                         "Warning: reverse shock ODE exceeded %zu steps at (i=%zu, j=%zu), "
+                         "Gamma4=%.17g, Gamma=%.17g, theta=%.17g, t=%.17g, dt=%.17g, "
+                         "t_dec=%.17g, T0=%.17g, giving up\n",
+                         defaults::solver::max_ode_steps, i, j, static_cast<double>(eqn.Gamma4),
+                         static_cast<double>(stepper.current_state().Gamma), static_cast<double>(eqn.theta0),
+                         static_cast<double>(stepper.current_time()), static_cast<double>(stepper.current_time_step()),
+                         static_cast<double>(t_dec), static_cast<double>(eqn.ejecta.T0));
+            throw std::runtime_error("reverse shock ODE exceeded maximum step count; incomplete simulation rejected");
         }
         if (stepper.current_time() + stepper.current_time_step() == stepper.current_time()) {
             // dt has collapsed below one ulp of t: time can no longer advance, so
             // spinning until the step cap would only burn cycles. Fail fast instead.
             std::fprintf(stderr,
-                         "Warning: reverse shock ODE stalled (dt below time ulp) at (i=%zu, j=%zu), giving up\n", i, j);
-            break;
+                         "Warning: reverse shock ODE stalled (dt below time ulp) at (i=%zu, j=%zu), "
+                         "Gamma4=%.17g, Gamma=%.17g, theta=%.17g, t=%.17g, dt=%.17g, "
+                         "t_dec=%.17g, T0=%.17g, giving up\n",
+                         i, j, static_cast<double>(eqn.Gamma4), static_cast<double>(stepper.current_state().Gamma),
+                         static_cast<double>(eqn.theta0), static_cast<double>(stepper.current_time()),
+                         static_cast<double>(stepper.current_time_step()), static_cast<double>(t_dec),
+                         static_cast<double>(eqn.ejecta.T0));
+            throw std::runtime_error("reverse shock ODE stalled; incomplete simulation rejected");
         }
         if (reverse_shock_crossing && eqn.crossing_complete(stepper.current_state(), stepper.current_time())) {
             // The crossing ended within this step. Freeze the crossing state at the

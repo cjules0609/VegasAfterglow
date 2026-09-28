@@ -16,6 +16,7 @@
 #include "environment/jet.h"
 #include "environment/medium.h"
 #include "radiation/inverse-compton.h"
+#include "radiation/electron-cooling.h"
 #include "radiation/electron-distribution.h"
 #include "radiation/numerical-synchrotron.h"
 #include "radiation/prompt.h"

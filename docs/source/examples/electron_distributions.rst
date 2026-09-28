@@ -4,7 +4,9 @@ Numerical Electron Distributions
 VegasAfterglow can calculate optically thin or self-absorbed synchrotron emission from a bounded,
 instantaneous electron column distribution. The supplied distribution is the
 actual emitting population :math:`d\Sigma_e/d\gamma`; it is not an injection
-function and is not automatically cooled or broken at :math:`\gamma_c`.
+function and is not automatically cooled or broken at :math:`\gamma_c`. Use
+:doc:`electron_cooling` when an injected shape should first undergo explicit
+one-zone kinetic evolution.
 
 The built-in flat distribution can be configured as follows:
 
@@ -39,7 +41,7 @@ Numerical electron distributions currently have the following limitations:
 * ``ssc=True`` and ``kn=True`` are rejected because the existing SSC and IC
   cooling algorithms assume the standard afterglow electron model;
 * the distribution need not contain :math:`\gamma_m`, and :math:`\gamma_c` does
-  not modify it;
+  not modify it; explicit ``ElectronCooling`` evolution is opt-in;
 * the legacy radiative blast-wave efficiency still uses ``p``, ``eps_e``, and
   ``xi_e``. Numerical electrons change the instantaneous radiation calculation,
   not that dynamics approximation.

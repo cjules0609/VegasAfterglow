@@ -126,6 +126,59 @@ NumericalElectronConfig const& numerical_electron_config(PyNumericalElectrons co
     return std::visit([](auto const& model) -> NumericalElectronConfig const& { return model.config; }, electrons);
 }
 
+PyElectronCooling::PyElectronCooling(bool synchrotron, bool inverse_compton, bool adiabatic, Real compton_y,
+                                     Real max_step_fraction, size_t max_substeps,
+                                     bool accumulate_at_gamma_min) {
+    config.synchrotron = synchrotron;
+    config.inverse_compton = inverse_compton;
+    config.adiabatic = adiabatic;
+    config.compton_y = compton_y;
+    config.max_step_fraction = max_step_fraction;
+    config.max_substeps = max_substeps;
+    config.accumulate_at_gamma_min = accumulate_at_gamma_min;
+    if (!(std::isfinite(compton_y) && compton_y >= 0)) {
+        throw std::invalid_argument("compton_y must be finite and non-negative");
+    }
+    if (!(std::isfinite(max_step_fraction) && max_step_fraction > 0)) {
+        throw std::invalid_argument("max_step_fraction must be finite and positive");
+    }
+    if (max_substeps == 0) {
+        throw std::invalid_argument("max_substeps must be positive");
+    }
+}
+
+std::string PyElectronCooling::repr() const {
+    char buf[256];
+    snprintf(buf, sizeof(buf),
+             "ElectronCooling(synchrotron=%s, inverse_compton=%s, adiabatic=%s, compton_y=%.6g)",
+             config.synchrotron ? "True" : "False", config.inverse_compton ? "True" : "False",
+             config.adiabatic ? "True" : "False", config.compton_y);
+    return buf;
+}
+
+PyElectronDistribution PyElectronEvolution::final_electrons(ElectronNormalization output_normalization) const {
+    if (time.size() == 0 || gamma.dimension() != 1 || distribution.dimension() != 2 ||
+        distribution.shape()[0] != time.size() || distribution.shape()[1] != gamma.size()) {
+        throw std::runtime_error("electron evolution result is empty or inconsistent");
+    }
+    Array gamma_native = Array::from_shape({gamma.size()});
+    Array values = Array::from_shape({gamma.size()});
+    const size_t last = time.size() - 1;
+    for (size_t i = 0; i < gamma.size(); ++i) {
+        gamma_native(i) = gamma(i);
+        values(i) = distribution(last, i);
+    }
+    return PyElectronDistribution(sample_electron_shape(gamma_native, values), output_normalization,
+                                  samples_per_decade);
+}
+
+std::string PyElectronEvolution::repr() const {
+    char buf[192];
+    snprintf(buf, sizeof(buf), "ElectronEvolutionResult(n_times=%zu, n_gamma=%zu, escaped_lower=%.6g)",
+             time.size(), gamma.size(), escaped_lower);
+    return buf;
+}
+
 NumericalRadiationGrid::NumericalRadiationGrid(Shock const& shock, NumericalElectronConfig const& config,
                                                RadParams const& rad, bool ssa_enabled) {
     const auto [phi_size, theta_size, time_size] = shock.shape();

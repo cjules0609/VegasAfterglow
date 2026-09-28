@@ -60,6 +60,7 @@ set(AFTERGLOW_SOURCES
   src/core/physics.cpp
   src/dynamics/shock.cpp
   src/radiation/inverse-compton.cpp
+  src/radiation/electron-cooling.cpp
   src/radiation/electron-distribution.cpp
   src/radiation/numerical-synchrotron.cpp
   src/radiation/power-law-syn.cpp
@@ -108,6 +109,7 @@ if(AFTERGLOW_TESTS)
     src/core/physics.cpp
     src/dynamics/shock.cpp
     src/radiation/inverse-compton.cpp
+    src/radiation/electron-cooling.cpp
     src/radiation/electron-distribution.cpp
     src/radiation/numerical-synchrotron.cpp
     src/radiation/power-law-syn.cpp
@@ -133,6 +135,7 @@ if(AFTERGLOW_TESTS)
     tests/cpp/test_power_law_syn.cpp
     tests/cpp/test_reverse_shock.cpp
     tests/cpp/test_inverse_compton.cpp
+    tests/cpp/test_electron_cooling.cpp
     tests/cpp/test_synchrotron_kernel.cpp
     tests/cpp/test_electron_distribution.cpp
     tests/cpp/test_numerical_synchrotron.cpp
