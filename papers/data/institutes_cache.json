@@ -3047,6 +3047,39 @@
   "homepage": "https://www.ile.osaka-u.ac.jp",
   "logo": "https://www.google.com/s2/favicons?domain=ile.osaka-u.ac.jp&sz=64"
  },
+ "I134820265": {
+  "id": "I134820265",
+  "name": "Consejo Superior de Investigaciones Cient\u00edficas",
+  "ror": "https://ror.org/02gfc7t72",
+  "country": "Spain",
+  "city": "Madrid",
+  "lat": 40.4165,
+  "lng": -3.70256,
+  "homepage": "https://www.csic.es/",
+  "logo": "https://www.google.com/s2/favicons?domain=csic.es&sz=64"
+ },
+ "I2801536946": {
+  "id": "I2801536946",
+  "name": "Trieste Astronomical Observatory",
+  "ror": "https://ror.org/00c9gth79",
+  "country": "Italy",
+  "city": "Trieste",
+  "lat": 45.64494323730469,
+  "lng": 13.774184226989746,
+  "homepage": "http://www.ts.astro.it/",
+  "logo": "https://www.google.com/s2/favicons?domain=ts.astro.it&sz=64"
+ },
+ "I4210124779": {
+  "id": "I4210124779",
+  "name": "National Aeronautics and Space Administration",
+  "ror": "https://ror.org/027ka1x80",
+  "country": "United States",
+  "city": "Washington",
+  "lat": 38.89511,
+  "lng": -77.03637,
+  "homepage": "https://www.nasa.gov",
+  "logo": "https://www.google.com/s2/favicons?domain=nasa.gov&sz=64"
+ },
  "I4210165452": {
   "id": "I4210165452",
   "name": "Institut de Recherche en Astrophysique et Plan\u00e9tologie",
