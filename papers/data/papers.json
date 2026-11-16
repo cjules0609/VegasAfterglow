@@ -1,5 +1,5 @@
 {
- "generated": "2026-11-09",
+ "generated": "2026-11-16",
  "papers": [
   {
    "figures": [
@@ -1011,6 +1011,7 @@
     }
    ],
    "sources": [
+    "openalex:cites",
     "openalex:fulltext"
    ]
   },
@@ -3011,6 +3012,44 @@
    ]
   },
   {
+   "figures": [],
+   "usage": "unverified",
+   "key": "W7166832318",
+   "title": "Development progress and science drivers of the 4.2m ground-based astrometric telescope",
+   "year": 2026,
+   "date": "2026-07-01",
+   "type": "conference-paper",
+   "authors": [
+    "T. R. Sun",
+    "\u5e73\u4e00\u9f0e",
+    "Fan Li",
+    "Bin Li",
+    "Han Qu",
+    "Haibin Zhao"
+   ],
+   "journal": "Ground-based and Airborne Telescopes IX",
+   "doi": "10.1117/12.3103341",
+   "arxiv": null,
+   "abstract": "Purple Mountain Observatory is building a new 4.2-meter telescope at the Lenghu B+ site in Qinghai Province, China. The 4.2m ground-based astrometric telescope is intended to carry out follow-up observations of gamma-ray bursts and gravitational-wave events, obtain spectra of supernovae, and perform astrometric measurements of selected Solar System targets. The telescope has one Cassegrain focus and two Nasmyth foci. The Cassegrain focus hosts the main imaging camera, which includes multiple filters and provides a field of view of approximately 10\u2032 \u00d7 10\u2032. The two Nasmyth ports will be equipped with a medium- to low-resolution spectrograph and an adaptive-optics camera. This presentation will report on the development progress of the telescope and describe the range of scientific programs it is designed to support.",
+   "institutes": [
+    {
+     "id": "I2802340896",
+     "name": "Purple Mountain Observatory",
+     "ror": "https://ror.org/02eb4t121",
+     "country": "China",
+     "city": "Nanjing",
+     "lat": 32.06598663330078,
+     "lng": 118.82951354980469,
+     "homepage": "http://english.pmo.cas.cn/",
+     "logo": "https://www.google.com/s2/favicons?domain=english.pmo.cas.cn&sz=64"
+    }
+   ],
+   "co_institutes": [],
+   "sources": [
+    "openalex:cites"
+   ]
+  },
+  {
    "figures": [
     {
      "file": "figures/W7165762260_0.png",
@@ -3690,6 +3729,7 @@
     }
    ],
    "sources": [
+    "openalex:cites",
     "openalex:fulltext"
    ]
   },
@@ -3954,7 +3994,7 @@
     "B. -B. Zhang",
     "Peter Gustaaf Jonker",
     "Y. Liu",
-    "W. Yuan",
+    "Wei Yuan",
     "D. Xu",
     "Z. G. Dai",
     "Maria Edvige Ravasio",
